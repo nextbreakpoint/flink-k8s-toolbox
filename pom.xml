@@ -13,6 +13,7 @@
         <junit.version>4.12</junit.version>
         <kubernetes-client.version>4.0.0-beta1</kubernetes-client.version>
         <slf4j-simple.version>1.7.25</slf4j-simple.version>
+        <fabric8-kubernetes-client.version>4.1.1</fabric8-kubernetes-client.version>
     </properties>
     <dependencies>
         <dependency>
@@ -25,6 +26,11 @@
             <artifactId>client-java</artifactId>
             <version>${kubernetes-client.version}</version>
         </dependency>
+        <!--<dependency>-->
+            <!--<groupId>io.fabric8</groupId>-->
+            <!--<artifactId>kubernetes-client</artifactId>-->
+            <!--<version>${fabric8-kubernetes-client.version}</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
