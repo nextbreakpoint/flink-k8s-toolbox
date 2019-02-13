@@ -29,37 +29,44 @@ fun main(args: Array<String>) {
 fun createFlinkCluster() {
     val api = AppsV1Api()
 
-    val srvPort8081 = V1ServicePort().nodePort(8081).name("ui")
-    val srvPort6123 = V1ServicePort().nodePort(6123).name("rpc")
-    val srvPort6124 = V1ServicePort().nodePort(6124).name("query")
+    val coreApi = CoreV1Api()
 
-    val port8081 = V1ContainerPort().containerPort(8081)
-    val port6121 = V1ContainerPort().containerPort(6121)
-    val port6122 = V1ContainerPort().containerPort(6122)
-    val port6123 = V1ContainerPort().containerPort(6123)
-    val port6124 = V1ContainerPort().containerPort(6124)
+    val srvPort8081 = V1ServicePort().protocol("TCP").port(8081).targetPort(IntOrString("ui")).name("ui")
+    val srvPort6123 = V1ServicePort().protocol("TCP").port(6123).targetPort(IntOrString("rpc")).name("rpc")
+    val srvPort6124 = V1ServicePort().protocol("TCP").port(6124).targetPort(IntOrString("blob")).name("blob")
+    val srvPort6125 = V1ServicePort().protocol("TCP").port(6125).targetPort(IntOrString("query")).name("query")
+
+    val port8081 = V1ContainerPort().protocol("TCP").containerPort(8081).name("ui")
+    val port6121 = V1ContainerPort().protocol("TCP").containerPort(6121).name("data")
+    val port6122 = V1ContainerPort().protocol("TCP").containerPort(6122).name("ipc")
+    val port6123 = V1ContainerPort().protocol("TCP").containerPort(6123).name("rpc")
+    val port6124 = V1ContainerPort().protocol("TCP").containerPort(6124).name("blob")
+    val port6125 = V1ContainerPort().protocol("TCP").containerPort(6125).name("query")
 
     val flinkImage = "flink:1.7.1-scala_2.11-alpine"
+
+    val rpcAddressEnvVar = V1EnvVar().name("JOB_MANAGER_RPC_ADDRESS").value("flink-jobmanager")
 
     val jobmanager = V1Container()
     jobmanager.image = flinkImage
     jobmanager.name = "flink-jobmanager"
     jobmanager.args = listOf("jobmanager")
-    jobmanager.ports = listOf(port8081, port6123, port6124)
+    jobmanager.ports = listOf(port8081, port6123, port6124, port6125)
+    jobmanager.env = listOf(rpcAddressEnvVar)
 
     val jobmanagerPodSpec = V1PodSpec().containers(listOf(jobmanager))
 
-    val flink = Pair("component", "flink")
+    val componentLabel = Pair("component", "flink")
 
-    val jobmanagerMetadata = V1ObjectMeta().generateName("flink-jobmanager-").labels(mapOf(flink))
+    val jobmanagerLabel = Pair("role", "jobmanager")
 
-    val taskmanagerMetadata = V1ObjectMeta().generateName("flink-taskmanager-").labels(mapOf(flink))
+    val jobmanagerMetadata = V1ObjectMeta().generateName("flink-jobmanager-").labels(mapOf(componentLabel, jobmanagerLabel))
 
     val jobmanagerTemplate = V1PodTemplateSpec().spec(jobmanagerPodSpec).metadata(jobmanagerMetadata)
 
     val strategy = V1DeploymentStrategy().type("Recreate")
 
-    val selector = V1LabelSelector().matchLabels(mapOf(flink))
+    val jobmanagerSelector = V1LabelSelector().matchLabels(mapOf(componentLabel, jobmanagerLabel))
 
     val jobmanagerDeployment = V1Deployment()
         .metadata(jobmanagerMetadata)
@@ -67,48 +74,65 @@ fun createFlinkCluster() {
             .replicas(1)
             .template(jobmanagerTemplate)
             .strategy(strategy)
-            .selector(selector))
+            .selector(jobmanagerSelector))
 
     val jobmanagerDeploymentOut = api.createNamespacedDeployment("default", jobmanagerDeployment, null, null, null)
 
     println("Job Manager deployment created ${jobmanagerDeploymentOut.metadata.name}")
 
     val jobmanagerServiceSpec = V1ServiceSpec()
-        .ports(listOf(srvPort8081, srvPort6123, srvPort6124))
-        .selector(mapOf(flink))
-        .type("NodePort")
-//        .externalIPs(listOf("192.168.1.10", "192.168.1.20", "192.168.1.30"))
+        .ports(listOf(srvPort8081, srvPort6123, srvPort6124, srvPort6125))
+        .selector(mapOf(componentLabel, jobmanagerLabel))
 
-    val jobmanagerService = V1Service().spec(jobmanagerServiceSpec).metadata(jobmanagerMetadata)
+    val jobmanagerServiceMetadata = V1ObjectMeta().name("flink-jobmanager").labels(mapOf(componentLabel, jobmanagerLabel))
 
-    val coreApi = CoreV1Api()
+    val jobmanagerService = V1Service().spec(jobmanagerServiceSpec).metadata(jobmanagerServiceMetadata)
 
     val jobmanagerServiceOut = coreApi.createNamespacedService("default", jobmanagerService, null, null, null)
 
     println("Job Manager service created ${jobmanagerServiceOut.metadata.name}")
-
-    val envVar = V1EnvVar().name("JOB_MANAGER_RPC_ADDRESS").value(jobmanagerServiceOut.metadata.name)
-
-//    val envVar = V1EnvVar().name("JOB_MANAGER_RPC_ADDRESS").value("192.168.1.10")
 
     val taskmanager = V1Container()
     taskmanager.image = flinkImage
     taskmanager.name = "flink-taskmanager"
     taskmanager.args = listOf("taskmanager")
     taskmanager.ports = listOf(port6121, port6122)
-    taskmanager.env = listOf(envVar)
+    taskmanager.env = listOf(rpcAddressEnvVar)
 
-    val taskmanagerPodSpec = V1PodSpec().containers(listOf(taskmanager))
+    val taskmanagerLabel = Pair("role", "taskmanager")
+
+    val taskmanagerSelector = V1LabelSelector().matchLabels(mapOf(componentLabel, taskmanagerLabel))
+
+    val affinityTerm1 = V1PodAffinityTerm()
+        .topologyKey("kubernetes.io/hostname")
+        .labelSelector(jobmanagerSelector)
+
+    val affinityTerm2 = V1PodAffinityTerm()
+        .topologyKey("kubernetes.io/hostname")
+        .labelSelector(taskmanagerSelector)
+
+    val terms = listOf(
+        V1WeightedPodAffinityTerm().weight(50).podAffinityTerm(affinityTerm1),
+        V1WeightedPodAffinityTerm().weight(100).podAffinityTerm(affinityTerm2)
+    )
+
+    val affinity = V1Affinity()
+        .podAntiAffinity(V1PodAntiAffinity()
+            .preferredDuringSchedulingIgnoredDuringExecution(terms))
+
+    val taskmanagerPodSpec = V1PodSpec().containers(listOf(taskmanager)).affinity(affinity)
+
+    val taskmanagerMetadata = V1ObjectMeta().generateName("flink-taskmanager-").labels(mapOf(componentLabel, taskmanagerLabel))
 
     val taskmanagerTemplate = V1PodTemplateSpec().spec(taskmanagerPodSpec).metadata(taskmanagerMetadata)
 
     val taskmanagerDeployment = V1Deployment()
         .metadata(taskmanagerMetadata)
         .spec(V1DeploymentSpec()
-            .replicas(2)
+            .replicas(1)
             .template(taskmanagerTemplate)
             .strategy(strategy)
-            .selector(selector))
+            .selector(taskmanagerSelector))
 
     val taskmanagerDeploymentOut = api.createNamespacedDeployment("default", taskmanagerDeployment, null, null, null)
 
