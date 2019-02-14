@@ -9,56 +9,131 @@ import io.kubernetes.client.models.*
 import io.kubernetes.client.util.Config
 import java.io.File
 import java.io.FileInputStream
+import io.kubernetes.client.Exec
+import com.google.common.io.ByteStreams
+import java.util.concurrent.TimeUnit
+
 
 fun main(args: Array<String>) {
-    val client = Config.fromConfig(FileInputStream(File(args[0])))
+    if (args.size < 2) {
+        return
+    }
+
+    val kubeConfigPath = args[0]
+
+    val flinkImageName = args[1]
+
+    val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
     Configuration.setDefaultApiClient(client)
 
-    if (args[1].equals("create")) {
-        createFlinkCluster()
-    }
+//    val serviceName = createFlinkCluster(flinkImageName)
 
-    if (args[1].equals("list")) {
-        printAllPods()
-    }
+    submitJob("flink-jobmanager-n9ckr")
 
-//    deletePod(pod.metadata.name)
+    System.exit(0)
 }
 
-fun createFlinkCluster() {
+fun submitJob(serviceName: String) {
+    val coreApi = CoreV1Api()
+
+    val exec = Exec()
+
+    val services = coreApi.listNamespacedService("default", null, null, null, "metadata.name=$serviceName", "role=jobmanager", 1, null, 30, null)
+
+    if (!services.items.isEmpty()) {
+        println("Found service ${services.items.get(0).metadata.name}")
+
+        val pods = coreApi.listNamespacedPod("default", null, null, null, null, "role=jobmanager", 1, null, 30, null)
+
+        if (!pods.items.isEmpty()) {
+            println("Found pod ${pods.items.get(0).metadata.name}")
+
+            val podName = pods.items.get(0).metadata.name
+
+            val proc = exec.exec("default", podName, arrayOf("ls", "-al"), false, false)
+
+            processExec(proc)
+
+            println("done")
+        } else {
+            println("Pod not found")
+        }
+    } else {
+        println("Service not found")
+    }
+}
+
+@Throws(InterruptedException::class)
+private fun processExec(proc: Process) {
+    val stdout = Thread(
+        Runnable {
+            try {
+                ByteStreams.copy(proc.inputStream, System.out)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
+        })
+    val stderr = Thread(
+        Runnable {
+            try {
+                ByteStreams.copy(proc.errorStream, System.out)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
+        })
+    stdout.start()
+    stderr.start()
+    proc.waitFor(30, TimeUnit.SECONDS)
+    stdout.join()
+    stderr.join()
+}
+
+fun createFlinkCluster(flinkImageName: String) : String {
     val api = AppsV1Api()
 
     val coreApi = CoreV1Api()
 
-    val srvPort8081 = V1ServicePort().protocol("TCP").port(8081).targetPort(IntOrString("ui")).name("ui")
-    val srvPort6123 = V1ServicePort().protocol("TCP").port(6123).targetPort(IntOrString("rpc")).name("rpc")
-    val srvPort6124 = V1ServicePort().protocol("TCP").port(6124).targetPort(IntOrString("blob")).name("blob")
-    val srvPort6125 = V1ServicePort().protocol("TCP").port(6125).targetPort(IntOrString("query")).name("query")
+    val srvPort8081 = createServicePort(8081, "ui")
+    val srvPort6123 = createServicePort(6123, "rpc")
+    val srvPort6124 = createServicePort(6124, "blob")
+    val srvPort6125 = createServicePort(6125, "query")
 
-    val port8081 = V1ContainerPort().protocol("TCP").containerPort(8081).name("ui")
-    val port6121 = V1ContainerPort().protocol("TCP").containerPort(6121).name("data")
-    val port6122 = V1ContainerPort().protocol("TCP").containerPort(6122).name("ipc")
-    val port6123 = V1ContainerPort().protocol("TCP").containerPort(6123).name("rpc")
-    val port6124 = V1ContainerPort().protocol("TCP").containerPort(6124).name("blob")
-    val port6125 = V1ContainerPort().protocol("TCP").containerPort(6125).name("query")
+    val port8081 = createContainerPort(8081, "ui")
+    val port6121 = createContainerPort(6121, "data")
+    val port6122 = createContainerPort(6122, "ipc")
+    val port6123 = createContainerPort(6123, "rpc")
+    val port6124 = createContainerPort(6124, "blob")
+    val port6125 = createContainerPort(6125, "query")
 
-    val flinkImage = "flink:1.7.1-scala_2.11-alpine"
+    val componentLabel = Pair("component", "flink")
 
-    val rpcAddressEnvVar = V1EnvVar().name("JOB_MANAGER_RPC_ADDRESS").value("flink-jobmanager")
+    val jobmanagerLabel = Pair("role", "jobmanager")
+
+    val taskmanagerLabel = Pair("role", "taskmanager")
+
+    val jobmanagerServiceSpec = V1ServiceSpec()
+        .ports(listOf(srvPort8081, srvPort6123, srvPort6124, srvPort6125))
+        .selector(mapOf(componentLabel, jobmanagerLabel))
+
+    val jobmanagerServiceMetadata = V1ObjectMeta().generateName("flink-jobmanager-").labels(mapOf(componentLabel, jobmanagerLabel))
+
+    val jobmanagerService = V1Service().spec(jobmanagerServiceSpec).metadata(jobmanagerServiceMetadata)
+
+    val jobmanagerServiceOut = coreApi.createNamespacedService("default", jobmanagerService, null, null, null)
+
+    println("Job Manager service created ${jobmanagerServiceOut.metadata.name}")
+
+    val rpcAddressEnvVar = V1EnvVar().name("JOB_MANAGER_RPC_ADDRESS").value(jobmanagerServiceOut.metadata.name)
 
     val jobmanager = V1Container()
-    jobmanager.image = flinkImage
+    jobmanager.image = flinkImageName
     jobmanager.name = "flink-jobmanager"
     jobmanager.args = listOf("jobmanager")
     jobmanager.ports = listOf(port8081, port6123, port6124, port6125)
     jobmanager.env = listOf(rpcAddressEnvVar)
 
     val jobmanagerPodSpec = V1PodSpec().containers(listOf(jobmanager))
-
-    val componentLabel = Pair("component", "flink")
-
-    val jobmanagerLabel = Pair("role", "jobmanager")
 
     val jobmanagerMetadata = V1ObjectMeta().generateName("flink-jobmanager-").labels(mapOf(componentLabel, jobmanagerLabel))
 
@@ -80,26 +155,12 @@ fun createFlinkCluster() {
 
     println("Job Manager deployment created ${jobmanagerDeploymentOut.metadata.name}")
 
-    val jobmanagerServiceSpec = V1ServiceSpec()
-        .ports(listOf(srvPort8081, srvPort6123, srvPort6124, srvPort6125))
-        .selector(mapOf(componentLabel, jobmanagerLabel))
-
-    val jobmanagerServiceMetadata = V1ObjectMeta().name("flink-jobmanager").labels(mapOf(componentLabel, jobmanagerLabel))
-
-    val jobmanagerService = V1Service().spec(jobmanagerServiceSpec).metadata(jobmanagerServiceMetadata)
-
-    val jobmanagerServiceOut = coreApi.createNamespacedService("default", jobmanagerService, null, null, null)
-
-    println("Job Manager service created ${jobmanagerServiceOut.metadata.name}")
-
     val taskmanager = V1Container()
-    taskmanager.image = flinkImage
+    taskmanager.image = flinkImageName
     taskmanager.name = "flink-taskmanager"
     taskmanager.args = listOf("taskmanager")
     taskmanager.ports = listOf(port6121, port6122)
     taskmanager.env = listOf(rpcAddressEnvVar)
-
-    val taskmanagerLabel = Pair("role", "taskmanager")
 
     val taskmanagerSelector = V1LabelSelector().matchLabels(mapOf(componentLabel, taskmanagerLabel))
 
@@ -137,7 +198,20 @@ fun createFlinkCluster() {
     val taskmanagerDeploymentOut = api.createNamespacedDeployment("default", taskmanagerDeployment, null, null, null)
 
     println("Task Manager deployment created ${taskmanagerDeploymentOut.metadata.name}")
+
+    return jobmanagerServiceOut.metadata.name
 }
+
+private fun createServicePort(port: Int, name: String) = V1ServicePort()
+    .protocol("TCP")
+    .port(port)
+    .targetPort(IntOrString(name))
+    .name(name)
+
+private fun createContainerPort(port: Int, name: String) = V1ContainerPort()
+    .protocol("TCP")
+    .containerPort(port)
+    .name(name)
 
 private fun printAllPods() {
     val api = CoreV1Api()
@@ -149,7 +223,7 @@ private fun printAllPods() {
     }
 
     list.items.forEach {
-            item -> println("${item.status}")
+        item -> println("${item.status}")
     }
 }
 
