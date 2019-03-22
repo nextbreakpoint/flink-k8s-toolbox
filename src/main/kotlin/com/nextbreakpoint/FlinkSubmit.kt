@@ -1,7 +1,6 @@
 package com.nextbreakpoint
 
 import com.google.common.io.ByteStreams.copy
-import com.google.gson.JsonParseException
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.apis.AppsV1Api
@@ -29,27 +28,32 @@ fun main(args: Array<String>) {
 
     val serviceName = createFlinkCluster(flinkImageName)
 
-    Thread.sleep(60000)
-
-    submitJob(serviceName)
-
-    Thread.sleep(60000)
-
-    printAllPods()
-
-    deleteFlinkCluster(serviceName)
+//    Thread.sleep(60000)
+//
+//    submitJob("flink-jobmanager-ltml9")
+//
+//    Thread.sleep(60000)
+//
+//    listJobs("flink-jobmanager-ltml9")
+//
+//    Thread.sleep(60000)
+//
+//    printAllPods()
+//
+//    deleteFlinkCluster()
 
     System.exit(0)
 }
 
 private val NAMESPACE = "default"
 
-private fun submitJob(serviceName: String) {
+private fun listJobs(serviceName: String) {
     val coreApi = CoreV1Api()
 
     val exec = Exec()
 
-    val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, "metadata.name=$serviceName", "role=jobmanager", 1, null, 30, null)
+//    val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, "metadata.name=$serviceName", "role=jobmanager", 1, null, 30, null)
+    val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, null, "role=jobmanager", 1, null, 30, null)
 
     if (!services.items.isEmpty()) {
         println("Found service ${services.items.get(0).metadata.name}")
@@ -61,7 +65,61 @@ private fun submitJob(serviceName: String) {
 
             val podName = pods.items.get(0).metadata.name
 
-            val proc = exec.exec(NAMESPACE, podName, arrayOf("flink", "list", "-r", "-m", "${serviceName}:8081"), false, false)
+            val proc = exec.exec(NAMESPACE, podName, arrayOf(
+                "flink",
+                "list",
+                "-r",
+                "-m",
+                "${services.items.get(0).metadata.name}:8081"
+            ), false, false)
+
+            processExec(proc)
+
+            println("done")
+        } else {
+            println("Pod not found")
+        }
+    } else {
+        println("Service not found")
+    }
+}
+
+private fun submitJob(serviceName: String) {
+    val coreApi = CoreV1Api()
+
+    val exec = Exec()
+
+//    val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, "metadata.name=$serviceName", "role=jobmanager", 1, null, 30, null)
+    val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, null, "role=jobmanager", 1, null, 30, null)
+
+    if (!services.items.isEmpty()) {
+        println("Found service ${services.items.get(0).metadata.name}")
+
+        val pods = coreApi.listNamespacedPod(NAMESPACE, null, null, null, null, "role=jobmanager", 1, null, 30, null)
+
+        if (!pods.items.isEmpty()) {
+            println("Found pod ${pods.items.get(0).metadata.name}")
+
+            val podName = pods.items.get(0).metadata.name
+
+            val proc = exec.exec(NAMESPACE, podName, arrayOf(
+                "flink",
+                "run",
+                "-d",
+                "-m",
+                "${services.items.get(0).metadata.name}:8081",
+                "-c",
+                "com.nextbreakpoint.flink.jobs.GenerateSensorValuesJob",
+                "/maven/com.nextbreakpoint.flinkdemo-0-SNAPSHOT.jar",
+                "--JOB_PARALLELISM",
+                "1",
+                "--BUCKET_BASE_PATH",
+                "file:///var/tmp/flink",
+                "--BOOTSTRAP_SERVERS",
+                "kafka-k8s1:9092,kafka-k8s2:9092,kafka-k8s3:9092",
+                "--TARGET_TOPIC_NAME",
+                "sensors-input"
+            ), false, false)
 
             processExec(proc)
 
@@ -212,7 +270,6 @@ private fun createFlinkCluster(flinkImageName: String) : String {
 
     val jobmanagerVolumeClaim = V1PersistentVolumeClaimSpec()
         .accessModes(listOf("ReadWriteOnce"))
-        .volumeName("flink")
         .storageClassName(storageClassName)
         .resources(V1ResourceRequirements().requests(mapOf("storage" to Quantity(jobmanagerStorageSize))))
 
@@ -258,7 +315,6 @@ private fun createFlinkCluster(flinkImageName: String) : String {
 
     val taskmanagerVolumeClaim = V1PersistentVolumeClaimSpec()
         .accessModes(listOf("ReadWriteOnce"))
-        .volumeName("flink")
         .storageClassName(storageClassName)
         .resources(V1ResourceRequirements().requests(mapOf("storage" to Quantity(taskmanagerStorageSize))))
 
@@ -279,7 +335,7 @@ private fun createFlinkCluster(flinkImageName: String) : String {
     return jobmanagerServiceOut.metadata.name
 }
 
-private fun deleteFlinkCluster(name: String) {
+private fun deleteFlinkCluster() {
     val api = AppsV1Api()
 
     val statefulSets = api.listNamespacedStatefulSet(NAMESPACE, null, null, null, null, "component=flink", 1, null, 30, null)
