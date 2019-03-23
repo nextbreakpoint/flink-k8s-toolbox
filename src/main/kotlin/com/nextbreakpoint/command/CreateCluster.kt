@@ -1,9 +1,5 @@
-package com.nextbreakpoint
+package com.nextbreakpoint.command
 
-import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.parameters.options.required
-import com.google.common.io.ByteStreams.copy
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.apis.AppsV1Api
@@ -12,47 +8,17 @@ import io.kubernetes.client.models.*
 import io.kubernetes.client.util.Config
 import java.io.File
 import java.io.FileInputStream
-import io.kubernetes.client.Exec
 import io.kubernetes.client.custom.Quantity
-import java.util.concurrent.TimeUnit
 
-class FlinkSubmit : CliktCommand() {
+class CreateCluster {
     private val NAMESPACE = "default"
 
-    private val kubeConfig: String by option(help="The path of Kubectl config").required()
-    private val dockerImage: String by option(help="The Docker image with Flink job").required()
-    private val clusterName: String by option(help="The name of the Flink cluster").required()
-
-    override fun run() {
-        try {
-            run(kubeConfig, dockerImage, clusterName)
-        } catch (e : Exception) {
-            e.printStackTrace()
-        } finally {
-            System.exit(0)
-        }
-    }
-
-    private fun run(kubeConfigPath: String, dockerImage: String, clusterName: String) {
+    fun run(kubeConfigPath: String, dockerImage: String, clusterName: String) {
         val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
         Configuration.setDefaultApiClient(client)
 
         createCluster(clusterName, dockerImage)
-
-        Thread.sleep(60000)
-
-        listClusterPods(clusterName)
-
-        submitJob(clusterName)
-
-        Thread.sleep(60000)
-
-        listJobs(clusterName)
-
-        Thread.sleep(60000)
-
-        deleteCluster(clusterName)
     }
 
     private fun createCluster(clusterName: String, dockerImage: String) {
@@ -467,162 +433,6 @@ class FlinkSubmit : CliktCommand() {
         println("StatefulSet created ${taskmanagerStatefulSetOut.metadata.name}")
     }
 
-    private fun deleteCluster(clusterName: String) {
-        println("Deleting cluster $clusterName...")
-
-        val api = AppsV1Api()
-
-        val statefulSets = api.listNamespacedStatefulSet(NAMESPACE, null, null, null, null, "cluster=$clusterName", null, null, 30, null)
-
-        statefulSets.items.forEach { statefulSet ->
-            try {
-                println("Removing StatefulSet ${statefulSet.metadata.name}...")
-
-                val status = api.deleteNamespacedStatefulSet(statefulSet.metadata.name, NAMESPACE, V1DeleteOptions(), "true", null, null, null, null)
-
-                println("Response status: ${status.reason}")
-
-                status.details.causes.forEach { println(it.message) }
-            } catch (e : Exception) {
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
-            }
-        }
-
-        val coreApi = CoreV1Api()
-
-        val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, null, "cluster=$clusterName", null, null, 30, null)
-
-        services.items.forEach { service ->
-            try {
-                println("Removing Service ${service.metadata.name}...")
-
-                val status = coreApi.deleteNamespacedService(service.metadata.name, NAMESPACE, V1DeleteOptions(), "true", null, null, null, null)
-
-                println("Response status: ${status.reason}")
-
-                status.details.causes.forEach { println(it.message) }
-            } catch (e : Exception) {
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
-            }
-        }
-
-        val volumeClaims = coreApi.listNamespacedPersistentVolumeClaim(NAMESPACE, null, null, null, null, "cluster=$clusterName", null, null, 30, null)
-
-        volumeClaims.items.forEach { volumeClaim ->
-            try {
-                println("Removing Persistent Volume Claim ${volumeClaim.metadata.name}...")
-
-                val status = coreApi.deleteNamespacedPersistentVolumeClaim(volumeClaim.metadata.name, NAMESPACE, V1DeleteOptions(), "true", null, null, null, null)
-
-                println("Response status: ${status.reason}")
-
-                status.details.causes.forEach { println(it.message) }
-            } catch (e : Exception) {
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
-            }
-        }
-
-        println("Done.")
-    }
-
-    private fun listClusterPods(clusterName: String) {
-        val api = CoreV1Api()
-
-        val list = api.listNamespacedPod(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", null, null, 10, null)
-
-        list.items.forEach {
-                item -> println("Pod name: ${item.metadata.name}")
-        }
-
-        list.items.forEach {
-                item -> println("${item.status}")
-        }
-    }
-
-    private fun listJobs(clusterName: String) {
-        val coreApi = CoreV1Api()
-
-        val exec = Exec()
-
-//    val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, "metadata.name=$serviceName", "role=jobmanager", 1, null, 30, null)
-        val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", 1, null, 30, null)
-
-        if (!services.items.isEmpty()) {
-            println("Found service ${services.items.get(0).metadata.name}")
-
-            val pods = coreApi.listNamespacedPod(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", 1, null, 30, null)
-
-            if (!pods.items.isEmpty()) {
-                println("Found pod ${pods.items.get(0).metadata.name}")
-
-                val podName = pods.items.get(0).metadata.name
-
-                val proc = exec.exec(NAMESPACE, podName, arrayOf(
-                    "flink",
-                    "list",
-                    "-r",
-                    "-m",
-                    "${services.items.get(0).metadata.name}:8081"
-                ), false, false)
-
-                processExec(proc)
-
-                println("done")
-            } else {
-                println("Pod not found")
-            }
-        } else {
-            println("Service not found")
-        }
-    }
-
-    private fun submitJob(clusterName: String) {
-        val coreApi = CoreV1Api()
-
-        val exec = Exec()
-
-        val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", 1, null, 30, null)
-
-        if (!services.items.isEmpty()) {
-            println("Found service ${services.items.get(0).metadata.name}")
-
-            val pods = coreApi.listNamespacedPod(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", 1, null, 30, null)
-
-            if (!pods.items.isEmpty()) {
-                println("Found pod ${pods.items.get(0).metadata.name}")
-
-                val podName = pods.items.get(0).metadata.name
-
-                val proc = exec.exec(NAMESPACE, podName, arrayOf(
-                    "flink",
-                    "run",
-                    "-d",
-                    "-m",
-                    "${services.items.get(0).metadata.name}:8081",
-                    "-c",
-                    "com.nextbreakpoint.flink.jobs.GenerateSensorValuesJob",
-                    "/maven/com.nextbreakpoint.flinkdemo-0-SNAPSHOT.jar",
-                    "--JOB_PARALLELISM",
-                    "1",
-                    "--BUCKET_BASE_PATH",
-                    "file:///var/tmp/flink",
-                    "--BOOTSTRAP_SERVERS",
-                    "kafka-k8s1:9092,kafka-k8s2:9092,kafka-k8s3:9092",
-                    "--TARGET_TOPIC_NAME",
-                    "sensors-input"
-                ), false, false)
-
-                processExec(proc)
-
-                println("done")
-            } else {
-                println("Pod not found")
-            }
-        } else {
-            println("Service not found")
-        }
-    }
-
     private fun createServicePort(port: Int, name: String) = V1ServicePort()
         .protocol("TCP")
         .port(port)
@@ -633,30 +443,5 @@ class FlinkSubmit : CliktCommand() {
         .protocol("TCP")
         .containerPort(port)
         .name(name)
-
-    @Throws(InterruptedException::class)
-    private fun processExec(proc: Process) {
-        val stdout = Thread(
-            Runnable {
-                try {
-                    copy(proc.inputStream, System.out)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            })
-        val stderr = Thread(
-            Runnable {
-                try {
-                    copy(proc.errorStream, System.out)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            })
-        stdout.start()
-        stderr.start()
-        proc.waitFor(30, TimeUnit.SECONDS)
-        stdout.join()
-        stderr.join()
-    }
 }
 
