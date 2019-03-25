@@ -1,5 +1,8 @@
 package com.nextbreakpoint.command
 
+import com.nextbreakpoint.model.ClusterConfig
+import com.nextbreakpoint.model.ResourcesConfig
+import com.nextbreakpoint.model.StorageConfig
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.apis.AppsV1Api
@@ -9,429 +12,357 @@ import io.kubernetes.client.util.Config
 import java.io.File
 import java.io.FileInputStream
 import io.kubernetes.client.custom.Quantity
+import java.lang.Exception
+import java.lang.RuntimeException
 
 class CreateCluster {
-    private val NAMESPACE = "default"
+    fun run(kubeConfigPath: String, clusterConfig: ClusterConfig) {
+        try {
+            val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
-    fun run(kubeConfigPath: String, dockerImage: String, clusterName: String) {
-        val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
+            Configuration.setDefaultApiClient(client)
 
-        Configuration.setDefaultApiClient(client)
+            val api = AppsV1Api()
 
-        createCluster(clusterName, dockerImage)
+            val coreApi = CoreV1Api()
+
+            val statefulSets = api.listNamespacedStatefulSet(
+                clusterConfig.descriptor.namespace,
+                null,
+                null,
+                null,
+                null,
+                "cluster=${clusterConfig.descriptor.name},environment=${clusterConfig.descriptor.environment}",
+                null,
+                null,
+                30,
+                null
+            )
+
+            if (statefulSets.items.size > 0) {
+                throw RuntimeException("Cluster already exists")
+            }
+
+            val srvPort8081 = createServicePort(8081, "ui")
+            val srvPort6123 = createServicePort(6123, "rpc")
+            val srvPort6124 = createServicePort(6124, "blob")
+            val srvPort6125 = createServicePort(6125, "query")
+
+            val port8081 = createContainerPort(8081, "ui")
+            val port6121 = createContainerPort(6121, "data")
+            val port6122 = createContainerPort(6122, "ipc")
+            val port6123 = createContainerPort(6123, "rpc")
+            val port6124 = createContainerPort(6124, "blob")
+            val port6125 = createContainerPort(6125, "query")
+
+            val componentLabel = Pair("component", "flink")
+
+            val environmentLabel = Pair("environment", clusterConfig.descriptor.environment)
+
+            val clusterLabel = Pair("cluster", clusterConfig.descriptor.name)
+
+            val jobmanagerLabel = Pair("role", "jobmanager")
+
+            val taskmanagerLabel = Pair("role", "taskmanager")
+
+            val jobmanagerResources = clusterConfig.jobmanager.resources
+
+            val taskmanagerResources = clusterConfig.taskmanager.resources
+
+            val jobmanagerResourceRequirements = createResourceRequirements(jobmanagerResources)
+
+            val taskmanagerResourceRequirements = createResourceRequirements(taskmanagerResources)
+
+            val jobmanagerLabels = mapOf(clusterLabel, componentLabel, jobmanagerLabel, environmentLabel)
+
+            val taskmanagerLabels = mapOf(clusterLabel, componentLabel, taskmanagerLabel, environmentLabel)
+
+            val jobmanagerSelector = V1LabelSelector().matchLabels(jobmanagerLabels)
+
+            val taskmanagerSelector = V1LabelSelector().matchLabels(taskmanagerLabels)
+
+            val environmentEnvVar = createEnvVar("FLINK_ENVIRONMENT", clusterConfig.descriptor.environment)
+
+            val jobManagerHeapEnvVar = createEnvVar("FLINK_JM_HEAP", jobmanagerResources.memory.toString())
+
+            val taskManagerHeapEnvVar = createEnvVar("FLINK_TM_HEAP", taskmanagerResources.memory.toString())
+
+            val numberOfTaskSlotsEnvVar = createEnvVar("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", clusterConfig.taskmanager.taskSlots.toString())
+
+            val podNameEnvVar = createEnvVarFromField("POD_NAME", "metadata.name")
+
+            val podNamespaceEnvVar = createEnvVarFromField("POD_NAMESPACE", "metadata.namespace")
+
+            val jobmanagerVolumeMount = createVolumeMount("jobmanager")
+
+            val taskmanagerVolumeMount = createVolumeMount("taskmanager")
+
+            val updateStrategy = V1StatefulSetUpdateStrategy().type("RollingUpdate")
+
+            val jobmanagerServiceSpec = V1ServiceSpec()
+                .ports(
+                    listOf(
+                        srvPort8081,
+                        srvPort6123,
+                        srvPort6124,
+                        srvPort6125
+                    )
+                )
+                .selector(jobmanagerLabels)
+                .type("NodePort")
+
+            val jobmanagerServiceMetadata = createObjectMeta("flink-jobmanager-", jobmanagerLabels)
+
+            val jobmanagerService = V1Service().spec(jobmanagerServiceSpec).metadata(jobmanagerServiceMetadata)
+
+            println("Creating Flink Service ...")
+
+            val jobmanagerServiceOut = coreApi.createNamespacedService(
+                clusterConfig.descriptor.namespace,
+                jobmanagerService,
+                null,
+                null,
+                null
+            )
+
+            println("Service created ${jobmanagerServiceOut.metadata.name}")
+
+            val rpcAddressEnvVar = createEnvVar("JOB_MANAGER_RPC_ADDRESS", jobmanagerServiceOut.metadata.name)
+
+            val jobmanager = V1Container()
+                .image(clusterConfig.jobmanager.image)
+                .imagePullPolicy(clusterConfig.jobmanager.pullPolicy)
+                .name("flink-jobmanager")
+                .command(
+                    listOf("/custom_entrypoint.sh")
+                )
+                .args(
+                    listOf("jobmanager")
+                )
+                .ports(
+                    listOf(
+                        port8081,
+                        port6123,
+                        port6124,
+                        port6125
+                    )
+                )
+                .volumeMounts(listOf(jobmanagerVolumeMount))
+                .env(
+                    listOf(
+                        podNameEnvVar,
+                        podNamespaceEnvVar,
+                        environmentEnvVar,
+                        rpcAddressEnvVar,
+                        jobManagerHeapEnvVar
+                    )
+                )
+                .resources(jobmanagerResourceRequirements)
+
+            val jobmanagerAffinity = createAffinity(jobmanagerSelector, taskmanagerSelector)
+
+            val jobmanagerPodSpec = V1PodSpec()
+                .containers(
+                    listOf(jobmanager)
+                )
+                .imagePullSecrets(
+                    listOf(
+                        V1LocalObjectReference().name(clusterConfig.jobmanager.pullSecrets)
+                    )
+                )
+                .affinity(jobmanagerAffinity)
+
+            val jobmanagerMetadata = createObjectMeta("flink-jobmanager-", jobmanagerLabels)
+
+            val jobmanagerVolumeClaim = createPersistentVolumeClaimSpec(clusterConfig.jobmanager.storage)
+
+            val jobmanagerStatefulSet = V1StatefulSet()
+                .metadata(jobmanagerMetadata)
+                .spec(
+                    V1StatefulSetSpec()
+                        .replicas(1)
+                        .template(
+                            V1PodTemplateSpec()
+                                .spec(jobmanagerPodSpec)
+                                .metadata(jobmanagerMetadata)
+                        )
+                        .updateStrategy(updateStrategy)
+                        .serviceName("jobmanager")
+                        .selector(jobmanagerSelector)
+                        .addVolumeClaimTemplatesItem(
+                            V1PersistentVolumeClaim()
+                                .spec(jobmanagerVolumeClaim)
+                                .metadata(
+                                    V1ObjectMeta()
+                                        .name("jobmanager")
+                                        .labels(jobmanagerLabels)
+                                )
+                        )
+                )
+
+            println("Creating JobManager StatefulSet ...")
+
+            val jobmanagerStatefulSetOut = api.createNamespacedStatefulSet(
+                clusterConfig.descriptor.namespace,
+                jobmanagerStatefulSet,
+                null,
+                null,
+                null
+            )
+
+            println("StatefulSet created ${jobmanagerStatefulSetOut.metadata.name}")
+
+            val taskmanager = V1Container()
+                .image(clusterConfig.taskmanager.image)
+                .imagePullPolicy(clusterConfig.taskmanager.pullPolicy)
+                .name("flink-taskmanager")
+                .command(
+                    listOf("/custom_entrypoint.sh")
+                )
+                .args(
+                    listOf("taskmanager")
+                )
+                .ports(
+                    listOf(
+                        port6121,
+                        port6122
+                    )
+                )
+                .volumeMounts(
+                    listOf(taskmanagerVolumeMount)
+                )
+                .env(
+                    listOf(
+                        podNameEnvVar,
+                        podNamespaceEnvVar,
+                        environmentEnvVar,
+                        rpcAddressEnvVar,
+                        taskManagerHeapEnvVar,
+                        numberOfTaskSlotsEnvVar
+                    )
+                )
+                .resources(taskmanagerResourceRequirements)
+
+            val taskmanagerAffinity = createAffinity(jobmanagerSelector, taskmanagerSelector)
+
+            val taskmanagerPodSpec = V1PodSpec()
+                .containers(
+                    listOf(taskmanager)
+                )
+                .imagePullSecrets(
+                    listOf(
+                        V1LocalObjectReference().name(clusterConfig.taskmanager.pullSecrets)
+                    )
+                )
+                .affinity(taskmanagerAffinity)
+
+            val taskmanagerMetadata = createObjectMeta("flink-taskmanager-", taskmanagerLabels)
+
+            val taskmanagerVolumeClaim = createPersistentVolumeClaimSpec(clusterConfig.taskmanager.storage)
+
+            val taskmanagerStatefulSet = V1StatefulSet()
+                .metadata(taskmanagerMetadata)
+                .spec(
+                    V1StatefulSetSpec()
+                        .replicas(2)
+                        .template(
+                            V1PodTemplateSpec()
+                                .spec(taskmanagerPodSpec)
+                                .metadata(taskmanagerMetadata)
+                        )
+                        .updateStrategy(updateStrategy)
+                        .serviceName("taskmanager")
+                        .selector(taskmanagerSelector)
+                        .addVolumeClaimTemplatesItem(
+                            V1PersistentVolumeClaim()
+                                .spec(taskmanagerVolumeClaim)
+                                .metadata(
+                                    V1ObjectMeta()
+                                        .name("taskmanager")
+                                        .labels(taskmanagerLabels)
+                                )
+                        )
+                )
+
+            println("Creating TaskManager StatefulSet ...")
+
+            val taskmanagerStatefulSetOut = api.createNamespacedStatefulSet(
+                clusterConfig.descriptor.namespace,
+                taskmanagerStatefulSet,
+                null,
+                null,
+                null
+            )
+
+            println("StatefulSet created ${taskmanagerStatefulSetOut.metadata.name}")
+        } catch (e : Exception) {
+            throw RuntimeException(e)
+        }
     }
 
-    private fun createCluster(clusterName: String, dockerImage: String) {
-        val api = AppsV1Api()
-
-        val coreApi = CoreV1Api()
-
-        val environment = "test"
-
-        val srvPort8081 = createServicePort(8081, "ui")
-        val srvPort6123 = createServicePort(6123, "rpc")
-        val srvPort6124 = createServicePort(6124, "blob")
-        val srvPort6125 = createServicePort(6125, "query")
-
-        val port8081 = createContainerPort(8081, "ui")
-        val port6121 = createContainerPort(6121, "data")
-        val port6122 = createContainerPort(6122, "ipc")
-        val port6123 = createContainerPort(6123, "rpc")
-        val port6124 = createContainerPort(6124, "blob")
-        val port6125 = createContainerPort(6125, "query")
-
-        val storageClassName = "standard"
-
-        val jobmanagerStorageSize = "2Gi"
-
-        val taskmanagerStorageSize = "5Gi"
-
-        val pullSecretsReference = V1LocalObjectReference().name("regcred")
-
-        val componentLabel = Pair("component", "flink")
-
-        val clusterLabel = Pair("cluster", clusterName)
-
-        val jobmanagerLabel = Pair("role", "jobmanager")
-
-        val taskmanagerLabel = Pair("role", "taskmanager")
-
-        val jobmanagerResourceRequirements = V1ResourceRequirements()
-            .limits(
-                mapOf(
-                    "cpu" to Quantity("1"),
-                    "memory" to Quantity("600Mi")
+    private fun createAffinity(jobmanagerSelector: V1LabelSelector?, taskmanagerSelector: V1LabelSelector?) = V1Affinity()
+        .podAntiAffinity(
+            V1PodAntiAffinity().preferredDuringSchedulingIgnoredDuringExecution(
+                listOf(
+                    V1WeightedPodAffinityTerm().weight(50).podAffinityTerm(
+                        V1PodAffinityTerm()
+                            .topologyKey("kubernetes.io/hostname")
+                            .labelSelector(jobmanagerSelector)
+                    ),
+                    V1WeightedPodAffinityTerm().weight(100).podAffinityTerm(
+                        V1PodAffinityTerm()
+                            .topologyKey("kubernetes.io/hostname")
+                            .labelSelector(taskmanagerSelector)
+                    )
                 )
-            )
-            .requests(
-                mapOf(
-                    "cpu" to Quantity("0.2"),
-                    "memory" to Quantity("200Mi")
-                )
-            )
-
-        val taskmanagerResourceRequirements = V1ResourceRequirements()
-            .limits(
-                mapOf(
-                    "cpu" to Quantity("1"),
-                    "memory" to Quantity("1200Mi")
-                )
-            )
-            .requests(
-                mapOf(
-                    "cpu" to Quantity("0.2"),
-                    "memory" to Quantity("500Mi")
-                )
-            )
-
-        val jobmanagerSelector = V1LabelSelector().matchLabels(
-            mapOf(
-                clusterLabel,
-                componentLabel,
-                jobmanagerLabel
             )
         )
 
-        val taskmanagerSelector = V1LabelSelector().matchLabels(
-            mapOf(
-                clusterLabel,
-                componentLabel,
-                taskmanagerLabel
-            )
+    private fun createPersistentVolumeClaimSpec(storageConfig: StorageConfig) = V1PersistentVolumeClaimSpec()
+        .accessModes(listOf("ReadWriteOnce"))
+        .storageClassName(storageConfig.storageClass)
+        .resources(
+            V1ResourceRequirements()
+                .requests(
+                    mapOf("storage" to Quantity(storageConfig.size.toString()))
+                )
         )
 
-        val environmentEnvVar = V1EnvVar()
-            .name("FLINK_ENVIRONMENT")
-            .value(environment)
+    private fun createObjectMeta(name: String, jobmanagerLabels: Map<String, String>) = V1ObjectMeta()
+        .generateName(name)
+        .labels(jobmanagerLabels)
 
-        val flinkJobManagerHeap = V1EnvVar()
-            .name("FLINK_JM_HEAP")
-            .value("512")
+    private fun createVolumeMount(s: String) = V1VolumeMount()
+        .mountPath("/var/tmp/data")
+        .subPath("data")
+        .name(s)
 
-        val flinkTaskManagerHeap = V1EnvVar()
-            .name("FLINK_TM_HEAP")
-            .value("1024")
-
-        val flinkTaskManagerNumberOfTaskSlots = V1EnvVar()
-            .name("TASK_MANAGER_NUMBER_OF_TASK_SLOTS")
-            .value("1")
-
-        val podNameEnvVar = V1EnvVar()
-            .name("POD_NAME")
-            .valueFrom(
-                V1EnvVarSource()
-                    .fieldRef(
-                        V1ObjectFieldSelector().fieldPath("metadata.name")
-                    )
-            )
-
-        val podNamespaceEnvVar = V1EnvVar()
-            .name("POD_NAMESPACE")
-            .valueFrom(
-                V1EnvVarSource()
-                    .fieldRef(
-                        V1ObjectFieldSelector().fieldPath("metadata.namespace")
-                    )
-            )
-
-        val jobmanagerVolumeMount = V1VolumeMount()
-            .mountPath("/var/tmp/data")
-            .subPath("data")
-            .name("jobmanager")
-
-        val taskmanagerVolumeMount = V1VolumeMount()
-            .mountPath("/var/tmp/data")
-            .subPath("data")
-            .name("taskmanager")
-
-        val updateStrategy = V1StatefulSetUpdateStrategy().type("RollingUpdate")
-
-        val jobmanagerServiceSpec = V1ServiceSpec()
-            .ports(
-                listOf(
-                    srvPort8081,
-                    srvPort6123,
-                    srvPort6124,
-                    srvPort6125
+    private fun createEnvVarFromField(s: String, s1: String) = V1EnvVar()
+        .name(s)
+        .valueFrom(
+            V1EnvVarSource()
+                .fieldRef(
+                    V1ObjectFieldSelector().fieldPath(s1)
                 )
-            )
-            .selector(
-                mapOf(
-                    clusterLabel,
-                    componentLabel,
-                    jobmanagerLabel
-                )
-            )
-            .type("NodePort")
+        )
 
-        val jobmanagerServiceMetadata = V1ObjectMeta()
-            .generateName("flink-jobmanager-")
-            .labels(
-                mapOf(
-                    clusterLabel,
-                    componentLabel,
-                    jobmanagerLabel
-                )
+    private fun createEnvVar(name: String, value: String) = V1EnvVar()
+        .name(name)
+        .value(value)
+
+    private fun createResourceRequirements(resourcesConfig: ResourcesConfig) = V1ResourceRequirements()
+        .limits(
+            mapOf(
+                "cpu" to Quantity(resourcesConfig.cpus.toString()),
+                "memory" to Quantity(resourcesConfig.memory.times(1.5).toString() + "Mi")
             )
-
-        val jobmanagerService = V1Service()
-            .spec(jobmanagerServiceSpec)
-            .metadata(jobmanagerServiceMetadata)
-
-        println("Creating Flink Service ...")
-
-        val jobmanagerServiceOut = coreApi.createNamespacedService(NAMESPACE, jobmanagerService, null, null, null)
-
-        println("Service created ${jobmanagerServiceOut.metadata.name}")
-
-        val rpcAddressEnvVar = V1EnvVar()
-            .name("JOB_MANAGER_RPC_ADDRESS")
-            .value(jobmanagerServiceOut.metadata.name)
-
-        val jobmanager = V1Container()
-            .image(dockerImage)
-            .imagePullPolicy("IfNotPresent")
-            .name("flink-jobmanager")
-            .command(
-                listOf("/custom_entrypoint.sh")
+        )
+        .requests(
+            mapOf(
+                "cpu" to Quantity(resourcesConfig.cpus.div(4).toString()),
+                "memory" to Quantity(resourcesConfig.memory.toString() + "Mi")
             )
-            .args(
-                listOf("jobmanager")
-            )
-            .ports(
-                listOf(
-                    port8081,
-                    port6123,
-                    port6124,
-                    port6125
-                )
-            )
-            .volumeMounts(listOf(jobmanagerVolumeMount))
-            .env(
-                listOf(
-                    podNameEnvVar,
-                    podNamespaceEnvVar,
-                    environmentEnvVar,
-                    rpcAddressEnvVar,
-                    flinkJobManagerHeap
-                )
-            )
-            .resources(jobmanagerResourceRequirements)
-
-//    val jobmanagerNodeSelector = V1NodeSelector().nodeSelectorTerms(listOf(
-//        V1NodeSelectorTerm().matchExpressions(listOf(
-//            V1NodeSelectorRequirement().key("kubernetes.io/hostname").operator("in").values(listOf("k8s1")))
-//        )
-//    ))
-
-        val jobmanagerAffinity = V1Affinity()
-//        .nodeAffinity(V1NodeAffinity().requiredDuringSchedulingIgnoredDuringExecution(jobmanagerNodeSelector))
-            .podAntiAffinity(
-                V1PodAntiAffinity().preferredDuringSchedulingIgnoredDuringExecution(
-                    listOf(
-                        V1WeightedPodAffinityTerm().weight(50).podAffinityTerm(
-                            V1PodAffinityTerm()
-                                .topologyKey("kubernetes.io/hostname")
-                                .labelSelector(jobmanagerSelector)
-                        ),
-                        V1WeightedPodAffinityTerm().weight(100).podAffinityTerm(
-                            V1PodAffinityTerm()
-                                .topologyKey("kubernetes.io/hostname")
-                                .labelSelector(taskmanagerSelector)
-                        )
-                    )
-                )
-            )
-
-        val jobmanagerPodSpec = V1PodSpec()
-            .containers(
-                listOf(jobmanager)
-            )
-            .imagePullSecrets(
-                listOf(pullSecretsReference)
-            )
-            .affinity(jobmanagerAffinity)
-
-        val jobmanagerMetadata = V1ObjectMeta()
-            .generateName("flink-jobmanager-")
-            .labels(
-                mapOf(
-                    clusterLabel,
-                    componentLabel,
-                    jobmanagerLabel
-                )
-            )
-
-        val jobmanagerVolumeClaim = V1PersistentVolumeClaimSpec()
-            .accessModes(listOf("ReadWriteOnce"))
-            .storageClassName(storageClassName)
-            .resources(
-                V1ResourceRequirements()
-                    .requests(
-                        mapOf("storage" to Quantity(jobmanagerStorageSize))
-                    )
-            )
-
-        val jobmanagerStatefulSet = V1StatefulSet()
-            .metadata(
-                V1ObjectMeta()
-                    .generateName("flink-jobmanager-")
-                    .labels(
-                        mapOf(
-                            clusterLabel,
-                            componentLabel,
-                            jobmanagerLabel
-                        )
-                    )
-            )
-            .spec(
-                V1StatefulSetSpec()
-                    .replicas(1)
-                    .template(
-                        V1PodTemplateSpec()
-                            .spec(jobmanagerPodSpec)
-                            .metadata(jobmanagerMetadata)
-                    )
-                    .updateStrategy(updateStrategy)
-                    .serviceName("jobmanager")
-                    .selector(jobmanagerSelector)
-                    .addVolumeClaimTemplatesItem(
-                        V1PersistentVolumeClaim()
-                            .spec(jobmanagerVolumeClaim)
-                            .metadata(
-                                V1ObjectMeta()
-                                    .name("jobmanager")
-                                    .labels(
-                                        mapOf(
-                                            clusterLabel,
-                                            componentLabel,
-                                            jobmanagerLabel
-                                        )
-                                    )
-                            )
-                    )
-            )
-
-        println("Creating JobManager StatefulSet ...")
-
-        val jobmanagerStatefulSetOut = api.createNamespacedStatefulSet(NAMESPACE, jobmanagerStatefulSet, null, null, null)
-
-        println("StatefulSet created ${jobmanagerStatefulSetOut.metadata.name}")
-
-        val taskmanager = V1Container()
-            .image(dockerImage)
-            .imagePullPolicy("IfNotPresent")
-            .name("flink-taskmanager")
-            .command(
-                listOf("/custom_entrypoint.sh")
-            )
-            .args(
-                listOf("taskmanager")
-            )
-            .ports(
-                listOf(
-                    port6121,
-                    port6122
-                )
-            )
-            .volumeMounts(
-                listOf(taskmanagerVolumeMount)
-            )
-            .env(
-                listOf(
-                    podNameEnvVar,
-                    podNamespaceEnvVar,
-                    environmentEnvVar,
-                    rpcAddressEnvVar,
-                    flinkTaskManagerHeap,
-                    flinkTaskManagerNumberOfTaskSlots
-                )
-            )
-            .resources(taskmanagerResourceRequirements)
-
-        val taskmanagerAffinity = V1Affinity()
-            .podAntiAffinity(V1PodAntiAffinity()
-                .preferredDuringSchedulingIgnoredDuringExecution(
-                    listOf(
-                        V1WeightedPodAffinityTerm().weight(50).podAffinityTerm(
-                            V1PodAffinityTerm()
-                                .topologyKey("kubernetes.io/hostname")
-                                .labelSelector(jobmanagerSelector)
-                        ),
-                        V1WeightedPodAffinityTerm().weight(100).podAffinityTerm(
-                            V1PodAffinityTerm()
-                                .topologyKey("kubernetes.io/hostname")
-                                .labelSelector(taskmanagerSelector)
-                        )
-                    )
-                )
-            )
-
-        val taskmanagerPodSpec = V1PodSpec()
-            .containers(
-                listOf(taskmanager)
-            )
-            .imagePullSecrets(
-                listOf(pullSecretsReference)
-            )
-            .affinity(taskmanagerAffinity)
-
-        val taskmanagerMetadata = V1ObjectMeta()
-            .generateName("flink-taskmanager-")
-            .labels(
-                mapOf(
-                    clusterLabel,
-                    componentLabel,
-                    taskmanagerLabel
-                )
-            )
-
-        val taskmanagerVolumeClaim = V1PersistentVolumeClaimSpec()
-            .accessModes(listOf("ReadWriteOnce"))
-            .storageClassName(storageClassName)
-            .resources(
-                V1ResourceRequirements()
-                    .requests(
-                        mapOf("storage" to Quantity(taskmanagerStorageSize))
-                    )
-            )
-
-        val taskmanagerStatefulSet = V1StatefulSet()
-            .metadata(taskmanagerMetadata)
-            .spec(
-                V1StatefulSetSpec()
-                    .replicas(2)
-                    .template(
-                        V1PodTemplateSpec()
-                            .spec(taskmanagerPodSpec)
-                            .metadata(taskmanagerMetadata)
-                    )
-                    .updateStrategy(updateStrategy)
-                    .serviceName("taskmanager")
-                    .selector(taskmanagerSelector)
-                    .addVolumeClaimTemplatesItem(
-                        V1PersistentVolumeClaim()
-                            .spec(taskmanagerVolumeClaim)
-                            .metadata(
-                                V1ObjectMeta()
-                                    .name("taskmanager")
-                                    .labels(
-                                        mapOf(
-                                            clusterLabel,
-                                            componentLabel,
-                                            taskmanagerLabel
-                                        )
-                                    )
-                            )
-                    )
-            )
-
-        println("Creating TaskManager StatefulSet ...")
-
-        val taskmanagerStatefulSetOut = api.createNamespacedStatefulSet(NAMESPACE, taskmanagerStatefulSet, null, null, null)
-
-        println("StatefulSet created ${taskmanagerStatefulSetOut.metadata.name}")
-    }
+        )
 
     private fun createServicePort(port: Int, name: String) = V1ServicePort()
         .protocol("TCP")

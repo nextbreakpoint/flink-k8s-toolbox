@@ -1,43 +1,61 @@
 package com.nextbreakpoint.command
 
 import com.google.common.io.ByteStreams.copy
+import com.nextbreakpoint.model.ClusterDescriptor
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.util.Config
 import java.io.File
 import java.io.FileInputStream
 import io.kubernetes.client.Exec
+import java.lang.RuntimeException
 import java.util.concurrent.TimeUnit
 
 class ListJobs {
-    private val NAMESPACE = "default"
-
-    fun run(kubeConfigPath: String, clusterName: String) {
+    fun run(kubeConfigPath: String, descriptor: ClusterDescriptor) {
         val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
         Configuration.setDefaultApiClient(client)
 
-        listJobs(clusterName)
-    }
-
-    private fun listJobs(clusterName: String) {
         val coreApi = CoreV1Api()
 
         val exec = Exec()
 
-        val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", 1, null, 30, null)
+        val services = coreApi.listNamespacedService(
+            descriptor.namespace,
+            null,
+            null,
+            null,
+            null,
+            "cluster=${descriptor.name},environment=${descriptor.environment},role=jobmanager",
+            1,
+            null,
+            30,
+            null
+        )
 
         if (!services.items.isEmpty()) {
             println("Found service ${services.items.get(0).metadata.name}")
 
-            val pods = coreApi.listNamespacedPod(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", 1, null, 30, null)
+            val pods = coreApi.listNamespacedPod(
+                descriptor.namespace,
+                null,
+                null,
+                null,
+                null,
+                "cluster=${descriptor.name},environment=${descriptor.environment},role=jobmanager",
+                1,
+                null,
+                30,
+                null
+            )
 
             if (!pods.items.isEmpty()) {
                 println("Found pod ${pods.items.get(0).metadata.name}")
 
                 val podName = pods.items.get(0).metadata.name
 
-                val proc = exec.exec(NAMESPACE, podName, arrayOf(
+                val proc = exec.exec(descriptor.namespace, podName, arrayOf(
                     "flink",
                     "list",
                     "-r",
@@ -49,10 +67,10 @@ class ListJobs {
 
                 println("done")
             } else {
-                println("Pod not found")
+                throw RuntimeException("Pod not found")
             }
         } else {
-            println("Service not found")
+            throw RuntimeException("Service not found")
         }
     }
 

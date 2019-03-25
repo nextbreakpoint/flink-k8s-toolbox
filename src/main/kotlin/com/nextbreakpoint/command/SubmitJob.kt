@@ -1,85 +1,91 @@
 package com.nextbreakpoint.command
 
 import com.google.common.io.ByteStreams.copy
+import com.nextbreakpoint.model.ClusterDescriptor
+import com.nextbreakpoint.model.JobSubmitConfig
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.util.Config
 import java.io.File
 import java.io.FileInputStream
 import io.kubernetes.client.Exec
+import java.lang.RuntimeException
 import java.util.concurrent.TimeUnit
 
 class SubmitJob {
-    private val NAMESPACE = "default"
-
-    fun run(kubeConfigPath: String, clusterName: String) {
+    fun run(kubeConfigPath: String, submitConfig: JobSubmitConfig) {
         val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
         Configuration.setDefaultApiClient(client)
 
-        listClusterPods(clusterName)
-
-        submitJob(clusterName)
-    }
-
-    private fun listClusterPods(clusterName: String) {
-        val api = CoreV1Api()
-
-        val list = api.listNamespacedPod(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", null, null, 10, null)
-
-        list.items.forEach {
-                item -> println("Pod name: ${item.metadata.name}")
-        }
-
-        list.items.forEach {
-                item -> println("${item.status}")
-        }
-    }
-
-    private fun submitJob(clusterName: String) {
         val coreApi = CoreV1Api()
 
         val exec = Exec()
 
-        val services = coreApi.listNamespacedService(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", 1, null, 30, null)
+        listClusterPods(submitConfig.descriptor)
+
+        val services = coreApi.listNamespacedService(
+            submitConfig.descriptor.namespace,
+            null,
+            null,
+            null,
+            null,
+            "cluster=${submitConfig.descriptor.name},environment=${submitConfig.descriptor.environment},role=jobmanager",
+            1,
+            null,
+            30,
+            null
+        )
 
         if (!services.items.isEmpty()) {
             println("Found service ${services.items.get(0).metadata.name}")
 
-            val pods = coreApi.listNamespacedPod(NAMESPACE, null, null, null, null, "cluster=$clusterName,role=jobmanager", 1, null, 30, null)
+            val pods = coreApi.listNamespacedPod(
+                submitConfig.descriptor.namespace,
+                null,
+                null,
+                null,
+                null,
+                "cluster=${submitConfig.descriptor.name},environment=${submitConfig.descriptor.environment},role=jobmanager",
+                1,
+                null,
+                30,
+                null
+            )
 
             if (!pods.items.isEmpty()) {
                 println("Found pod ${pods.items.get(0).metadata.name}")
 
                 val podName = pods.items.get(0).metadata.name
 
-                val proc = exec.exec(NAMESPACE, podName, arrayOf(
+                val command = mutableListOf(
                     "flink",
                     "run",
                     "-d",
                     "-m",
                     "${services.items.get(0).metadata.name}:8081",
                     "-c",
-                    "com.nextbreakpoint.flink.jobs.GenerateSensorValuesJob",
-                    "/maven/com.nextbreakpoint.flinkdemo-0-SNAPSHOT.jar",
-                    "--JOB_PARALLELISM",
-                    "1",
-                    "--BUCKET_BASE_PATH",
-                    "file:///var/tmp/flink",
-                    "--BOOTSTRAP_SERVERS",
-                    "kafka-k8s1:9092,kafka-k8s2:9092,kafka-k8s3:9092",
-                    "--TARGET_TOPIC_NAME",
-                    "sensors-input"
-                ), false, false)
+                    submitConfig.className,
+                    submitConfig.jarPath
+                )
+
+                command.addAll(
+                    submitConfig.arguments
+                        .filter { it.first.startsWith("--") }
+                        .flatMap { listOf(it.first, it.second) }
+                        .toList()
+                )
+
+                val proc = exec.exec(submitConfig.descriptor.namespace, podName, command.toTypedArray(), false, false)
 
                 processExec(proc)
 
                 println("done")
             } else {
-                println("Pod not found")
+                throw RuntimeException("Pod not found")
             }
         } else {
-            println("Service not found")
+            throw RuntimeException("Service not found")
         }
     }
 
@@ -106,6 +112,20 @@ class SubmitJob {
         proc.waitFor(30, TimeUnit.SECONDS)
         stdout.join()
         stderr.join()
+    }
+
+    private fun listClusterPods(descriptor: ClusterDescriptor) {
+        val api = CoreV1Api()
+
+        val list = api.listNamespacedPod(descriptor.namespace, null, null, null, null, "cluster=${descriptor.namespace},environment=${descriptor.environment}", null, null, 10, null)
+
+        list.items.forEach {
+                item -> println("Pod name: ${item.metadata.name}")
+        }
+
+//        list.items.forEach {
+//                item -> println("${item.status}")
+//        }
     }
 }
 
