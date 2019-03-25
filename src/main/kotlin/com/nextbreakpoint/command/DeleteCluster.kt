@@ -1,5 +1,6 @@
 package com.nextbreakpoint.command
 
+import com.nextbreakpoint.model.ClusterDescriptor
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.apis.AppsV1Api
@@ -7,30 +8,41 @@ import io.kubernetes.client.models.*
 import io.kubernetes.client.util.Config
 import java.io.File
 import java.io.FileInputStream
+import java.lang.RuntimeException
 
 class DeleteCluster {
-    private val NAMESPACE = "default"
+    fun run(kubeConfigPath: String, descriptor: ClusterDescriptor) {
+        try {
+            val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
-    fun run(kubeConfigPath: String, clusterName: String) {
-        val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
+            Configuration.setDefaultApiClient(client)
 
-        Configuration.setDefaultApiClient(client)
+            println("Deleting cluster ${descriptor.name}...")
 
-        deleteCluster(clusterName)
+            val api = AppsV1Api()
+
+            val coreApi = CoreV1Api()
+
+            deleteStatefulSets(api, descriptor)
+
+            deleteService(coreApi, descriptor)
+
+            deletePersistentVolumeClaims(coreApi, descriptor)
+
+            println("Done.")
+        } catch (e : Exception) {
+            throw RuntimeException(e)
+        }
     }
 
-    private fun deleteCluster(clusterName: String) {
-        println("Deleting cluster $clusterName...")
-
-        val api = AppsV1Api()
-
+    private fun deleteStatefulSets(api: AppsV1Api, descriptor: ClusterDescriptor) {
         val statefulSets = api.listNamespacedStatefulSet(
-            NAMESPACE,
+            descriptor.namespace,
             null,
             null,
             null,
             null,
-            "cluster=$clusterName",
+            "cluster=${descriptor.name},environment=${descriptor.environment}",
             null,
             null,
             30,
@@ -43,7 +55,7 @@ class DeleteCluster {
 
                 val status = api.deleteNamespacedStatefulSet(
                     statefulSet.metadata.name,
-                    NAMESPACE,
+                    descriptor.namespace,
                     V1DeleteOptions(),
                     "true",
                     null,
@@ -59,16 +71,16 @@ class DeleteCluster {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
+    }
 
-        val coreApi = CoreV1Api()
-
+    private fun deleteService(coreApi: CoreV1Api, descriptor: ClusterDescriptor) {
         val services = coreApi.listNamespacedService(
-            NAMESPACE,
+            descriptor.namespace,
             null,
             null,
             null,
             null,
-            "cluster=$clusterName",
+            "cluster=${descriptor.name},environment=${descriptor.environment}",
             null,
             null,
             30,
@@ -81,7 +93,7 @@ class DeleteCluster {
 
                 val status = coreApi.deleteNamespacedService(
                     service.metadata.name,
-                    NAMESPACE,
+                    descriptor.namespace,
                     V1DeleteOptions(),
                     "true",
                     null,
@@ -97,14 +109,16 @@ class DeleteCluster {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
+    }
 
+    private fun deletePersistentVolumeClaims(coreApi: CoreV1Api, descriptor: ClusterDescriptor) {
         val volumeClaims = coreApi.listNamespacedPersistentVolumeClaim(
-            NAMESPACE,
+            descriptor.namespace,
             null,
             null,
             null,
             null,
-            "cluster=$clusterName",
+            "cluster=${descriptor.name},environment=${descriptor.environment}",
             null,
             null,
             30,
@@ -117,7 +131,7 @@ class DeleteCluster {
 
                 val status = coreApi.deleteNamespacedPersistentVolumeClaim(
                     volumeClaim.metadata.name,
-                    NAMESPACE,
+                    descriptor.namespace,
                     V1DeleteOptions(),
                     "true",
                     null,
@@ -133,8 +147,6 @@ class DeleteCluster {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
-
-        println("Done.")
     }
 }
 
