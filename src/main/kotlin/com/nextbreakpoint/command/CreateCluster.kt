@@ -109,7 +109,7 @@ class CreateCluster {
                     )
                 )
                 .selector(jobmanagerLabels)
-                .type("NodePort")
+                .type(clusterConfig.jobmanager.serviceMode)
 
             val jobmanagerServiceMetadata = createObjectMeta("flink-jobmanager-", jobmanagerLabels)
 
@@ -133,9 +133,6 @@ class CreateCluster {
                 .image(clusterConfig.jobmanager.image)
                 .imagePullPolicy(clusterConfig.jobmanager.pullPolicy)
                 .name("flink-jobmanager")
-                .command(
-                    listOf("/custom_entrypoint.sh")
-                )
                 .args(
                     listOf("jobmanager")
                 )
@@ -216,9 +213,6 @@ class CreateCluster {
                 .image(clusterConfig.taskmanager.image)
                 .imagePullPolicy(clusterConfig.taskmanager.pullPolicy)
                 .name("flink-taskmanager")
-                .command(
-                    listOf("/custom_entrypoint.sh")
-                )
                 .args(
                     listOf("taskmanager")
                 )

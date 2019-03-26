@@ -5,5 +5,6 @@ data class JobManagerConfig(
     val pullSecrets: String,
     val pullPolicy: String,
     val storage: StorageConfig,
-    val resources: ResourcesConfig
+    val resources: ResourcesConfig,
+    val serviceMode: String
 )
