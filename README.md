@@ -10,17 +10,17 @@ Build the application using Maven:
 
 ## How to use
 
-List available commands with the command: 
+List available commands with the command:
 
     java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar --help
 
 The command will produce the output:
-  
+
     Usage: FlinkSubmit [OPTIONS] COMMAND [ARGS]...
-    
+
     Options:
       -h, --help  Show this message and exit
-    
+
     Commands:
       create  Create a cluster
       delete  Delete a cluster
@@ -39,9 +39,9 @@ Execute the command:
         --environment=test \
         --image=docker-repo/image-name:image-version \
         --image-pull-secrets=secrets-name \   
-        --jobmanager-service-mode=NodePort 
+        --jobmanager-service-mode=NodePort
 
-Show all parameters with the command: 
+Show all parameters with the command:
 
     java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar create --help
 
@@ -49,13 +49,13 @@ Show all parameters with the command:
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \ 
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
         delete \
         --kube-config=some-kubectl.conf \
         --cluster-name=my-flink-cluster \
         --environment=test
 
-Show all parameters with the command: 
+Show all parameters with the command:
 
     java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar delete --help
 
@@ -63,7 +63,7 @@ Show all parameters with the command:
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \ 
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
         submit \
         --kube-config=some-kubectl.conf \
         --cluster-name=my-flink-cluster \
@@ -72,29 +72,15 @@ Execute the command:
         --jar-path=your-jar \
         --arguments="--input=...,--output=..."
 
-Show all parameters with the command: 
+Show all parameters with the command:
 
     java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar submit --help
-
-## How to list jobs
-
-Execute the command:
-
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \ 
-        list \
-        --kube-config=some-kubectl.conf \
-        --cluster-name=my-flink-cluster \
-        --environment=test
-
-Show all parameters with the command: 
-
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar list --help
 
 ## How to cancel a job
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \ 
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
         cancel \
         --kube-config=some-kubectl.conf \
         --cluster-name=my-flink-cluster \
@@ -102,6 +88,20 @@ Execute the command:
         --create-savepoint \
         --job-id=your-job-id
 
-Show all parameters with the command: 
+Show all parameters with the command:
 
     java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar cancel --help
+
+## How to list jobs
+
+Execute the command:
+
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+        list \
+        --kube-config=some-kubectl.conf \
+        --cluster-name=my-flink-cluster \
+        --environment=test
+
+Show all parameters with the command:
+
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar list --help
