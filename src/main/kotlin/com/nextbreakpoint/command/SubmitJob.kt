@@ -61,13 +61,25 @@ class SubmitJob {
                 val command = mutableListOf(
                     "flink",
                     "run",
-                    "-d",
+                    "-d"
+                )
+
+                if (submitConfig.savepoint.isNotEmpty()) {
+                    command.addAll(arrayListOf(
+                        "-s",
+                        submitConfig.savepoint
+                    ))
+                }
+
+                command.addAll(arrayListOf(
                     "-m",
                     "${services.items.get(0).metadata.name}:8081",
+                    "-p",
+                    submitConfig.parallelism.toString(),
                     "-c",
                     submitConfig.className,
                     submitConfig.jarPath
-                )
+                ))
 
                 command.addAll(
                     submitConfig.arguments

@@ -109,7 +109,8 @@ class FlinkSubmitMain {
         private val className: String by option(help="The name of the class to submit").required()
         private val jarPath: String by option(help="The path of the jar to submit").required()
         private val arguments: String by option(help="The comma-separated list of arguments").default("")
-        private val savepoint: String by option(help="The path of the savepoint directory").default("")
+        private val fromSavepoint: String by option(help="Resume the job from the savepoint").default("")
+        private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
 
         override fun run() {
             val config = JobSubmitConfig(
@@ -121,7 +122,8 @@ class FlinkSubmitMain {
                 className = className,
                 jarPath = jarPath,
                 arguments = expandArguments(arguments),
-                savepoint = if (savepoint.length > 0) savepoint else null
+                savepoint = fromSavepoint,
+                parallelism = parallelism
             )
             SubmitJob().run(kubeConfig, config)
         }
@@ -136,6 +138,7 @@ class FlinkSubmitMain {
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
+        private val createSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
         private val jobId: String by option(help="The id of the job to cancel").prompt("Insert job id")
 
         override fun run() {
@@ -145,7 +148,7 @@ class FlinkSubmitMain {
                     name = clusterName,
                     environment = environment
                 ),
-                savepoint = false,
+                savepoint = createSavepoint,
                 jobId = jobId
             )
             CancelJob().run(kubeConfig, config)
@@ -157,7 +160,7 @@ class FlinkSubmitMain {
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
-        private val running: Boolean by option(help="List only running jobs").flag("true")
+        private val onlyRunning: Boolean by option(help="List only running jobs").flag(default = true)
 
         override fun run() {
             val config = JobListConfig(
@@ -166,7 +169,7 @@ class FlinkSubmitMain {
                     name = clusterName,
                     environment = environment
                 ),
-                running = running
+                running = onlyRunning
             )
             ListJobs().run(kubeConfig, config)
         }
