@@ -5,5 +5,6 @@ data class JobSubmitConfig(
     val className: String,
     val jarPath: String,
     val arguments: List<Pair<String, String>>,
-    val savepoint: String?
+    val savepoint: String,
+    val parallelism: Int
 )
