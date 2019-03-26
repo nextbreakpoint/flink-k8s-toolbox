@@ -44,6 +44,7 @@ class FlinkSubmitMain {
         private val taskmanagerStorageClass: String by option(help="The TaskManager's storage class").default("standard")
         private val taskmanagerTaskSlots: Int by option(help="The number of task slots for each TaskManager").int().default(1)
         private val taskmanagerReplicas: Int by option(help="The number of TaskManager replicas").int().default(1)
+        private val jobmanagerServiceMode: String by option(help="The JobManager's service type").default("clusterIP")
 
         override fun run() {
             val config = ClusterConfig(
@@ -56,6 +57,7 @@ class FlinkSubmitMain {
                     image = image,
                     pullPolicy = imagePullPolicy,
                     pullSecrets = imagePullSecrets,
+                    serviceMode = jobmanagerServiceMode,
                     storage = StorageConfig(
                         size = jobmanagerStorageSize,
                         storageClass = jobmanagerStorageClass

@@ -32,13 +32,14 @@ The command will produce the output:
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar / 
-        create /
-        --kube-config=some-kubectl.conf /
-        --cluster-name=my-flink-cluster /
-        --environment=test /
-        --image=docker-repo/image-name:image-version /
-        --image-pull-secrets=secrets-name     
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+        create \
+        --kube-config=some-kubectl.conf \
+        --cluster-name=my-flink-cluster \
+        --environment=test \
+        --image=docker-repo/image-name:image-version \
+        --image-pull-secrets=secrets-name \   
+        --jobmanager-service-mode=NodePort 
 
 Show all parameters with the command: 
 
@@ -48,10 +49,10 @@ Show all parameters with the command:
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar / 
-        delete /
-        --kube-config=some-kubectl.conf /
-        --cluster-name=my-flink-cluster /
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \ 
+        delete \
+        --kube-config=some-kubectl.conf \
+        --cluster-name=my-flink-cluster \
         --environment=test
 
 Show all parameters with the command: 
@@ -62,13 +63,13 @@ Show all parameters with the command:
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar / 
-        submit /
-        --kube-config=some-kubectl.conf /
-        --cluster-name=my-flink-cluster /
-        --environment=test /
-        --class-name=your-class /
-        --jar-path=your-jar /
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \ 
+        submit \
+        --kube-config=some-kubectl.conf \
+        --cluster-name=my-flink-cluster \
+        --environment=test \
+        --class-name=your-class \
+        --jar-path=your-jar \
         --arguments="--input=...,--output=..."
 
 Show all parameters with the command: 
@@ -79,10 +80,10 @@ Show all parameters with the command:
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar / 
-        list /
-        --kube-config=some-kubectl.conf /
-        --cluster-name=my-flink-cluster /
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \ 
+        list \
+        --kube-config=some-kubectl.conf \
+        --cluster-name=my-flink-cluster \
         --environment=test
 
 Show all parameters with the command: 
@@ -93,12 +94,12 @@ Show all parameters with the command:
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar / 
-        cancel /
-        --kube-config=some-kubectl.conf /
-        --cluster-name=my-flink-cluster /
-        --environment=test /
-        --create-savepoint /
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \ 
+        cancel \
+        --kube-config=some-kubectl.conf \
+        --cluster-name=my-flink-cluster \
+        --environment=test \
+        --create-savepoint \
         --job-id=your-job-id
 
 Show all parameters with the command: 
