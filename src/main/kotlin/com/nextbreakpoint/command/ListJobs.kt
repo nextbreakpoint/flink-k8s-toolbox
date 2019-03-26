@@ -1,7 +1,7 @@
 package com.nextbreakpoint.command
 
 import com.google.common.io.ByteStreams.copy
-import com.nextbreakpoint.model.ClusterDescriptor
+import com.nextbreakpoint.model.JobListConfig
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.util.Config
@@ -12,7 +12,7 @@ import java.lang.RuntimeException
 import java.util.concurrent.TimeUnit
 
 class ListJobs {
-    fun run(kubeConfigPath: String, descriptor: ClusterDescriptor) {
+    fun run(kubeConfigPath: String, listConfig: JobListConfig) {
         val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
         Configuration.setDefaultApiClient(client)
@@ -22,12 +22,12 @@ class ListJobs {
         val exec = Exec()
 
         val services = coreApi.listNamespacedService(
-            descriptor.namespace,
+            listConfig.descriptor.namespace,
             null,
             null,
             null,
             null,
-            "cluster=${descriptor.name},environment=${descriptor.environment},role=jobmanager",
+            "cluster=${listConfig.descriptor.name},environment=${listConfig.descriptor.environment},role=jobmanager",
             1,
             null,
             30,
@@ -38,12 +38,12 @@ class ListJobs {
             println("Found service ${services.items.get(0).metadata.name}")
 
             val pods = coreApi.listNamespacedPod(
-                descriptor.namespace,
+                listConfig.descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${descriptor.name},environment=${descriptor.environment},role=jobmanager",
+                "cluster=${listConfig.descriptor.name},environment=${listConfig.descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -55,15 +55,27 @@ class ListJobs {
 
                 val podName = pods.items.get(0).metadata.name
 
-                val proc = exec.exec(descriptor.namespace, podName, arrayOf(
-                    "flink",
-                    "list",
-                    "-r",
-                    "-m",
-                    "${services.items.get(0).metadata.name}:8081"
-                ), false, false)
+                if (listConfig.running) {
+                    val proc = exec.exec(listConfig.descriptor.namespace, podName, arrayOf(
+                        "flink",
+                        "list",
+                        "-r",
+                        "-m",
+                        "${services.items.get(0).metadata.name}:8081"
+                    ), false, false)
 
-                processExec(proc)
+                    processExec(proc)
+                } else {
+                    val proc = exec.exec(listConfig.descriptor.namespace, podName, arrayOf(
+                        "flink",
+                        "list",
+                        "-a",
+                        "-m",
+                        "${services.items.get(0).metadata.name}:8081"
+                    ), false, false)
+
+                    processExec(proc)
+                }
 
                 println("done")
             } else {
