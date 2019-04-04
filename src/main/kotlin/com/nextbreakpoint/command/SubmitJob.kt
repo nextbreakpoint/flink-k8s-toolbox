@@ -82,10 +82,7 @@ class SubmitJob {
                 ))
 
                 command.addAll(
-                    submitConfig.arguments
-                        .filter { it.first.startsWith("--") }
-                        .flatMap { listOf(it.first, it.second) }
-                        .toList()
+                    submitConfig.arguments.split(" ")
                 )
 
                 val proc = exec.exec(submitConfig.descriptor.namespace, podName, command.toTypedArray(), false, false)
