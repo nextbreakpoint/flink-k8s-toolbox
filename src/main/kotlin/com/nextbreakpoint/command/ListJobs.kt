@@ -1,17 +1,19 @@
 package com.nextbreakpoint.command
 
-import com.google.common.io.ByteStreams.copy
+import com.google.gson.Gson
+import com.nextbreakpoint.CommandUtils.flinkApi
 import com.nextbreakpoint.model.JobListConfig
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.util.Config
 import java.io.File
 import java.io.FileInputStream
-import io.kubernetes.client.Exec
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.lang.RuntimeException
-import java.util.concurrent.TimeUnit
+import java.net.URL
 
 class ListJobs {
+    @ExperimentalCoroutinesApi
     fun run(kubeConfigPath: String, listConfig: JobListConfig) {
         val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
@@ -19,7 +21,7 @@ class ListJobs {
 
         val coreApi = CoreV1Api()
 
-        val exec = Exec()
+        val kubernetesHost = URL(Configuration.getDefaultApiClient().basePath).host
 
         val services = coreApi.listNamespacedService(
             listConfig.descriptor.namespace,
@@ -35,7 +37,11 @@ class ListJobs {
         )
 
         if (!services.items.isEmpty()) {
-            println("Found service ${services.items.get(0).metadata.name}")
+            val service = services.items.get(0)
+
+            println("Found service ${service.metadata.name}")
+
+            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.nodePort }.first()
 
             val pods = coreApi.listNamespacedPod(
                 listConfig.descriptor.namespace,
@@ -51,31 +57,16 @@ class ListJobs {
             )
 
             if (!pods.items.isEmpty()) {
-                println("Found pod ${pods.items.get(0).metadata.name}")
+                val pod = pods.items.get(0)
 
-                val podName = pods.items.get(0).metadata.name
+                println("Found pod ${pod.metadata.name}")
 
-                if (listConfig.running) {
-                    val proc = exec.exec(listConfig.descriptor.namespace, podName, arrayOf(
-                        "flink",
-                        "list",
-                        "-r",
-                        "-m",
-                        "${services.items.get(0).metadata.name}:8081"
-                    ), false, false)
+                val jobs = flinkApi(host = kubernetesHost, port = jobmanagerPort).jobs
 
-                    processExec(proc)
-                } else {
-                    val proc = exec.exec(listConfig.descriptor.namespace, podName, arrayOf(
-                        "flink",
-                        "list",
-                        "-a",
-                        "-m",
-                        "${services.items.get(0).metadata.name}:8081"
-                    ), false, false)
-
-                    processExec(proc)
-                }
+                jobs.jobs
+                    .filter { job -> !listConfig.running || job.status.name.equals("RUNNING") }
+                    .map { job -> Gson().toJson(job) }
+                    .forEach { println(it) }
 
                 println("done")
             } else {
@@ -84,31 +75,6 @@ class ListJobs {
         } else {
             throw RuntimeException("Service not found")
         }
-    }
-
-    @Throws(InterruptedException::class)
-    private fun processExec(proc: Process) {
-        val stdout = Thread(
-            Runnable {
-                try {
-                    copy(proc.inputStream, System.out)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            })
-        val stderr = Thread(
-            Runnable {
-                try {
-                    copy(proc.errorStream, System.out)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            })
-        stdout.start()
-        stderr.start()
-        proc.waitFor(30, TimeUnit.SECONDS)
-        stdout.join()
-        stderr.join()
     }
 }
 

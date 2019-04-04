@@ -1,16 +1,19 @@
 package com.nextbreakpoint.command
 
-import com.google.common.io.ByteStreams.copy
+import com.nextbreakpoint.CommandUtils.flinkApi
+import com.nextbreakpoint.flinkclient.model.QueueStatus
+import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
 import com.nextbreakpoint.model.JobCancelConfig
 import io.kubernetes.client.Configuration
-import io.kubernetes.client.Exec
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.util.Config
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.io.File
 import java.io.FileInputStream
-import java.util.concurrent.TimeUnit
+import java.net.URL
 
 class CancelJob {
+    @ExperimentalCoroutinesApi
     fun run(kubeConfigPath: String, cancelConfig: JobCancelConfig) {
         val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
 
@@ -18,7 +21,7 @@ class CancelJob {
 
         val coreApi = CoreV1Api()
 
-        val exec = Exec()
+        val kubernetesHost = URL(Configuration.getDefaultApiClient().basePath).host
 
         val services = coreApi.listNamespacedService(
             cancelConfig.descriptor.namespace,
@@ -34,7 +37,11 @@ class CancelJob {
         )
 
         if (!services.items.isEmpty()) {
-            println("Found service ${services.items.get(0).metadata.name}")
+            val service = services.items.get(0)
+
+            println("Found service ${service.metadata.name}")
+
+            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.nodePort }.first()
 
             val pods = coreApi.listNamespacedPod(
                 cancelConfig.descriptor.namespace,
@@ -50,35 +57,42 @@ class CancelJob {
             )
 
             if (!pods.items.isEmpty()) {
-                println("Found pod ${pods.items.get(0).metadata.name}")
+                val pod = pods.items.get(0)
 
-                val podName = pods.items.get(0).metadata.name
+                println("Found pod ${pod.metadata.name}")
+
+                val flinkApi = flinkApi(host = kubernetesHost, port = jobmanagerPort)
 
                 if (cancelConfig.savepoint) {
-                    println("Cancelling job with savepoint...")
+                    println("Cancelling jobs with savepoint...")
 
-                    val proc = exec.exec(cancelConfig.descriptor.namespace, podName, arrayOf(
-                        "flink",
-                        "cancel",
-                        "-s",
-                        "-m",
-                        "${services.items.get(0).metadata.name}:8081",
-                        cancelConfig.jobId
-                    ), false, false)
+                    val operation = flinkApi.createJobSavepoint(savepointTriggerRequestBody(true), cancelConfig.jobId)
 
-                    processExec(proc)
+                    while (true) {
+                        val operationStatus = flinkApi.getJobSavepointStatus(cancelConfig.jobId, operation.requestId.toString());
+
+                        if (operationStatus.status.id.equals(QueueStatus.IdEnum.COMPLETED)) {
+                            break
+                        }
+
+                        Thread.sleep(5000)
+                    }
                 } else {
-                    println("Cancelling job...")
+                    println("Cancelling jobs...")
 
-                    val proc = exec.exec(cancelConfig.descriptor.namespace, podName, arrayOf(
-                        "flink",
-                        "cancel",
-                        "-m",
-                        "${services.items.get(0).metadata.name}:8081",
-                        cancelConfig.jobId
-                    ), false, false)
+//                    val operation = flinkApi.createJobSavepoint(savepointTriggerRequestBody(false), cancelConfig.jobId)
+//
+//                    while (true) {
+//                        val operationStatus = flinkApi.getJobSavepointStatus(cancelConfig.jobId, operation.requestId.toString());
+//
+//                        if (operationStatus.status.id.equals(QueueStatus.IdEnum.COMPLETED)) {
+//                            break
+//                        }
+//
+//                        Thread.sleep(5000)
+//                    }
 
-                    processExec(proc)
+                    flinkApi.terminateJob(cancelConfig.jobId, "stop")
                 }
 
                 println("done")
@@ -90,29 +104,11 @@ class CancelJob {
         }
     }
 
-    @Throws(InterruptedException::class)
-    private fun processExec(proc: Process) {
-        val stdout = Thread(
-            Runnable {
-                try {
-                    copy(proc.inputStream, System.out)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            })
-        val stderr = Thread(
-            Runnable {
-                try {
-                    copy(proc.errorStream, System.out)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            })
-        stdout.start()
-        stderr.start()
-        proc.waitFor(30, TimeUnit.SECONDS)
-        stdout.join()
-        stderr.join()
+    private fun savepointTriggerRequestBody(isCancel: Boolean): SavepointTriggerRequestBody {
+        val requestBody = SavepointTriggerRequestBody()
+        requestBody.isCancelJob = isCancel
+        requestBody.targetDirectory = "file:///var/tmp/savepoints"
+        return requestBody
     }
 }
 

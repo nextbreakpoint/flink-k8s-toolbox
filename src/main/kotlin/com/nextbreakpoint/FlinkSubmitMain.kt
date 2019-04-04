@@ -7,6 +7,7 @@ import com.github.ajalt.clikt.parameters.types.float
 import com.github.ajalt.clikt.parameters.types.int
 import com.nextbreakpoint.command.*
 import com.nextbreakpoint.model.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 class FlinkSubmitMain {
     companion object {
@@ -108,12 +109,13 @@ class FlinkSubmitMain {
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
-        private val className: String by option(help="The name of the class to submit").required()
+        private val className: String by option(help="The name of the class to submit").default("")
         private val jarPath: String by option(help="The path of the jar to submit").required()
-        private val arguments: String by option(help="The comma-separated list of arguments").default("")
+        private val arguments: String by option(help="The argument list (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
         private val fromSavepoint: String by option(help="Resume the job from the savepoint").default("")
         private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
 
+        @ExperimentalCoroutinesApi
         override fun run() {
             val config = JobSubmitConfig(
                 descriptor = ClusterDescriptor(
@@ -121,18 +123,14 @@ class FlinkSubmitMain {
                     name = clusterName,
                     environment = environment
                 ),
-                className = className,
                 jarPath = jarPath,
-                arguments = expandArguments(arguments),
-                savepoint = fromSavepoint,
+                className = if (className.isBlank()) null else className,
+                arguments = if (arguments.isBlank()) null else arguments,
+                savepoint = if (fromSavepoint.isBlank()) null else fromSavepoint,
                 parallelism = parallelism
             )
             SubmitJob().run(kubeConfig, config)
         }
-
-        private fun expandArguments(arguments: String) =
-            arguments.split(",").map { it.split("=") }.map { Pair(it[0], it[1]) }.toList()
-
     }
 
     class Cancel: CliktCommand(help="Cancel a job") {
@@ -143,6 +141,7 @@ class FlinkSubmitMain {
         private val createSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
         private val jobId: String by option(help="The id of the job to cancel").prompt("Insert job id")
 
+        @ExperimentalCoroutinesApi
         override fun run() {
             val config = JobCancelConfig(
                 descriptor = ClusterDescriptor(
@@ -164,6 +163,7 @@ class FlinkSubmitMain {
         private val environment: String by option(help="The name of the environment").default("test")
         private val onlyRunning: Boolean by option(help="List only running jobs").flag(default = true)
 
+        @ExperimentalCoroutinesApi
         override fun run() {
             val config = JobListConfig(
                 descriptor = ClusterDescriptor(
