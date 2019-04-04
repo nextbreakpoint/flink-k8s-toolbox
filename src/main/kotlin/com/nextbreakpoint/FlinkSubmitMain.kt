@@ -123,16 +123,12 @@ class FlinkSubmitMain {
                 ),
                 className = className,
                 jarPath = jarPath,
-                arguments = expandArguments(arguments),
+                arguments = arguments,
                 savepoint = fromSavepoint,
                 parallelism = parallelism
             )
             SubmitJob().run(kubeConfig, config)
         }
-
-        private fun expandArguments(arguments: String) =
-            arguments.split(",").map { it.split("=") }.map { Pair(it[0], it[1]) }.toList()
-
     }
 
     class Cancel: CliktCommand(help="Cancel a job") {
