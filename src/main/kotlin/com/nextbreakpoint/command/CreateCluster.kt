@@ -258,7 +258,7 @@ class CreateCluster {
                 .metadata(taskmanagerMetadata)
                 .spec(
                     V1StatefulSetSpec()
-                        .replicas(2)
+                        .replicas(clusterConfig.taskmanager.replicas)
                         .template(
                             V1PodTemplateSpec()
                                 .spec(taskmanagerPodSpec)
