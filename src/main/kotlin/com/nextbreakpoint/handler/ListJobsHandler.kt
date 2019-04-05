@@ -3,15 +3,11 @@ package com.nextbreakpoint.handler
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.model.JobListConfig
-import io.kubernetes.client.Configuration
 import io.kubernetes.client.apis.CoreV1Api
-import java.net.URL
 
 object ListJobsHandler {
     fun execute(listConfig: JobListConfig): String {
         val coreApi = CoreV1Api()
-
-        val kubernetesHost = URL(Configuration.getDefaultApiClient().basePath).host
 
         val services = coreApi.listNamespacedService(
             listConfig.descriptor.namespace,
@@ -31,7 +27,9 @@ object ListJobsHandler {
 
             println("Found service ${service.metadata.name}")
 
-            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.nodePort }.first()
+            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.port }.first()
+
+            val jobmanagerHost = service.spec.clusterIP
 
             val pods = coreApi.listNamespacedPod(
                 listConfig.descriptor.namespace,
@@ -51,7 +49,7 @@ object ListJobsHandler {
 
                 println("Found pod ${pod.metadata.name}")
 
-                val jobs = CommandUtils.flinkApi(host = kubernetesHost, port = jobmanagerPort).jobs
+                val jobs = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort).jobs
 
                 val result = jobs.jobs
                     .filter { job -> !listConfig.running || job.status.name.equals("RUNNING") }

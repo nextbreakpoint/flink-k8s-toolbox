@@ -25,6 +25,9 @@
         <url>git@github.com:nextbreakpoint/flink-submit.git</url>
     </scm>
     <properties>
+        <java.image>openjdk:13-alpine</java.image>
+        <container.port>4444</container.port>
+        <service.jar>${project.build.finalName}.${project.packaging}</service.jar>
         <java.version>11</java.version>
         <java.release>11</java.release>
         <maven.compiler.source>11</maven.compiler.source>
@@ -56,6 +59,7 @@
         <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.7</nexus-staging-maven-plugin.version>
+        <docker-maven-plugin.version>0.28.0</docker-maven-plugin.version>
         <github-release-plugin.version>1.1.1</github-release-plugin.version>
         <twitter-maven-plugin.version>1.0.1</twitter-maven-plugin.version>
         <nexus.host>https://oss.sonatype.org</nexus.host>
@@ -317,11 +321,39 @@
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <manifestEntries>
-                                <Main-Class>com.nextbreakpoint.FlinkSubmitClientMain</Main-Class>
+                                <Main-Class>com.nextbreakpoint.FlinkSubmitMain</Main-Class>
                             </manifestEntries>
                         </transformer>
                     </transformers>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>${docker-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>package</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <name>flink-submit:${project.version}</name>
+                                    <build>
+                                        <dockerFileDir>${project.basedir}/src/main/docker</dockerFileDir>
+                                        <filter>${*}</filter>
+                                        <assembly>
+                                            <descriptorRef>artifact</descriptorRef>
+                                        </assembly>
+                                    </build>
+                                </image>
+                            </images>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -4,15 +4,11 @@ import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.flinkclient.model.QueueStatus
 import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
 import com.nextbreakpoint.model.JobCancelConfig
-import io.kubernetes.client.Configuration
 import io.kubernetes.client.apis.CoreV1Api
-import java.net.URL
 
 object CancelJobHandler {
     fun execute(cancelConfig: JobCancelConfig): String {
         val coreApi = CoreV1Api()
-
-        val kubernetesHost = URL(Configuration.getDefaultApiClient().basePath).host
 
         val services = coreApi.listNamespacedService(
             cancelConfig.descriptor.namespace,
@@ -32,7 +28,9 @@ object CancelJobHandler {
 
             println("Found service ${service.metadata.name}")
 
-            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.nodePort }.first()
+            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.port }.first()
+
+            val jobmanagerHost = service.spec.clusterIP
 
             val pods = coreApi.listNamespacedPod(
                 cancelConfig.descriptor.namespace,
@@ -52,7 +50,7 @@ object CancelJobHandler {
 
                 println("Found pod ${pod.metadata.name}")
 
-                val flinkApi = CommandUtils.flinkApi(host = kubernetesHost, port = jobmanagerPort)
+                val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
                 if (cancelConfig.savepoint) {
                     println("Cancelling jobs with savepoint...")

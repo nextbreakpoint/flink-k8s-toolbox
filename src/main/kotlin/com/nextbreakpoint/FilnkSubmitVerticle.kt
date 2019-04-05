@@ -1,11 +1,10 @@
 package com.nextbreakpoint
 
 import com.google.gson.Gson
+import com.nextbreakpoint.CommandUtils.createKubernetesClient
 import com.nextbreakpoint.handler.*
 import com.nextbreakpoint.model.*
-import io.kubernetes.client.ApiClient
 import io.kubernetes.client.Configuration
-import io.kubernetes.client.util.Config
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.handler.LoggerFormat
 import io.vertx.rxjava.core.AbstractVerticle
@@ -16,11 +15,8 @@ import io.vertx.rxjava.ext.web.handler.LoggerHandler
 import io.vertx.rxjava.ext.web.handler.TimeoutHandler
 import rx.Completable
 import rx.Single
-import java.io.File
-import java.io.FileInputStream
-import java.util.concurrent.TimeUnit
 
-class FilnkSubmitServerMain : AbstractVerticle() {
+class FilnkSubmitVerticle : AbstractVerticle() {
     override fun rxStart(): Completable {
         return createServer(vertx.orCreateContext.config()).toCompletable()
     }
@@ -93,15 +89,6 @@ class FilnkSubmitServerMain : AbstractVerticle() {
         }
 
         return vertx.createHttpServer().requestHandler(mainRouter).rxListen(port)
-    }
-
-    private fun createKubernetesClient(kubeConfig: String?): ApiClient? {
-        val client = if (kubeConfig != null) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
-        client.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
-        client.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)
-        client.httpClient.setReadTimeout(30000, TimeUnit.MILLISECONDS)
-        client.isDebugging = true
-        return client
     }
 
     private fun makeError(error: Throwable) = error.message

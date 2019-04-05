@@ -5,17 +5,13 @@ import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.float
 import com.github.ajalt.clikt.parameters.types.int
+import com.nextbreakpoint.CommandUtils.createKubernetesClient
 import com.nextbreakpoint.command.*
 import com.nextbreakpoint.model.*
-import io.kubernetes.client.ApiClient
 import io.kubernetes.client.Configuration
-import io.kubernetes.client.util.Config
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import java.io.File
-import java.io.FileInputStream
-import java.util.concurrent.TimeUnit
 
-class FlinkSubmitClientMain {
+class FlinkSubmitMain {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
@@ -25,15 +21,6 @@ class FlinkSubmitClientMain {
                 e.printStackTrace()
                 System.exit(-1)
             }
-        }
-
-        private fun createKubernetesClient(kubeConfig: String?): ApiClient? {
-            val client = if (kubeConfig != null) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
-            client.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
-            client.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)
-            client.httpClient.setReadTimeout(30000, TimeUnit.MILLISECONDS)
-            client.isDebugging = true
-            return client
         }
     }
 
@@ -100,12 +87,13 @@ class FlinkSubmitClientMain {
                 )
             )
             Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            CreateCluster().run(config)
+            CreateCluster().run(namespace, config)
+            System.exit(0)
         }
     }
 
     class Delete: CliktCommand(help="Delete a cluster") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").required()
+        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -118,12 +106,13 @@ class FlinkSubmitClientMain {
                 environment = environment
             )
             Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            DeleteCluster().run(descriptor)
+            DeleteCluster().run(namespace, descriptor)
+            System.exit(0)
         }
     }
 
     class Submit: CliktCommand(help="Submit a job") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").required()
+        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -148,12 +137,13 @@ class FlinkSubmitClientMain {
                 parallelism = parallelism
             )
             Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            SubmitJob().run(config)
+            SubmitJob().run(namespace, config)
+            System.exit(0)
         }
     }
 
     class Cancel: CliktCommand(help="Cancel a job") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").required()
+        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -172,12 +162,13 @@ class FlinkSubmitClientMain {
                 jobId = jobId
             )
             Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            CancelJob().run(config)
+            CancelJob().run(namespace, config)
+            System.exit(0)
         }
     }
 
     class List: CliktCommand(help="List jobs") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").required()
+        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -194,18 +185,19 @@ class FlinkSubmitClientMain {
                 running = onlyRunning
             )
             Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            ListJobs().run(config)
+            ListJobs().run(namespace, config)
+            System.exit(0)
         }
     }
 
-    class Server: CliktCommand(help="Run Server") {
+    class Server: CliktCommand(help="Run the server") {
         private val port: Int by option(help="Listen on port").int().default(4444)
         private val kubeConfig: String by option(help="The path of Kubectl config").default("")
 
         override fun run() {
             val config = ServerConfig(
                 port = port,
-                kubeConfig = if (kubeConfig.isNotBlank()) kubeConfig else null
+                kubeConfig = kubeConfig
             )
             RunServer().run(config)
         }
