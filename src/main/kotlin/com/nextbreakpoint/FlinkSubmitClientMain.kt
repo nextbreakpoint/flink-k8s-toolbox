@@ -61,6 +61,7 @@ class FlinkSubmitClientMain {
         private val taskmanagerReplicas: Int by option(help="The number of TaskManager replicas").int().default(1)
         private val jobmanagerServiceMode: String by option(help="The JobManager's service type").default("clusterIP")
 
+        @ExperimentalCoroutinesApi
         override fun run() {
             val config = ClusterConfig(
                 descriptor = ClusterDescriptor(
@@ -109,6 +110,7 @@ class FlinkSubmitClientMain {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
 
+        @ExperimentalCoroutinesApi
         override fun run() {
             val descriptor = ClusterDescriptor(
                 namespace = namespace,
