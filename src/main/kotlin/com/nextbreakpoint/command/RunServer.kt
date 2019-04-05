@@ -1,7 +1,7 @@
 package com.nextbreakpoint.command
 
 import com.google.gson.Gson
-import com.nextbreakpoint.FilnkSubmitServerMain
+import com.nextbreakpoint.FilnkSubmitVerticle
 import com.nextbreakpoint.model.ServerConfig
 import io.vertx.core.Launcher
 
@@ -14,7 +14,7 @@ class RunServer {
         Launcher.main(
             arrayOf(
                 "run",
-                FilnkSubmitServerMain::class.java.canonicalName,
+                FilnkSubmitVerticle::class.java.canonicalName,
                 "-conf",
                 Gson().toJson(serverConfig)
             )

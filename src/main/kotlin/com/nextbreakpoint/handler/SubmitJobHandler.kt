@@ -3,16 +3,12 @@ package com.nextbreakpoint.handler
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.model.JobSubmitConfig
-import io.kubernetes.client.Configuration
 import io.kubernetes.client.apis.CoreV1Api
 import java.io.File
-import java.net.URL
 
 object SubmitJobHandler {
     fun execute(submitConfig: JobSubmitConfig): String {
         val coreApi = CoreV1Api()
-
-        val kubernetesHost = URL(Configuration.getDefaultApiClient().basePath).host
 
         val services = coreApi.listNamespacedService(
             submitConfig.descriptor.namespace,
@@ -30,7 +26,9 @@ object SubmitJobHandler {
         if (!services.items.isEmpty()) {
             val service = services.items.get(0)
 
-            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.nodePort }.first()
+            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.port }.first()
+
+            val jobmanagerHost = service.spec.clusterIP
 
             println("Found service ${service.metadata.name}")
 
@@ -52,7 +50,7 @@ object SubmitJobHandler {
 
                 println("Found pod ${pod.metadata.name}")
 
-                val api = CommandUtils.flinkApi(host = kubernetesHost, port = jobmanagerPort)
+                val api = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
                 val result = api.uploadJar(File(submitConfig.jarPath))
 

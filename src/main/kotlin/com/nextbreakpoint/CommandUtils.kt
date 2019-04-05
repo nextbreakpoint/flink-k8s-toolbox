@@ -2,13 +2,17 @@ package com.nextbreakpoint
 
 import com.google.common.io.ByteStreams.copy
 import com.nextbreakpoint.flinkclient.api.DefaultApi
+import io.kubernetes.client.ApiClient
 import io.kubernetes.client.PortForward
 import io.kubernetes.client.models.V1Pod
+import io.kubernetes.client.util.Config
 import io.vertx.ext.web.client.WebClientOptions
 import io.vertx.rxjava.core.Vertx
 import io.vertx.rxjava.ext.web.client.WebClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import java.io.File
+import java.io.FileInputStream
 import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 
@@ -19,8 +23,17 @@ object CommandUtils {
         flinkApi.apiClient.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
         flinkApi.apiClient.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)
         flinkApi.apiClient.httpClient.setReadTimeout(30000, TimeUnit.MILLISECONDS)
-        flinkApi.apiClient.isDebugging = true
+//        flinkApi.apiClient.isDebugging = true
         return flinkApi
+    }
+
+    fun createKubernetesClient(kubeConfig: String?): ApiClient? {
+        val client = if (kubeConfig?.isNotBlank() == true) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
+        client.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
+        client.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)
+        client.httpClient.setReadTimeout(30000, TimeUnit.MILLISECONDS)
+//            client.isDebugging = true
+        return client
     }
 
     @ExperimentalCoroutinesApi
@@ -53,7 +66,6 @@ object CommandUtils {
                             try {
                                 copy(clientSocket.inputStream, forwardResult.getOutboundStream(port))
                             } catch (ex: Exception) {
-                                ex.printStackTrace()
                             }
                         })
                     stdin = Thread(
@@ -61,7 +73,6 @@ object CommandUtils {
                             try {
                                 copy(forwardResult.getInputStream(port), clientSocket.outputStream)
                             } catch (ex: Exception) {
-                                ex.printStackTrace()
                             }
                         })
                     stdout.start()
@@ -92,7 +103,6 @@ object CommandUtils {
                     try {
                         copy(proc.inputStream, System.out)
                     } catch (ex: Exception) {
-                        ex.printStackTrace()
                     }
                 })
             stderr = Thread(
@@ -100,7 +110,6 @@ object CommandUtils {
                     try {
                         copy(proc.errorStream, System.out)
                     } catch (ex: Exception) {
-                        ex.printStackTrace()
                     }
                 })
             stdout.start()
@@ -118,12 +127,12 @@ object CommandUtils {
         }
     }
 
-    fun createWebClient(localPort: Int): WebClient {
+    fun createWebClient(host: String = "localhost", port: Int): WebClient {
         val clientOptions = WebClientOptions()
-        clientOptions.logActivity = true
+//        clientOptions.logActivity = true
         clientOptions.isFollowRedirects = true
-        clientOptions.defaultHost = "localhost"
-        clientOptions.defaultPort = localPort
+        clientOptions.defaultHost = host
+        clientOptions.defaultPort = port
         return WebClient.create(Vertx.vertx(), clientOptions)
     }
 }

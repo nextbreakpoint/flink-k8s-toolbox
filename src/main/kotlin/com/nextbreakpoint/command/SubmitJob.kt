@@ -1,6 +1,5 @@
 package com.nextbreakpoint.command
 
-import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.CommandUtils.forwardPort
 import com.nextbreakpoint.model.JobSubmitConfig
@@ -10,12 +9,12 @@ import kotlinx.coroutines.channels.Channel
 
 class SubmitJob {
     @ExperimentalCoroutinesApi
-    fun run(submitConfig: JobSubmitConfig) {
+    fun run(namespace: String, submitConfig: JobSubmitConfig) {
         try {
             val coreApi = CoreV1Api()
 
-            val services = coreApi.listNamespacedService(
-                null,
+            val pods = coreApi.listNamespacedPod(
+                namespace,
                 null,
                 null,
                 null,
@@ -27,48 +26,31 @@ class SubmitJob {
                 null
             )
 
-            if (!services.items.isEmpty()) {
-                val service = services.items.get(0)
+            if (!pods.items.isEmpty()) {
+                val pod = pods.items.get(0)
 
-                println("Found service ${service.metadata.name}")
+                println("Found pod ${pod.metadata.name}")
 
-                val pods = coreApi.listNamespacedPod(
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    "app=flink-submit",
-                    1,
-                    null,
-                    30,
-                    null
-                )
-
-                if (!pods.items.isEmpty()) {
-                    val pod = pods.items.get(0)
-
-                    println("Found pod ${pod.metadata.name}")
-
-                    val stop = Channel<Int>()
-                    val localPort = 34444
-                    val process = forwardPort(pod, localPort, 4444, stop)
-                    process.start()
-                    // We need to wait for the server socket to be ready
-                    Thread.sleep(1000)
-                    val client = CommandUtils.createWebClient(localPort)
-                    client.post("/submitJob")
-                        .putHeader("content-type", "application/json")
-                        .rxSendJson(submitConfig).subscribe({
-                            println(Gson().toJson(it.bodyAsString()))
-                        }, {
-                            println(it.message)
-                        })
-                    client.close()
-                    // Close server socket
-                    stop.close()
-                    process.join()
-                }
+                val stop = Channel<Int>()
+                val localPort = 34444
+                val process = forwardPort(pod, localPort, 4444, stop)
+                process.start()
+                // We need to wait for the server socket to be ready
+                Thread.sleep(1000)
+                val client = CommandUtils.createWebClient(port = localPort)
+                val response = client.post("/submitJob")
+                    .putHeader("content-type", "application/json")
+                    .rxSendJson(submitConfig)
+                    .toBlocking()
+                    .value()
+                    .bodyAsString()
+                println(response)
+                // Close server socket
+                stop.close()
+                process.join()
+                client.close()
+            } else {
+                println("FlinkSubmit pod not found!")
             }
         } catch (e: Exception) {
             throw RuntimeException(e)

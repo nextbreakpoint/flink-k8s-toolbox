@@ -59,11 +59,9 @@ object CreateClusterHandler {
 
             val taskmanagerResources = clusterConfig.taskmanager.resources
 
-            val jobmanagerResourceRequirements =
-                createResourceRequirements(jobmanagerResources)
+            val jobmanagerResourceRequirements = createResourceRequirements(jobmanagerResources)
 
-            val taskmanagerResourceRequirements =
-                createResourceRequirements(taskmanagerResources)
+            val taskmanagerResourceRequirements = createResourceRequirements(taskmanagerResources)
 
             val jobmanagerLabels = mapOf(clusterLabel, componentLabel, jobmanagerLabel, environmentLabel)
 
