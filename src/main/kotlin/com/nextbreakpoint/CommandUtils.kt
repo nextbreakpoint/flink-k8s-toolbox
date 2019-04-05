@@ -4,6 +4,9 @@ import com.google.common.io.ByteStreams.copy
 import com.nextbreakpoint.flinkclient.api.DefaultApi
 import io.kubernetes.client.PortForward
 import io.kubernetes.client.models.V1Pod
+import io.vertx.ext.web.client.WebClientOptions
+import io.vertx.rxjava.core.Vertx
+import io.vertx.rxjava.ext.web.client.WebClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import java.net.ServerSocket
@@ -21,13 +24,18 @@ object CommandUtils {
     }
 
     @ExperimentalCoroutinesApi
-    fun forwardPort(pod: V1Pod?, localPort: Int, stop: Channel<Int>): Thread {
+    fun forwardPort(
+        pod: V1Pod?,
+        localPort: Int,
+        port: Int,
+        stop: Channel<Int>
+    ): Thread {
         return Thread(
             Runnable {
                 var stdout : Thread? = null
                 var stdin : Thread? = null
                 try {
-                    val forwardResult = PortForward().forward(pod, listOf(8081))
+                    val forwardResult = PortForward().forward(pod, listOf(port))
                     val serverSocket = ServerSocket(localPort)
                     val clientSocket = serverSocket.accept()
                     stop.invokeOnClose {
@@ -43,7 +51,7 @@ object CommandUtils {
                     stdout = Thread(
                         Runnable {
                             try {
-                                copy(clientSocket.inputStream, forwardResult.getOutboundStream(8081))
+                                copy(clientSocket.inputStream, forwardResult.getOutboundStream(port))
                             } catch (ex: Exception) {
                                 ex.printStackTrace()
                             }
@@ -51,7 +59,7 @@ object CommandUtils {
                     stdin = Thread(
                         Runnable {
                             try {
-                                copy(forwardResult.getInputStream(8081), clientSocket.outputStream)
+                                copy(forwardResult.getInputStream(port), clientSocket.outputStream)
                             } catch (ex: Exception) {
                                 ex.printStackTrace()
                             }
@@ -108,5 +116,14 @@ object CommandUtils {
             stdout?.join()
             stderr?.join()
         }
+    }
+
+    fun createWebClient(localPort: Int): WebClient {
+        val clientOptions = WebClientOptions()
+        clientOptions.logActivity = true
+        clientOptions.isFollowRedirects = true
+        clientOptions.defaultHost = "localhost"
+        clientOptions.defaultPort = localPort
+        return WebClient.create(Vertx.vertx(), clientOptions)
     }
 }

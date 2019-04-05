@@ -7,19 +7,33 @@ import com.github.ajalt.clikt.parameters.types.float
 import com.github.ajalt.clikt.parameters.types.int
 import com.nextbreakpoint.command.*
 import com.nextbreakpoint.model.*
+import io.kubernetes.client.ApiClient
+import io.kubernetes.client.Configuration
+import io.kubernetes.client.util.Config
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.io.File
+import java.io.FileInputStream
+import java.util.concurrent.TimeUnit
 
-class FlinkSubmitMain {
+class FlinkSubmitClientMain {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
             try {
-                FlinkSubmit().subcommands(Create(), Delete(), Submit(), Cancel(), List()).main(args)
-                System.exit(0)
+                FlinkSubmit().subcommands(Create(), Delete(), Submit(), Cancel(), List(), Server()).main(args)
             } catch (e: Exception) {
                 e.printStackTrace()
                 System.exit(-1)
             }
+        }
+
+        private fun createKubernetesClient(kubeConfig: String?): ApiClient? {
+            val client = if (kubeConfig != null) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
+            client.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
+            client.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)
+            client.httpClient.setReadTimeout(30000, TimeUnit.MILLISECONDS)
+            client.isDebugging = true
+            return client
         }
     }
 
@@ -84,7 +98,8 @@ class FlinkSubmitMain {
                     )
                 )
             )
-            CreateCluster().run(kubeConfig, config)
+            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
+            CreateCluster().run(config)
         }
     }
 
@@ -100,7 +115,8 @@ class FlinkSubmitMain {
                 name = clusterName,
                 environment = environment
             )
-            DeleteCluster().run(kubeConfig, descriptor)
+            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
+            DeleteCluster().run(descriptor)
         }
     }
 
@@ -129,7 +145,8 @@ class FlinkSubmitMain {
                 savepoint = if (fromSavepoint.isBlank()) null else fromSavepoint,
                 parallelism = parallelism
             )
-            SubmitJob().run(kubeConfig, config)
+            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
+            SubmitJob().run(config)
         }
     }
 
@@ -152,7 +169,8 @@ class FlinkSubmitMain {
                 savepoint = createSavepoint,
                 jobId = jobId
             )
-            CancelJob().run(kubeConfig, config)
+            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
+            CancelJob().run(config)
         }
     }
 
@@ -173,7 +191,21 @@ class FlinkSubmitMain {
                 ),
                 running = onlyRunning
             )
-            ListJobs().run(kubeConfig, config)
+            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
+            ListJobs().run(config)
+        }
+    }
+
+    class Server: CliktCommand(help="Run Server") {
+        private val port: Int by option(help="Listen on port").int().default(4444)
+        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
+
+        override fun run() {
+            val config = ServerConfig(
+                port = port,
+                kubeConfig = if (kubeConfig.isNotBlank()) kubeConfig else null
+            )
+            RunServer().run(config)
         }
     }
 }

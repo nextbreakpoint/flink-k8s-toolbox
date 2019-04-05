@@ -1,79 +1,77 @@
 package com.nextbreakpoint.command
 
 import com.google.gson.Gson
-import com.nextbreakpoint.CommandUtils.flinkApi
+import com.nextbreakpoint.CommandUtils
+import com.nextbreakpoint.CommandUtils.forwardPort
 import com.nextbreakpoint.model.JobListConfig
 import io.kubernetes.client.apis.CoreV1Api
-import io.kubernetes.client.Configuration
-import io.kubernetes.client.util.Config
-import java.io.File
-import java.io.FileInputStream
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import java.lang.RuntimeException
-import java.net.URL
+import kotlinx.coroutines.channels.Channel
 
 class ListJobs {
     @ExperimentalCoroutinesApi
-    fun run(kubeConfigPath: String, listConfig: JobListConfig) {
-        val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
+    fun run(listConfig: JobListConfig) {
+        try {
+            val coreApi = CoreV1Api()
 
-        Configuration.setDefaultApiClient(client)
-
-        val coreApi = CoreV1Api()
-
-        val kubernetesHost = URL(Configuration.getDefaultApiClient().basePath).host
-
-        val services = coreApi.listNamespacedService(
-            listConfig.descriptor.namespace,
-            null,
-            null,
-            null,
-            null,
-            "cluster=${listConfig.descriptor.name},environment=${listConfig.descriptor.environment},role=jobmanager",
-            1,
-            null,
-            30,
-            null
-        )
-
-        if (!services.items.isEmpty()) {
-            val service = services.items.get(0)
-
-            println("Found service ${service.metadata.name}")
-
-            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.nodePort }.first()
-
-            val pods = coreApi.listNamespacedPod(
-                listConfig.descriptor.namespace,
+            val services = coreApi.listNamespacedService(
                 null,
                 null,
                 null,
                 null,
-                "cluster=${listConfig.descriptor.name},environment=${listConfig.descriptor.environment},role=jobmanager",
+                null,
+                "app=flink-submit",
                 1,
                 null,
                 30,
                 null
             )
 
-            if (!pods.items.isEmpty()) {
-                val pod = pods.items.get(0)
+            if (!services.items.isEmpty()) {
+                val service = services.items.get(0)
 
-                println("Found pod ${pod.metadata.name}")
+                println("Found service ${service.metadata.name}")
 
-                val jobs = flinkApi(host = kubernetesHost, port = jobmanagerPort).jobs
+                val pods = coreApi.listNamespacedPod(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "app=flink-submit",
+                    1,
+                    null,
+                    30,
+                    null
+                )
 
-                jobs.jobs
-                    .filter { job -> !listConfig.running || job.status.name.equals("RUNNING") }
-                    .map { job -> Gson().toJson(job) }
-                    .forEach { println(it) }
+                if (!pods.items.isEmpty()) {
+                    val pod = pods.items.get(0)
 
-                println("done")
-            } else {
-                throw RuntimeException("Pod not found")
+                    println("Found pod ${pod.metadata.name}")
+
+                    val stop = Channel<Int>()
+                    val localPort = 34444
+                    val process = forwardPort(pod, localPort, 4444, stop)
+                    process.start()
+                    // We need to wait for the server socket to be ready
+                    Thread.sleep(1000)
+                    val client = CommandUtils.createWebClient(localPort)
+                    client.post("/listJobs")
+                        .putHeader("content-type", "application/json")
+                        .rxSendJson(listConfig).subscribe({
+                            println(Gson().toJson(it.bodyAsString()))
+                        }, {
+                            println(it.message)
+                        })
+                    client.close()
+                    // Close server socket
+                    stop.close()
+                    process.join()
+                }
             }
-        } else {
-            throw RuntimeException("Service not found")
+        } catch (e: Exception) {
+            throw RuntimeException(e)
         }
     }
 }

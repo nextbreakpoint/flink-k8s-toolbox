@@ -1,151 +1,77 @@
 package com.nextbreakpoint.command
 
+import com.google.gson.Gson
+import com.nextbreakpoint.CommandUtils.createWebClient
+import com.nextbreakpoint.CommandUtils.forwardPort
 import com.nextbreakpoint.model.ClusterDescriptor
 import io.kubernetes.client.apis.CoreV1Api
-import io.kubernetes.client.Configuration
-import io.kubernetes.client.apis.AppsV1Api
-import io.kubernetes.client.models.*
-import io.kubernetes.client.util.Config
-import java.io.File
-import java.io.FileInputStream
-import java.lang.RuntimeException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 
 class DeleteCluster {
-    fun run(kubeConfigPath: String, descriptor: ClusterDescriptor) {
+    @ExperimentalCoroutinesApi
+    fun run(descriptor: ClusterDescriptor) {
         try {
-            val client = Config.fromConfig(FileInputStream(File(kubeConfigPath)))
-
-            Configuration.setDefaultApiClient(client)
-
-            println("Deleting cluster ${descriptor.name}...")
-
-            val api = AppsV1Api()
-
             val coreApi = CoreV1Api()
 
-            deleteStatefulSets(api, descriptor)
+            val services = coreApi.listNamespacedService(
+                null,
+                null,
+                null,
+                null,
+                null,
+                "app=flink-submit",
+                1,
+                null,
+                30,
+                null
+            )
 
-            deleteService(coreApi, descriptor)
+            if (!services.items.isEmpty()) {
+                val service = services.items.get(0)
 
-            deletePersistentVolumeClaims(coreApi, descriptor)
+                println("Found service ${service.metadata.name}")
 
-            println("Done.")
-        } catch (e : Exception) {
+                val pods = coreApi.listNamespacedPod(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "app=flink-submit",
+                    1,
+                    null,
+                    30,
+                    null
+                )
+
+                if (!pods.items.isEmpty()) {
+                    val pod = pods.items.get(0)
+
+                    println("Found pod ${pod.metadata.name}")
+
+                    val stop = Channel<Int>()
+                    val localPort = 34444
+                    val process = forwardPort(pod, localPort, 4444, stop)
+                    process.start()
+                    // We need to wait for the server socket to be ready
+                    Thread.sleep(1000)
+                    val client = createWebClient(localPort)
+                    client.post("/deleteCluster")
+                        .putHeader("content-type", "application/json")
+                        .rxSendJson(descriptor).subscribe({
+                            println(Gson().toJson(it.bodyAsString()))
+                        }, {
+                            println(it.message)
+                        })
+                    client.close()
+                    // Close server socket
+                    stop.close()
+                    process.join()
+                }
+            }
+        } catch (e: Exception) {
             throw RuntimeException(e)
-        }
-    }
-
-    private fun deleteStatefulSets(api: AppsV1Api, descriptor: ClusterDescriptor) {
-        val statefulSets = api.listNamespacedStatefulSet(
-            descriptor.namespace,
-            null,
-            null,
-            null,
-            null,
-            "cluster=${descriptor.name},environment=${descriptor.environment}",
-            null,
-            null,
-            30,
-            null
-        )
-
-        statefulSets.items.forEach { statefulSet ->
-            try {
-                println("Removing StatefulSet ${statefulSet.metadata.name}...")
-
-                val status = api.deleteNamespacedStatefulSet(
-                    statefulSet.metadata.name,
-                    descriptor.namespace,
-                    V1DeleteOptions(),
-                    "true",
-                    null,
-                    null,
-                    null,
-                    null
-                )
-
-                println("Response status: ${status.reason}")
-
-                status.details.causes.forEach { println(it.message) }
-            } catch (e: Exception) {
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
-            }
-        }
-    }
-
-    private fun deleteService(coreApi: CoreV1Api, descriptor: ClusterDescriptor) {
-        val services = coreApi.listNamespacedService(
-            descriptor.namespace,
-            null,
-            null,
-            null,
-            null,
-            "cluster=${descriptor.name},environment=${descriptor.environment}",
-            null,
-            null,
-            30,
-            null
-        )
-
-        services.items.forEach { service ->
-            try {
-                println("Removing Service ${service.metadata.name}...")
-
-                val status = coreApi.deleteNamespacedService(
-                    service.metadata.name,
-                    descriptor.namespace,
-                    V1DeleteOptions(),
-                    "true",
-                    null,
-                    null,
-                    null,
-                    null
-                )
-
-                println("Response status: ${status.reason}")
-
-                status.details.causes.forEach { println(it.message) }
-            } catch (e: Exception) {
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
-            }
-        }
-    }
-
-    private fun deletePersistentVolumeClaims(coreApi: CoreV1Api, descriptor: ClusterDescriptor) {
-        val volumeClaims = coreApi.listNamespacedPersistentVolumeClaim(
-            descriptor.namespace,
-            null,
-            null,
-            null,
-            null,
-            "cluster=${descriptor.name},environment=${descriptor.environment}",
-            null,
-            null,
-            30,
-            null
-        )
-
-        volumeClaims.items.forEach { volumeClaim ->
-            try {
-                println("Removing Persistent Volume Claim ${volumeClaim.metadata.name}...")
-
-                val status = coreApi.deleteNamespacedPersistentVolumeClaim(
-                    volumeClaim.metadata.name,
-                    descriptor.namespace,
-                    V1DeleteOptions(),
-                    "true",
-                    null,
-                    null,
-                    null,
-                    null
-                )
-
-                println("Response status: ${status.reason}")
-
-                status.details.causes.forEach { println(it.message) }
-            } catch (e: Exception) {
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
-            }
         }
     }
 }
