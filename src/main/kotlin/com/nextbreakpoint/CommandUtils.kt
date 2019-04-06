@@ -115,6 +115,8 @@ object CommandUtils {
             stdout.start()
             stderr.start()
             proc.waitFor(60, TimeUnit.SECONDS)
+            stdout.interrupt()
+            stderr.interrupt()
             stdout.join()
             stderr.join()
         } catch (e: Exception) {
