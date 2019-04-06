@@ -37,6 +37,7 @@ object CommandUtils {
     }
 
     @ExperimentalCoroutinesApi
+    @Throws(InterruptedException::class)
     fun forwardPort(
         pod: V1Pod?,
         localPort: Int,
