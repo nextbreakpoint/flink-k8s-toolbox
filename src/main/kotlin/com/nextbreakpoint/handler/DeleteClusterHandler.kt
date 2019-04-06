@@ -14,6 +14,8 @@ object DeleteClusterHandler {
 
             println("Deleting cluster ${descriptor.name}...")
 
+            deleteDeployment(api, descriptor)
+
             deleteStatefulSets(api, descriptor)
 
             deleteService(coreApi, descriptor)
@@ -25,6 +27,44 @@ object DeleteClusterHandler {
             return "{\"status\":\"SUCCESS\"}"
         } catch (e : Exception) {
             throw RuntimeException(e)
+        }
+    }
+
+    private fun deleteDeployment(api: AppsV1Api, descriptor: ClusterDescriptor) {
+        val deployments = api.listNamespacedDeployment(
+            descriptor.namespace,
+            null,
+            null,
+            null,
+            null,
+            "cluster=${descriptor.name},environment=${descriptor.environment}",
+            null,
+            null,
+            30,
+            null
+        )
+
+        deployments.items.forEach { deployment ->
+            try {
+                println("Removing Deployment ${deployment.metadata.name}...")
+
+                val status = api.deleteNamespacedDeployment(
+                    deployment.metadata.name,
+                    descriptor.namespace,
+                    V1DeleteOptions(),
+                    "true",
+                    null,
+                    null,
+                    null,
+                    null
+                )
+
+                println("Response status: ${status.reason}")
+
+                status.details.causes.forEach { println(it.message) }
+            } catch (e: Exception) {
+                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
+            }
         }
     }
 

@@ -5,18 +5,15 @@ import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.float
 import com.github.ajalt.clikt.parameters.types.int
-import com.nextbreakpoint.CommandUtils.createKubernetesClient
 import com.nextbreakpoint.command.*
 import com.nextbreakpoint.model.*
-import io.kubernetes.client.Configuration
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 class FlinkSubmitMain {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
             try {
-                FlinkSubmit().subcommands(Create(), Delete(), Submit(), Cancel(), List(), Server()).main(args)
+                FlinkSubmit().subcommands(Create(), Delete(), Submit(), Cancel(), ListCommand(), Server(), Sidecar()).main(args)
             } catch (e: Exception) {
                 e.printStackTrace()
                 System.exit(-1)
@@ -29,11 +26,15 @@ class FlinkSubmitMain {
     }
 
     class Create: CliktCommand(help="Create a cluster") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").required()
+        private val apiHost: String by option(help="The server host").default("localhost")
+        private val apiPort: Int by option(help="The server port").int().default(4444)
         private val clusterName: String by option(help="The name of the new Flink cluster").required()
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val environment: String by option(help="The name of the environment").default("test")
-        private val image: String by option(help="The Flink image to use for JobManager and TaskManager").required()
+        private val flinkImage: String by option(help="The image to use for JobManager and TaskManager").required()
+        private val sidecarImage: String by option(help="The image to use for Flink Submit sidecar").required()
+        private val sidecarArgument: List<String> by option(help="The argument for Flink Submit sidecar").multiple()
+        private val sidecarArguments: String by option(help="The arguments for Flink Submit sidecar").default("")
         private val imagePullPolicy: String by option(help="The image pull policy").default("IfNotPresent")
         private val imagePullSecrets: String by option(help="The image pull secrets").required()
         private val jobmanagerCpus: Float by option(help="The JobManager's cpus limit").float().default(1f)
@@ -48,7 +49,6 @@ class FlinkSubmitMain {
         private val taskmanagerReplicas: Int by option(help="The number of TaskManager replicas").int().default(1)
         private val jobmanagerServiceMode: String by option(help="The JobManager's service type").default("clusterIP")
 
-        @ExperimentalCoroutinesApi
         override fun run() {
             val config = ClusterConfig(
                 descriptor = ClusterDescriptor(
@@ -57,7 +57,7 @@ class FlinkSubmitMain {
                     environment = environment
                 ),
                 jobmanager = JobManagerConfig(
-                    image = image,
+                    image = flinkImage,
                     pullPolicy = imagePullPolicy,
                     pullSecrets = imagePullSecrets,
                     serviceMode = jobmanagerServiceMode,
@@ -71,7 +71,7 @@ class FlinkSubmitMain {
                     )
                 ),
                 taskmanager = TaskManagerConfig(
-                    image = image,
+                    image = flinkImage,
                     pullPolicy = imagePullPolicy,
                     pullSecrets = imagePullSecrets,
                     taskSlots = taskmanagerTaskSlots,
@@ -84,45 +84,49 @@ class FlinkSubmitMain {
                         cpus = taskmanagerCpus,
                         memory = taskmanageMemory
                     )
+                ),
+                sidecar = SidecarConfig(
+                    image = sidecarImage,
+                    pullPolicy = imagePullPolicy,
+                    arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" ")
                 )
             )
-            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            CreateCluster().run(namespace, config)
+            CreateCluster().run(ApiConfig(apiHost, apiPort), config)
             System.exit(0)
         }
     }
 
     class Delete: CliktCommand(help="Delete a cluster") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
+        private val apiHost: String by option(help="The server host").default("localhost")
+        private val apiPort: Int by option(help="The server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
 
-        @ExperimentalCoroutinesApi
         override fun run() {
             val descriptor = ClusterDescriptor(
                 namespace = namespace,
                 name = clusterName,
                 environment = environment
             )
-            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            DeleteCluster().run(namespace, descriptor)
+            DeleteCluster().run(ApiConfig(apiHost, apiPort), descriptor)
             System.exit(0)
         }
     }
 
     class Submit: CliktCommand(help="Submit a job") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
+        private val apiHost: String by option(help="The server host").default("localhost")
+        private val apiPort: Int by option(help="The server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val className: String by option(help="The name of the class to submit").default("")
         private val jarPath: String by option(help="The path of the jar to submit").required()
-        private val arguments: String by option(help="The argument list (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
+        private val arguments: String by option(help="The job's arguments (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
+        private val argument: List<String> by option(help="The job's argument (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").multiple()
         private val fromSavepoint: String by option(help="Resume the job from the savepoint").default("")
         private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
 
-        @ExperimentalCoroutinesApi
         override fun run() {
             val config = JobSubmitConfig(
                 descriptor = ClusterDescriptor(
@@ -132,25 +136,24 @@ class FlinkSubmitMain {
                 ),
                 jarPath = jarPath,
                 className = if (className.isBlank()) null else className,
-                arguments = if (arguments.isBlank()) null else arguments,
+                arguments = if (arguments.isNotBlank()) arguments else argument.joinToString(" "),
                 savepoint = if (fromSavepoint.isBlank()) null else fromSavepoint,
                 parallelism = parallelism
             )
-            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            SubmitJob().run(namespace, config)
+            SubmitJob().run(ApiConfig(apiHost, apiPort), config)
             System.exit(0)
         }
     }
 
     class Cancel: CliktCommand(help="Cancel a job") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
+        private val apiHost: String by option(help="The server host").default("localhost")
+        private val apiPort: Int by option(help="The server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val createSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
         private val jobId: String by option(help="The id of the job to cancel").prompt("Insert job id")
 
-        @ExperimentalCoroutinesApi
         override fun run() {
             val config = JobCancelConfig(
                 descriptor = ClusterDescriptor(
@@ -161,20 +164,19 @@ class FlinkSubmitMain {
                 savepoint = createSavepoint,
                 jobId = jobId
             )
-            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            CancelJob().run(namespace, config)
+            CancelJob().run(ApiConfig(apiHost, apiPort), config)
             System.exit(0)
         }
     }
 
-    class List: CliktCommand(help="List jobs") {
-        private val kubeConfig: String by option(help="The path of Kubectl config").default("")
+    class ListCommand: CliktCommand(name="List", help="List jobs") {
+        private val apiHost: String by option(help="The server host").default("localhost")
+        private val apiPort: Int by option(help="The server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val onlyRunning: Boolean by option(help="List only running jobs").flag(default = true)
 
-        @ExperimentalCoroutinesApi
         override fun run() {
             val config = JobListConfig(
                 descriptor = ClusterDescriptor(
@@ -184,8 +186,7 @@ class FlinkSubmitMain {
                 ),
                 running = onlyRunning
             )
-            Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
-            ListJobs().run(namespace, config)
+            ListJobs().run(ApiConfig(apiHost, apiPort), config)
             System.exit(0)
         }
     }
@@ -200,6 +201,35 @@ class FlinkSubmitMain {
                 kubeConfig = kubeConfig
             )
             RunServer().run(config)
+        }
+    }
+
+    class Sidecar: CliktCommand(help="Run the sidecar") {
+        private val kubeConfig: String by option(help="The path of kuke config").default("")
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val environment: String by option(help="The name of the environment").default("test")
+        private val className: String by option(help="The name of the class to submit").default("")
+        private val jarPath: String by option(help="The path of the jar to submit").required()
+        private val arguments: String by option(help="The job's arguments (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
+        private val argument: List<String> by option(help="The job's argument (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").multiple()
+        private val fromSavepoint: String by option(help="Resume the job from the savepoint").default("")
+        private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
+
+        override fun run() {
+            val config = JobSubmitConfig(
+                descriptor = ClusterDescriptor(
+                    namespace = namespace,
+                    name = clusterName,
+                    environment = environment
+                ),
+                jarPath = jarPath,
+                className = if (className.isBlank()) null else className,
+                arguments = if (arguments.isNotBlank()) arguments else argument.joinToString(" "),
+                savepoint = if (fromSavepoint.isBlank()) null else fromSavepoint,
+                parallelism = parallelism
+            )
+            RunSidecar().run(kubeConfig, config)
         }
     }
 }
