@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 java \
     -XX:+UseParallelGC \
@@ -11,4 +11,4 @@ java \
     -Dnetworkaddress.cache.negative.ttl=1 \
     -jar \
     /maven/$SERVICE_JAR \
-    server
+    sidecar $@

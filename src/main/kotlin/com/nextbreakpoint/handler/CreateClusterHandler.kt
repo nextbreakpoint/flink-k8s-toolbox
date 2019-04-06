@@ -8,6 +8,7 @@ import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.*
+import java.util.regex.Pattern
 
 object CreateClusterHandler {
     fun execute(clusterConfig: ClusterConfig): String {
@@ -15,6 +16,8 @@ object CreateClusterHandler {
             val api = AppsV1Api()
 
             val coreApi = CoreV1Api()
+
+            val results = Pattern.compile("(--([^ ]+)=(\"[^=]+\"))|(--([^ ]+)=([^\"= ]+))").matcher(clusterConfig.sidecar.arguments).results()
 
             val statefulSets = api.listNamespacedStatefulSet(
                 clusterConfig.descriptor.namespace,
@@ -67,9 +70,13 @@ object CreateClusterHandler {
 
             val taskmanagerLabels = mapOf(clusterLabel, componentLabel, taskmanagerLabel, environmentLabel)
 
+            val sidecarLabels = mapOf(clusterLabel, componentLabel, environmentLabel)
+
             val jobmanagerSelector = V1LabelSelector().matchLabels(jobmanagerLabels)
 
             val taskmanagerSelector = V1LabelSelector().matchLabels(taskmanagerLabels)
+
+            val sidecarSelector = V1LabelSelector().matchLabels(sidecarLabels)
 
             val environmentEnvVar = createEnvVar(
                 "FLINK_ENVIRONMENT",
@@ -174,6 +181,7 @@ object CreateClusterHandler {
                 .containers(
                     listOf(jobmanager)
                 )
+                .serviceAccountName("flink-submit")
                 .imagePullSecrets(
                     listOf(
                         V1LocalObjectReference().name(clusterConfig.jobmanager.pullSecrets)
@@ -222,6 +230,72 @@ object CreateClusterHandler {
             )
 
             println("StatefulSet created ${jobmanagerStatefulSetOut.metadata.name}")
+
+            val arguments = mutableListOf<String>()
+
+            arguments.add("/entrypoint_sidecar.sh")
+
+            results.forEach { result ->
+                if (result.group(2) != null) {
+                    arguments.add("--${result.group(2)}=${result.group(3)}")
+                } else {
+                    arguments.add("--${result.group(5)}=${result.group(6)}")
+                }
+            }
+
+            val sidecar = V1Container()
+                .image(clusterConfig.sidecar.image)
+                .imagePullPolicy(clusterConfig.sidecar.pullPolicy)
+                .name("flink-submit-sidecar")
+                .args(arguments)
+                .env(
+                    listOf(
+                        podNameEnvVar,
+                        podNamespaceEnvVar,
+                        environmentEnvVar
+                    )
+                )
+                .resources(createSidecarResourceRequirements())
+
+            val sidecarPodSpec = V1PodSpec()
+                .containers(
+                    listOf(sidecar)
+                )
+                .serviceAccountName("flink-submit")
+                .imagePullSecrets(
+                    listOf(
+                        V1LocalObjectReference().name(clusterConfig.jobmanager.pullSecrets)
+                    )
+                )
+                .affinity(jobmanagerAffinity)
+
+            val sidecarMetadata =
+                createObjectMeta("flink-submit-sidecar-", sidecarLabels)
+
+            val sidecarDeployment = V1Deployment()
+                .metadata(sidecarMetadata)
+                .spec(
+                    V1DeploymentSpec()
+                        .replicas(1)
+                        .template(
+                            V1PodTemplateSpec()
+                                .spec(sidecarPodSpec)
+                                .metadata(sidecarMetadata)
+                        )
+                        .selector(sidecarSelector)
+                )
+
+            println("Creating Sidecar Deployment ...")
+
+            val sidecarDeploymentOut = api.createNamespacedDeployment(
+                clusterConfig.descriptor.namespace,
+                sidecarDeployment,
+                null,
+                null,
+                null
+            )
+
+            println("Deployment created ${sidecarDeploymentOut.metadata.name}")
 
             val taskmanager = V1Container()
                 .image(clusterConfig.taskmanager.image)
@@ -376,6 +450,20 @@ object CreateClusterHandler {
             mapOf(
                 "cpu" to Quantity(resourcesConfig.cpus.div(4).toString()),
                 "memory" to Quantity(resourcesConfig.memory.toString() + "Mi")
+            )
+        )
+
+    private fun createSidecarResourceRequirements() = V1ResourceRequirements()
+        .limits(
+            mapOf(
+                "cpu" to Quantity("0.2"),
+                "memory" to Quantity("200Mi")
+            )
+        )
+        .requests(
+            mapOf(
+                "cpu" to Quantity("0.2"),
+                "memory" to Quantity("200Mi")
             )
         )
 
