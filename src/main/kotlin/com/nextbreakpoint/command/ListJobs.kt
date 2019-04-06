@@ -107,6 +107,8 @@ class ListJobs {
         stdout.start()
         stderr.start()
         proc.waitFor(30, TimeUnit.SECONDS)
+        stdout.interrupt()
+        stderr.interrupt()
         stdout.join()
         stderr.join()
     }
