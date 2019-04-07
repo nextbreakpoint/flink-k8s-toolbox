@@ -37,7 +37,7 @@ class FlinkSubmitMain {
         override fun run() = Unit
     }
 
-    class FlinkSubmitSidecar: CliktCommand(name = "sidecar") {
+    class FlinkSubmitSidecar: CliktCommand(name = "sidecar", help = "Sidecar commands") {
         override fun run() = Unit
     }
 

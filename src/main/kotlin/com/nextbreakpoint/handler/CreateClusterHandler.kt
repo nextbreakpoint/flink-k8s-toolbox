@@ -11,13 +11,15 @@ import io.kubernetes.client.models.*
 import java.util.regex.Pattern
 
 object CreateClusterHandler {
+    val ARGUMENTS_PATTERN = "(--([^ ]+)=(\"[^=]+\"))|(--([^ ]+)=([^\"= ]+))|([^ ]+)"
+
     fun execute(clusterConfig: ClusterConfig): String {
         try {
             val api = AppsV1Api()
 
             val coreApi = CoreV1Api()
 
-            val results = Pattern.compile("(--([^ ]+)=(\"[^=]+\"))|(--([^ ]+)=([^\"= ]+))").matcher(clusterConfig.sidecar.arguments).results()
+            val results = Pattern.compile(ARGUMENTS_PATTERN).matcher(clusterConfig.sidecar.arguments).results()
 
             val statefulSets = api.listNamespacedStatefulSet(
                 clusterConfig.descriptor.namespace,
@@ -236,7 +238,9 @@ object CreateClusterHandler {
             arguments.add("/entrypoint_sidecar.sh")
 
             results.forEach { result ->
-                if (result.group(2) != null) {
+                if (result.group(7) != null) {
+                    arguments.add(result.group(7))
+                } else if (result.group(2) != null) {
                     arguments.add("--${result.group(2)}=${result.group(3)}")
                 } else {
                     arguments.add("--${result.group(5)}=${result.group(6)}")
