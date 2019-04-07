@@ -22,9 +22,11 @@ class FilnkSubmitVerticle : AbstractVerticle() {
     }
 
     private fun createServer(config: JsonObject): Single<HttpServer> {
-        val port = config.getInteger("port")
+        val port: Int = config.getInteger("port") ?: 4444
 
-        val kubeConfig = config.getString("kubeConfig")
+        val portForward: Int? = config.getInteger("portForward") ?: null
+
+        val kubeConfig: String? = config.getString("kubeConfig") ?: null
 
         val mainRouter = Router.router(vertx)
 
@@ -36,7 +38,7 @@ class FilnkSubmitVerticle : AbstractVerticle() {
 
         mainRouter.post("/listJobs").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(ListJobsHandler.execute(Gson().fromJson(context.bodyAsString, JobListConfig::class.java)))
+                future.complete(ListJobsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobListConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -46,7 +48,7 @@ class FilnkSubmitVerticle : AbstractVerticle() {
 
         mainRouter.post("/submitJob").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(SubmitJobHandler.execute(Gson().fromJson(context.bodyAsString, JobSubmitConfig::class.java)))
+                future.complete(SubmitJobHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobSubmitConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -56,7 +58,7 @@ class FilnkSubmitVerticle : AbstractVerticle() {
 
         mainRouter.post("/cancelJob").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(CancelJobHandler.execute(Gson().fromJson(context.bodyAsString, JobCancelConfig::class.java)))
+                future.complete(CancelJobHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobCancelConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->

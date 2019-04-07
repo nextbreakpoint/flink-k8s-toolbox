@@ -10,14 +10,6 @@ class RunServer {
         System.setProperty("crypto.policy", "unlimited")
         System.setProperty("vertx.graphite.options.enabled", "true")
         System.setProperty("vertx.graphite.options.registryName", "exported")
-
-        Launcher.main(
-            arrayOf(
-                "run",
-                FilnkSubmitVerticle::class.java.canonicalName,
-                "-conf",
-                Gson().toJson(serverConfig)
-            )
-        )
+        Launcher.main(arrayOf("run", FilnkSubmitVerticle::class.java.canonicalName, "-conf", Gson().toJson(serverConfig)))
     }
 }

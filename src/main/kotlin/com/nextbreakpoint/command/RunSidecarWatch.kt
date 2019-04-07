@@ -1,12 +1,12 @@
-package com.nextbreakpoint.handler
+package com.nextbreakpoint.command
 
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
-import com.nextbreakpoint.model.JobListConfig
+import com.nextbreakpoint.model.WatchConfig
 import io.kubernetes.client.apis.CoreV1Api
 
-object ListJobsHandler {
-    fun execute(portForward: Int?, useNodePort: Boolean, listConfig: JobListConfig): String {
+class RunSidecarWatch {
+    fun run(portForward: Int?, useNodePort: Boolean, watchConfig: WatchConfig) {
         val coreApi = CoreV1Api()
 
         var jobmanagerHost = "localhost"
@@ -39,12 +39,12 @@ object ListJobsHandler {
 
         if (portForward == null) {
             val services = coreApi.listNamespacedService(
-                listConfig.descriptor.namespace,
+                watchConfig.descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${listConfig.descriptor.name},environment=${listConfig.descriptor.environment},role=jobmanager",
+                "cluster=${watchConfig.descriptor.name},environment=${watchConfig.descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -53,8 +53,6 @@ object ListJobsHandler {
 
             if (!services.items.isEmpty()) {
                 val service = services.items.get(0)
-
-                println("Found JobManager ${service.metadata.name}")
 
                 if (useNodePort) {
                     service.spec.ports.filter {
@@ -78,21 +76,40 @@ object ListJobsHandler {
                     }
                     jobmanagerHost = service.spec.clusterIP
                 }
+
+                println("Found service ${service.metadata.name}")
             } else {
-                throw RuntimeException("JobManager not found")
+                throw RuntimeException("Service not found")
+            }
+
+            val pods = coreApi.listNamespacedPod(
+                watchConfig.descriptor.namespace,
+                null,
+                null,
+                null,
+                null,
+                "cluster=${watchConfig.descriptor.name},environment=${watchConfig.descriptor.environment},role=jobmanager",
+                1,
+                null,
+                30,
+                null
+            )
+
+            if (!pods.items.isEmpty()) {
+                val pod = pods.items.get(0)
+
+                println("Found pod ${pod.metadata.name}")
+            } else {
+                throw RuntimeException("Pod not found")
             }
         }
 
-        val jobs = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort).jobs
+        val api = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-        val result = jobs.jobs
-            .filter { job -> !listConfig.running || job.status.name.equals("RUNNING") }
-            .toList()
+        while (true) {
+            api.jobs.jobs.toList().map { job -> Gson().toJson(job) }.forEach { println(it) }
 
-        result.map { job -> Gson().toJson(job) }.forEach { println(it) }
-
-        println("done")
-
-        return Gson().toJson(result)
+            Thread.sleep(10000)
+        }
     }
 }

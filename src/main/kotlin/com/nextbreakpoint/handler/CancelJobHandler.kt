@@ -7,32 +7,39 @@ import com.nextbreakpoint.model.JobCancelConfig
 import io.kubernetes.client.apis.CoreV1Api
 
 object CancelJobHandler {
-    fun execute(cancelConfig: JobCancelConfig): String {
+    fun execute(portForward: Int?, useNodePort: Boolean, cancelConfig: JobCancelConfig): String {
         val coreApi = CoreV1Api()
 
-        val services = coreApi.listNamespacedService(
-            cancelConfig.descriptor.namespace,
-            null,
-            null,
-            null,
-            null,
-            "cluster=${cancelConfig.descriptor.name},environment=${cancelConfig.descriptor.environment},role=jobmanager",
-            1,
-            null,
-            30,
-            null
-        )
+        var jobmanagerHost = "localhost"
+        var jobmanagerPort = portForward ?: 8081
 
-        if (!services.items.isEmpty()) {
-            val service = services.items.get(0)
+        if (portForward == null && useNodePort) {
+            val nodes = coreApi.listNode(false,
+                null,
+                null,
+                null,
+                null,
+                1,
+                null,
+                30,
+                null
+            )
 
-            println("Found service ${service.metadata.name}")
+            if (!nodes.items.isEmpty()) {
+                nodes.items.get(0).status.addresses.filter {
+                    it.type.equals("InternalIP")
+                }.map {
+                    it.address
+                }.firstOrNull()?.let {
+                    jobmanagerHost = it
+                }
+            } else {
+                throw RuntimeException("Node not found")
+            }
+        }
 
-            val jobmanagerPort = service.spec.ports.filter { it.name.equals("ui") }.map { it.port }.first()
-
-            val jobmanagerHost = service.spec.clusterIP
-
-            val pods = coreApi.listNamespacedPod(
+        if (portForward == null) {
+            val services = coreApi.listNamespacedService(
                 cancelConfig.descriptor.namespace,
                 null,
                 null,
@@ -45,59 +52,80 @@ object CancelJobHandler {
                 null
             )
 
-            if (!pods.items.isEmpty()) {
-                val pod = pods.items.get(0)
+            if (!services.items.isEmpty()) {
+                val service = services.items.get(0)
 
-                println("Found pod ${pod.metadata.name}")
+                println("Found JobManager ${service.metadata.name}")
 
-                val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
-
-                if (cancelConfig.savepoint) {
-                    println("Cancelling jobs with savepoint...")
-
-                    val operation =
-                        flinkApi.createJobSavepoint(
-                            savepointTriggerRequestBody(
-                                true
-                            ), cancelConfig.jobId)
-
-                    while (true) {
-                        val operationStatus =
-                            flinkApi.getJobSavepointStatus(cancelConfig.jobId, operation.requestId.toString());
-
-                        if (operationStatus.status.id.equals(QueueStatus.IdEnum.COMPLETED)) {
-                            break
-                        }
-
-                        Thread.sleep(5000)
+                if (useNodePort) {
+                    service.spec.ports.filter {
+                        it.name.equals("ui")
+                    }.filter {
+                        it.nodePort != null
+                    }.map {
+                        it.nodePort
+                    }.firstOrNull()?.let {
+                        jobmanagerPort = it
                     }
                 } else {
-                    println("Cancelling jobs...")
+                    service.spec.ports.filter {
+                        it.name.equals("ui")
+                    }.filter {
+                        it.port != null
+                    }.map {
+                        it.port
+                    }.firstOrNull()?.let {
+                        jobmanagerPort = it
+                    }
+                    jobmanagerHost = service.spec.clusterIP
+                }
+            } else {
+                throw RuntimeException("JobManager not found")
+            }
+        }
 
-                    //                    val operation = flinkApi.createJobSavepoint(savepointTriggerRequestBody(false), cancelConfig.jobId)
-                    //
-                    //                    while (true) {
-                    //                        val operationStatus = flinkApi.getJobSavepointStatus(cancelConfig.jobId, operation.requestId.toString());
-                    //
-                    //                        if (operationStatus.status.id.equals(QueueStatus.IdEnum.COMPLETED)) {
-                    //                            break
-                    //                        }
-                    //
-                    //                        Thread.sleep(5000)
-                    //                    }
+        val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-                    flinkApi.terminateJob(cancelConfig.jobId, "stop")
+        if (cancelConfig.savepoint) {
+            println("Cancelling jobs with savepoint...")
+
+            val operation =
+                flinkApi.createJobSavepoint(
+                    savepointTriggerRequestBody(
+                        true
+                    ), cancelConfig.jobId)
+
+            while (true) {
+                val operationStatus =
+                    flinkApi.getJobSavepointStatus(cancelConfig.jobId, operation.requestId.toString());
+
+                if (operationStatus.status.id.equals(QueueStatus.IdEnum.COMPLETED)) {
+                    break
                 }
 
-                println("done")
-
-                return "{\"status\":\"SUCCESS\"}"
-            } else {
-                throw RuntimeException("Pod not found")
+                Thread.sleep(5000)
             }
         } else {
-            throw RuntimeException("Service not found")
+            println("Cancelling jobs...")
+
+//            val operation = flinkApi.createJobSavepoint(savepointTriggerRequestBody(false), cancelConfig.jobId)
+//
+//            while (true) {
+//                val operationStatus = flinkApi.getJobSavepointStatus(cancelConfig.jobId, operation.requestId.toString());
+//
+//                if (operationStatus.status.id.equals(QueueStatus.IdEnum.COMPLETED)) {
+//                    break
+//                }
+//
+//                Thread.sleep(5000)
+//            }
+
+            flinkApi.terminateJob(cancelConfig.jobId, "stop")
         }
+
+        println("done")
+
+        return "{\"status\":\"SUCCESS\"}"
     }
 
     private fun savepointTriggerRequestBody(isCancel: Boolean): SavepointTriggerRequestBody {
