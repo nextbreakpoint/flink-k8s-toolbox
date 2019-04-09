@@ -268,7 +268,7 @@ object CreateClusterHandler {
                 .serviceAccountName("flink-submit")
                 .imagePullSecrets(
                     listOf(
-                        V1LocalObjectReference().name(clusterConfig.jobmanager.pullSecrets)
+                        V1LocalObjectReference().name(clusterConfig.sidecar.pullSecrets)
                     )
                 )
                 .affinity(jobmanagerAffinity)
