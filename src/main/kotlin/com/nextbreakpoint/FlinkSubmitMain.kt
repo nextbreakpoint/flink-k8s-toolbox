@@ -104,6 +104,7 @@ class FlinkSubmitMain {
                 sidecar = SidecarConfig(
                     image = sidecarImage,
                     pullPolicy = imagePullPolicy,
+                    pullSecrets = imagePullSecrets,
                     arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" ")
                 )
             )
