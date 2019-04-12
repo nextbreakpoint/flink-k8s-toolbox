@@ -238,7 +238,7 @@ object CreateClusterHandler {
 
             val arguments = mutableListOf<String>()
 
-            arguments.add("/entrypoint_sidecar.sh")
+            arguments.add("sidecar")
 
             results.forEach { result ->
                 if (result.group(7) != null) {
