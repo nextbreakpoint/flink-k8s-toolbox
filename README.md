@@ -60,7 +60,7 @@ Verify that service account has been created:
     
 Run flink-submit server api:
 
-    kubectl run flink-submit --restart=Always --image=nextbreakpoint/flink-submit:1.0.0 --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-submit" } }, "spec": { "serviceAccountName": "flink-submit", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }'
+    kubectl run flink-submit --restart=Never --image=some-registry/flink-submit:1.0.0 --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-submit" } }, "spec": { "serviceAccountName": "flink-submit", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }'
     
 Verify that pod has been created:
 
