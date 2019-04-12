@@ -1,12 +1,12 @@
 # flink-submit
 
-FlinkSubmit provides a solution for managing Flink clusters on Kubernetes. FlinkSubmit consists in three components: client cli, server api, sidecar controller.
+FlinkSubmit provides a solution for managing Flink clusters on Kubernetes. FlinkSubmit has three components: client cli, server api, sidecar controller:
 
-The client command-line interface provides the tools for managing clusters and jobs.
+- The client command-line interface provides the tools for managing clusters and jobs.
 
-The server api accepts requests from the cli and executes commands against Kubernetes and Flink.
+- The server api accepts requests from the cli and executes commands against Kubernetes and Flink.
 
-The sidecar controller is responsible of executing a job and monitoring its status.        
+- The sidecar controller is responsible of executing a job and monitoring its status.        
 
 ## How to build
 
@@ -60,7 +60,7 @@ Verify that service account has been created:
     
 Run flink-submit server api:
 
-    kubectl run flink-submit --restart=Never --image=nextbreakpoint/flink-submit:1.0.0 --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-submit" } }, "spec": { "serviceAccountName": "flink-submit", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }'
+    kubectl run flink-submit --restart=Always --image=nextbreakpoint/flink-submit:1.0.0 --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-submit" } }, "spec": { "serviceAccountName": "flink-submit", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }'
     
 Verify that pod has been created:
 
