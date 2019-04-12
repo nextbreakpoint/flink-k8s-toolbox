@@ -4,9 +4,12 @@ import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.model.JobSubmitConfig
 import io.kubernetes.client.apis.CoreV1Api
+import org.apache.log4j.Logger
 import java.io.File
 
 object SubmitJobHandler {
+    val logger = Logger.getLogger(SubmitJobHandler::class.simpleName)
+
     fun execute(portForward: Int?, useNodePort: Boolean, submitConfig: JobSubmitConfig): String {
         val coreApi = CoreV1Api()
 
@@ -78,7 +81,7 @@ object SubmitJobHandler {
                     jobmanagerHost = service.spec.clusterIP
                 }
 
-                println("Found JobManager ${service.metadata.name}")
+                logger.info("Found JobManager ${service.metadata.name}")
             } else {
                 throw RuntimeException("JobManager not found")
             }
@@ -88,7 +91,7 @@ object SubmitJobHandler {
 
         val result = api.uploadJar(File(submitConfig.jarPath))
 
-        println(Gson().toJson(result))
+        logger.info(Gson().toJson(result))
 
         if (result.status.name.equals("SUCCESS")) {
             val response = api.runJar(
@@ -101,9 +104,9 @@ object SubmitJobHandler {
                 submitConfig.parallelism
             )
 
-            println(Gson().toJson(response))
+            logger.info(Gson().toJson(response))
 
-            println("done")
+            logger.info("done")
 
             return "{\"status\":\"SUCCESS\"}"
         } else {

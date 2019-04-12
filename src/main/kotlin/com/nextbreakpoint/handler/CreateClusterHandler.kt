@@ -8,9 +8,12 @@ import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.*
+import org.apache.log4j.Logger
 import java.util.regex.Pattern
 
 object CreateClusterHandler {
+    val logger = Logger.getLogger(CreateClusterHandler::class.simpleName)
+
     val ARGUMENTS_PATTERN = "(--([^ ]+)=(\"[^=]+\"))|(--([^ ]+)=([^\"= ]+))|([^ ]+)"
 
     fun execute(clusterConfig: ClusterConfig): String {
@@ -132,7 +135,7 @@ object CreateClusterHandler {
 
             val jobmanagerService = V1Service().spec(jobmanagerServiceSpec).metadata(jobmanagerServiceMetadata)
 
-            println("Creating Flink Service ...")
+            logger.info("Creating Flink Service ...")
 
             val jobmanagerServiceOut = coreApi.createNamespacedService(
                 clusterConfig.descriptor.namespace,
@@ -142,7 +145,7 @@ object CreateClusterHandler {
                 null
             )
 
-            println("Service created ${jobmanagerServiceOut.metadata.name}")
+            logger.info("Service created ${jobmanagerServiceOut.metadata.name}")
 
             val rpcAddressEnvVar = createEnvVar(
                 "JOB_MANAGER_RPC_ADDRESS",
@@ -221,7 +224,7 @@ object CreateClusterHandler {
                         )
                 )
 
-            println("Creating JobManager StatefulSet ...")
+            logger.info("Creating JobManager StatefulSet ...")
 
             val jobmanagerStatefulSetOut = api.createNamespacedStatefulSet(
                 clusterConfig.descriptor.namespace,
@@ -231,7 +234,7 @@ object CreateClusterHandler {
                 null
             )
 
-            println("StatefulSet created ${jobmanagerStatefulSetOut.metadata.name}")
+            logger.info("StatefulSet created ${jobmanagerStatefulSetOut.metadata.name}")
 
             val arguments = mutableListOf<String>()
 
@@ -289,7 +292,7 @@ object CreateClusterHandler {
                         .selector(sidecarSelector)
                 )
 
-            println("Creating Sidecar Deployment ...")
+            logger.info("Creating Sidecar Deployment ...")
 
             val sidecarDeploymentOut = api.createNamespacedDeployment(
                 clusterConfig.descriptor.namespace,
@@ -299,7 +302,7 @@ object CreateClusterHandler {
                 null
             )
 
-            println("Deployment created ${sidecarDeploymentOut.metadata.name}")
+            logger.info("Deployment created ${sidecarDeploymentOut.metadata.name}")
 
             val taskmanager = V1Container()
                 .image(clusterConfig.taskmanager.image)
@@ -375,7 +378,7 @@ object CreateClusterHandler {
                         )
                 )
 
-            println("Creating TaskManager StatefulSet ...")
+            logger.info("Creating TaskManager StatefulSet ...")
 
             val taskmanagerStatefulSetOut = api.createNamespacedStatefulSet(
                 clusterConfig.descriptor.namespace,
@@ -385,7 +388,7 @@ object CreateClusterHandler {
                 null
             )
 
-            println("StatefulSet created ${taskmanagerStatefulSetOut.metadata.name}")
+            logger.info("StatefulSet created ${taskmanagerStatefulSetOut.metadata.name}")
 
             return "{\"status\":\"SUCCESS\"}"
         } catch (e : Exception) {

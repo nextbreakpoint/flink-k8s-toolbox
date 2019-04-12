@@ -11,12 +11,15 @@ import io.vertx.rxjava.core.Vertx
 import io.vertx.rxjava.ext.web.client.WebClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import org.apache.log4j.Logger
 import java.io.File
 import java.io.FileInputStream
 import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 
 object CommandUtils {
+    val logger = Logger.getLogger(CommandUtils::class.simpleName)
+
     fun flinkApi(host: String = "localhost", port: Int = 8081): DefaultApi {
         val flinkApi = DefaultApi()
         flinkApi.apiClient.basePath = "http://$host:$port"
@@ -84,7 +87,7 @@ object CommandUtils {
                     stdout = null
                     stdin = null
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    logger.error("An error occurred", e)
                 } finally {
                     stdout?.interrupt()
                     stdin?.interrupt()
@@ -121,7 +124,7 @@ object CommandUtils {
             stdout.join()
             stderr.join()
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.error("An error occurred", e)
         } finally {
             stdout?.interrupt()
             stderr?.interrupt()
