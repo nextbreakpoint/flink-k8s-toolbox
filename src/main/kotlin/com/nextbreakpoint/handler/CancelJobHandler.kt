@@ -5,8 +5,11 @@ import com.nextbreakpoint.flinkclient.model.QueueStatus
 import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
 import com.nextbreakpoint.model.JobCancelConfig
 import io.kubernetes.client.apis.CoreV1Api
+import org.apache.log4j.Logger
 
 object CancelJobHandler {
+    val logger = Logger.getLogger(CancelJobHandler::class.simpleName)
+
     fun execute(portForward: Int?, useNodePort: Boolean, cancelConfig: JobCancelConfig): String {
         val coreApi = CoreV1Api()
 
@@ -55,7 +58,7 @@ object CancelJobHandler {
             if (!services.items.isEmpty()) {
                 val service = services.items.get(0)
 
-                println("Found JobManager ${service.metadata.name}")
+                logger.info("Found JobManager ${service.metadata.name}")
 
                 if (useNodePort) {
                     service.spec.ports.filter {
@@ -87,12 +90,13 @@ object CancelJobHandler {
         val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
         if (cancelConfig.savepoint) {
-            println("Cancelling jobs with savepoint...")
+            logger.info("Cancelling jobs with savepoint...")
 
             val operation =
                 flinkApi.createJobSavepoint(
                     savepointTriggerRequestBody(
-                        true
+                        true,
+                        cancelConfig.savepointPath
                     ), cancelConfig.jobId)
 
             while (true) {
@@ -106,7 +110,7 @@ object CancelJobHandler {
                 Thread.sleep(5000)
             }
         } else {
-            println("Cancelling jobs...")
+            logger.info("Cancelling jobs...")
 
 //            val operation = flinkApi.createJobSavepoint(savepointTriggerRequestBody(false), cancelConfig.jobId)
 //
@@ -123,15 +127,15 @@ object CancelJobHandler {
             flinkApi.terminateJob(cancelConfig.jobId, "stop")
         }
 
-        println("done")
+        logger.info("done")
 
         return "{\"status\":\"SUCCESS\"}"
     }
 
-    private fun savepointTriggerRequestBody(isCancel: Boolean): SavepointTriggerRequestBody {
+    private fun savepointTriggerRequestBody(isCancel: Boolean, savepointPath: String): SavepointTriggerRequestBody {
         val requestBody = SavepointTriggerRequestBody()
         requestBody.isCancelJob = isCancel
-        requestBody.targetDirectory = "file:///var/tmp/savepoints"
+        requestBody.targetDirectory = savepointPath
         return requestBody
     }
 }

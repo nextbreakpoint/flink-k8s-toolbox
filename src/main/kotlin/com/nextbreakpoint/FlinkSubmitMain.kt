@@ -8,9 +8,12 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.nextbreakpoint.command.*
 import com.nextbreakpoint.model.*
 import io.kubernetes.client.Configuration
+import org.apache.log4j.Logger
 
 class FlinkSubmitMain {
     companion object {
+        val logger = Logger.getLogger(FlinkSubmitMain::class.simpleName)
+
         @JvmStatic
         fun main(args: Array<String>) {
             try {
@@ -27,7 +30,7 @@ class FlinkSubmitMain {
                     )
                 ).main(args)
             } catch (e: Exception) {
-                e.printStackTrace()
+                logger.error("An error occurred while launching the application", e)
                 System.exit(-1)
             }
         }
@@ -169,6 +172,7 @@ class FlinkSubmitMain {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val createSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
+        private val savepointPath: String by option(help="Directory where to save savepoint").default("file:///var/tmp/savepoints")
         private val jobId: String by option(help="The id of the job to cancel").prompt("Insert job id")
 
         override fun run() {
@@ -179,6 +183,7 @@ class FlinkSubmitMain {
                     environment = environment
                 ),
                 savepoint = createSavepoint,
+                savepointPath = savepointPath,
                 jobId = jobId
             )
             CancelJob().run(ApiConfig(host, port), config)

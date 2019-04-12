@@ -4,15 +4,18 @@ import com.nextbreakpoint.model.ClusterDescriptor
 import io.kubernetes.client.apis.AppsV1Api
 import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.models.V1DeleteOptions
+import org.apache.log4j.Logger
 
 object DeleteClusterHandler {
+    val logger = Logger.getLogger(DeleteClusterHandler::class.simpleName)
+
     fun execute(descriptor: ClusterDescriptor): String {
         try {
             val api = AppsV1Api()
 
             val coreApi = CoreV1Api()
 
-            println("Deleting cluster ${descriptor.name}...")
+            logger.info("Deleting cluster ${descriptor.name}...")
 
             deleteDeployment(api, descriptor)
 
@@ -22,7 +25,7 @@ object DeleteClusterHandler {
 
             deletePersistentVolumeClaims(coreApi, descriptor)
 
-            println("Done.")
+            logger.info("Done.")
 
             return "{\"status\":\"SUCCESS\"}"
         } catch (e : Exception) {
@@ -46,7 +49,7 @@ object DeleteClusterHandler {
 
         deployments.items.forEach { deployment ->
             try {
-                println("Removing Deployment ${deployment.metadata.name}...")
+                logger.info("Removing Deployment ${deployment.metadata.name}...")
 
                 val status = api.deleteNamespacedDeployment(
                     deployment.metadata.name,
@@ -59,9 +62,9 @@ object DeleteClusterHandler {
                     null
                 )
 
-                println("Response status: ${status.reason}")
+                logger.info("Response status: ${status.reason}")
 
-                status.details.causes.forEach { println(it.message) }
+                status.details.causes.forEach { logger.info(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -84,7 +87,7 @@ object DeleteClusterHandler {
 
         statefulSets.items.forEach { statefulSet ->
             try {
-                println("Removing StatefulSet ${statefulSet.metadata.name}...")
+                logger.info("Removing StatefulSet ${statefulSet.metadata.name}...")
 
                 val status = api.deleteNamespacedStatefulSet(
                     statefulSet.metadata.name,
@@ -97,9 +100,9 @@ object DeleteClusterHandler {
                     null
                 )
 
-                println("Response status: ${status.reason}")
+                logger.info("Response status: ${status.reason}")
 
-                status.details.causes.forEach { println(it.message) }
+                status.details.causes.forEach { logger.info(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -122,7 +125,7 @@ object DeleteClusterHandler {
 
         services.items.forEach { service ->
             try {
-                println("Removing Service ${service.metadata.name}...")
+                logger.info("Removing Service ${service.metadata.name}...")
 
                 val status = coreApi.deleteNamespacedService(
                     service.metadata.name,
@@ -135,9 +138,9 @@ object DeleteClusterHandler {
                     null
                 )
 
-                println("Response status: ${status.reason}")
+                logger.info("Response status: ${status.reason}")
 
-                status.details.causes.forEach { println(it.message) }
+                status.details.causes.forEach { logger.info(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -160,7 +163,7 @@ object DeleteClusterHandler {
 
         volumeClaims.items.forEach { volumeClaim ->
             try {
-                println("Removing Persistent Volume Claim ${volumeClaim.metadata.name}...")
+                logger.info("Removing Persistent Volume Claim ${volumeClaim.metadata.name}...")
 
                 val status = coreApi.deleteNamespacedPersistentVolumeClaim(
                     volumeClaim.metadata.name,
@@ -173,9 +176,9 @@ object DeleteClusterHandler {
                     null
                 )
 
-                println("Response status: ${status.reason}")
+                logger.info("Response status: ${status.reason}")
 
-                status.details.causes.forEach { println(it.message) }
+                status.details.causes.forEach { logger.info(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }

@@ -4,8 +4,11 @@ import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.model.JobListConfig
 import io.kubernetes.client.apis.CoreV1Api
+import org.apache.log4j.Logger
 
 object ListJobsHandler {
+    val logger = Logger.getLogger(ListJobsHandler::class.simpleName)
+
     fun execute(portForward: Int?, useNodePort: Boolean, listConfig: JobListConfig): String {
         val coreApi = CoreV1Api()
 
@@ -54,7 +57,7 @@ object ListJobsHandler {
             if (!services.items.isEmpty()) {
                 val service = services.items.get(0)
 
-                println("Found JobManager ${service.metadata.name}")
+                logger.info("Found JobManager ${service.metadata.name}")
 
                 if (useNodePort) {
                     service.spec.ports.filter {
@@ -89,9 +92,9 @@ object ListJobsHandler {
             .filter { job -> !listConfig.running || job.status.name.equals("RUNNING") }
             .toList()
 
-        result.map { job -> Gson().toJson(job) }.forEach { println(it) }
+        result.map { job -> Gson().toJson(job) }.forEach { logger.info(it) }
 
-        println("done")
+        logger.info("done")
 
         return Gson().toJson(result)
     }
