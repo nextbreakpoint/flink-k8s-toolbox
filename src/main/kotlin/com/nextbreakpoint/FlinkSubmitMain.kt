@@ -30,7 +30,7 @@ class FlinkSubmitMain {
                     )
                 ).main(args)
             } catch (e: Exception) {
-                logger.error("An error occurred while launching the application", e)
+                logger.error("An error occurred while launching the application: ${e.message}")
                 System.exit(-1)
             }
         }
