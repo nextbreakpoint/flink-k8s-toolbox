@@ -21,6 +21,8 @@ class FilnkSubmitVerticle : AbstractVerticle() {
         return createServer(vertx.orCreateContext.config()).toCompletable()
     }
 
+    private fun makeError(error: Throwable) = error.message
+
     private fun createServer(config: JsonObject): Single<HttpServer> {
         val port: Int = config.getInteger("port") ?: 4444
 
@@ -92,6 +94,4 @@ class FilnkSubmitVerticle : AbstractVerticle() {
 
         return vertx.createHttpServer().requestHandler(mainRouter).rxListen(port)
     }
-
-    private fun makeError(error: Throwable) = error.message
 }

@@ -147,7 +147,7 @@ class RunSidecarSubmit {
                 while (true) {
                     api.jobs.jobs.toList().map { job -> Gson().toJson(job) }.forEach { logger.info(it) }
 
-                    logger.info("Sleeping a bit...")
+                    logger.info("Sleeping for a while...")
 
                     Thread.sleep(10000)
                 }
