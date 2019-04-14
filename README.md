@@ -96,7 +96,7 @@ Maven will create a fat jar and a Docker image.
 
 Create a tag and push the image to your Docker registry:
 
-    docker tag flink-submit:1.0.0 some-registry/flink-submit:1.0.0-alpha
+    docker tag flink-submit:1.0.0-alpha some-registry/flink-submit:1.0.0-alpha
 
     docker login some-registry
 
