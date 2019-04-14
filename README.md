@@ -1,38 +1,120 @@
 # flink-submit
 
-FlinkSubmit provides a solution for managing Flink clusters on Kubernetes. FlinkSubmit has three components: client cli, server api, sidecar controller:
+This repository provides a set of tools for managing Flink clusters on Kubernetes, which includes a CLI, a server application, and a sidecar controller:
 
-- The client command-line interface provides the tools for managing clusters and jobs.
+- The command-line interface provides the interface for managing clusters and jobs.
 
-- The server api accepts requests from the cli and executes commands against Kubernetes and Flink.
+- The server application accepts requests from the cli and executes commands against Kubernetes and Flink.
 
 - The sidecar controller is responsible of executing a job and monitoring its status.        
 
-## How to build
+## License
 
-Build the application using Maven:
+The tools are distributed under the terms of BSD 3-Clause License.
 
-    mvn clean package
+    Copyright (c) 2019, Andrea Medeghini
+    All rights reserved.
+    
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+    
+    * Redistributions of source code must retain the above copyright notice, this
+      list of conditions and the following disclaimer.
+    
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+    
+    * Neither the name of the tools nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
+    
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Maven creates a fat jar and a Docker image.
+## Get Docker image
 
-### Push image to registry
+The Docker image can be downloaded from Docker Hub: 
 
-Create a tag and push the image to a Docker registry:
+    docker fetch nextbreakpoint/flink-submit:1.0.0-alpha
+    
+Tag and push the image into your registry if required:
 
-    docker tag flink-submit:1.0.0 some-registry/flink-submit:1.0.0
+    docker tag nextbreakpoint/flink-submit:1.0.0-alpha some-registry/flink-submit:1.0.0-alpha
     
     docker login some-registry
     
-    docker push some-registry/flink-submit:1.0.0
+    docker push some-registry/flink-submit:1.0.0-alpha
 
-## How to use
+## Create service account and install server application
 
-List available commands with the command:
+Create service account and RBAC role:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar --help
+    kubectl create -f flink-submit-rbac.yaml
+    
+Verify that service account has been created:
 
-The command will produce the output:
+    kubectl get serviceaccounts flink-submit -o yaml     
+    
+Run the server application using Docker Hub:
+
+    kubectl run flink-submit --restart=Never --image=nextbreakpoint/flink-submit:1.0.0-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-submit" } }, "spec": { "serviceAccountName": "flink-submit", "imagePullPolicy": "Always" } }'
+    
+Or run the application using your registry:
+
+    kubectl run flink-submit --restart=Never --image=some-registry/flink-submit:1.0.0-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-submit" } }, "spec": { "serviceAccountName": "flink-submit", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }'
+    
+Verify that pod has been created:
+
+    kubectl get pod flink-submit -o yaml     
+
+The pod must have a label app with value *flink-submit* and it must run with *flink-submit* service account. 
+    
+Verify that there are no errors in the logs:
+    
+    kubectl logs flink-submit
+
+Check the system events if the pod doesn't start:
+    
+    kubectl get events
+
+## Build from source code
+
+Build the tools using Maven:
+
+    mvn clean package
+
+Maven will create a fat jar and a Docker image.
+
+Create a tag and push the image to your Docker registry:
+
+    docker tag flink-submit:1.0.0 some-registry/flink-submit:1.0.0-alpha
+    
+    docker login some-registry
+    
+    docker push some-registry/flink-submit:1.0.0-alpha
+
+## How to use the CLI
+
+Execute the CLI using the Docker image or download the jar file and run the CLI with Java command.   
+
+Show all commands using the jar file:
+
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar --help
+
+Oe show all commands using the Docker image:
+
+    docker run --rm -it nextbreakpoint/flink-submit:1.0.0-alpha --help
+
+The output should look like:
 
     Usage: FlinkSubmit [OPTIONS] COMMAND [ARGS]...
 
@@ -48,39 +130,11 @@ The command will produce the output:
       server   Run the server
       sidecar  Sidecar commands
 
-## Create service account and install server api
-
-Create service account and RBAC role:
-
-    kubectl create -f flink-submit-rbac.yaml
-    
-Verify that service account has been created:
-
-    kubectl get serviceaccounts flink-submit -o yaml     
-    
-Run flink-submit server api:
-
-    kubectl run flink-submit --restart=Never --image=some-registry/flink-submit:1.0.0 --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-submit" } }, "spec": { "serviceAccountName": "flink-submit", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }'
-    
-Verify that pod has been created:
-
-    kubectl get pod flink-submit -o yaml     
-
-The pod must have a label app with value flink-submit and it must run with flink-submit service account. 
-    
-Verify that there are no errors in the logs:
-    
-    kubectl logs flink-submit
-
-Check the system events if the pod doesn't start:
-    
-    kubectl get events
-
-## How to create a cluster
+### How to create a cluster
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         create \
         --cluster-name=test \
         --flink-image=nextbreakpoint/flink:1.7.2 \
@@ -90,13 +144,13 @@ Execute the command:
 
 Show more parameters with the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar create --help
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar create --help
 
-## How to create a cluster and submit a job
+### How to create a cluster and submit a job
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         create \
         --cluster-name=test \
         --flink-image=nextbreakpoint/flink:1.7.2 \
@@ -111,24 +165,24 @@ Execute the command:
         --sidecar-argument=--argument=--OUTPUT \
         --sidecar-argument=--argument=B 
 
-## How to delete a cluster
+### How to delete a cluster
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         delete \
         --cluster-name=my-flink-cluster \
         --environment=test
 
 Show more parameters with the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar delete --help
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar delete --help
 
-## How to submit a job
+### How to submit a job
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         submit \
         --cluster-name=my-flink-cluster \
         --environment=test \
@@ -139,7 +193,7 @@ Execute the command:
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         submit \
         --cluster-name=my-flink-cluster \
         --environment=test \
@@ -152,7 +206,7 @@ Execute the command:
 
 Or execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         submit \
         --cluster-name=my-flink-cluster \
         --environment=test \
@@ -160,11 +214,11 @@ Or execute the command:
         --jar-path=your-jar \
         --arguments="--input A --output B"
 
-## How to cancel a job
+### How to cancel a job
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         cancel \
         --cluster-name=my-flink-cluster \
         --environment=test \
@@ -173,67 +227,67 @@ Execute the command:
 
 Show more parameters with the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar cancel --help
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar cancel --help
 
-## How to list the jobs
+### How to list the jobs
 
 Execute the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar \
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         list \
         --cluster-name=my-flink-cluster \
         --environment=test
 
 Show more parameters with the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar list --help
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar list --help
 
-## More about server api and sidecar controller
+## More about server application and sidecar controller
 
-The server api and the sidecar controller are usually managed by FlinkSubmit. 
+The server application and the sidecar controller are usually executed a containers. 
 However it might be necessary to run the server and the controller manually for testing.     
     
-## How to run the server api
+## How to run the server application
 
-Run the server api within Kubernetes:
+Run the server application within Kubernetes:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar server
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar server
     
-Run the server api outside Kubernetes:
+Run the server application outside Kubernetes:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar server --port=4444 --kube-config=/your-kube-config.conf
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar server --port=4444 --kube-config=/your-kube-config.conf
     
 Show more parameters with the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar server --help
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar server --help
 
 ## How to run the sidecar controller
 
 Run the sidecar controller within Kubernetes:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar sidecar watch --cluster-name=test
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar sidecar watch --cluster-name=test
     
 Run the sidecar controller outside Kubernetes:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar sidecar watch --cluster-name=test --kube-config=/your-kube-config.conf 
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar sidecar watch --cluster-name=test --kube-config=/your-kube-config.conf 
     
 Show more parameters with the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar sidecar watch --help
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar sidecar watch --help
 
 ## How to submit a job from the sidecar controller
 
 Run the sidecar controller within Kubernetes:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar sidecar submit --cluster-name=test
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar sidecar submit --cluster-name=test
     
 Run the sidecar controller outside Kubernetes:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar sidecar submit --cluster-name=test --kube-config=/your-kube-config.conf --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar sidecar submit --cluster-name=test --kube-config=/your-kube-config.conf --class-name=your-main-class --jar-path=/your-job-jar.jar
     
 Show more parameters with the command:
 
-    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0.jar sidecar submit --help
+    java -jar target/com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar sidecar submit --help
         --sidecar-argument=submit \
         --sidecar-argument=--cluster-name=test \
         --sidecar-argument=--class-name=your-main-class \

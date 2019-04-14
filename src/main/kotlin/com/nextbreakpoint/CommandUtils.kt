@@ -1,7 +1,7 @@
 package com.nextbreakpoint
 
 import com.google.common.io.ByteStreams.copy
-import com.nextbreakpoint.flinkclient.api.DefaultApi
+import com.nextbreakpoint.flinkclient.api.FlinkApi
 import io.kubernetes.client.ApiClient
 import io.kubernetes.client.PortForward
 import io.kubernetes.client.models.V1Pod
@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit
 object CommandUtils {
     val logger = Logger.getLogger(CommandUtils::class.simpleName)
 
-    fun flinkApi(host: String = "localhost", port: Int = 8081): DefaultApi {
-        val flinkApi = DefaultApi()
+    fun flinkApi(host: String = "localhost", port: Int = 8081): FlinkApi {
+        val flinkApi = FlinkApi()
         flinkApi.apiClient.basePath = "http://$host:$port"
         flinkApi.apiClient.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
         flinkApi.apiClient.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)

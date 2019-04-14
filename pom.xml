@@ -3,8 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.nextbreakpoint</groupId>
     <artifactId>com.nextbreakpoint.flinksubmit</artifactId>
-    <version>1.0.13</version>
+    <version>1.0.0-alpha</version>
     <packaging>jar</packaging>
+    <description>Set of tools for managing Flink clusters on Kubernetes</description>
     <name>com.nextbreakpoint.flinksubmit</name>
     <url>https://github.com/nextbreakpoint/flink-submit</url>
     <licenses>
@@ -39,16 +40,16 @@
         <kotlinx-coroutines-core.version>1.0.1</kotlinx-coroutines-core.version>
         <clikt.version>1.6.0</clikt.version>
         <junit.version>4.12</junit.version>
-        <kubernetes-client.version>4.0.0</kubernetes-client.version>
         <gson.version>2.8.5</gson.version>
-        <maven-jar-plugin.version>3.1.0</maven-jar-plugin.version>
-        <vertx.version>3.6.3</vertx.version>
-        <codahale-metrics-core.version>3.0.2</codahale-metrics-core.version>
-        <dropwizard.version>4.0.5</dropwizard.version>
         <log4j2.version>2.11.2</log4j2.version>
         <jackson.version>2.9.8</jackson.version>
         <jaxb-api.version>2.2.11</jaxb-api.version>
         <activation.version>1.1.1</activation.version>
+        <vertx.version>3.6.3</vertx.version>
+        <dropwizard.version>4.0.5</dropwizard.version>
+        <codahale-metrics-core.version>3.0.2</codahale-metrics-core.version>
+        <kubernetes-client.version>4.0.0</kubernetes-client.version>
+        <maven-jar-plugin.version>3.1.0</maven-jar-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
         <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
@@ -70,7 +71,7 @@
         <dependency>
             <groupId>com.nextbreakpoint</groupId>
             <artifactId>com.nextbreakpoint.flinkclient</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.0-alpha</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -86,6 +87,11 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
+            <version>${kotlin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-reflect</artifactId>
             <version>${kotlin.version}</version>
         </dependency>
         <dependency>
