@@ -137,7 +137,7 @@ Execute the command:
     java -jar com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         create \
         --cluster-name=test \
-        --flink-image=nextbreakpoint/flink:1.7.2 \
+        --flink-image=nextbreakpoint/flink:1.7.2-1 \
         --sidecar-image=nextbreakpoint/flink-submit:1.0.0-alpha \
         --image-pull-secrets=regcred \
         --sidecar-arguments="watch --cluster-name=test"
@@ -148,18 +148,37 @@ Show more parameters with the command:
 
 ### How to create a cluster and submit a job
 
+Create a Docker file like:
+
+    FROM nextbreakpoint/flink-submit:1.0.0-alpha
+    COPY flink-jobs.jar /flink-jobs.jar
+
+Where flink-jobs.jar contains the code of your Flink jobs.
+
+Create a Docker image:
+
+    docker build -t flink-submit-with-jobs:1.0.0 .
+
+Create a tag and push the image to your Docker registry:
+
+    docker tag flink-submit-with-jobs:1.0.0 some-registry/flink-submit-with-jobs:1.0.0
+
+    docker login some-registry
+
+    docker push some-registry/flink-submit-with-jobs:1.0.0
+
 Execute the command:
 
     java -jar com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
         create \
         --cluster-name=test \
-        --flink-image=nextbreakpoint/flink:1.7.2 \
-        --sidecar-image=nextbreakpoint/flink-submit:1.0.0-alpha \
+        --flink-image=nextbreakpoint/flink:1.7.2-1 \
+        --sidecar-image=some-registry/flink-submit-with-jobs:1.0.0 \
         --image-pull-secrets=regcred \
         --sidecar-argument=submit \
         --sidecar-argument=--cluster-name=test \
         --sidecar-argument=--class-name=your-main-class \
-        --sidecar-argument=--jar-path=/your-job-jar.jar \
+        --sidecar-argument=--jar-path=/flink-jobs.jar \
         --sidecar-argument=--argument=--INPUT \
         --sidecar-argument=--argument=A \
         --sidecar-argument=--argument=--OUTPUT \
