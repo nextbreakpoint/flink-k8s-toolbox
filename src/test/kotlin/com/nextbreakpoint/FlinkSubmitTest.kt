@@ -1,6 +1,6 @@
 package com.nextbreakpoint
 
-import com.nextbreakpoint.handler.CreateClusterHandler.ARGUMENTS_PATTERN
+import com.nextbreakpoint.model.ARGUMENTS_PATTERN
 import org.junit.Test
 import java.util.regex.Pattern
 import java.util.stream.Collectors
