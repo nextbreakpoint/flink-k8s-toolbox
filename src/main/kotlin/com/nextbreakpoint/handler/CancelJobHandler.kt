@@ -8,7 +8,7 @@ import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 
 object CancelJobHandler {
-    val logger = Logger.getLogger(CancelJobHandler::class.simpleName)
+    private val logger = Logger.getLogger(CancelJobHandler::class.simpleName)
 
     fun execute(portForward: Int?, useNodePort: Boolean, cancelConfig: JobCancelConfig): String {
         val coreApi = CoreV1Api()

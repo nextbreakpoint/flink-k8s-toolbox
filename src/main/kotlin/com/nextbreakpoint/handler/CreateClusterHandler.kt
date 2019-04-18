@@ -1,5 +1,6 @@
 package com.nextbreakpoint.handler
 
+import com.nextbreakpoint.model.ARGUMENTS_PATTERN
 import com.nextbreakpoint.model.ClusterConfig
 import com.nextbreakpoint.model.ResourcesConfig
 import com.nextbreakpoint.model.StorageConfig
@@ -12,9 +13,7 @@ import org.apache.log4j.Logger
 import java.util.regex.Pattern
 
 object CreateClusterHandler {
-    val logger = Logger.getLogger(CreateClusterHandler::class.simpleName)
-
-    val ARGUMENTS_PATTERN = "(--([^ ]+)=(\"[^=]+\"))|(--([^ ]+)=([^\"= ]+))|([^ ]+)"
+    private val logger = Logger.getLogger(CreateClusterHandler::class.simpleName)
 
     fun execute(clusterConfig: ClusterConfig): String {
         try {

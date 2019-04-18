@@ -48,9 +48,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/submitJob").handler { context ->
+        mainRouter.post("/runJob").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(SubmitJobHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobSubmitConfig::class.java)))
+                future.complete(RunJobHandler.execute(Gson().fromJson(context.bodyAsString, RunJobConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
