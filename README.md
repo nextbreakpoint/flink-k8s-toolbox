@@ -148,10 +148,12 @@ Show more parameters with the command:
 
 ### How to create a cluster and submit a job
 
-Create a Docker file like:
+Create a Docker file:
 
+    cat <<EOF >Dockerfile
     FROM nextbreakpoint/flink-submit:1.0.0-alpha
     COPY flink-jobs.jar /flink-jobs.jar
+    EOF
 
 Where flink-jobs.jar contains the code of your Flink jobs.
 
@@ -197,41 +199,51 @@ Show more parameters with the command:
 
     java -jar com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar delete --help
 
-### How to submit a job
+### How to run a job
 
 Execute the command:
 
     java -jar com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
-        submit \
+        run \
         --cluster-name=my-flink-cluster \
         --environment=test \
-        --class-name=your-class \
-        --jar-path=your-jar
+        --sidecar-image=some-registry/flink-submit-with-jobs:1.0.0 \
+        --image-pull-secrets=regcred \
+        --sidecar-argument=submit \
+        --sidecar-argument=--cluster-name=test \
+        --sidecar-argument=--class-name=your-main-class \
+        --sidecar-argument=--jar-path=/flink-jobs.jar
 
-### How to pass multiple job arguments:
+### How to pass multiple arguments to a job:
 
 Execute the command:
 
     java -jar com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
-        submit \
+        run \
         --cluster-name=my-flink-cluster \
         --environment=test \
-        --class-name=your-class \
-        --jar-path=your-jar \
-        --argument=--input \
-        --argument=A \
-        --argument=--output \
-        --argument=B
+        --sidecar-image=some-registry/flink-submit-with-jobs:1.0.0 \
+        --image-pull-secrets=regcred \
+        --sidecar-argument=submit \
+        --sidecar-argument=--cluster-name=test \
+        --sidecar-argument=--class-name=your-main-class \
+        --sidecar-argument=--jar-path=/flink-jobs.jar \
+        --sidecar-argument=--argument=--INPUT \
+        --sidecar-argument=--argument=A \
+        --sidecar-argument=--argument=--OUTPUT \
+        --sidecar-argument=--argument=B
 
 Or execute the command:
 
     java -jar com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar \
-        submit \
+        run \
         --cluster-name=my-flink-cluster \
         --environment=test \
-        --class-name=your-class \
-        --jar-path=your-jar \
-        --arguments="--input A --output B"
+        --sidecar-argument=submit \
+        --sidecar-argument=--cluster-name=test \
+        --sidecar-argument=--class-name=your-main-class \
+        --sidecar-argument=--jar-path=/flink-jobs.jar \
+        --sidecar-argument=--arguments="--INPUT A --OUTPUT B"
 
 ### How to cancel a job
 
@@ -266,7 +278,7 @@ Show more parameters with the command:
 The server application and the sidecar controller are usually executed a containers.
 However it might be necessary to run the server and the controller manually for testing.     
 
-## How to run the server application
+### How to run the server application
 
 Run the server application within Kubernetes:
 
@@ -280,7 +292,7 @@ Show more parameters with the command:
 
     java -jar com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar server --help
 
-## How to run the sidecar controller
+### How to run the sidecar controller
 
 Run the sidecar controller within Kubernetes:
 
@@ -294,7 +306,7 @@ Show more parameters with the command:
 
     java -jar com.nextbreakpoint.flinksubmit-1.0.0-alpha.jar sidecar watch --help
 
-## How to submit a job from the sidecar controller
+### How to submit a job from the sidecar controller
 
 Run the sidecar controller within Kubernetes:
 
