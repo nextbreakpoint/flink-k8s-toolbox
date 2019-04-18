@@ -8,7 +8,7 @@ import org.apache.log4j.Logger
 import java.io.File
 
 object SubmitJobHandler {
-    val logger = Logger.getLogger(SubmitJobHandler::class.simpleName)
+    private val logger = Logger.getLogger(SubmitJobHandler::class.simpleName)
 
     fun execute(portForward: Int?, useNodePort: Boolean, submitConfig: JobSubmitConfig): String {
         val coreApi = CoreV1Api()
