@@ -12,9 +12,9 @@ import org.apache.log4j.Logger
 import java.util.regex.Pattern
 
 object CreateClusterHandler {
-    val logger = Logger.getLogger(CreateClusterHandler::class.simpleName)
+    private val logger = Logger.getLogger(CreateClusterHandler::class.simpleName)
 
-    val ARGUMENTS_PATTERN = "(--([^ ]+)=(\"[^=]+\"))|(--([^ ]+)=([^\"= ]+))|([^ ]+)"
+    private val ARGUMENTS_PATTERN = "(--([^ ]+)=(\"[^=]+\"))|(--([^ ]+)=([^\"= ]+))|([^ ]+)"
 
     fun execute(clusterConfig: ClusterConfig): String {
         try {
