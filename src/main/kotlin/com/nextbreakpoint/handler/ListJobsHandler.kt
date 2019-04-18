@@ -7,7 +7,7 @@ import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 
 object ListJobsHandler {
-    val logger = Logger.getLogger(ListJobsHandler::class.simpleName)
+    private val logger = Logger.getLogger(ListJobsHandler::class.simpleName)
 
     fun execute(portForward: Int?, useNodePort: Boolean, listConfig: JobListConfig): String {
         val coreApi = CoreV1Api()
