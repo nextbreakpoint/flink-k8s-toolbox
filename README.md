@@ -214,7 +214,7 @@ Execute the command:
         --sidecar-argument=--class-name=your-main-class \
         --sidecar-argument=--jar-path=/flink-jobs.jar
 
-### How to pass multiple arguments to a job:
+### How to pass multiple arguments to a job
 
 Execute the command:
 
