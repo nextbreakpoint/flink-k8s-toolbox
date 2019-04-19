@@ -23,6 +23,7 @@ class FlinkSubmitMain {
                     RunJobCommand(),
                     ListJobsCommand(),
                     CancelJobCommand(),
+                    GetJobMetricsCommand(),
                     RunServerCommand(),
                     FlinkSubmitSidecar().subcommands(
                         SidecarSubmitCommand(),
@@ -209,6 +210,28 @@ class FlinkSubmitMain {
                 jobId = jobId
             )
             CancelJob().run(ApiConfig(host, port), config)
+            System.exit(0)
+        }
+    }
+
+    class GetJobMetricsCommand: CliktCommand(name = "job-metrics", help="Get job metrics") {
+        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
+        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val environment: String by option(help="The name of the environment").default("test")
+        private val jobId: String by option(help="The id of the job").prompt("Insert job id")
+
+        override fun run() {
+            val config = JobMetricsConfig(
+                descriptor = ClusterDescriptor(
+                    namespace = namespace,
+                    name = clusterName,
+                    environment = environment
+                ),
+                jobId = jobId
+            )
+            GetJobMetrics().run(ApiConfig(host, port), config)
             System.exit(0)
         }
     }
