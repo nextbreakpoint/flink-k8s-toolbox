@@ -1,16 +1,16 @@
 package com.nextbreakpoint.command
 
 import com.nextbreakpoint.CommandUtils.createWebClient
-import com.nextbreakpoint.model.ApiConfig
-import com.nextbreakpoint.model.RunJobConfig
+import com.nextbreakpoint.model.ApiParams
+import com.nextbreakpoint.model.JobRunParams
 
 class PostJobRunRequest {
-    fun run(apiConfig: ApiConfig, runJobConfig: RunJobConfig) {
-        val client = createWebClient(host = apiConfig.host, port = apiConfig.port)
+    fun run(apiParams: ApiParams, runParams: JobRunParams) {
+        val client = createWebClient(host = apiParams.host, port = apiParams.port)
         try {
             val response = client.post("/job/run")
                 .putHeader("content-type", "application/json")
-                .rxSendJson(runJobConfig)
+                .rxSendJson(runParams)
                 .toBlocking()
                 .value()
             println(response.bodyAsString())

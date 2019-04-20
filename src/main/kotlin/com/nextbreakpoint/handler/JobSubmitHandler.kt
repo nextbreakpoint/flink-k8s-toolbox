@@ -2,7 +2,7 @@ package com.nextbreakpoint.handler
 
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
-import com.nextbreakpoint.model.JobSubmitConfig
+import com.nextbreakpoint.model.JobSubmitParams
 import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 import java.io.File
@@ -10,7 +10,7 @@ import java.io.File
 object JobSubmitHandler {
     private val logger = Logger.getLogger(JobSubmitHandler::class.simpleName)
 
-    fun execute(portForward: Int?, useNodePort: Boolean, submitConfig: JobSubmitConfig): String {
+    fun execute(portForward: Int?, useNodePort: Boolean, submitParams: JobSubmitParams): String {
         val coreApi = CoreV1Api()
 
         var jobmanagerHost = "localhost"
@@ -43,12 +43,12 @@ object JobSubmitHandler {
 
         if (portForward == null) {
             val services = coreApi.listNamespacedService(
-                submitConfig.descriptor.namespace,
+                submitParams.descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${submitConfig.descriptor.name},environment=${submitConfig.descriptor.environment},role=jobmanager",
+                "cluster=${submitParams.descriptor.name},environment=${submitParams.descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -89,7 +89,7 @@ object JobSubmitHandler {
 
         val api = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-        val result = api.uploadJar(File(submitConfig.jarPath))
+        val result = api.uploadJar(File(submitParams.jarPath))
 
         logger.info(Gson().toJson(result))
 
@@ -97,11 +97,11 @@ object JobSubmitHandler {
             val response = api.runJar(
                 result.filename.substringAfterLast(delimiter = "/"),
                 false,
-                submitConfig.savepoint,
-                submitConfig.arguments,
+                submitParams.savepoint,
+                submitParams.arguments,
                 null,
-                submitConfig.className,
-                submitConfig.parallelism
+                submitParams.className,
+                submitParams.parallelism
             )
 
             logger.info(Gson().toJson(response))

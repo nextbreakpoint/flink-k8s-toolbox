@@ -1,12 +1,12 @@
 package com.nextbreakpoint.command
 
 import com.nextbreakpoint.CommandUtils.createWebClient
-import com.nextbreakpoint.model.ApiConfig
+import com.nextbreakpoint.model.ApiParams
 import com.nextbreakpoint.model.TaskManagerDescriptor
 
 class PostTaskManagerDetailsRequest {
-    fun run(apiConfig: ApiConfig, taskManagerDescriptor: TaskManagerDescriptor) {
-        val client = createWebClient(host = apiConfig.host, port = apiConfig.port)
+    fun run(apiParams: ApiParams, taskManagerDescriptor: TaskManagerDescriptor) {
+        val client = createWebClient(host = apiParams.host, port = apiParams.port)
         try {
             val response = client.post("/taskmanager/details")
                 .putHeader("content-type", "application/json")

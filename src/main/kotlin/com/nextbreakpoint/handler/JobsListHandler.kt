@@ -2,14 +2,14 @@ package com.nextbreakpoint.handler
 
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
-import com.nextbreakpoint.model.JobListConfig
+import com.nextbreakpoint.model.JobsListParams
 import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 
 object JobsListHandler {
     private val logger = Logger.getLogger(JobsListHandler::class.simpleName)
 
-    fun execute(portForward: Int?, useNodePort: Boolean, listConfig: JobListConfig): String {
+    fun execute(portForward: Int?, useNodePort: Boolean, listParams: JobsListParams): String {
         val coreApi = CoreV1Api()
 
         var jobmanagerHost = "localhost"
@@ -42,12 +42,12 @@ object JobsListHandler {
 
         if (portForward == null) {
             val services = coreApi.listNamespacedService(
-                listConfig.descriptor.namespace,
+                listParams.descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${listConfig.descriptor.name},environment=${listConfig.descriptor.environment},role=jobmanager",
+                "cluster=${listParams.descriptor.name},environment=${listParams.descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -89,7 +89,7 @@ object JobsListHandler {
         val jobs = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort).jobs
 
         val result = jobs.jobs
-            .filter { job -> !listConfig.running || job.status.name.equals("RUNNING") }
+            .filter { job -> !listParams.running || job.status.name.equals("RUNNING") }
             .toList()
 
         return Gson().toJson(result)

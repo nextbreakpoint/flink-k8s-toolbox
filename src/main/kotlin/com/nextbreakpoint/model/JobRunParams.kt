@@ -1,6 +1,6 @@
 package com.nextbreakpoint.model
 
-data class RunJobConfig(
+data class JobRunParams(
     val descriptor: ClusterDescriptor,
     val sidecar: SidecarConfig
 )

@@ -1,6 +1,6 @@
 package com.nextbreakpoint.model
 
-data class ServerConfig(
+data class ControllerConfig(
     val port: Int,
     val portForward: Int?,
     val kubeConfig: String?

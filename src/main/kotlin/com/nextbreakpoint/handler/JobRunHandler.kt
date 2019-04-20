@@ -2,7 +2,7 @@ package com.nextbreakpoint.handler
 
 import com.nextbreakpoint.Arguments
 import com.nextbreakpoint.model.ClusterDescriptor
-import com.nextbreakpoint.model.RunJobConfig
+import com.nextbreakpoint.model.JobRunParams
 import io.kubernetes.client.apis.AppsV1Api
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.*
@@ -12,17 +12,17 @@ import java.util.regex.Pattern
 object JobRunHandler {
     private val logger = Logger.getLogger(JobRunHandler::class.simpleName)
 
-    fun execute(runJobConfig: RunJobConfig): String {
+    fun execute(runParams: JobRunParams): String {
         try {
             val api = AppsV1Api()
 
-            val results = Pattern.compile(Arguments.PATTERN).matcher(runJobConfig.sidecar.arguments).results()
+            val results = Pattern.compile(Arguments.PATTERN).matcher(runParams.sidecar.arguments).results()
 
-            deleteDeployment(api, runJobConfig.descriptor)
+            deleteDeployment(api, runParams.descriptor)
 
             val environmentEnvVar = createEnvVar(
                 "FLINK_ENVIRONMENT",
-                runJobConfig.descriptor.environment
+                runParams.descriptor.environment
             )
 
             val podNameEnvVar =
@@ -49,9 +49,9 @@ object JobRunHandler {
 
             val componentLabel = Pair("component", "flink")
 
-            val environmentLabel = Pair("environment", runJobConfig.descriptor.environment)
+            val environmentLabel = Pair("environment", runParams.descriptor.environment)
 
-            val clusterLabel = Pair("cluster", runJobConfig.descriptor.name)
+            val clusterLabel = Pair("cluster", runParams.descriptor.name)
 
             val jobmanagerLabel = Pair("role", "jobmanager")
 
@@ -73,8 +73,8 @@ object JobRunHandler {
                 createAffinity(jobmanagerSelector, taskmanagerSelector)
 
             val sidecar = V1Container()
-                .image(runJobConfig.sidecar.image)
-                .imagePullPolicy(runJobConfig.sidecar.pullPolicy)
+                .image(runParams.sidecar.image)
+                .imagePullPolicy(runParams.sidecar.pullPolicy)
                 .name("flink-submit-sidecar")
                 .args(arguments)
                 .env(
@@ -93,7 +93,7 @@ object JobRunHandler {
                 .serviceAccountName("flink-submit")
                 .imagePullSecrets(
                     listOf(
-                        V1LocalObjectReference().name(runJobConfig.sidecar.pullSecrets)
+                        V1LocalObjectReference().name(runParams.sidecar.pullSecrets)
                     )
                 )
                 .affinity(jobmanagerAffinity)
@@ -117,7 +117,7 @@ object JobRunHandler {
             logger.info("Creating Sidecar Deployment ...")
 
             val sidecarDeploymentOut = api.createNamespacedDeployment(
-                runJobConfig.descriptor.namespace,
+                runParams.descriptor.namespace,
                 sidecarDeployment,
                 null,
                 null,

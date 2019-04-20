@@ -2,22 +2,22 @@ package com.nextbreakpoint.command
 
 import com.google.gson.Gson
 import com.nextbreakpoint.ControllerVerticle
-import com.nextbreakpoint.model.ServerConfig
+import com.nextbreakpoint.model.ControllerConfig
 import io.vertx.core.Launcher
 import org.apache.log4j.Logger
 
-class RunServer {
+class RunController {
     companion object {
-        val logger = Logger.getLogger(RunServer::class.simpleName)
+        val logger = Logger.getLogger(RunController::class.simpleName)
     }
 
-    fun run(serverConfig: ServerConfig) {
+    fun run(controllerConfig: ControllerConfig) {
         try {
             System.setProperty("crypto.policy", "unlimited")
             System.setProperty("vertx.graphite.options.enabled", "true")
             System.setProperty("vertx.graphite.options.registryName", "exported")
             logger.info("Launching FlinkController server...")
-            Launcher.main(arrayOf("run", ControllerVerticle::class.java.canonicalName, "-conf", Gson().toJson(serverConfig)))
+            Launcher.main(arrayOf("run", ControllerVerticle::class.java.canonicalName, "-conf", Gson().toJson(controllerConfig)))
             while (true) {
                 if (Thread.interrupted()) {
                     break

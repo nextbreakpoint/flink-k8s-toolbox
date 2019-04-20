@@ -16,7 +16,10 @@ class FlinkControllerMain {
             try {
                 FlinkController().subcommands(
                     Controller().subcommands(
-                        RunServerCommand()
+                        RunControllerCommand()
+                    ),
+                    Operator().subcommands(
+                        RunOperatorCommand()
                     ),
                     Cluster().subcommands(
                         CreateClusterCommand(),
@@ -58,6 +61,10 @@ class FlinkControllerMain {
     }
 
     class Controller: CliktCommand(name = "controller", help = "Access controller subcommands") {
+        override fun run() = Unit
+    }
+
+    class Operator: CliktCommand(name = "operator", help = "Access operator subcommands") {
         override fun run() = Unit
     }
 
@@ -156,7 +163,7 @@ class FlinkControllerMain {
                     arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" ")
                 )
             )
-            PostClusterCreateRequest().run(ApiConfig(host, port), config)
+            PostClusterCreateRequest().run(ApiParams(host, port), config)
         }
     }
 
@@ -173,7 +180,7 @@ class FlinkControllerMain {
                 name = clusterName,
                 environment = environment
             )
-            PostClusterDeleteRequest().run(ApiConfig(host, port), descriptor)
+            PostClusterDeleteRequest().run(ApiParams(host, port), descriptor)
         }
     }
 
@@ -190,7 +197,7 @@ class FlinkControllerMain {
         private val imagePullSecrets: String by option(help="The image pull secrets").required()
 
         override fun run() {
-            val config = RunJobConfig(
+            val config = JobRunParams(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,
@@ -203,7 +210,7 @@ class FlinkControllerMain {
                     arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" ")
                 )
             )
-            PostJobRunRequest().run(ApiConfig(host, port), config)
+            PostJobRunRequest().run(ApiParams(host, port), config)
             System.exit(0)
         }
     }
@@ -217,7 +224,7 @@ class FlinkControllerMain {
         private val onlyRunning: Boolean by option(help="List only running jobs").flag(default = true)
 
         override fun run() {
-            val config = JobListConfig(
+            val config = JobsListParams(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,
@@ -225,7 +232,7 @@ class FlinkControllerMain {
                 ),
                 running = onlyRunning
             )
-            PostJobsListRequest().run(ApiConfig(host, port), config)
+            PostJobsListRequest().run(ApiParams(host, port), config)
         }
     }
 
@@ -240,7 +247,7 @@ class FlinkControllerMain {
         private val jobId: String by option(help="The id of the job to cancel").prompt("Insert job id")
 
         override fun run() {
-            val config = JobCancelConfig(
+            val config = JobCancelParams(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,
@@ -250,7 +257,7 @@ class FlinkControllerMain {
                 savepointPath = savepointPath,
                 jobId = jobId
             )
-            PostJobCancelRequest().run(ApiConfig(host, port), config)
+            PostJobCancelRequest().run(ApiParams(host, port), config)
         }
     }
 
@@ -271,7 +278,7 @@ class FlinkControllerMain {
                 ),
                 jobId = jobId
             )
-            PostJobDetailsRequest().run(ApiConfig(host, port), config)
+            PostJobDetailsRequest().run(ApiParams(host, port), config)
         }
     }
 
@@ -292,7 +299,7 @@ class FlinkControllerMain {
                 ),
                 jobId = jobId
             )
-            PostJobMetricsRequest().run(ApiConfig(host, port), config)
+            PostJobMetricsRequest().run(ApiParams(host, port), config)
         }
     }
 
@@ -309,7 +316,7 @@ class FlinkControllerMain {
                 name = clusterName,
                 environment = environment
             )
-            PostJobManagerMetricsRequest().run(ApiConfig(host, port), descriptor)
+            PostJobManagerMetricsRequest().run(ApiParams(host, port), descriptor)
         }
     }
 
@@ -330,7 +337,7 @@ class FlinkControllerMain {
                 ),
                 taskmanagerId = taskmanagerId
             )
-            PostTaskManagerDetailsRequest().run(ApiConfig(host, port), config)
+            PostTaskManagerDetailsRequest().run(ApiParams(host, port), config)
         }
     }
 
@@ -351,7 +358,7 @@ class FlinkControllerMain {
                 ),
                 taskmanagerId = taskmanagerId
             )
-            PostTaskManagerMetricsRequest().run(ApiConfig(host, port), config)
+            PostTaskManagerMetricsRequest().run(ApiParams(host, port), config)
         }
     }
 
@@ -368,22 +375,32 @@ class FlinkControllerMain {
                 name = clusterName,
                 environment = environment
             )
-            PostTaskManagersListRequest().run(ApiConfig(host, port), descriptor)
+            PostTaskManagersListRequest().run(ApiParams(host, port), descriptor)
         }
     }
 
-    class RunServerCommand: CliktCommand(name = "run", help="Run the controller") {
+    class RunControllerCommand: CliktCommand(name = "run", help="Run the controller") {
         private val port: Int by option(help="Listen on port").int().default(4444)
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of Kubectl config")
 
         override fun run() {
-            val config = ServerConfig(
+            val config = ControllerConfig(
                 port = port,
                 portForward = portForward,
                 kubeConfig = kubeConfig
             )
-            RunServer().run(config)
+            RunController().run(config)
+        }
+    }
+
+    class RunOperatorCommand: CliktCommand(help="Run the operator") {
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val kubeConfig: String? by option(help="The path of kuke config")
+
+        override fun run() {
+            Configuration.setDefaultApiClient(CommandUtils.createKubernetesClient(kubeConfig))
+            RunOperator().run(OperatorConfig(namespace))
         }
     }
 
@@ -401,7 +418,7 @@ class FlinkControllerMain {
         private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
 
         override fun run() {
-            val config = JobSubmitConfig(
+            val config = JobSubmitParams(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,
@@ -426,7 +443,7 @@ class FlinkControllerMain {
         private val environment: String by option(help="The name of the environment").default("test")
 
         override fun run() {
-            val config = WatchConfig(
+            val config = WatchParams(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,

@@ -40,7 +40,7 @@ class ControllerVerticle : AbstractVerticle() {
 
         mainRouter.post("/jobs/list").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(JobsListHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobListConfig::class.java)))
+                future.complete(JobsListHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobsListParams::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -50,7 +50,7 @@ class ControllerVerticle : AbstractVerticle() {
 
         mainRouter.post("/job/run").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(JobRunHandler.execute(Gson().fromJson(context.bodyAsString, RunJobConfig::class.java)))
+                future.complete(JobRunHandler.execute(Gson().fromJson(context.bodyAsString, JobRunParams::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -60,7 +60,7 @@ class ControllerVerticle : AbstractVerticle() {
 
         mainRouter.post("/job/cancel").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(JobCancelHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobCancelConfig::class.java)))
+                future.complete(JobCancelHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobCancelParams::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
