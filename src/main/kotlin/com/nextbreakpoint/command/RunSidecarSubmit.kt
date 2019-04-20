@@ -2,7 +2,7 @@ package com.nextbreakpoint.command
 
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
-import com.nextbreakpoint.model.JobSubmitConfig
+import com.nextbreakpoint.model.JobSubmitParams
 import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 import java.io.File
@@ -12,9 +12,9 @@ class RunSidecarSubmit {
         val logger = Logger.getLogger(RunSidecarSubmit::class.simpleName)
     }
 
-    fun run(portForward: Int?, useNodePort: Boolean, submitConfig: JobSubmitConfig) {
+    fun run(portForward: Int?, useNodePort: Boolean, submitParams: JobSubmitParams) {
         try {
-            logger.info("Launching FlinkSubmit sidecar...")
+            logger.info("Launching sidecar...")
 
             val coreApi = CoreV1Api()
 
@@ -50,12 +50,12 @@ class RunSidecarSubmit {
 
             if (portForward == null) {
                 val services = coreApi.listNamespacedService(
-                    submitConfig.descriptor.namespace,
+                    submitParams.descriptor.namespace,
                     null,
                     null,
                     null,
                     null,
-                    "cluster=${submitConfig.descriptor.name},environment=${submitConfig.descriptor.environment},role=jobmanager",
+                    "cluster=${submitParams.descriptor.name},environment=${submitParams.descriptor.environment},role=jobmanager",
                     1,
                     null,
                     30,
@@ -94,12 +94,12 @@ class RunSidecarSubmit {
                 }
 
                 val pods = coreApi.listNamespacedPod(
-                    submitConfig.descriptor.namespace,
+                    submitParams.descriptor.namespace,
                     null,
                     null,
                     null,
                     null,
-                    "cluster=${submitConfig.descriptor.name},environment=${submitConfig.descriptor.environment},role=jobmanager",
+                    "cluster=${submitParams.descriptor.name},environment=${submitParams.descriptor.environment},role=jobmanager",
                     1,
                     null,
                     30,
@@ -123,7 +123,7 @@ class RunSidecarSubmit {
 
             logger.info("Uploading jar...")
 
-            val result = api.uploadJar(File(submitConfig.jarPath))
+            val result = api.uploadJar(File(submitParams.jarPath))
 
             logger.info("File uploaded: ${Gson().toJson(result)}")
 
@@ -133,11 +133,11 @@ class RunSidecarSubmit {
                 val response = api.runJar(
                     result.filename.substringAfterLast(delimiter = "/"),
                     false,
-                    submitConfig.savepoint,
-                    submitConfig.arguments,
+                    submitParams.savepoint,
+                    submitParams.arguments,
                     null,
-                    submitConfig.className,
-                    submitConfig.parallelism
+                    submitParams.className,
+                    submitParams.parallelism
                 )
 
                 logger.info("Job started: ${Gson().toJson(response)}")
