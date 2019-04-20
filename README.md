@@ -324,3 +324,35 @@ Show more parameters with the command:
         --sidecar-argument=--class-name=your-main-class \
         --sidecar-argument=--jar-path=/your-job-jar.jar \
         --sidecar-argument=--arguments="--input A --output B"
+
+### How to run the operator
+
+The operator can be executed as Docker image or as JAR file.   
+
+Run the operator with a given namespace and Kubernetes config using the JAR file:
+
+    java -jar com.nextbreakpoint.flink-k8-ops:1.0.1-alpha.jar operator run --namespace=test --kube-config=/path/admin.conf
+
+Run the operator with a given namespace and Kubernetes config using the Docker image:
+
+    docker run --rm -it -v /path/admin.conf:/admin.conf flink-k8-ops:1.0.1-alpha operator run --namespace=test --kube-config=/admin.conf
+    
+Show all options using the JAR file:
+
+    java -jar com.nextbreakpoint.flink-k8-ops:1.0.1-alpha.jar operator run --help
+
+Or show all options using the Docker image:
+
+    docker run --rm -it nextbreakpoint/flink-k8-ops:1.0.1-alpha operator run --help
+
+The output should look like:
+
+    Usage: run [OPTIONS]
+    
+      Run the operator
+
+    Options:
+      --namespace TEXT    The namespace where to create the resources
+      --kube-config TEXT  The path of kuke config
+      -h, --help          Show this message and exit
+
