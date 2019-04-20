@@ -245,11 +245,11 @@ Or show all commands using the Docker image:
 
 The output should look like:
 
-    Usage: FlinkController [OPTIONS] COMMAND [ARGS]...
-
+    Usage: Flink K8 Ops [OPTIONS] COMMAND [ARGS]...
+    
     Options:
       -h, --help  Show this message and exit
-
+    
     Commands:
       controller    Access controller subcommands
       operator      Access operator subcommands
@@ -260,7 +260,7 @@ The output should look like:
       jobmanager    Access JobManager subcommands
       taskmanager   Access TaskManager subcommands
       taskmanagers  Access TaskManagers subcommands
-
+      
 ### How to create a cluster
 
 Execute the command:
