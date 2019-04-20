@@ -245,7 +245,7 @@ Or show all available commands using the Docker image:
 
 The output should look like:
 
-    Usage: Flink k8-ops [OPTIONS] COMMAND [ARGS]...
+    Usage: flink-k8-ops [OPTIONS] COMMAND [ARGS]...
 
     Options:
       -h, --help  Show this message and exit
