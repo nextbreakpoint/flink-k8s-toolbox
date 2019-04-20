@@ -16,7 +16,7 @@ import io.vertx.rxjava.ext.web.handler.TimeoutHandler
 import rx.Completable
 import rx.Single
 
-class FilnkSubmitVerticle : AbstractVerticle() {
+class ControllerVerticle : AbstractVerticle() {
     override fun rxStart(): Completable {
         return createServer(vertx.orCreateContext.config()).toCompletable()
     }
@@ -38,9 +38,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
 
         Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig))
 
-        mainRouter.post("/listJobs").handler { context ->
+        mainRouter.post("/jobs/list").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(ListJobsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobListConfig::class.java)))
+                future.complete(JobsListHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobListConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -48,9 +48,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/cancelJob").handler { context ->
+        mainRouter.post("/job/run").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(CancelJobHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobCancelConfig::class.java)))
+                future.complete(JobRunHandler.execute(Gson().fromJson(context.bodyAsString, RunJobConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -58,9 +58,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/getJobDetails").handler { context ->
+        mainRouter.post("/job/cancel").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(GetJobDetailsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobDetailsConfig::class.java)))
+                future.complete(JobCancelHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobCancelConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -68,9 +68,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/getJobMetrics").handler { context ->
+        mainRouter.post("/job/details").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(GetJobMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobMetricsConfig::class.java)))
+                future.complete(JobDetailsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobDescriptor::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -78,9 +78,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/getJobManagerMetrics").handler { context ->
+        mainRouter.post("/job/metrics").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(GetJobManagerMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, ClusterDescriptor::class.java)))
+                future.complete(JobMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobDescriptor::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -88,9 +88,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/listTaskManagers").handler { context ->
+        mainRouter.post("/jobmanager/metrics").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(ListTaskManagersHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, ClusterDescriptor::class.java)))
+                future.complete(JobManagerMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, ClusterDescriptor::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -98,9 +98,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/getTaskManagerDetails").handler { context ->
+        mainRouter.post("/taskmanagers/list").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(GetTaskManagerDetailsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, GetTaskManagerConfig::class.java)))
+                future.complete(TaskManagersListHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, ClusterDescriptor::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -108,9 +108,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/getTaskManagerMetrics").handler { context ->
+        mainRouter.post("/taskmanager/details").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(GetTaskManagerMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, GetTaskManagerConfig::class.java)))
+                future.complete(TaskManagerDetailsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, TaskManagerDescriptor::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -118,9 +118,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/runJob").handler { context ->
+        mainRouter.post("/taskmanager/metrics").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(RunJobHandler.execute(Gson().fromJson(context.bodyAsString, RunJobConfig::class.java)))
+                future.complete(TaskManagerMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, TaskManagerDescriptor::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -128,9 +128,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/createCluster").handler { context ->
+        mainRouter.post("/cluster/create").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(CreateClusterHandler.execute(Gson().fromJson(context.bodyAsString, ClusterConfig::class.java)))
+                future.complete(ClusterCreateHandler.execute(Gson().fromJson(context.bodyAsString, ClusterConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -138,9 +138,9 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/deleteCluster").handler { context ->
+        mainRouter.post("/cluster/delete").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(DeleteClusterHandler.execute(Gson().fromJson(context.bodyAsString, ClusterDescriptor::class.java)))
+                future.complete(ClusterDeleteHandler.execute(Gson().fromJson(context.bodyAsString, ClusterDescriptor::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->

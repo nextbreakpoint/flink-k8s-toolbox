@@ -1,6 +1,6 @@
 package com.nextbreakpoint.handler
 
-import com.nextbreakpoint.model.ARGUMENTS_PATTERN
+import com.nextbreakpoint.Arguments
 import com.nextbreakpoint.model.ClusterConfig
 import com.nextbreakpoint.model.ResourcesConfig
 import com.nextbreakpoint.model.StorageConfig
@@ -12,8 +12,8 @@ import io.kubernetes.client.models.*
 import org.apache.log4j.Logger
 import java.util.regex.Pattern
 
-object CreateClusterHandler {
-    private val logger = Logger.getLogger(CreateClusterHandler::class.simpleName)
+object ClusterCreateHandler {
+    private val logger = Logger.getLogger(ClusterCreateHandler::class.simpleName)
 
     fun execute(clusterConfig: ClusterConfig): String {
         try {
@@ -21,7 +21,7 @@ object CreateClusterHandler {
 
             val coreApi = CoreV1Api()
 
-            val results = Pattern.compile(ARGUMENTS_PATTERN).matcher(clusterConfig.sidecar.arguments).results()
+            val results = Pattern.compile(Arguments.PATTERN).matcher(clusterConfig.sidecar.arguments).results()
 
             val statefulSets = api.listNamespacedStatefulSet(
                 clusterConfig.descriptor.namespace,

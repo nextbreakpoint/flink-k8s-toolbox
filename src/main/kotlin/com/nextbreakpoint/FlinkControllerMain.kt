@@ -8,51 +8,90 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.nextbreakpoint.command.*
 import com.nextbreakpoint.model.*
 import io.kubernetes.client.Configuration
-import org.apache.log4j.Logger
 
-class FlinkSubmitMain {
+class FlinkControllerMain {
     companion object {
-        val logger = Logger.getLogger(FlinkSubmitMain::class.simpleName)
-
         @JvmStatic
         fun main(args: Array<String>) {
             try {
-                FlinkSubmit().subcommands(
-                    CreateClusterCommand(),
-                    DeleteClusterCommand(),
-                    RunJobCommand(),
-                    ListJobsCommand(),
-                    CancelJobCommand(),
-                    GetJobDetailsCommand(),
-                    GetJobMetricsCommand(),
-                    GetJobManagerMetricsCommand(),
-                    GetTaskManagerDetailsCommand(),
-                    GetTaskManagerMetricsCommand(),
-                    ListTaskManagersCommand(),
-                    RunServerCommand(),
-                    FlinkSubmitSidecar().subcommands(
+                FlinkController().subcommands(
+                    Controller().subcommands(
+                        RunServerCommand()
+                    ),
+                    Cluster().subcommands(
+                        CreateClusterCommand(),
+                        DeleteClusterCommand()
+                    ),
+                    Sidecar().subcommands(
                         SidecarSubmitCommand(),
                         SidecarWatchCommand()
+                    ),
+                    Job().subcommands(
+                        RunJobCommand(),
+                        CancelJobCommand(),
+                        GetJobDetailsCommand(),
+                        GetJobMetricsCommand()
+                    ),
+                    Jobs().subcommands(
+                        ListJobsCommand()
+                    ),
+                    JobManager().subcommands(
+                        GetJobManagerMetricsCommand()
+                    ),
+                    TaskManager().subcommands(
+                        GetTaskManagerDetailsCommand(),
+                        GetTaskManagerMetricsCommand()
+                    ),
+                    TaskManagers().subcommands(
+                        ListTaskManagersCommand()
                     )
                 ).main(args)
+                System.exit(0)
             } catch (e: Exception) {
-                logger.error("An error occurred while launching the application: ${e.message}")
                 System.exit(-1)
             }
         }
     }
 
-    class FlinkSubmit: CliktCommand(name = "FlinkSubmit") {
+    class FlinkController: CliktCommand(name = "FlinkController") {
         override fun run() = Unit
     }
 
-    class FlinkSubmitSidecar: CliktCommand(name = "sidecar", help = "Sidecar commands") {
+    class Controller: CliktCommand(name = "controller", help = "Access controller subcommands") {
+        override fun run() = Unit
+    }
+
+    class Cluster: CliktCommand(name = "cluster", help = "Access cluster subcommands") {
+        override fun run() = Unit
+    }
+
+    class Sidecar: CliktCommand(name = "sidecar", help = "Access sidecar subcommands") {
+        override fun run() = Unit
+    }
+
+    class Job: CliktCommand(name = "job", help = "Access job subcommands") {
+        override fun run() = Unit
+    }
+
+    class Jobs: CliktCommand(name = "jobs", help = "Access jobs subcommands") {
+        override fun run() = Unit
+    }
+
+    class JobManager: CliktCommand(name = "jobmanager", help = "Access JobManager subcommands") {
+        override fun run() = Unit
+    }
+
+    class TaskManager: CliktCommand(name = "taskmanager", help = "Access TaskManager subcommands") {
+        override fun run() = Unit
+    }
+
+    class TaskManagers: CliktCommand(name = "taskmanagers", help = "Access TaskManagers subcommands") {
         override fun run() = Unit
     }
 
     class CreateClusterCommand: CliktCommand(name = "create", help="Create a cluster") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val clusterName: String by option(help="The name of the new Flink cluster").required()
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val environment: String by option(help="The name of the environment").default("test")
@@ -117,14 +156,13 @@ class FlinkSubmitMain {
                     arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" ")
                 )
             )
-            CreateCluster().run(ApiConfig(host, port), config)
-            System.exit(0)
+            PostClusterCreateRequest().run(ApiConfig(host, port), config)
         }
     }
 
     class DeleteClusterCommand: CliktCommand(name = "delete", help="Delete a cluster") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -135,14 +173,13 @@ class FlinkSubmitMain {
                 name = clusterName,
                 environment = environment
             )
-            DeleteCluster().run(ApiConfig(host, port), descriptor)
-            System.exit(0)
+            PostClusterDeleteRequest().run(ApiConfig(host, port), descriptor)
         }
     }
 
-    class RunJobCommand: CliktCommand(name="run", help="Run a new sidecar") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+    class RunJobCommand: CliktCommand(name="run", help="Run a job") {
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -166,14 +203,14 @@ class FlinkSubmitMain {
                     arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" ")
                 )
             )
-            RunJob().run(ApiConfig(host, port), config)
+            PostJobRunRequest().run(ApiConfig(host, port), config)
             System.exit(0)
         }
     }
 
     class ListJobsCommand: CliktCommand(name="list", help="List jobs") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -188,14 +225,13 @@ class FlinkSubmitMain {
                 ),
                 running = onlyRunning
             )
-            ListJobs().run(ApiConfig(host, port), config)
-            System.exit(0)
+            PostJobsListRequest().run(ApiConfig(host, port), config)
         }
     }
 
     class CancelJobCommand: CliktCommand(name = "cancel", help="Cancel a job") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -214,21 +250,20 @@ class FlinkSubmitMain {
                 savepointPath = savepointPath,
                 jobId = jobId
             )
-            CancelJob().run(ApiConfig(host, port), config)
-            System.exit(0)
+            PostJobCancelRequest().run(ApiConfig(host, port), config)
         }
     }
 
-    class GetJobDetailsCommand: CliktCommand(name = "job-details", help="Get job details") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+    class GetJobDetailsCommand: CliktCommand(name = "details", help="Get job's details") {
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val jobId: String by option(help="The id of the job").prompt("Insert job id")
 
         override fun run() {
-            val config = JobDetailsConfig(
+            val config = JobDescriptor(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,
@@ -236,21 +271,20 @@ class FlinkSubmitMain {
                 ),
                 jobId = jobId
             )
-            GetJobDetails().run(ApiConfig(host, port), config)
-            System.exit(0)
+            PostJobDetailsRequest().run(ApiConfig(host, port), config)
         }
     }
 
-    class GetJobMetricsCommand: CliktCommand(name = "job-metrics", help="Get job metrics") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+    class GetJobMetricsCommand: CliktCommand(name = "metrics", help="Get job's metrics") {
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val jobId: String by option(help="The id of the job").prompt("Insert job id")
 
         override fun run() {
-            val config = JobMetricsConfig(
+            val config = JobDescriptor(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,
@@ -258,14 +292,13 @@ class FlinkSubmitMain {
                 ),
                 jobId = jobId
             )
-            GetJobMetrics().run(ApiConfig(host, port), config)
-            System.exit(0)
+            PostJobMetricsRequest().run(ApiConfig(host, port), config)
         }
     }
 
-    class GetJobManagerMetricsCommand: CliktCommand(name = "jobmanager-metrics", help="Get JobManager metrics") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+    class GetJobManagerMetricsCommand: CliktCommand(name = "metrics", help="Get JobManager's metrics") {
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -276,21 +309,20 @@ class FlinkSubmitMain {
                 name = clusterName,
                 environment = environment
             )
-            GetJobManagerMetrics().run(ApiConfig(host, port), descriptor)
-            System.exit(0)
+            PostJobManagerMetricsRequest().run(ApiConfig(host, port), descriptor)
         }
     }
 
-    class GetTaskManagerDetailsCommand: CliktCommand(name = "taskmanager", help="Get TaskManager details") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+    class GetTaskManagerDetailsCommand: CliktCommand(name = "details", help="Get TaskManager's details") {
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val taskmanagerId: String by option(help="The id of the TaskManager").prompt("Insert TaskManager id")
 
         override fun run() {
-            val config = GetTaskManagerConfig(
+            val config = TaskManagerDescriptor(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,
@@ -298,21 +330,20 @@ class FlinkSubmitMain {
                 ),
                 taskmanagerId = taskmanagerId
             )
-            GetTaskManagerDetails().run(ApiConfig(host, port), config)
-            System.exit(0)
+            PostTaskManagerDetailsRequest().run(ApiConfig(host, port), config)
         }
     }
 
-    class GetTaskManagerMetricsCommand: CliktCommand(name = "taskmanager-metrics", help="Get TaskManager metrics") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+    class GetTaskManagerMetricsCommand: CliktCommand(name = "metrics", help="Get TaskManager's metrics") {
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val taskmanagerId: String by option(help="The id of the TaskManager").prompt("Insert TaskManager id")
 
         override fun run() {
-            val config = GetTaskManagerConfig(
+            val config = TaskManagerDescriptor(
                 descriptor = ClusterDescriptor(
                     namespace = namespace,
                     name = clusterName,
@@ -320,14 +351,13 @@ class FlinkSubmitMain {
                 ),
                 taskmanagerId = taskmanagerId
             )
-            GetTaskManagerMetrics().run(ApiConfig(host, port), config)
-            System.exit(0)
+            PostTaskManagerMetricsRequest().run(ApiConfig(host, port), config)
         }
     }
 
-    class ListTaskManagersCommand: CliktCommand(name="taskmanagers", help="List TaskManagers") {
-        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
-        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+    class ListTaskManagersCommand: CliktCommand(name="list", help="List TaskManagers") {
+        private val host: String by option(help="The FlinkController server address").default("localhost")
+        private val port: Int by option(help="The FlinkController server port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -338,12 +368,11 @@ class FlinkSubmitMain {
                 name = clusterName,
                 environment = environment
             )
-            ListTaskManagers().run(ApiConfig(host, port), descriptor)
-            System.exit(0)
+            PostTaskManagersListRequest().run(ApiConfig(host, port), descriptor)
         }
     }
 
-    class RunServerCommand: CliktCommand(name = "server", help="Run the server") {
+    class RunServerCommand: CliktCommand(name = "run", help="Run the controller") {
         private val port: Int by option(help="Listen on port").int().default(4444)
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of Kubectl config")
@@ -358,7 +387,7 @@ class FlinkSubmitMain {
         }
     }
 
-    class SidecarSubmitCommand: CliktCommand(name="submit", help="Run submit command from sidecar") {
+    class SidecarSubmitCommand: CliktCommand(name="submit", help="Submit a job and monitor cluster jobs") {
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of kuke config")
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
@@ -389,7 +418,7 @@ class FlinkSubmitMain {
         }
     }
 
-    class SidecarWatchCommand: CliktCommand(name="watch", help="Run watch command from sidecar") {
+    class SidecarWatchCommand: CliktCommand(name="watch", help="Monitor cluster jobs") {
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of kuke config")
         private val namespace: String by option(help="The namespace where to create the resources").default("default")

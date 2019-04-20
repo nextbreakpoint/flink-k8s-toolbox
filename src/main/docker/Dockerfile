@@ -12,4 +12,4 @@ ENV SERVICE_JAR ${service.jar}
 
 ENTRYPOINT ["sh", "/entrypoint.sh"]
 
-CMD ["server"]
+CMD ["controller", "run"]

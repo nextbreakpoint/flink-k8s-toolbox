@@ -7,8 +7,8 @@ import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 import java.io.File
 
-object SubmitJobHandler {
-    private val logger = Logger.getLogger(SubmitJobHandler::class.simpleName)
+object JobSubmitHandler {
+    private val logger = Logger.getLogger(JobSubmitHandler::class.simpleName)
 
     fun execute(portForward: Int?, useNodePort: Boolean, submitConfig: JobSubmitConfig): String {
         val coreApi = CoreV1Api()

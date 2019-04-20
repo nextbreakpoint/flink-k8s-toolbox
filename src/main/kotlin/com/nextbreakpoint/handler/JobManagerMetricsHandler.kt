@@ -13,8 +13,8 @@ import org.apache.log4j.Logger
 import java.util.*
 import java.util.List
 
-object GetJobManagerMetricsHandler {
-    private val logger = Logger.getLogger(GetJobManagerMetricsHandler::class.simpleName)
+object JobManagerMetricsHandler {
+    private val logger = Logger.getLogger(JobManagerMetricsHandler::class.simpleName)
 
     fun execute(portForward: Int?, useNodePort: Boolean, descriptor: ClusterDescriptor): String {
         val coreApi = CoreV1Api()
