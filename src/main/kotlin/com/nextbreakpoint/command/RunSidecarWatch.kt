@@ -2,7 +2,7 @@ package com.nextbreakpoint.command
 
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
-import com.nextbreakpoint.model.WatchConfig
+import com.nextbreakpoint.model.WatchParams
 import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 
@@ -11,9 +11,9 @@ class RunSidecarWatch {
         val logger = Logger.getLogger(RunSidecarWatch::class.simpleName)
     }
 
-    fun run(portForward: Int?, useNodePort: Boolean, watchConfig: WatchConfig) {
+    fun run(portForward: Int?, useNodePort: Boolean, watchParams: WatchParams) {
         try {
-            logger.info("Launching FlinkSubmit sidecar...")
+            logger.info("Launching sidecar...")
 
             val coreApi = CoreV1Api()
 
@@ -52,12 +52,12 @@ class RunSidecarWatch {
                 logger.info("Looking for pod...")
 
                 val services = coreApi.listNamespacedService(
-                    watchConfig.descriptor.namespace,
+                    watchParams.descriptor.namespace,
                     null,
                     null,
                     null,
                     null,
-                    "cluster=${watchConfig.descriptor.name},environment=${watchConfig.descriptor.environment},role=jobmanager",
+                    "cluster=${watchParams.descriptor.name},environment=${watchParams.descriptor.environment},role=jobmanager",
                     1,
                     null,
                     30,
@@ -96,12 +96,12 @@ class RunSidecarWatch {
                 }
 
                 val pods = coreApi.listNamespacedPod(
-                    watchConfig.descriptor.namespace,
+                    watchParams.descriptor.namespace,
                     null,
                     null,
                     null,
                     null,
-                    "cluster=${watchConfig.descriptor.name},environment=${watchConfig.descriptor.environment},role=jobmanager",
+                    "cluster=${watchParams.descriptor.name},environment=${watchParams.descriptor.environment},role=jobmanager",
                     1,
                     null,
                     30,

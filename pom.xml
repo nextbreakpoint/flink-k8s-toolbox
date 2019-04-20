@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.nextbreakpoint</groupId>
-    <artifactId>com.nextbreakpoint.flinksubmit</artifactId>
-    <version>1.0.0-alpha</version>
+    <artifactId>com.nextbreakpoint.flink-k8-ops</artifactId>
+    <version>1.0.1-alpha</version>
     <packaging>jar</packaging>
     <description>Set of tools for managing Flink clusters on Kubernetes</description>
-    <name>com.nextbreakpoint.flinksubmit</name>
-    <url>https://github.com/nextbreakpoint/flink-submit</url>
+    <name>com.nextbreakpoint.flink-k8-ops</name>
+    <url>https://github.com/nextbreakpoint/flink-k8-ops</url>
     <licenses>
         <license>
             <name>BSD 3</name>
@@ -21,9 +21,9 @@
         </developer>
     </developers>
     <scm>
-        <connection>scm:git:git@github.com:nextbreakpoint/flink-submit.git</connection>
-        <developerConnection>scm:git:git@github.com:nextbreakpoint/flink-submit.git</developerConnection>
-        <url>git@github.com:nextbreakpoint/flink-submit.git</url>
+        <connection>scm:git:git@github.com:nextbreakpoint/flink-k8-ops.git</connection>
+        <developerConnection>scm:git:git@github.com:nextbreakpoint/flink-k8-ops.git</developerConnection>
+        <url>git@github.com:nextbreakpoint/flink-k8-ops.git</url>
     </scm>
     <properties>
         <java.image>openjdk:13-alpine</java.image>
@@ -57,6 +57,7 @@
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
         <maven-toolchains-plugin.version>1.1</maven-toolchains-plugin.version>
         <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
+        <build-helper-maven-plugin.version>3.0.0</build-helper-maven-plugin.version>
         <maven-gpg-plugin.version>1.5</maven-gpg-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.7</nexus-staging-maven-plugin.version>
         <docker-maven-plugin.version>0.28.0</docker-maven-plugin.version>
@@ -71,7 +72,7 @@
         <dependency>
             <groupId>com.nextbreakpoint</groupId>
             <artifactId>com.nextbreakpoint.flinkclient</artifactId>
-            <version>1.0.0-alpha</version>
+            <version>1.0.1-alpha</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -231,6 +232,25 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <version>${kotlin.version}</version>
@@ -321,7 +341,7 @@
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <manifestEntries>
-                                <Main-Class>com.nextbreakpoint.FlinkSubmitMain</Main-Class>
+                                <Main-Class>com.nextbreakpoint.FlinkK8OpsMain</Main-Class>
                             </manifestEntries>
                         </transformer>
                     </transformers>
@@ -341,7 +361,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>flink-submit:${project.version}</name>
+                                    <name>flink-k8-ops:${project.version}</name>
                                     <build>
                                         <dockerFileDir>${project.basedir}/src/main/docker</dockerFileDir>
                                         <filter>${*}</filter>
