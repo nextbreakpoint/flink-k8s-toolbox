@@ -13,7 +13,7 @@ class RunSidecarWatch {
 
     fun run(portForward: Int?, useNodePort: Boolean, watchParams: WatchParams) {
         try {
-            logger.info("Launching FlinkController sidecar...")
+            logger.info("Launching sidecar...")
 
             val coreApi = CoreV1Api()
 

@@ -9,12 +9,12 @@ import com.nextbreakpoint.command.*
 import com.nextbreakpoint.model.*
 import io.kubernetes.client.Configuration
 
-class FlinkControllerMain {
+class FlinkK8OpsMain {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
             try {
-                FlinkController().subcommands(
+                MainCommand().subcommands(
                     Controller().subcommands(
                         RunControllerCommand()
                     ),
@@ -56,7 +56,7 @@ class FlinkControllerMain {
         }
     }
 
-    class FlinkController: CliktCommand(name = "FlinkController") {
+    class MainCommand: CliktCommand(name = "Flink K8 Ops") {
         override fun run() = Unit
     }
 
@@ -97,8 +97,8 @@ class FlinkControllerMain {
     }
 
     class CreateClusterCommand: CliktCommand(name = "create", help="Create a cluster") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val clusterName: String by option(help="The name of the new Flink cluster").required()
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val environment: String by option(help="The name of the environment").default("test")
@@ -168,8 +168,8 @@ class FlinkControllerMain {
     }
 
     class DeleteClusterCommand: CliktCommand(name = "delete", help="Delete a cluster") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -185,8 +185,8 @@ class FlinkControllerMain {
     }
 
     class RunJobCommand: CliktCommand(name="run", help="Run a job") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -216,8 +216,8 @@ class FlinkControllerMain {
     }
 
     class ListJobsCommand: CliktCommand(name="list", help="List jobs") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -237,8 +237,8 @@ class FlinkControllerMain {
     }
 
     class CancelJobCommand: CliktCommand(name = "cancel", help="Cancel a job") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -262,8 +262,8 @@ class FlinkControllerMain {
     }
 
     class GetJobDetailsCommand: CliktCommand(name = "details", help="Get job's details") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -283,8 +283,8 @@ class FlinkControllerMain {
     }
 
     class GetJobMetricsCommand: CliktCommand(name = "metrics", help="Get job's metrics") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -304,8 +304,8 @@ class FlinkControllerMain {
     }
 
     class GetJobManagerMetricsCommand: CliktCommand(name = "metrics", help="Get JobManager's metrics") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -321,8 +321,8 @@ class FlinkControllerMain {
     }
 
     class GetTaskManagerDetailsCommand: CliktCommand(name = "details", help="Get TaskManager's details") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -342,8 +342,8 @@ class FlinkControllerMain {
     }
 
     class GetTaskManagerMetricsCommand: CliktCommand(name = "metrics", help="Get TaskManager's metrics") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
@@ -363,8 +363,8 @@ class FlinkControllerMain {
     }
 
     class ListTaskManagersCommand: CliktCommand(name="list", help="List TaskManagers") {
-        private val host: String by option(help="The FlinkController server address").default("localhost")
-        private val port: Int by option(help="The FlinkController server port").int().default(4444)
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")

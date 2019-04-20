@@ -14,7 +14,7 @@ class RunSidecarSubmit {
 
     fun run(portForward: Int?, useNodePort: Boolean, submitParams: JobSubmitParams) {
         try {
-            logger.info("Launching FlinkController sidecar...")
+            logger.info("Launching sidecar...")
 
             val coreApi = CoreV1Api()
 

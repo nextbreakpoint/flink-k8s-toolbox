@@ -16,7 +16,7 @@ class RunController {
             System.setProperty("crypto.policy", "unlimited")
             System.setProperty("vertx.graphite.options.enabled", "true")
             System.setProperty("vertx.graphite.options.registryName", "exported")
-            logger.info("Launching FlinkController server...")
+            logger.info("Launching controller...")
             Launcher.main(arrayOf("run", ControllerVerticle::class.java.canonicalName, "-conf", Gson().toJson(controllerConfig)))
             while (true) {
                 if (Thread.interrupted()) {
