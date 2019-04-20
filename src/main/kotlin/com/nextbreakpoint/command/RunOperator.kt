@@ -47,6 +47,8 @@ class RunOperator {
     private val taskmanagerPersistentVolumeClaims = mutableMapOf<ClusterDescriptor, V1PersistentVolumeClaim>()
 
     fun run(config: OperatorConfig) {
+        RunController.logger.info("Launching operator...")
+
         val objectApi = CustomObjectsApi()
 
         val coreApi = CoreV1Api()
