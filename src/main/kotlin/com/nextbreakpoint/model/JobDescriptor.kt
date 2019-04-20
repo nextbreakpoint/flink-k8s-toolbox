@@ -1,6 +1,6 @@
 package com.nextbreakpoint.model
 
-data class JobDetailsConfig(
+data class JobDescriptor(
     val descriptor: ClusterDescriptor,
     val jobId: String
 )

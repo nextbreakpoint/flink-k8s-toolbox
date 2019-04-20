@@ -1,6 +1,6 @@
 package com.nextbreakpoint.handler
 
-import com.nextbreakpoint.model.ARGUMENTS_PATTERN
+import com.nextbreakpoint.Arguments
 import com.nextbreakpoint.model.ClusterDescriptor
 import com.nextbreakpoint.model.RunJobConfig
 import io.kubernetes.client.apis.AppsV1Api
@@ -9,14 +9,14 @@ import io.kubernetes.client.models.*
 import org.apache.log4j.Logger
 import java.util.regex.Pattern
 
-object RunJobHandler {
-    private val logger = Logger.getLogger(RunJobHandler::class.simpleName)
+object JobRunHandler {
+    private val logger = Logger.getLogger(JobRunHandler::class.simpleName)
 
     fun execute(runJobConfig: RunJobConfig): String {
         try {
             val api = AppsV1Api()
 
-            val results = Pattern.compile(ARGUMENTS_PATTERN).matcher(runJobConfig.sidecar.arguments).results()
+            val results = Pattern.compile(Arguments.PATTERN).matcher(runJobConfig.sidecar.arguments).results()
 
             deleteDeployment(api, runJobConfig.descriptor)
 

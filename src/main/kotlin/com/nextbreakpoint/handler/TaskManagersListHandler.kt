@@ -2,14 +2,14 @@ package com.nextbreakpoint.handler
 
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
-import com.nextbreakpoint.model.JobDetailsConfig
+import com.nextbreakpoint.model.ClusterDescriptor
 import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 
-object GetJobDetailsHandler {
-    private val logger = Logger.getLogger(GetJobDetailsHandler::class.simpleName)
+object TaskManagersListHandler {
+    private val logger = Logger.getLogger(TaskManagersListHandler::class.simpleName)
 
-    fun execute(portForward: Int?, useNodePort: Boolean, jobDetailsConfig: JobDetailsConfig): String {
+    fun execute(portForward: Int?, useNodePort: Boolean, descriptor: ClusterDescriptor): String {
         val coreApi = CoreV1Api()
 
         var jobmanagerHost = "localhost"
@@ -43,12 +43,12 @@ object GetJobDetailsHandler {
 
         if (portForward == null) {
             val services = coreApi.listNamespacedService(
-                jobDetailsConfig.descriptor.namespace,
+                descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${jobDetailsConfig.descriptor.name},environment=${jobDetailsConfig.descriptor.environment},role=jobmanager",
+                "cluster=${descriptor.name},environment=${descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -89,8 +89,8 @@ object GetJobDetailsHandler {
 
         val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-        val details = flinkApi.getJobDetails(jobDetailsConfig.jobId)
+        val taskmanagers = flinkApi.taskManagersOverview.taskmanagers.toList()
 
-        return Gson().toJson(details)
+        return Gson().toJson(taskmanagers)
     }
 }

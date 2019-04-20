@@ -1,15 +1,14 @@
 package com.nextbreakpoint
 
-import com.nextbreakpoint.model.ARGUMENTS_PATTERN
 import org.junit.Test
 import java.util.regex.Pattern
 import java.util.stream.Collectors
 import kotlin.test.assertEquals
 
-class FlinkSubmitTest {
+class ArgumentsRegexpTest {
     @Test
     fun `should parse arguments`() {
-        val results = Pattern.compile(ARGUMENTS_PATTERN).matcher("submit --cluster-name=test --class-name=testClass --arguments=\"--BUCKET_BASE_PATH file:///var/tmp/flink --JOB_PARALLELISM 1\"").results().collect(Collectors.toList())
+        val results = Pattern.compile(Arguments.PATTERN).matcher("submit --cluster-name=test --class-name=testClass --arguments=\"--BUCKET_BASE_PATH file:///var/tmp/flink --JOB_PARALLELISM 1\"").results().collect(Collectors.toList())
         assertEquals("submit", results.get(0).group(7))
         assertEquals("cluster-name", results.get(1).group(5))
         assertEquals("test", results.get(1).group(6))

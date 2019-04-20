@@ -4,7 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.flinkclient.api.FlinkApi
-import com.nextbreakpoint.model.GetTaskManagerConfig
+import com.nextbreakpoint.model.TaskManagerDescriptor
 import com.nextbreakpoint.model.Metric
 import io.kubernetes.client.JSON
 import io.kubernetes.client.apis.CoreV1Api
@@ -12,10 +12,10 @@ import org.apache.log4j.Logger
 import java.util.*
 import java.util.List
 
-object GetTaskManagerMetricsHandler {
-    private val logger = Logger.getLogger(GetTaskManagerMetricsHandler::class.simpleName)
+object TaskManagerMetricsHandler {
+    private val logger = Logger.getLogger(TaskManagerMetricsHandler::class.simpleName)
 
-    fun execute(portForward: Int?, useNodePort: Boolean, taskManagerConfig: GetTaskManagerConfig): String {
+    fun execute(portForward: Int?, useNodePort: Boolean, taskManagerDescriptor: TaskManagerDescriptor): String {
         val coreApi = CoreV1Api()
 
         var jobmanagerHost = "localhost"
@@ -49,12 +49,12 @@ object GetTaskManagerMetricsHandler {
 
         if (portForward == null) {
             val services = coreApi.listNamespacedService(
-                taskManagerConfig.descriptor.namespace,
+                taskManagerDescriptor.descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${taskManagerConfig.descriptor.name},environment=${taskManagerConfig.descriptor.environment},role=jobmanager",
+                "cluster=${taskManagerDescriptor.descriptor.name},environment=${taskManagerDescriptor.descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -95,7 +95,7 @@ object GetTaskManagerMetricsHandler {
 
         val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-        val response = flinkApi.getTaskManagerMetricsCall(taskManagerConfig.taskmanagerId, null, null, null).execute()
+        val response = flinkApi.getTaskManagerMetricsCall(taskManagerDescriptor.taskmanagerId, null, null, null).execute()
         if (response.isSuccessful) {
             logger.info(response.body().string())
         }

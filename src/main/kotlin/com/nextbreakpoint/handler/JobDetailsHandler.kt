@@ -2,21 +2,22 @@ package com.nextbreakpoint.handler
 
 import com.google.gson.Gson
 import com.nextbreakpoint.CommandUtils
-import com.nextbreakpoint.model.JobListConfig
+import com.nextbreakpoint.model.JobDescriptor
 import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 
-object ListJobsHandler {
-    private val logger = Logger.getLogger(ListJobsHandler::class.simpleName)
+object JobDetailsHandler {
+    private val logger = Logger.getLogger(JobDetailsHandler::class.simpleName)
 
-    fun execute(portForward: Int?, useNodePort: Boolean, listConfig: JobListConfig): String {
+    fun execute(portForward: Int?, useNodePort: Boolean, jobDescriptor: JobDescriptor): String {
         val coreApi = CoreV1Api()
 
         var jobmanagerHost = "localhost"
         var jobmanagerPort = portForward ?: 8081
 
         if (portForward == null && useNodePort) {
-            val nodes = coreApi.listNode(false,
+            val nodes = coreApi.listNode(
+                false,
                 null,
                 null,
                 null,
@@ -42,12 +43,12 @@ object ListJobsHandler {
 
         if (portForward == null) {
             val services = coreApi.listNamespacedService(
-                listConfig.descriptor.namespace,
+                jobDescriptor.descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${listConfig.descriptor.name},environment=${listConfig.descriptor.environment},role=jobmanager",
+                "cluster=${jobDescriptor.descriptor.name},environment=${jobDescriptor.descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -86,13 +87,10 @@ object ListJobsHandler {
             }
         }
 
-        val jobs = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort).jobs
+        val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-        val result = jobs.jobs
-            .filter { job -> !listConfig.running || job.status.name.equals("RUNNING") }
-            .map { job -> job.id }
-            .toList()
+        val details = flinkApi.getJobDetails(jobDescriptor.jobId)
 
-        return Gson().toJson(result)
+        return Gson().toJson(details)
     }
 }

@@ -5,7 +5,7 @@ import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.flinkclient.api.FlinkApi
 import com.nextbreakpoint.model.JobMetrics
-import com.nextbreakpoint.model.JobMetricsConfig
+import com.nextbreakpoint.model.JobDescriptor
 import com.nextbreakpoint.model.Metric
 import io.kubernetes.client.JSON
 import io.kubernetes.client.apis.CoreV1Api
@@ -13,10 +13,10 @@ import org.apache.log4j.Logger
 import java.util.*
 import java.util.List
 
-object GetJobMetricsHandler {
-    private val logger = Logger.getLogger(GetJobMetricsHandler::class.simpleName)
+object JobMetricsHandler {
+    private val logger = Logger.getLogger(JobMetricsHandler::class.simpleName)
 
-    fun execute(portForward: Int?, useNodePort: Boolean, jobMetricsConfig: JobMetricsConfig): String {
+    fun execute(portForward: Int?, useNodePort: Boolean, jobDescriptor: JobDescriptor): String {
         val coreApi = CoreV1Api()
 
         var jobmanagerHost = "localhost"
@@ -50,12 +50,12 @@ object GetJobMetricsHandler {
 
         if (portForward == null) {
             val services = coreApi.listNamespacedService(
-                jobMetricsConfig.descriptor.namespace,
+                jobDescriptor.descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${jobMetricsConfig.descriptor.name},environment=${jobMetricsConfig.descriptor.environment},role=jobmanager",
+                "cluster=${jobDescriptor.descriptor.name},environment=${jobDescriptor.descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -96,7 +96,7 @@ object GetJobMetricsHandler {
 
         val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-//        val response = flinkApi.getJobMetricsCall(jobMetricsConfig.jobId, null, null, null).execute()
+//        val response = flinkApi.getJobMetricsCall(jobDescriptor.jobId, null, null, null).execute()
 //        if (response.isSuccessful) {
 //            logger.info(response.body().string())
 //        }
@@ -104,7 +104,7 @@ object GetJobMetricsHandler {
         try {
             val metrics = getMetric(
                 flinkApi,
-                jobMetricsConfig.jobId,
+                jobDescriptor.jobId,
                 "totalNumberOfCheckpoints,numberOfCompletedCheckpoints,numberOfInProgressCheckpoints,numberOfFailedCheckpoints,lastCheckpointDuration,lastCheckpointSize,lastCheckpointRestoreTimestamp,lastCheckpointAlignmentBuffered,lastCheckpointExternalPath,fullRestarts,restartingTime,uptime,downtime"
             )
 

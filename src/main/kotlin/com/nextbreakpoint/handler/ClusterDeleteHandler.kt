@@ -6,8 +6,8 @@ import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.models.V1DeleteOptions
 import org.apache.log4j.Logger
 
-object DeleteClusterHandler {
-    private val logger = Logger.getLogger(DeleteClusterHandler::class.simpleName)
+object ClusterDeleteHandler {
+    private val logger = Logger.getLogger(ClusterDeleteHandler::class.simpleName)
 
     fun execute(descriptor: ClusterDescriptor): String {
         try {
