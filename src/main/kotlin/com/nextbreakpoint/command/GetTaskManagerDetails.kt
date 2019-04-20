@@ -2,21 +2,21 @@ package com.nextbreakpoint.command
 
 import com.nextbreakpoint.CommandUtils.createWebClient
 import com.nextbreakpoint.model.ApiConfig
-import com.nextbreakpoint.model.JobMetricsConfig
+import com.nextbreakpoint.model.GetTaskManagerConfig
 import org.apache.log4j.Logger
 
-class GetJobMetrics {
+class GetTaskManagerDetails {
     companion object {
-        val logger = Logger.getLogger(GetJobMetrics::class.simpleName)
+        val logger = Logger.getLogger(GetTaskManagerDetails::class.simpleName)
     }
 
-    fun run(apiConfig: ApiConfig, jobMetricsConfig: JobMetricsConfig) {
+    fun run(apiConfig: ApiConfig, taskManagerConfig: GetTaskManagerConfig) {
         val client = createWebClient(host = apiConfig.host, port = apiConfig.port)
         try {
-            logger.info("Sending job metrics request...")
-            val response = client.post("/getJobMetrics")
+            logger.info("Sending get taskmanager details request...")
+            val response = client.post("/getTaskManagerDetails")
                 .putHeader("content-type", "application/json")
-                .rxSendJson(jobMetricsConfig)
+                .rxSendJson(taskManagerConfig)
                 .toBlocking()
                 .value()
             logger.info("Request completed with response: ${response.bodyAsString()}")

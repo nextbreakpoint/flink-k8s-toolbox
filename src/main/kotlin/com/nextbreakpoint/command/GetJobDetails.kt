@@ -2,21 +2,21 @@ package com.nextbreakpoint.command
 
 import com.nextbreakpoint.CommandUtils.createWebClient
 import com.nextbreakpoint.model.ApiConfig
-import com.nextbreakpoint.model.JobMetricsConfig
+import com.nextbreakpoint.model.JobDetailsConfig
 import org.apache.log4j.Logger
 
-class GetJobMetrics {
+class GetJobDetails {
     companion object {
-        val logger = Logger.getLogger(GetJobMetrics::class.simpleName)
+        val logger = Logger.getLogger(GetJobDetails::class.simpleName)
     }
 
-    fun run(apiConfig: ApiConfig, jobMetricsConfig: JobMetricsConfig) {
+    fun run(apiConfig: ApiConfig, jobDetailsConfig: JobDetailsConfig) {
         val client = createWebClient(host = apiConfig.host, port = apiConfig.port)
         try {
-            logger.info("Sending job metrics request...")
-            val response = client.post("/getJobMetrics")
+            logger.info("Sending job details request...")
+            val response = client.post("/getJobDetails")
                 .putHeader("content-type", "application/json")
-                .rxSendJson(jobMetricsConfig)
+                .rxSendJson(jobDetailsConfig)
                 .toBlocking()
                 .value()
             logger.info("Request completed with response: ${response.bodyAsString()}")

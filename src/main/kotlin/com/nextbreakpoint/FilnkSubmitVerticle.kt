@@ -58,9 +58,59 @@ class FilnkSubmitVerticle : AbstractVerticle() {
             })
         }
 
-        mainRouter.post("/jobMetrics").handler { context ->
+        mainRouter.post("/getJobDetails").handler { context ->
+            vertx.rxExecuteBlocking<String> { future ->
+                future.complete(GetJobDetailsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobDetailsConfig::class.java)))
+            }.subscribe({ output ->
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
+            }, { error ->
+                context.response().setStatusCode(500).end(makeError(error))
+            })
+        }
+
+        mainRouter.post("/getJobMetrics").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
                 future.complete(GetJobMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobMetricsConfig::class.java)))
+            }.subscribe({ output ->
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
+            }, { error ->
+                context.response().setStatusCode(500).end(makeError(error))
+            })
+        }
+
+        mainRouter.post("/getJobManagerMetrics").handler { context ->
+            vertx.rxExecuteBlocking<String> { future ->
+                future.complete(GetJobManagerMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, ClusterDescriptor::class.java)))
+            }.subscribe({ output ->
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
+            }, { error ->
+                context.response().setStatusCode(500).end(makeError(error))
+            })
+        }
+
+        mainRouter.post("/listTaskManagers").handler { context ->
+            vertx.rxExecuteBlocking<String> { future ->
+                future.complete(ListTaskManagersHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, ClusterDescriptor::class.java)))
+            }.subscribe({ output ->
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
+            }, { error ->
+                context.response().setStatusCode(500).end(makeError(error))
+            })
+        }
+
+        mainRouter.post("/getTaskManagerDetails").handler { context ->
+            vertx.rxExecuteBlocking<String> { future ->
+                future.complete(GetTaskManagerDetailsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, GetTaskManagerConfig::class.java)))
+            }.subscribe({ output ->
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
+            }, { error ->
+                context.response().setStatusCode(500).end(makeError(error))
+            })
+        }
+
+        mainRouter.post("/getTaskManagerMetrics").handler { context ->
+            vertx.rxExecuteBlocking<String> { future ->
+                future.complete(GetTaskManagerMetricsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, GetTaskManagerConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
