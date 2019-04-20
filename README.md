@@ -1,12 +1,13 @@
 # flink-controller
 
-This repository provides a set of tools for managing Flink clusters on Kubernetes, which includes a CLI, a controller application, and a sidecar application:
+Flink Controller contains a set of tools for managing Flink clusters on Kubernetes. 
 
-- The command-line interface provides the interface for managing clusters and jobs.
+The set of tools includes a CLI, a controller application, a Kubernetes Operator, and a sidecar application:
 
-- The controller application accepts requests from the cli and executes commands against Kubernetes and Flink.
-
-- The sidecar application is responsible of deploying a job and monitoring its status.        
+- The command-line interface interprets commands for managing clusters and jobs.
+- The controller application accepts requests from the CLI and executes commands against Kubernetes and Flink.
+- The operator creates or deletes clusters according to custom resources.
+- The sidecar application is responsible of deploying and monitoring a job.        
 
 ## License
 
@@ -54,7 +55,7 @@ Tag and push the image into your registry if required:
 
     docker push some-registry/flink-controller:1.0.1-alpha
 
-## Create service account and install server application
+## Install Flink Controller
 
 Create service account and RBAC role:
 
@@ -64,11 +65,11 @@ Verify that service account has been created:
 
     kubectl get serviceaccounts flink-controller -o yaml     
 
-Run the server application using Docker Hub:
+Run the controller using Docker Hub:
 
     kubectl run flink-controller --restart=Never --image=nextbreakpoint/flink-controller:1.0.1-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-controller" } }, "spec": { "serviceAccountName": "flink-controller", "imagePullPolicy": "Always" } }'
 
-Or run the application using your registry:
+Or run the controller using your registry:
 
     kubectl run flink-controller --restart=Never --image=some-registry/flink-controller:1.0.1-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-controller" } }, "spec": { "serviceAccountName": "flink-controller", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }'
 
@@ -85,6 +86,134 @@ Verify that there are no errors in the logs:
 Check the system events if the pod doesn't start:
 
     kubectl get events
+
+## Install Flink Operator
+
+Create service account and RBAC role:
+
+    kubectl create -f flink-operator-rbac.yaml
+
+Verify that service account has been created:
+
+    kubectl get serviceaccounts flink-operator -o yaml     
+
+Run the operator using Docker Hub:
+
+    kubectl run flink-operator --restart=Never --image=nextbreakpoint/flink-operator:1.0.0-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=test
+
+Or run the operator using your registry:
+
+    kubectl run flink-operator --restart=Never --image=some-registry/flink-operator:1.0.0-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=test
+
+Run one operator for each namespace.
+
+Verify that pod has been created:
+
+    kubectl get pod flink-operator -o yaml     
+
+The pod must have a label app with value *flink-operator* and it must run with *flink-operator* service account.
+
+Verify that there are no errors in the logs:
+
+    kubectl logs flink-operator
+
+Check the system events if the pod doesn't start:
+
+    kubectl get events
+
+## Create Custom Resource Definition
+
+Flink Operator requires a Custom Resource Definition or CRD:
+
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: flinkclusters.beta.nextbreakpoint.com
+    spec:
+      group: beta.nextbreakpoint.com
+      versions:
+        - name: v1
+          served: true
+          storage: true
+      scope: Namespaced
+      names:
+        plural: flinkclusters
+        singular: flinkcluster
+        kind: FlinkCluster
+        shortNames:
+        - fc
+
+Create the CDR with command:
+
+    kubectl create -f flink-operator-crd.yaml
+
+## Create Custom Object
+
+Make sure the CDR has been installed.
+
+Create a Docker file like:
+
+    FROM nextbreakpoint/flink-submit:1.0.0-alpha
+    COPY flink-jobs.jar /flink-jobs.jar
+
+Where flink-jobs.jar contains the code of your Flink jobs.
+
+Create a Docker image:
+
+    docker build -t flink-submit-with-jobs:1.0.0 .
+
+Tag and push the image into your registry if required:
+
+    docker tag flink-submit-with-jobs:1.0.0 some-registry/flink-submit-with-jobs:1.0.0
+
+    docker login some-registry
+
+    docker push some-registry/flink-submit-with-jobs:1.0.0
+
+Create a resource file flink-cluster-test.yaml like:
+
+    apiVersion: "beta.nextbreakpoint.com/v1"
+    kind: FlinkCluster
+    metadata:
+      name: test
+    spec:
+      clusterName: test
+      environment: test
+      pullSecrets: regcred
+      flinkImage: nextbreakpoint/flink:1.7.2-1
+      sidecarImage: some-registry/flink-submit-with-jobs:1.0.0
+      sidecarArguments:
+       - submit
+       - --cluster-name
+       - test
+       - --class-name
+       - your-main-class
+       - --jar-path
+       - /flink-jobs.jar
+       - --argument
+       - --INPUT
+       - --argument
+       - A
+       - --argument
+       - --OUTPUT
+       - --argument
+       - B
+
+Create the custom object with command:
+
+    kubectl create -f flink-cluster-test.yaml
+
+## Delete Custom Object
+
+Delete the custom object with command:
+
+    kubectl delete -f flink-cluster-test.yaml
+
+## List Custom Objects
+
+List the custom objects with command:
+
+    kubectl get flinkclusters
 
 ## Build from source code
 
@@ -287,12 +416,12 @@ Show more parameters with the command:
 
     java -jar com.nextbreakpoint.flinkcontroller-1.0.1-alpha.jar jobs list --help
 
-## More about controller application and sidecar application
+## More about Flink controller, operator and sidecar
 
 The controller application and the sidecar application are usually executed a containers.
 However it might be necessary to run the controller and the sidecar manually for testing.     
 
-### How to run the controller application
+### How to run the controller
 
 Run the controller application within Kubernetes:
 
@@ -306,7 +435,7 @@ Show more parameters with the command:
 
     java -jar com.nextbreakpoint.flinkcontroller-1.0.1-alpha.jar controller run --help
 
-### How to run the sidecar application
+### How to run the sidecar
 
 Run the sidecar application within Kubernetes:
 
@@ -320,7 +449,7 @@ Show more parameters with the command:
 
     java -jar com.nextbreakpoint.flinkcontroller-1.0.1-alpha.jar sidecar watch --help
 
-### How to submit a job from the sidecar application
+### How to submit a job from the sidecar
 
 Run the sidecar application within Kubernetes:
 
@@ -338,3 +467,30 @@ Show more parameters with the command:
         --sidecar-argument=--class-name=your-main-class \
         --sidecar-argument=--jar-path=/your-job-jar.jar \
         --sidecar-argument=--arguments="--input A --output B"
+
+## How to run the operator
+
+Execute the operator using the Docker image or download the jar file and run the operator with Java command.   
+
+Show all commands using the jar file:
+
+    java -jar com.nextbreakpoint.flinkcontroller-1.0.0-alpha.jar operator --help
+
+Or show all commands using the Docker image:
+
+    docker run --rm -it nextbreakpoint/flink-operator:1.0.0-alpha operator --help
+
+The output should look like:
+
+    Usage: operator [OPTIONS]
+
+      Access operator subcommands
+
+    Options:
+      --namespace TEXT    The namespace where to create the resources
+      --kube-config TEXT  The path of kuke config
+      -h, --help          Show this message and exit
+
+Run the operator with a given namespace:
+
+    java -jar com.nextbreakpoint.flinkcontroller-1.0.0-alpha.jar operator run --namespace=test
