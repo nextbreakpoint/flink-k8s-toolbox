@@ -56,7 +56,7 @@ class FlinkK8OPSMain {
         }
     }
 
-    class MainCommand: CliktCommand(name = "k8-ops") {
+    class MainCommand: CliktCommand(name = "flink-k8-ops") {
         override fun run() = Unit
     }
 
