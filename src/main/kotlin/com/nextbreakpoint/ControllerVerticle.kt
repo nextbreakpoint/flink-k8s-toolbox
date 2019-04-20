@@ -21,7 +21,7 @@ class ControllerVerticle : AbstractVerticle() {
         return createServer(vertx.orCreateContext.config()).toCompletable()
     }
 
-    private fun makeError(error: Throwable) = error.message
+    private fun makeError(error: Throwable) = "{\"status\":\"FAILURE\",\"error\":\"${error.message}\"}"
 
     private fun createServer(config: JsonObject): Single<HttpServer> {
         val port: Int = config.getInteger("port") ?: 4444
