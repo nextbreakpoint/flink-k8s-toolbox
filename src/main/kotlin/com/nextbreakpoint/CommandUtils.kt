@@ -87,10 +87,10 @@ object CommandUtils {
                     stdout = null
                     stdin = null
                 } catch (e: Exception) {
-                    logger.error("An error occurred", e)
-                } finally {
                     stdout?.interrupt()
                     stdin?.interrupt()
+                    logger.error("An error occurred", e)
+                } finally {
                     stdout?.join()
                     stdin?.join()
                 }
@@ -119,15 +119,15 @@ object CommandUtils {
             stdout.start()
             stderr.start()
             proc.waitFor(60, TimeUnit.SECONDS)
-            stdout.interrupt()
-            stderr.interrupt()
             stdout.join()
             stderr.join()
+            stdout = null
+            stderr = null
         } catch (e: Exception) {
-            logger.error("An error occurred", e)
-        } finally {
             stdout?.interrupt()
             stderr?.interrupt()
+            logger.error("An error occurred", e)
+        } finally {
             stdout?.join()
             stderr?.join()
         }

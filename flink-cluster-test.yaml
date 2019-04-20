@@ -1,0 +1,26 @@
+apiVersion: "beta.nextbreakpoint.com/v1"
+kind: FlinkCluster
+metadata:
+  name: test
+spec:
+  clusterName: test
+  environment: test
+  pullSecrets: regcred
+  flinkImage: nextbreakpoint/flink:1.7.2-1
+  sidecarImage: some-registry/flink-submit-with-jobs:1.0.0
+  sidecarArguments:
+    - submit
+    - --cluster-name
+    - test
+    - --class-name
+    - your-main-class
+    - --jar-path
+    - /flink-jobs.jar
+    - --argument
+    - --INPUT
+    - --argument
+    - A
+    - --argument
+    - --OUTPUT
+    - --argument
+    - B
