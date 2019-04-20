@@ -1,13 +1,11 @@
-# flink-k8-ops
+# Flink K8 Ops
 
 Flink K8 Ops contains a set of tools for managing Flink clusters on Kubernetes.
-
-The set of tools includes a CLI, a controller application, a Kubernetes operator, and a sidecar application:
-
+It includes a CLI, a controller application, a Kubernetes operator, and a sidecar application:
 - The command-line interface interprets commands for managing clusters and jobs.
 - The controller application accepts requests from the CLI and executes commands against Kubernetes and Flink.
 - The operator creates or deletes clusters according to custom resources.
-- The sidecar application is responsible of deploying and monitoring a job.        
+- The sidecar application is responsible of launching and monitoring a job.        
 
 ## License
 
