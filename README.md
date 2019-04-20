@@ -123,6 +123,7 @@ The output should look like:
     
     Commands:
       controller    Access controller subcommands
+      operator      Access operator subcommands
       cluster       Access cluster subcommands
       sidecar       Access sidecar subcommands
       job           Access job subcommands

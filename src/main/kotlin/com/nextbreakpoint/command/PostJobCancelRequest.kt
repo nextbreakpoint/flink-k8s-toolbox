@@ -1,16 +1,16 @@
 package com.nextbreakpoint.command
 
 import com.nextbreakpoint.CommandUtils.createWebClient
-import com.nextbreakpoint.model.ApiConfig
-import com.nextbreakpoint.model.JobCancelConfig
+import com.nextbreakpoint.model.ApiParams
+import com.nextbreakpoint.model.JobCancelParams
 
 class PostJobCancelRequest {
-    fun run(apiConfig: ApiConfig, cancelConfig: JobCancelConfig) {
-        val client = createWebClient(host = apiConfig.host, port = apiConfig.port)
+    fun run(apiParams: ApiParams, cancelParams: JobCancelParams) {
+        val client = createWebClient(host = apiParams.host, port = apiParams.port)
         try {
             val response = client.post("/job/cancel")
                 .putHeader("content-type", "application/json")
-                .rxSendJson(cancelConfig)
+                .rxSendJson(cancelParams)
                 .toBlocking()
                 .value()
             println(response.bodyAsString())

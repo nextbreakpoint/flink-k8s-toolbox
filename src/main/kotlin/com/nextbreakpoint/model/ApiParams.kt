@@ -1,6 +1,6 @@
 package com.nextbreakpoint.model
 
-data class ApiConfig(
+data class ApiParams(
     val host: String,
     val port: Int
 )

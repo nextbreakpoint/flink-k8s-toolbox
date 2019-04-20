@@ -1,5 +1,5 @@
 package com.nextbreakpoint.model
 
-data class WatchConfig(
+data class WatchParams(
     val descriptor: ClusterDescriptor
 )

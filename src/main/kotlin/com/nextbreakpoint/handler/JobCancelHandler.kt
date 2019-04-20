@@ -3,14 +3,14 @@ package com.nextbreakpoint.handler
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.flinkclient.model.QueueStatus
 import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
-import com.nextbreakpoint.model.JobCancelConfig
+import com.nextbreakpoint.model.JobCancelParams
 import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
 
 object JobCancelHandler {
     private val logger = Logger.getLogger(JobCancelHandler::class.simpleName)
 
-    fun execute(portForward: Int?, useNodePort: Boolean, cancelConfig: JobCancelConfig): String {
+    fun execute(portForward: Int?, useNodePort: Boolean, cancelParams: JobCancelParams): String {
         val coreApi = CoreV1Api()
 
         var jobmanagerHost = "localhost"
@@ -43,12 +43,12 @@ object JobCancelHandler {
 
         if (portForward == null) {
             val services = coreApi.listNamespacedService(
-                cancelConfig.descriptor.namespace,
+                cancelParams.descriptor.namespace,
                 null,
                 null,
                 null,
                 null,
-                "cluster=${cancelConfig.descriptor.name},environment=${cancelConfig.descriptor.environment},role=jobmanager",
+                "cluster=${cancelParams.descriptor.name},environment=${cancelParams.descriptor.environment},role=jobmanager",
                 1,
                 null,
                 30,
@@ -89,19 +89,19 @@ object JobCancelHandler {
 
         val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-        if (cancelConfig.savepoint) {
+        if (cancelParams.savepoint) {
             logger.info("Cancelling jobs with savepoint...")
 
             val operation =
                 flinkApi.createJobSavepoint(
                     savepointTriggerRequestBody(
                         true,
-                        cancelConfig.savepointPath
-                    ), cancelConfig.jobId)
+                        cancelParams.savepointPath
+                    ), cancelParams.jobId)
 
             while (true) {
                 val operationStatus =
-                    flinkApi.getJobSavepointStatus(cancelConfig.jobId, operation.requestId.toString());
+                    flinkApi.getJobSavepointStatus(cancelParams.jobId, operation.requestId.toString());
 
                 if (operationStatus.status.id.equals(QueueStatus.IdEnum.COMPLETED)) {
                     break
@@ -112,10 +112,10 @@ object JobCancelHandler {
         } else {
             logger.info("Cancelling jobs...")
 
-//            val operation = flinkApi.createJobSavepoint(savepointTriggerRequestBody(false), cancelConfig.jobId)
+//            val operation = flinkApi.createJobSavepoint(savepointTriggerRequestBody(false), cancelParams.jobId)
 //
 //            while (true) {
-//                val operationStatus = flinkApi.getJobSavepointStatus(cancelConfig.jobId, operation.requestId.toString());
+//                val operationStatus = flinkApi.getJobSavepointStatus(cancelParams.jobId, operation.requestId.toString());
 //
 //                if (operationStatus.status.id.equals(QueueStatus.IdEnum.COMPLETED)) {
 //                    break
@@ -124,7 +124,7 @@ object JobCancelHandler {
 //                Thread.sleep(5000)
 //            }
 
-            flinkApi.terminateJob(cancelConfig.jobId, "stop")
+            flinkApi.terminateJob(cancelParams.jobId, "stop")
         }
 
         logger.info("done")
