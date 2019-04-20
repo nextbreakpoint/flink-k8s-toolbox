@@ -23,7 +23,12 @@ class FlinkSubmitMain {
                     RunJobCommand(),
                     ListJobsCommand(),
                     CancelJobCommand(),
+                    GetJobDetailsCommand(),
                     GetJobMetricsCommand(),
+                    GetJobManagerMetricsCommand(),
+                    GetTaskManagerDetailsCommand(),
+                    GetTaskManagerMetricsCommand(),
+                    ListTaskManagersCommand(),
                     RunServerCommand(),
                     FlinkSubmitSidecar().subcommands(
                         SidecarSubmitCommand(),
@@ -214,6 +219,28 @@ class FlinkSubmitMain {
         }
     }
 
+    class GetJobDetailsCommand: CliktCommand(name = "job-details", help="Get job details") {
+        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
+        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val environment: String by option(help="The name of the environment").default("test")
+        private val jobId: String by option(help="The id of the job").prompt("Insert job id")
+
+        override fun run() {
+            val config = JobDetailsConfig(
+                descriptor = ClusterDescriptor(
+                    namespace = namespace,
+                    name = clusterName,
+                    environment = environment
+                ),
+                jobId = jobId
+            )
+            GetJobDetails().run(ApiConfig(host, port), config)
+            System.exit(0)
+        }
+    }
+
     class GetJobMetricsCommand: CliktCommand(name = "job-metrics", help="Get job metrics") {
         private val host: String by option(help="The FlinkSubmit server address").default("localhost")
         private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
@@ -232,6 +259,86 @@ class FlinkSubmitMain {
                 jobId = jobId
             )
             GetJobMetrics().run(ApiConfig(host, port), config)
+            System.exit(0)
+        }
+    }
+
+    class GetJobManagerMetricsCommand: CliktCommand(name = "jobmanager-metrics", help="Get JobManager metrics") {
+        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
+        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val environment: String by option(help="The name of the environment").default("test")
+
+        override fun run() {
+            val descriptor = ClusterDescriptor(
+                namespace = namespace,
+                name = clusterName,
+                environment = environment
+            )
+            GetJobManagerMetrics().run(ApiConfig(host, port), descriptor)
+            System.exit(0)
+        }
+    }
+
+    class GetTaskManagerDetailsCommand: CliktCommand(name = "taskmanager", help="Get TaskManager details") {
+        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
+        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val environment: String by option(help="The name of the environment").default("test")
+        private val taskmanagerId: String by option(help="The id of the TaskManager").prompt("Insert TaskManager id")
+
+        override fun run() {
+            val config = GetTaskManagerConfig(
+                descriptor = ClusterDescriptor(
+                    namespace = namespace,
+                    name = clusterName,
+                    environment = environment
+                ),
+                taskmanagerId = taskmanagerId
+            )
+            GetTaskManagerDetails().run(ApiConfig(host, port), config)
+            System.exit(0)
+        }
+    }
+
+    class GetTaskManagerMetricsCommand: CliktCommand(name = "taskmanager-metrics", help="Get TaskManager metrics") {
+        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
+        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val environment: String by option(help="The name of the environment").default("test")
+        private val taskmanagerId: String by option(help="The id of the TaskManager").prompt("Insert TaskManager id")
+
+        override fun run() {
+            val config = GetTaskManagerConfig(
+                descriptor = ClusterDescriptor(
+                    namespace = namespace,
+                    name = clusterName,
+                    environment = environment
+                ),
+                taskmanagerId = taskmanagerId
+            )
+            GetTaskManagerMetrics().run(ApiConfig(host, port), config)
+            System.exit(0)
+        }
+    }
+
+    class ListTaskManagersCommand: CliktCommand(name="taskmanagers", help="List TaskManagers") {
+        private val host: String by option(help="The FlinkSubmit server address").default("localhost")
+        private val port: Int by option(help="The FlinkSubmit server port").int().default(4444)
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val environment: String by option(help="The name of the environment").default("test")
+
+        override fun run() {
+            val descriptor = ClusterDescriptor(
+                namespace = namespace,
+                name = clusterName,
+                environment = environment
+            )
+            ListTaskManagers().run(ApiConfig(host, port), descriptor)
             System.exit(0)
         }
     }

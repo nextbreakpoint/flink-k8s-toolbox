@@ -4,7 +4,9 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.CommandUtils
 import com.nextbreakpoint.flinkclient.api.FlinkApi
+import com.nextbreakpoint.model.JobMetrics
 import com.nextbreakpoint.model.JobMetricsConfig
+import com.nextbreakpoint.model.Metric
 import io.kubernetes.client.JSON
 import io.kubernetes.client.apis.CoreV1Api
 import org.apache.log4j.Logger
@@ -94,10 +96,10 @@ object GetJobMetricsHandler {
 
         val flinkApi = CommandUtils.flinkApi(host = jobmanagerHost, port = jobmanagerPort)
 
-        val response = flinkApi.getJobMetricsCall(jobMetricsConfig.jobId, null, null, null).execute()
-        if (response.isSuccessful) {
-            logger.info(response.body().string())
-        }
+//        val response = flinkApi.getJobMetricsCall(jobMetricsConfig.jobId, null, null, null).execute()
+//        if (response.isSuccessful) {
+//            logger.info(response.body().string())
+//        }
 
         try {
             val metrics = getMetric(
@@ -108,7 +110,7 @@ object GetJobMetricsHandler {
 
             val metricsMap = metrics.map { metric -> metric.id to metric.value }.toMap()
 
-            val metricResponse = MetricResponse(
+            val metricsResponse = JobMetrics(
                 totalNumberOfCheckpoints = metricsMap.get("totalNumberOfCheckpoints")?.toInt() ?: 0,
                 numberOfCompletedCheckpoints = metricsMap.get("numberOfCompletedCheckpoints")?.toInt() ?: 0,
                 numberOfInProgressCheckpoints = metricsMap.get("numberOfInProgressCheckpoints")?.toInt() ?: 0,
@@ -124,9 +126,7 @@ object GetJobMetricsHandler {
                 downtime = metricsMap.get("downtime")?.toLong() ?: 0L
             )
 
-            logger.info("${metricResponse}")
-
-            return Gson().toJson(metricResponse)
+            return Gson().toJson(metricsResponse)
         } catch (e : Exception) {
             e.printStackTrace()
         }
@@ -145,22 +145,4 @@ object GetJobMetricsHandler {
             LinkedList<Metric>() as List<Metric>
         }
     }
-
-    class Metric(val id: String, val value: String)
-
-    class MetricResponse(
-        val totalNumberOfCheckpoints: Int,
-        val numberOfCompletedCheckpoints: Int,
-        val numberOfInProgressCheckpoints: Int,
-        val numberOfFailedCheckpoints: Int,
-        val lastCheckpointDuration: Long,
-        val lastCheckpointSize: Long,
-        val lastCheckpointRestoreTimestamp: Long,
-        val lastCheckpointAlignmentBuffered: Long,
-        val lastCheckpointExternalPath: String,
-        val fullRestarts: Int,
-        val restartingTime: Long,
-        val uptime: Long,
-        val downtime: Long
-    )
 }
