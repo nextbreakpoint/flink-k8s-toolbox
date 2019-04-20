@@ -2,34 +2,37 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: flink-controller
+  name: flink-operator
   namespace: default
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: flink-controller
+  name: flink-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: flink-controller
+  name: flink-operator
 subjects:
   - kind: ServiceAccount
-    name: flink-controller
+    name: flink-operator
     namespace: default
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: flink-controller
+  name: flink-operator
   namespace: default
 rules:
   - apiGroups: [""]
-    resources: ["services", "pods", "services", "pods/portforward", "persistentvolumeclaims"]
-    verbs: ["get", "watch", "list", "create", "delete"]
+    resources: ["services", "pods", "services", "persistentvolumeclaims"]
+    verbs: ["get", "watch", "list"]
   - apiGroups: ["apps"]
     resources: ["statefulsets"]
-    verbs: ["get", "watch", "list", "create", "delete"]
+    verbs: ["get", "watch", "list"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
-    verbs: ["get", "watch", "list", "create", "delete"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["beta.nextbreakpoint.com"]
+    resources: ["flinkclusters"]
+    verbs: ["get", "watch", "list"]
