@@ -394,7 +394,7 @@ class FlinkControllerMain {
         }
     }
 
-    class RunOperatorCommand: CliktCommand(help="Run the operator") {
+    class RunOperatorCommand: CliktCommand(name="run", help="Run the operator") {
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val kubeConfig: String? by option(help="The path of kuke config")
 
