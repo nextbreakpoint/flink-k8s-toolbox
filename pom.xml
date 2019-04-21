@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.nextbreakpoint</groupId>
-    <artifactId>com.nextbreakpoint.flink-k8-ops</artifactId>
-    <version>1.0.1-alpha</version>
+    <artifactId>com.nextbreakpoint.flink-k8s-toolbox</artifactId>
+    <version>1.0.0-alpha</version>
     <packaging>jar</packaging>
     <description>Set of tools for managing Flink clusters on Kubernetes</description>
-    <name>com.nextbreakpoint.flink-k8-ops</name>
-    <url>https://github.com/nextbreakpoint/flink-k8-ops</url>
+    <name>com.nextbreakpoint.flink-k8s-toolbox</name>
+    <url>https://github.com/nextbreakpoint/flink-k8s-toolbox</url>
     <licenses>
         <license>
             <name>BSD 3</name>
@@ -21,9 +21,9 @@
         </developer>
     </developers>
     <scm>
-        <connection>scm:git:git@github.com:nextbreakpoint/flink-k8-ops.git</connection>
-        <developerConnection>scm:git:git@github.com:nextbreakpoint/flink-k8-ops.git</developerConnection>
-        <url>git@github.com:nextbreakpoint/flink-k8-ops.git</url>
+        <connection>scm:git:git@github.com:nextbreakpoint/flink-k8s-toolbox.git</connection>
+        <developerConnection>scm:git:git@github.com:nextbreakpoint/flink-k8s-toolbox.git</developerConnection>
+        <url>git@github.com:nextbreakpoint/flink-k8s-toolbox.git</url>
     </scm>
     <properties>
         <java.image>openjdk:13-alpine</java.image>
@@ -341,7 +341,7 @@
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <manifestEntries>
-                                <Main-Class>com.nextbreakpoint.FlinkK8OPSMain</Main-Class>
+                                <Main-Class>com.nextbreakpoint.FlinkK8SToolboxMain</Main-Class>
                             </manifestEntries>
                         </transformer>
                     </transformers>
@@ -361,7 +361,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>flink-k8-ops:${project.version}</name>
+                                    <name>flink-k8s-toolbox:${project.version}</name>
                                     <build>
                                         <dockerFileDir>${project.basedir}/src/main/docker</dockerFileDir>
                                         <filter>${*}</filter>
