@@ -9,7 +9,7 @@ import com.nextbreakpoint.command.*
 import com.nextbreakpoint.model.*
 import io.kubernetes.client.Configuration
 
-class FlinkK8OPSMain {
+class FlinkK8SToolboxMain {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
@@ -56,7 +56,7 @@ class FlinkK8OPSMain {
         }
     }
 
-    class MainCommand: CliktCommand(name = "flink-k8-ops") {
+    class MainCommand: CliktCommand(name = "flink-k8s-toolbox") {
         override fun run() = Unit
     }
 
