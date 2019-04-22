@@ -645,7 +645,11 @@ class RunOperator {
 
         val jobmanagerMemory = jobmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(4).value.toInt()
         val taskmanagerMemory = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(4).value.toInt()
+
         val taskmanagerTaskSlots = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(5).value.toInt()
+
+        val jobmanagerSavepointLocation = jobmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(5).value
+        val taskmanagerSavepointLocation = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(5).value
 
         val serviceMode = service.spec.type
 
@@ -661,6 +665,7 @@ class RunOperator {
                 pullPolicy = jobmanagerPullPolicy,
                 serviceMode = serviceMode,
                 serviceAccount = jobmanagerServiceAccount,
+                savepointLocation = jobmanagerSavepointLocation,
                 resources = ResourcesConfig(
                     cpus = jobmanagerCpu,
                     memory = jobmanagerMemory
@@ -675,6 +680,7 @@ class RunOperator {
                 pullSecrets = pullSecrets,
                 pullPolicy = taskmanagerPullPolicy,
                 serviceAccount = taskmanagerServiceAccount,
+                savepointLocation = taskmanagerSavepointLocation,
                 replicas = taskmanagerReplicas,
                 taskSlots = taskmanagerTaskSlots,
                 resources = ResourcesConfig(
@@ -725,6 +731,7 @@ class RunOperator {
                 pullPolicy = spec.pullPolicy ?: "Always",
                 serviceMode = spec.serviceMode ?: "NodePort",
                 serviceAccount = spec.jobmanagerServiceAccount ?: "default",
+                savepointLocation = spec.jobmanagerSavepointLocation ?: "file://var/tmp/savepoints",
                 resources = ResourcesConfig(
                     cpus = spec.jobmanagerCpus ?: 1f,
                     memory = spec.jobmanagerMemory ?: 512
@@ -739,6 +746,7 @@ class RunOperator {
                 pullSecrets = spec.pullSecrets,
                 pullPolicy = spec.pullPolicy ?: "Always",
                 serviceAccount = spec.taskmanagerServiceAccount ?: "default",
+                savepointLocation = spec.taskmanagerSavepointLocation ?: "file://var/tmp/savepoints",
                 replicas = spec.taskmanagerReplicas ?: 1,
                 taskSlots = spec.taskmanagerTaskSlots ?: 1,
                 resources = ResourcesConfig(

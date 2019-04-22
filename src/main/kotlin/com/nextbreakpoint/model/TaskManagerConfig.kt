@@ -8,5 +8,6 @@ data class TaskManagerConfig(
     val taskSlots: Int,
     val replicas: Int,
     val storage: StorageConfig,
-    val resources: ResourcesConfig
+    val resources: ResourcesConfig,
+    val savepointLocation: String
 )

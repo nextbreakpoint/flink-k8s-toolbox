@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class V1FlinkClusterSpec {
     @SerializedName("clusterName")
@@ -28,6 +29,8 @@ public class V1FlinkClusterSpec {
     private String jobmanagerStorageClass;
     @SerializedName("jobmanagerServiceAccount")
     private String jobmanagerServiceAccount;
+    @SerializedName("jobmanagerSavepointLocation")
+    private String jobmanagerSavepointLocation;
     @SerializedName("taskmanagerCpus")
     private Float taskmanagerCpus;
     @SerializedName("taskmanagerMemory")
@@ -42,6 +45,8 @@ public class V1FlinkClusterSpec {
     private Integer taskmanagerTaskSlots;
     @SerializedName("taskmanagerServiceAccount")
     private String taskmanagerServiceAccount;
+    @SerializedName("taskmanagerSavepointLocation")
+    private String taskmanagerSavepointLocation;
     @SerializedName("sidecarImage")
     private String sidecarImage;
     @SerializedName("sidecarClassName")
@@ -264,6 +269,24 @@ public class V1FlinkClusterSpec {
         return this;
     }
 
+    public String getJobmanagerSavepointLocation() {
+        return jobmanagerSavepointLocation;
+    }
+
+    public V1FlinkClusterSpec setJobmanagerSavepointLocation(String jobmanagerSavepointLocation) {
+        this.jobmanagerSavepointLocation = jobmanagerSavepointLocation;
+        return this;
+    }
+
+    public String getTaskmanagerSavepointLocation() {
+        return taskmanagerSavepointLocation;
+    }
+
+    public V1FlinkClusterSpec setTaskmanagerSavepointLocation(String taskmanagerSavepointLocation) {
+        this.taskmanagerSavepointLocation = taskmanagerSavepointLocation;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -280,6 +303,7 @@ public class V1FlinkClusterSpec {
                 Objects.equals(jobmanagerStorageSize, that.jobmanagerStorageSize) &&
                 Objects.equals(jobmanagerStorageClass, that.jobmanagerStorageClass) &&
                 Objects.equals(jobmanagerServiceAccount, that.jobmanagerServiceAccount) &&
+                Objects.equals(jobmanagerSavepointLocation, that.jobmanagerSavepointLocation) &&
                 Objects.equals(taskmanagerCpus, that.taskmanagerCpus) &&
                 Objects.equals(taskmanagerMemory, that.taskmanagerMemory) &&
                 Objects.equals(taskmanagerStorageSize, that.taskmanagerStorageSize) &&
@@ -287,6 +311,7 @@ public class V1FlinkClusterSpec {
                 Objects.equals(taskmanagerReplicas, that.taskmanagerReplicas) &&
                 Objects.equals(taskmanagerTaskSlots, that.taskmanagerTaskSlots) &&
                 Objects.equals(taskmanagerServiceAccount, that.taskmanagerServiceAccount) &&
+                Objects.equals(taskmanagerSavepointLocation, that.taskmanagerSavepointLocation) &&
                 Objects.equals(sidecarImage, that.sidecarImage) &&
                 Objects.equals(sidecarClassName, that.sidecarClassName) &&
                 Objects.equals(sidecarJarPath, that.sidecarJarPath) &&
@@ -298,12 +323,12 @@ public class V1FlinkClusterSpec {
 
     @Override
     public int hashCode() {
-        return Objects.hash(clusterName, environment, pullSecrets, pullPolicy, flinkImage, serviceMode, jobmanagerCpus, jobmanagerMemory, jobmanagerStorageSize, jobmanagerStorageClass, jobmanagerServiceAccount, taskmanagerCpus, taskmanagerMemory, taskmanagerStorageSize, taskmanagerStorageClass, taskmanagerReplicas, taskmanagerTaskSlots, taskmanagerServiceAccount, sidecarImage, sidecarClassName, sidecarJarPath, sidecarArguments, sidecarServiceAccount, sidecarSavepoint, sidecarParallelism);
+        return Objects.hash(clusterName, environment, pullSecrets, pullPolicy, flinkImage, serviceMode, jobmanagerCpus, jobmanagerMemory, jobmanagerStorageSize, jobmanagerStorageClass, jobmanagerServiceAccount, jobmanagerSavepointLocation, taskmanagerCpus, taskmanagerMemory, taskmanagerStorageSize, taskmanagerStorageClass, taskmanagerReplicas, taskmanagerTaskSlots, taskmanagerServiceAccount, taskmanagerSavepointLocation, sidecarImage, sidecarClassName, sidecarJarPath, sidecarArguments, sidecarServiceAccount, sidecarSavepoint, sidecarParallelism);
     }
 
     @Override
     public String toString() {
-        return "V1FlinkClusterSpec {" +
+        return "V1FlinkClusterSpec{" +
                 "clusterName='" + clusterName + '\'' +
                 ", environment='" + environment + '\'' +
                 ", pullSecrets='" + pullSecrets + '\'' +
@@ -315,6 +340,7 @@ public class V1FlinkClusterSpec {
                 ", jobmanagerStorageSize=" + jobmanagerStorageSize +
                 ", jobmanagerStorageClass='" + jobmanagerStorageClass + '\'' +
                 ", jobmanagerServiceAccount='" + jobmanagerServiceAccount + '\'' +
+                ", jobmanagerSavepointLocation='" + jobmanagerSavepointLocation + '\'' +
                 ", taskmanagerCpus=" + taskmanagerCpus +
                 ", taskmanagerMemory=" + taskmanagerMemory +
                 ", taskmanagerStorageSize=" + taskmanagerStorageSize +
@@ -322,13 +348,14 @@ public class V1FlinkClusterSpec {
                 ", taskmanagerReplicas=" + taskmanagerReplicas +
                 ", taskmanagerTaskSlots=" + taskmanagerTaskSlots +
                 ", taskmanagerServiceAccount='" + taskmanagerServiceAccount + '\'' +
+                ", taskmanagerSavepointLocation='" + taskmanagerSavepointLocation + '\'' +
                 ", sidecarImage='" + sidecarImage + '\'' +
                 ", sidecarClassName='" + sidecarClassName + '\'' +
                 ", sidecarJarPath='" + sidecarJarPath + '\'' +
-                ", sidecarArguments=" + sidecarArguments +
+                ", sidecarArguments=\'" + String.join(" ", sidecarArguments) + '\'' +
                 ", sidecarServiceAccount='" + sidecarServiceAccount + '\'' +
                 ", sidecarSavepoint='" + sidecarSavepoint + '\'' +
-                ", sidecarParallelism='" + sidecarParallelism + '\'' +
+                ", sidecarParallelism=" + sidecarParallelism +
                 '}';
     }
 }
