@@ -567,7 +567,7 @@ class RunOperator {
             return true
         }
 
-        if (sidecarClusterName == null || sidecarClassName != targetClusterConfig.descriptor.name) {
+        if (sidecarClusterName == null || sidecarClusterName != targetClusterConfig.descriptor.name) {
             logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
             return true
         }
