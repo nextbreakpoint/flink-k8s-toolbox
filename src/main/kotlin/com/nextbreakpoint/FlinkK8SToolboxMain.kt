@@ -104,10 +104,12 @@ class FlinkK8SToolboxMain {
         private val environment: String by option(help="The name of the environment").default("test")
         private val flinkImage: String by option(help="The image to use for JobManager and TaskManager").required()
         private val sidecarImage: String by option(help="The image to use for Flink Submit sidecar").required()
-        private val sidecarArgument: List<String> by option(help="The argument for Flink Submit sidecar").multiple()
+        private val sidecarClassName: String by option(help="The class name of the job to run").default("")
+        private val sidecarJarPath: String by option(help="The path of the JAR to upload").default("")
+        private val sidecarArgument: List<String> by option(help="The arguments for Flink Submit sidecar").multiple()
         private val sidecarArguments: String by option(help="The arguments for Flink Submit sidecar").default("")
         private val imagePullPolicy: String by option(help="The image pull policy").default("IfNotPresent")
-        private val imagePullSecrets: String by option(help="The image pull secrets").required()
+        private val imagePullSecrets: String by option(help="The image pull secrets").default("")
         private val jobmanagerCpus: Float by option(help="The JobManager's cpus limit").float().default(1f)
         private val taskmanagerCpus: Float by option(help="The TaskManager's cpus limit").float().default(1f)
         private val jobmanagerMemory: Int by option(help="The JobManager's memory limit in Mb").int().default(512)
@@ -119,6 +121,9 @@ class FlinkK8SToolboxMain {
         private val taskmanagerTaskSlots: Int by option(help="The number of task slots for each TaskManager").int().default(1)
         private val taskmanagerReplicas: Int by option(help="The number of TaskManager replicas").int().default(1)
         private val jobmanagerServiceMode: String by option(help="The JobManager's service type").default("clusterIP")
+        private val jobmanagerServiceAccount: String by option(help="The JobManager's service account").default("default")
+        private val taskmanagerServiceAccount: String by option(help="The TaskManager's service account").default("default")
+        private val sidecarServiceAccount: String by option(help="The Sidecar's service account").default("default")
 
         override fun run() {
             val config = ClusterConfig(
@@ -130,8 +135,9 @@ class FlinkK8SToolboxMain {
                 jobmanager = JobManagerConfig(
                     image = flinkImage,
                     pullPolicy = imagePullPolicy,
-                    pullSecrets = imagePullSecrets,
+                    pullSecrets = if (imagePullSecrets.isNotBlank()) imagePullSecrets else null,
                     serviceMode = jobmanagerServiceMode,
+                    serviceAccount = jobmanagerServiceAccount,
                     storage = StorageConfig(
                         size = jobmanagerStorageSize,
                         storageClass = jobmanagerStorageClass
@@ -144,7 +150,8 @@ class FlinkK8SToolboxMain {
                 taskmanager = TaskManagerConfig(
                     image = flinkImage,
                     pullPolicy = imagePullPolicy,
-                    pullSecrets = imagePullSecrets,
+                    pullSecrets = if (imagePullSecrets.isNotBlank()) imagePullSecrets else null,
+                    serviceAccount = taskmanagerServiceAccount,
                     taskSlots = taskmanagerTaskSlots,
                     replicas = taskmanagerReplicas,
                     storage = StorageConfig(
@@ -159,7 +166,10 @@ class FlinkK8SToolboxMain {
                 sidecar = SidecarConfig(
                     image = sidecarImage,
                     pullPolicy = imagePullPolicy,
-                    pullSecrets = imagePullSecrets,
+                    serviceAccount = sidecarServiceAccount,
+                    pullSecrets = if (imagePullSecrets.isNotBlank()) imagePullSecrets else null,
+                    jarPath = if (sidecarJarPath.isNotBlank()) sidecarJarPath else null,
+                    className = if (sidecarClassName.isNotBlank()) sidecarClassName else null,
                     arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" ")
                 )
             )
@@ -191,8 +201,11 @@ class FlinkK8SToolboxMain {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
         private val sidecarImage: String by option(help="The image to use for Flink Submit sidecar").required()
+        private val sidecarClassName: String by option(help="The class name of the job to run").default("")
+        private val sidecarJarPath: String by option(help="The path of the JAR to upload").default("")
         private val sidecarArgument: List<String> by option(help="The argument for Flink Submit sidecar").multiple()
         private val sidecarArguments: String by option(help="The arguments for Flink Submit sidecar").default("")
+        private val sidecarServiceAccount: String by option(help="The Sidecar's service account").default("default")
         private val imagePullPolicy: String by option(help="The image pull policy").default("IfNotPresent")
         private val imagePullSecrets: String by option(help="The image pull secrets").required()
 
@@ -207,6 +220,9 @@ class FlinkK8SToolboxMain {
                     image = sidecarImage,
                     pullPolicy = imagePullPolicy,
                     pullSecrets = imagePullSecrets,
+                    serviceAccount = sidecarServiceAccount,
+                    jarPath = if (sidecarJarPath.isNotBlank()) sidecarJarPath else null,
+                    className = if (sidecarClassName.isNotBlank()) sidecarClassName else null,
                     arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" ")
                 )
             )
@@ -412,8 +428,8 @@ class FlinkK8SToolboxMain {
         private val environment: String by option(help="The name of the environment").default("test")
         private val className: String? by option(help="The name of the class to submit")
         private val jarPath: String by option(help="The path of the jar to submit").required()
-        private val arguments: String by option(help="The job's arguments (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
         private val argument: List<String> by option(help="The job's argument (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").multiple()
+        private val arguments: String by option(help="The job's arguments (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
         private val fromSavepoint: String? by option(help="Resume the job from the savepoint")
         private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
 

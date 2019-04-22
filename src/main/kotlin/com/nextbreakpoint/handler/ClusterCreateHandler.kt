@@ -1,6 +1,5 @@
 package com.nextbreakpoint.handler
 
-import com.nextbreakpoint.Arguments
 import com.nextbreakpoint.model.ClusterConfig
 import com.nextbreakpoint.model.ResourcesConfig
 import com.nextbreakpoint.model.StorageConfig
@@ -10,7 +9,6 @@ import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.*
 import org.apache.log4j.Logger
-import java.util.regex.Pattern
 
 object ClusterCreateHandler {
     private val logger = Logger.getLogger(ClusterCreateHandler::class.simpleName)
@@ -20,8 +18,6 @@ object ClusterCreateHandler {
             val api = AppsV1Api()
 
             val coreApi = CoreV1Api()
-
-            val results = Pattern.compile(Arguments.PATTERN).matcher(clusterConfig.sidecar.arguments).results()
 
             val statefulSets = api.listNamespacedStatefulSet(
                 clusterConfig.descriptor.namespace,
@@ -181,16 +177,18 @@ object ClusterCreateHandler {
             val jobmanagerAffinity =
                 createAffinity(jobmanagerSelector, taskmanagerSelector)
 
+            val jobmanagerPullSecrets = if (clusterConfig.jobmanager.pullSecrets != null) {
+                listOf(
+                    V1LocalObjectReference().name(clusterConfig.jobmanager.pullSecrets)
+                )
+            } else null
+
             val jobmanagerPodSpec = V1PodSpec()
                 .containers(
                     listOf(jobmanager)
                 )
-                .serviceAccountName("flink-submit")
-                .imagePullSecrets(
-                    listOf(
-                        V1LocalObjectReference().name(clusterConfig.jobmanager.pullSecrets)
-                    )
-                )
+                .serviceAccountName(clusterConfig.jobmanager.serviceAccount)
+                .imagePullSecrets(jobmanagerPullSecrets)
                 .affinity(jobmanagerAffinity)
 
             val jobmanagerMetadata =
@@ -237,22 +235,45 @@ object ClusterCreateHandler {
 
             val arguments = mutableListOf<String>()
 
-            arguments.add("sidecar")
+            if (clusterConfig.sidecar.jarPath != null) {
+                arguments.addAll(listOf(
+                    "sidecar",
+                    "submit",
+                    "--namespace",
+                    clusterConfig.descriptor.namespace,
+                    "--environment",
+                    clusterConfig.descriptor.environment,
+                    "--cluster-name",
+                    clusterConfig.descriptor.name,
+                    "--jar-path",
+                    clusterConfig.sidecar.jarPath
+                ))
 
-            results.forEach { result ->
-                if (result.group(7) != null) {
-                    arguments.add(result.group(7))
-                } else if (result.group(2) != null) {
-                    arguments.add("--${result.group(2)}=${result.group(3)}")
-                } else {
-                    arguments.add("--${result.group(5)}=${result.group(6)}")
+                if (clusterConfig.sidecar.className != null) {
+                    arguments.add("--class-name")
+                    arguments.add(clusterConfig.sidecar.className)
                 }
+
+                clusterConfig.sidecar.arguments?.split(" ")?.forEach { argument ->
+                    arguments.add("--argument=$argument")
+                }
+            } else {
+                arguments.addAll(listOf(
+                    "sidecar",
+                    "watch",
+                    "--cluster-name",
+                    clusterConfig.descriptor.name,
+                    "--namespace",
+                    clusterConfig.descriptor.namespace,
+                    "--environment",
+                    clusterConfig.descriptor.environment)
+                )
             }
 
             val sidecar = V1Container()
                 .image(clusterConfig.sidecar.image)
                 .imagePullPolicy(clusterConfig.sidecar.pullPolicy)
-                .name("flink-submit-sidecar")
+                .name("flink-sidecar")
                 .args(arguments)
                 .env(
                     listOf(
@@ -263,20 +284,22 @@ object ClusterCreateHandler {
                 )
                 .resources(createSidecarResourceRequirements())
 
+            val sidecarPullSecrets = if (clusterConfig.sidecar.pullSecrets != null) {
+                listOf(
+                    V1LocalObjectReference().name(clusterConfig.sidecar.pullSecrets)
+                )
+            } else null
+
             val sidecarPodSpec = V1PodSpec()
                 .containers(
                     listOf(sidecar)
                 )
-                .serviceAccountName("flink-submit")
-                .imagePullSecrets(
-                    listOf(
-                        V1LocalObjectReference().name(clusterConfig.sidecar.pullSecrets)
-                    )
-                )
+                .serviceAccountName(clusterConfig.sidecar.serviceAccount)
+                .imagePullSecrets(sidecarPullSecrets)
                 .affinity(jobmanagerAffinity)
 
             val sidecarMetadata =
-                createObjectMeta("flink-submit-sidecar-", sidecarLabels)
+                createObjectMeta("flink-sidecar-", sidecarLabels)
 
             val sidecarDeployment = V1Deployment()
                 .metadata(sidecarMetadata)
@@ -334,15 +357,18 @@ object ClusterCreateHandler {
             val taskmanagerAffinity =
                 createAffinity(jobmanagerSelector, taskmanagerSelector)
 
+            val taskmanagerPullSecrets = if (clusterConfig.taskmanager.pullSecrets != null) {
+                listOf(
+                    V1LocalObjectReference().name(clusterConfig.taskmanager.pullSecrets)
+                )
+            } else null
+
             val taskmanagerPodSpec = V1PodSpec()
                 .containers(
                     listOf(taskmanager)
                 )
-                .imagePullSecrets(
-                    listOf(
-                        V1LocalObjectReference().name(clusterConfig.taskmanager.pullSecrets)
-                    )
-                )
+                .serviceAccountName(clusterConfig.taskmanager.serviceAccount)
+                .imagePullSecrets(taskmanagerPullSecrets)
                 .affinity(taskmanagerAffinity)
 
             val taskmanagerMetadata = createObjectMeta(
