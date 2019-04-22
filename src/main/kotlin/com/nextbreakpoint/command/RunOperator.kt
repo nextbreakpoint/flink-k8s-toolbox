@@ -23,7 +23,6 @@ import io.kubernetes.client.models.V1PersistentVolumeClaim
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.util.Watch
-import io.vertx.rxjava.ext.web.client.WebClient
 import org.apache.log4j.Logger
 import java.net.SocketTimeoutException
 import java.util.concurrent.LinkedBlockingQueue
@@ -300,7 +299,7 @@ class RunOperator {
                 if (divergentClusters.containsKey(clusterConfig.descriptor)) {
                     logger.info("Creating cluster ${clusterConfig.descriptor.name}...")
 
-                    ClusterCreateHandler.execute(clusterConfig)
+                    ClusterCreateHandler.execute("flink-operator", clusterConfig)
                 }
             }
 
@@ -550,37 +549,35 @@ class RunOperator {
             return true
         }
 
-        if (containerArguments.get(2) != "--namespace") {
+        val sidecarNamespace = containerArguments.filter{ it.startsWith("--namespace") }.map { it.substringAfter("=") }.firstOrNull()
+        val sidecarEnvironment = containerArguments.filter{ it.startsWith("--environment") }.map { it.substringAfter("=") }.firstOrNull()
+        val sidecarClusterName = containerArguments.filter{ it.startsWith("--cluster-name") }.map { it.substringAfter("=") }.firstOrNull()
+        val sidecarJarPath = containerArguments.filter{ it.startsWith("--jar-path") }.map { it.substringAfter("=") }.firstOrNull()
+        val sidecarClassName = containerArguments.filter{ it.startsWith("--class-name") }.map { it.substringAfter("=") }.firstOrNull()
+        val sidecarSavepoint = containerArguments.filter{ it.startsWith("--savepoint") }.map { it.substringAfter("=") }.firstOrNull()
+        val sidecarParallelism = containerArguments.filter{ it.startsWith("--parallelism") }.map { it.substringAfter("=") }.firstOrNull()
+
+        if (sidecarNamespace == null || sidecarNamespace != targetClusterConfig.descriptor.namespace) {
             logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
             return true
         }
 
-        if (containerArguments.get(4) != "--environment") {
+        if (sidecarEnvironment == null || sidecarEnvironment != targetClusterConfig.descriptor.environment) {
             logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
             return true
         }
 
-        if (containerArguments.get(6) != "--cluster-name") {
+        if (sidecarClusterName == null || sidecarClassName != targetClusterConfig.descriptor.name) {
             logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
             return true
         }
 
-        if (containerArguments.get(1) == "submit" && containerArguments.get(8) != "--jar-path") {
+        if (containerArguments.get(1) == "submit" && sidecarJarPath == null) {
             logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
             return true
         }
 
-        val sidecarArguments = if (containerArguments.get(1) == "submit" && containerArguments.get(10) == "--class-name") {
-            containerArguments.subList(12, containerArguments.size).filter { it.startsWith("--argument=") }.map { it.substring(11) }.toList()
-        } else if (containerArguments.get(1) == "submit" && containerArguments.get(10) != "--class-name") {
-            containerArguments.subList(10, containerArguments.size).filter { it.startsWith("--argument=") }.map { it.substring(11) }.toList()
-        } else {
-            null
-        }
-
-        val sidecarJarPath = if (containerArguments.get(1) == "submit" && containerArguments.get(8) == "--jar-path") containerArguments.get(9) else null
-
-        val sidecarClassName = if (containerArguments.get(1) == "submit" && containerArguments.get(10) == "--class-name") containerArguments.get(11) else null
+        val sidecarArguments = containerArguments.filter{ it.startsWith("--argument") }.map { it.substringAfter("=") }.toList()
 
         val pullSecrets = if (deployment.spec.template.spec.imagePullSecrets != null && !deployment.spec.template.spec.imagePullSecrets.isEmpty()) deployment.spec.template.spec.imagePullSecrets.get(0).name else null
 
@@ -696,7 +693,9 @@ class RunOperator {
                 serviceAccount = sidecarServiceAccount,
                 className = sidecarClassName,
                 jarPath = sidecarJarPath,
-                arguments = sidecarArguments?.joinToString(" ")
+                savepoint = sidecarSavepoint,
+                arguments = sidecarArguments.joinToString(" "),
+                parallelism = sidecarParallelism?.toInt() ?: 1
             )
         )
 
@@ -704,36 +703,10 @@ class RunOperator {
 
         if (diverged) {
             logger.info("Current config: $clusterConfig")
-            logger.info("Expected config: $targetClusterConfig")
+            logger.info("Desired config: $targetClusterConfig")
         }
 
         return diverged
-    }
-
-    private fun createCluster(
-        client: WebClient,
-        clusterConfig: ClusterConfig
-    ): String? {
-        val response = client.post("/createCluster")
-            .putHeader("content-type", "application/json")
-            .rxSendJson(clusterConfig)
-            .toBlocking()
-            .value()
-            .bodyAsString()
-        return response
-    }
-
-    private fun deleteCluster(
-        client: WebClient,
-        descriptor: ClusterDescriptor
-    ): String? {
-        val response = client.post("/deleteCluster")
-            .putHeader("content-type", "application/json")
-            .rxSendJson(descriptor)
-            .toBlocking()
-            .value()
-            .bodyAsString()
-        return response
     }
 
     private fun createClusterConfig(
@@ -784,7 +757,9 @@ class RunOperator {
                 serviceAccount = spec.sidecarServiceAccount ?: "default",
                 className = spec.sidecarClassName,
                 jarPath = spec.sidecarJarPath,
-                arguments = spec.sidecarArguments?.joinToString(" ")
+                savepoint = spec.sidecarSavepoint,
+                arguments = spec.sidecarArguments?.joinToString(" "),
+                parallelism = spec.sidecarParallelism ?: 1
             )
         )
         return clusterConfig
@@ -817,7 +792,7 @@ class RunOperator {
                 null,
                 null,
                 null,
-                "component=flink",
+                "component=flink,owner=flink-operator",
                 null,
                 null,
                 600,
@@ -837,7 +812,7 @@ class RunOperator {
                 null,
                 null,
                 null,
-                "component=flink",
+                "component=flink,owner=flink-operator",
                 null,
                 null,
                 600,
@@ -857,7 +832,7 @@ class RunOperator {
                 null,
                 null,
                 null,
-                "component=flink",
+                "component=flink,owner=flink-operator",
                 null,
                 null,
                 600,
@@ -877,7 +852,7 @@ class RunOperator {
                 null,
                 null,
                 null,
-                "component=flink",
+                "component=flink,owner=flink-operator",
                 null,
                 null,
                 600,

@@ -50,7 +50,7 @@ class ControllerVerticle : AbstractVerticle() {
 
         mainRouter.post("/job/run").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(JobRunHandler.execute(Gson().fromJson(context.bodyAsString, JobRunParams::class.java)))
+                future.complete(JobRunHandler.execute("flink-controller", Gson().fromJson(context.bodyAsString, JobRunParams::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->
@@ -130,7 +130,7 @@ class ControllerVerticle : AbstractVerticle() {
 
         mainRouter.post("/cluster/create").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
-                future.complete(ClusterCreateHandler.execute(Gson().fromJson(context.bodyAsString, ClusterConfig::class.java)))
+                future.complete(ClusterCreateHandler.execute("flink-controller", Gson().fromJson(context.bodyAsString, ClusterConfig::class.java)))
             }.subscribe({ output ->
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
             }, { error ->

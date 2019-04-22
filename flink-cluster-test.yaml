@@ -12,6 +12,7 @@ spec:
   sidecarServiceAccount: flink-operator
   sidecarClassName: com.nextbreakpoint.flink.jobs.TestJob
   sidecarJarPath: /com.nextbreakpoint.flinkworkshop-1.0.0.jar
+  sidecarParallelism: 1
   sidecarArguments:
     - --BUCKET_BASE_PATH
     - file:///var/tmp
