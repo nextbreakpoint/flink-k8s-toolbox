@@ -39,17 +39,33 @@ The tools are distributed under the terms of BSD 3-Clause License.
     OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-## Install Flink Controller and Operator with Helm
+## Install with Helm
+
+Create a namespace with command:
+
+    kubectl create namespace flink
+
+Install CRD and roles with command:
+
+    helm install --name flink-k8s-toolbox-global --namespace flink charts/flink-k8s-toolbox-global
 
 Install controller and operator with command:
 
-    helm install --name flink-k8s-toolbox --namespace flink-demo charts/flink-k8s-toolbox
+    helm install --name flink-k8s-toolbox --namespace flink charts/flink-k8s-toolbox
 
 Remove controller and operator with command:    
 
     helm delete --purge flink-k8s-toolbox
 
-## Install Flink Controller and Operator manually
+Remove CRD and roles with command:    
+
+    helm delete --purge flink-k8s-toolbox-global
+
+Remove namespace with command:    
+
+    helm delete namespace flink
+
+## Install manually
 
 You can install controller and operator manually for testing.
 
