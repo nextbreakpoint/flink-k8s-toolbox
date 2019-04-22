@@ -68,6 +68,16 @@ class ControllerVerticle : AbstractVerticle() {
             })
         }
 
+        mainRouter.post("/job/scale").handler { context ->
+            vertx.rxExecuteBlocking<String> { future ->
+                future.complete(JobScaleHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobScaleParams::class.java)))
+            }.subscribe({ output ->
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(output)
+            }, { error ->
+                context.response().setStatusCode(500).end(makeError(error))
+            })
+        }
+
         mainRouter.post("/job/details").handler { context ->
             vertx.rxExecuteBlocking<String> { future ->
                 future.complete(JobDetailsHandler.execute(portForward, kubeConfig != null, Gson().fromJson(context.bodyAsString, JobDescriptor::class.java)))

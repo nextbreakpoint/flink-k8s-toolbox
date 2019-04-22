@@ -31,6 +31,7 @@ class FlinkK8SToolboxMain {
                     ),
                     Job().subcommands(
                         RunJobCommand(),
+                        ScaleJobCommand(),
                         CancelJobCommand(),
                         GetJobDetailsCommand(),
                         GetJobMetricsCommand()
@@ -103,7 +104,7 @@ class FlinkK8SToolboxMain {
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val environment: String by option(help="The name of the environment").default("test")
         private val flinkImage: String by option(help="The image to use for JobManager and TaskManager").required()
-        private val sidecarImage: String by option(help="The image to use for Flink Submit sidecar").required()
+        private val sidecarImage: String by option(help="The image to use for sidecar").required()
         private val sidecarClassName: String? by option(help="The class name of the job to run")
         private val sidecarJarPath: String by option(help="The path of the JAR to upload").required()
         private val sidecarSavepoint: String? by option(help="Resume the job from the savepoint")
@@ -126,6 +127,7 @@ class FlinkK8SToolboxMain {
         private val jobmanagerServiceMode: String by option(help="The JobManager's service type").default("clusterIP")
         private val jobmanagerServiceAccount: String by option(help="The JobManager's service account").default("default")
         private val taskmanagerServiceAccount: String by option(help="The TaskManager's service account").default("default")
+        private val savepointLocation: String by option(help="The location of savepoints").default("file:///var/tmp/savepoints")
 
         override fun run() {
             val config = ClusterConfig(
@@ -140,6 +142,7 @@ class FlinkK8SToolboxMain {
                     pullSecrets = imagePullSecrets,
                     serviceMode = jobmanagerServiceMode,
                     serviceAccount = jobmanagerServiceAccount,
+                    savepointLocation = savepointLocation,
                     storage = StorageConfig(
                         size = jobmanagerStorageSize,
                         storageClass = jobmanagerStorageClass
@@ -156,6 +159,7 @@ class FlinkK8SToolboxMain {
                     serviceAccount = taskmanagerServiceAccount,
                     taskSlots = taskmanagerTaskSlots,
                     replicas = taskmanagerReplicas,
+                    savepointLocation = savepointLocation,
                     storage = StorageConfig(
                         size = taskmanagerStorageSize,
                         storageClass = taskmanagerStorageClass
@@ -204,7 +208,7 @@ class FlinkK8SToolboxMain {
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
-        private val sidecarImage: String by option(help="The image to use for Flink Submit sidecar").required()
+        private val sidecarImage: String by option(help="The image to use for sidecar").required()
         private val sidecarClassName: String? by option(help="The class name of the job to run")
         private val sidecarJarPath: String by option(help="The path of the JAR to upload").required()
         private val sidecarArgument: List<String> by option(help="Pass a job's argument").multiple()
@@ -257,6 +261,29 @@ class FlinkK8SToolboxMain {
                 running = onlyRunning
             )
             PostJobsListRequest().run(ApiParams(host, port), config)
+        }
+    }
+
+    class ScaleJobCommand: CliktCommand(name = "scale", help="Scale a job") {
+        private val host: String by option(help="The controller address").default("localhost")
+        private val port: Int by option(help="The controller port").int().default(4444)
+        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val environment: String by option(help="The name of the environment").default("test")
+        private val jobId: String by option(help="The id of the job to cancel").prompt("Insert job id")
+        private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
+
+        override fun run() {
+            val config = JobScaleParams(
+                descriptor = ClusterDescriptor(
+                    namespace = namespace,
+                    name = clusterName,
+                    environment = environment
+                ),
+                jobId = jobId,
+                parallelism = parallelism
+            )
+            PostJobScaleRequest().run(ApiParams(host, port), config)
         }
     }
 

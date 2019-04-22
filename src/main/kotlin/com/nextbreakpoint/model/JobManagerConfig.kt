@@ -7,5 +7,6 @@ data class JobManagerConfig(
     val storage: StorageConfig,
     val resources: ResourcesConfig,
     val serviceMode: String,
-    val serviceAccount: String
+    val serviceAccount: String,
+    val savepointLocation: String
 )

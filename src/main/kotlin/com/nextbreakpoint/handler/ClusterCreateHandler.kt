@@ -100,6 +100,16 @@ object ClusterCreateHandler {
                 clusterConfig.taskmanager.taskSlots.toString()
             )
 
+            val jobmanagerSavepointLocationEnvVar = createEnvVar(
+                "FLINK_SAVEPOINTS_LOCATION",
+                clusterConfig.jobmanager.savepointLocation
+            )
+
+            val taskmanagerSavepointLocationEnvVar = createEnvVar(
+                "FLINK_SAVEPOINTS_LOCATION",
+                clusterConfig.taskmanager.savepointLocation
+            )
+
             val podNameEnvVar =
                 createEnvVarFromField("POD_NAME", "metadata.name")
 
@@ -171,7 +181,8 @@ object ClusterCreateHandler {
                         podNamespaceEnvVar,
                         environmentEnvVar,
                         rpcAddressEnvVar,
-                        jobManagerHeapEnvVar
+                        jobManagerHeapEnvVar,
+                        jobmanagerSavepointLocationEnvVar
                     )
                 )
                 .resources(jobmanagerResourceRequirements)
@@ -348,6 +359,7 @@ object ClusterCreateHandler {
                         environmentEnvVar,
                         rpcAddressEnvVar,
                         taskManagerHeapEnvVar,
+                        taskmanagerSavepointLocationEnvVar,
                         numberOfTaskSlotsEnvVar
                     )
                 )
