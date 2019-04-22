@@ -31,8 +31,6 @@ object JobRunHandler {
 
             val arguments = mutableListOf<String>()
 
-            arguments.add("sidecar")
-
             if (runParams.sidecar.jarPath != null) {
                 arguments.addAll(listOf(
                     "sidecar",

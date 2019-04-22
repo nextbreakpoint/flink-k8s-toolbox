@@ -399,7 +399,7 @@ class RunOperator {
     }
 
     private fun hasDiverged(
-        objectClusterConfig: ClusterConfig,
+        targetClusterConfig: ClusterConfig,
         deployments: MutableMap<ClusterDescriptor, V1Deployment>,
         jobmanagerStatefulSets: MutableMap<ClusterDescriptor, V1StatefulSet>,
         taskmanagerStatefulSets: MutableMap<ClusterDescriptor, V1StatefulSet>,
@@ -407,12 +407,12 @@ class RunOperator {
         jobmanagerPersistentVolumeClaims: MutableMap<ClusterDescriptor, V1PersistentVolumeClaim>,
         taskmanagerPersistentVolumeClaims: MutableMap<ClusterDescriptor, V1PersistentVolumeClaim>
     ) : Boolean {
-        val service = services.get(objectClusterConfig.descriptor)
-        val deployment = deployments.get(objectClusterConfig.descriptor)
-        val jobmanagerStatefulSet = jobmanagerStatefulSets.get(objectClusterConfig.descriptor)
-        val taskmanagerStatefulSet = taskmanagerStatefulSets.get(objectClusterConfig.descriptor)
-        val jobmanagerPersistentVolumeClaim = jobmanagerPersistentVolumeClaims.get(objectClusterConfig.descriptor)
-        val taskmanagerPersistentVolumeClaim = taskmanagerPersistentVolumeClaims.get(objectClusterConfig.descriptor)
+        val service = services.get(targetClusterConfig.descriptor)
+        val deployment = deployments.get(targetClusterConfig.descriptor)
+        val jobmanagerStatefulSet = jobmanagerStatefulSets.get(targetClusterConfig.descriptor)
+        val taskmanagerStatefulSet = taskmanagerStatefulSets.get(targetClusterConfig.descriptor)
+        val jobmanagerPersistentVolumeClaim = jobmanagerPersistentVolumeClaims.get(targetClusterConfig.descriptor)
+        val taskmanagerPersistentVolumeClaim = taskmanagerPersistentVolumeClaims.get(targetClusterConfig.descriptor)
 
         if (service == null) {
             return true
@@ -578,7 +578,7 @@ class RunOperator {
             null
         }
 
-        val sidecarJarPath = if (containerArguments.get(1) == "submit" && containerArguments.get(8) != "--jar-path") containerArguments.get(9) else null
+        val sidecarJarPath = if (containerArguments.get(1) == "submit" && containerArguments.get(8) == "--jar-path") containerArguments.get(9) else null
 
         val sidecarClassName = if (containerArguments.get(1) == "submit" && containerArguments.get(10) == "--class-name") containerArguments.get(11) else null
 
@@ -654,8 +654,8 @@ class RunOperator {
 
         val clusterConfig = ClusterConfig(
             descriptor = ClusterDescriptor(
-                namespace = objectClusterConfig.descriptor.namespace,
-                name = objectClusterConfig.descriptor.name,
+                namespace = targetClusterConfig.descriptor.namespace,
+                name = targetClusterConfig.descriptor.name,
                 environment = environment
             ),
             jobmanager = JobManagerConfig(
@@ -700,7 +700,14 @@ class RunOperator {
             )
         )
 
-        return clusterConfig.equals(objectClusterConfig).not()
+        val diverged = clusterConfig.equals(targetClusterConfig).not()
+
+        if (diverged) {
+            logger.info("Current config: $clusterConfig")
+            logger.info("Expected config: $targetClusterConfig")
+        }
+
+        return diverged
     }
 
     private fun createCluster(
