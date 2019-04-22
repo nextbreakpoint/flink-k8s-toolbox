@@ -52,6 +52,10 @@ public class V1FlinkClusterSpec {
     private List<String> sidecarArguments;
     @SerializedName("sidecarServiceAccount")
     private String sidecarServiceAccount;
+    @SerializedName("sidecarSavepoint")
+    private String sidecarSavepoint;
+    @SerializedName("sidecarParallelism")
+    private Integer sidecarParallelism;
 
     public String getPullPolicy() {
         return pullPolicy;
@@ -242,6 +246,24 @@ public class V1FlinkClusterSpec {
         return this;
     }
 
+    public String getSidecarSavepoint() {
+        return sidecarSavepoint;
+    }
+
+    public V1FlinkClusterSpec setSidecarSavepoint(String sidecarSavepoint) {
+        this.sidecarSavepoint = sidecarSavepoint;
+        return this;
+    }
+
+    public Integer getSidecarParallelism() {
+        return sidecarParallelism;
+    }
+
+    public V1FlinkClusterSpec setSidecarParallelism(Integer sidecarParallelism) {
+        this.sidecarParallelism = sidecarParallelism;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -269,12 +291,14 @@ public class V1FlinkClusterSpec {
                 Objects.equals(sidecarClassName, that.sidecarClassName) &&
                 Objects.equals(sidecarJarPath, that.sidecarJarPath) &&
                 Objects.equals(sidecarArguments, that.sidecarArguments) &&
-                Objects.equals(sidecarServiceAccount, that.sidecarServiceAccount);
+                Objects.equals(sidecarServiceAccount, that.sidecarServiceAccount) &&
+                Objects.equals(sidecarSavepoint, that.sidecarSavepoint) &&
+                Objects.equals(sidecarParallelism, that.sidecarParallelism);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(clusterName, environment, pullSecrets, pullPolicy, flinkImage, serviceMode, jobmanagerCpus, jobmanagerMemory, jobmanagerStorageSize, jobmanagerStorageClass, jobmanagerServiceAccount, taskmanagerCpus, taskmanagerMemory, taskmanagerStorageSize, taskmanagerStorageClass, taskmanagerReplicas, taskmanagerTaskSlots, taskmanagerServiceAccount, sidecarImage, sidecarClassName, sidecarJarPath, sidecarArguments, sidecarServiceAccount);
+        return Objects.hash(clusterName, environment, pullSecrets, pullPolicy, flinkImage, serviceMode, jobmanagerCpus, jobmanagerMemory, jobmanagerStorageSize, jobmanagerStorageClass, jobmanagerServiceAccount, taskmanagerCpus, taskmanagerMemory, taskmanagerStorageSize, taskmanagerStorageClass, taskmanagerReplicas, taskmanagerTaskSlots, taskmanagerServiceAccount, sidecarImage, sidecarClassName, sidecarJarPath, sidecarArguments, sidecarServiceAccount, sidecarSavepoint, sidecarParallelism);
     }
 
     @Override
@@ -303,6 +327,8 @@ public class V1FlinkClusterSpec {
                 ", sidecarJarPath='" + sidecarJarPath + '\'' +
                 ", sidecarArguments=" + sidecarArguments +
                 ", sidecarServiceAccount='" + sidecarServiceAccount + '\'' +
+                ", sidecarSavepoint='" + sidecarSavepoint + '\'' +
+                ", sidecarParallelism='" + sidecarParallelism + '\'' +
                 '}';
     }
 }

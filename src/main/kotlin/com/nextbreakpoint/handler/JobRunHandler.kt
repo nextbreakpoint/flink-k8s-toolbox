@@ -10,7 +10,7 @@ import org.apache.log4j.Logger
 object JobRunHandler {
     private val logger = Logger.getLogger(JobRunHandler::class.simpleName)
 
-    fun execute(runParams: JobRunParams): String {
+    fun execute(owner: String, runParams: JobRunParams): String {
         try {
             val api = AppsV1Api()
 
@@ -35,19 +35,19 @@ object JobRunHandler {
                 arguments.addAll(listOf(
                     "sidecar",
                     "submit",
-                    "--namespace",
-                    runParams.descriptor.namespace,
-                    "--environment",
-                    runParams.descriptor.environment,
-                    "--cluster-name",
-                    runParams.descriptor.name,
-                    "--jar-path",
-                    runParams.sidecar.jarPath
+                    "--namespace=${runParams.descriptor.namespace}",
+                    "--environment=${runParams.descriptor.environment}",
+                    "--cluster-name=${runParams.descriptor.name}",
+                    "--jar-path=${runParams.sidecar.jarPath}",
+                    "--parallelism=${runParams.sidecar.parallelism}"
                 ))
 
                 if (runParams.sidecar.className != null) {
-                    arguments.add("--class-name")
-                    arguments.add(runParams.sidecar.className)
+                    arguments.add("--class-name=${runParams.sidecar.className}")
+                }
+
+                if (runParams.sidecar.savepoint != null) {
+                    arguments.add("--savepoint=${runParams.sidecar.savepoint}")
                 }
 
                 runParams.sidecar.arguments?.split(" ")?.forEach { argument ->
@@ -57,13 +57,10 @@ object JobRunHandler {
                 arguments.addAll(listOf(
                     "sidecar",
                     "watch",
-                    "--cluster-name",
-                    runParams.descriptor.name,
-                    "--namespace",
-                    runParams.descriptor.namespace,
-                    "--environment",
-                    runParams.descriptor.environment)
-                )
+                    "--namespace=${runParams.descriptor.namespace}",
+                    "--environment=${runParams.descriptor.environment}",
+                    "--cluster-name=${runParams.descriptor.name}"
+                ))
             }
 
             val componentLabel = Pair("component", "flink")
@@ -72,15 +69,17 @@ object JobRunHandler {
 
             val clusterLabel = Pair("cluster", runParams.descriptor.name)
 
+            val ownerLabel = Pair("owner", owner)
+
             val jobmanagerLabel = Pair("role", "jobmanager")
 
             val taskmanagerLabel = Pair("role", "taskmanager")
 
-            val jobmanagerLabels = mapOf(clusterLabel, componentLabel, jobmanagerLabel, environmentLabel)
+            val jobmanagerLabels = mapOf(ownerLabel, clusterLabel, componentLabel, jobmanagerLabel, environmentLabel)
 
-            val taskmanagerLabels = mapOf(clusterLabel, componentLabel, taskmanagerLabel, environmentLabel)
+            val taskmanagerLabels = mapOf(ownerLabel, clusterLabel, componentLabel, taskmanagerLabel, environmentLabel)
 
-            val sidecarLabels = mapOf(clusterLabel, componentLabel, environmentLabel)
+            val sidecarLabels = mapOf(ownerLabel, clusterLabel, componentLabel, environmentLabel)
 
             val jobmanagerSelector = V1LabelSelector().matchLabels(jobmanagerLabels)
 
@@ -94,7 +93,7 @@ object JobRunHandler {
             val sidecar = V1Container()
                 .image(runParams.sidecar.image)
                 .imagePullPolicy(runParams.sidecar.pullPolicy)
-                .name("flink-submit-sidecar")
+                .name("flink-sidecar")
                 .args(arguments)
                 .env(
                     listOf(
@@ -109,7 +108,7 @@ object JobRunHandler {
                 .containers(
                     listOf(sidecar)
                 )
-                .serviceAccountName("flink-submit")
+                .serviceAccountName(runParams.sidecar.serviceAccount)
                 .imagePullSecrets(
                     listOf(
                         V1LocalObjectReference().name(runParams.sidecar.pullSecrets)
@@ -118,7 +117,7 @@ object JobRunHandler {
                 .affinity(jobmanagerAffinity)
 
             val sidecarMetadata =
-                createObjectMeta("flink-submit-sidecar-", sidecarLabels)
+                createObjectMeta("flink-sidecar-", sidecarLabels)
 
             val sidecarDeployment = V1Deployment()
                 .metadata(sidecarMetadata)

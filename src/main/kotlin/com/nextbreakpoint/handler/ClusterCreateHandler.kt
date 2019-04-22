@@ -13,7 +13,7 @@ import org.apache.log4j.Logger
 object ClusterCreateHandler {
     private val logger = Logger.getLogger(ClusterCreateHandler::class.simpleName)
 
-    fun execute(clusterConfig: ClusterConfig): String {
+    fun execute(owner: String, clusterConfig: ClusterConfig): String {
         try {
             val api = AppsV1Api()
 
@@ -54,6 +54,8 @@ object ClusterCreateHandler {
 
             val clusterLabel = Pair("cluster", clusterConfig.descriptor.name)
 
+            val ownerLabel = Pair("owner", owner)
+
             val jobmanagerLabel = Pair("role", "jobmanager")
 
             val taskmanagerLabel = Pair("role", "taskmanager")
@@ -66,11 +68,11 @@ object ClusterCreateHandler {
 
             val taskmanagerResourceRequirements = createResourceRequirements(taskmanagerResources)
 
-            val jobmanagerLabels = mapOf(clusterLabel, componentLabel, jobmanagerLabel, environmentLabel)
+            val jobmanagerLabels = mapOf(ownerLabel, clusterLabel, componentLabel, jobmanagerLabel, environmentLabel)
 
-            val taskmanagerLabels = mapOf(clusterLabel, componentLabel, taskmanagerLabel, environmentLabel)
+            val taskmanagerLabels = mapOf(ownerLabel, clusterLabel, componentLabel, taskmanagerLabel, environmentLabel)
 
-            val sidecarLabels = mapOf(clusterLabel, componentLabel, environmentLabel)
+            val sidecarLabels = mapOf(ownerLabel, clusterLabel, componentLabel, environmentLabel)
 
             val jobmanagerSelector = V1LabelSelector().matchLabels(jobmanagerLabels)
 
@@ -239,19 +241,19 @@ object ClusterCreateHandler {
                 arguments.addAll(listOf(
                     "sidecar",
                     "submit",
-                    "--namespace",
-                    clusterConfig.descriptor.namespace,
-                    "--environment",
-                    clusterConfig.descriptor.environment,
-                    "--cluster-name",
-                    clusterConfig.descriptor.name,
-                    "--jar-path",
-                    clusterConfig.sidecar.jarPath
+                    "--namespace=${clusterConfig.descriptor.namespace}",
+                    "--environment=${clusterConfig.descriptor.environment}",
+                    "--cluster-name=${clusterConfig.descriptor.name}",
+                    "--jar-path=${clusterConfig.sidecar.jarPath}",
+                    "--parallelism=${clusterConfig.sidecar.parallelism}"
                 ))
 
                 if (clusterConfig.sidecar.className != null) {
-                    arguments.add("--class-name")
-                    arguments.add(clusterConfig.sidecar.className)
+                    arguments.add("--class-name=${clusterConfig.sidecar.className}")
+                }
+
+                if (clusterConfig.sidecar.savepoint != null) {
+                    arguments.add("--savepoint=${clusterConfig.sidecar.savepoint}")
                 }
 
                 clusterConfig.sidecar.arguments?.split(" ")?.forEach { argument ->
@@ -261,13 +263,10 @@ object ClusterCreateHandler {
                 arguments.addAll(listOf(
                     "sidecar",
                     "watch",
-                    "--cluster-name",
-                    clusterConfig.descriptor.name,
-                    "--namespace",
-                    clusterConfig.descriptor.namespace,
-                    "--environment",
-                    clusterConfig.descriptor.environment)
-                )
+                    "--namespace=${clusterConfig.descriptor.namespace}",
+                    "--environment=${clusterConfig.descriptor.environment}",
+                    "--cluster-name=${clusterConfig.descriptor.name}"
+                ))
             }
 
             val sidecar = V1Container()

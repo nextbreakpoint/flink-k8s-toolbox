@@ -7,5 +7,7 @@ data class SidecarConfig(
     val arguments: String?,
     val className: String?,
     val jarPath: String?,
-    val serviceAccount: String
+    val savepoint: String?,
+    val serviceAccount: String,
+    val parallelism: Int
 )
