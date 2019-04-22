@@ -15,7 +15,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: flink-controller
+  name: {{ $fullname }}-flink-controller
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -29,25 +29,6 @@ subjects:
     name: flink-controller
     namespace: {{ $root.Release.Namespace }}
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: flink-controller
-  labels:
-    chart: {{ $chart }}
-    release: {{ $root.Release.Name }}
-    heritage: {{ $root.Release.Service }}
-rules:
-  - apiGroups: [""]
-    resources: ["services", "pods", "services", "pods/portforward", "persistentvolumeclaims"]
-    verbs: ["get", "watch", "list", "create", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["statefulsets"]
-    verbs: ["get", "watch", "list", "create", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "watch", "list", "create", "delete"]
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -60,7 +41,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: flink-operator
+  name: {{ $fullname }}-flink-operator
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -73,25 +54,3 @@ subjects:
   - kind: ServiceAccount
     name: flink-operator
     namespace: {{ $root.Release.Namespace }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: flink-operator
-  labels:
-    chart: {{ $chart }}
-    release: {{ $root.Release.Name }}
-    heritage: {{ $root.Release.Service }}
-rules:
-  - apiGroups: [""]
-    resources: ["services", "pods", "services", "pods/portforward", "persistentvolumeclaims"]
-    verbs: ["get", "watch", "list", "create", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["statefulsets"]
-    verbs: ["get", "watch", "list", "create", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "watch", "list", "create", "delete"]
-  - apiGroups: ["beta.nextbreakpoint.com"]
-    resources: ["flinkclusters"]
-    verbs: ["get", "watch", "list"]
