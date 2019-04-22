@@ -133,7 +133,7 @@ Check the system events if the pod doesn't start:
 
     kubectl get events
 
-## Create Custom Resource Definition
+### Create Custom Resource Definition
 
 Flink Operator requires a CRD (Custom Resource Definition):
 
@@ -159,7 +159,11 @@ Create the CRD with command:
 
     kubectl create -f flink-operator-crd.yaml
 
-## Create Custom Object representing Flink cluster
+## How to create a Flink Cluster using CRD
+
+Flink Clusters are created or deleted as any other resource.
+
+### Create FlinkCluster resource
 
 Make sure the CRD has been installed (see above).
 
@@ -210,13 +214,13 @@ Create the custom object with command:
 
     kubectl create -f flink-cluster-test.yaml
 
-## Delete Custom Object representing Flink cluster
+### Delete FlinkCluster resource
 
 Delete the custom object with command:
 
     kubectl delete -f flink-cluster-test.yaml
 
-## List Custom Objects representing Flink clusters
+### List FlinkCluster resources
 
 List all custom objects with command:
 
