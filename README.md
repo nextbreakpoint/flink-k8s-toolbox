@@ -39,7 +39,21 @@ The tools are distributed under the terms of BSD 3-Clause License.
     OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-## Get Docker image
+## Install Flink Controller and Operator with Helm
+
+Install controller and operator with command:
+
+    helm install --name flink-k8s-toolbox --namespace flink-demo charts/flink-k8s-toolbox
+
+Remove controller and operator with command:    
+
+    helm delete --purge flink-k8s-toolbox
+
+## Install Flink Controller and Operator manually
+
+You can install controller and operator manually for testing.
+
+### Get Docker image
 
 The Docker image can be downloaded from Docker Hub:
 
@@ -53,7 +67,7 @@ Tag and push the image into your registry if required:
 
     docker push some-registry/flink-k8s-toolbox:1.0.0-alpha
 
-## Install Flink Controller
+### Run Flink Controller
 
 Create service account and RBAC role:
 
@@ -85,7 +99,7 @@ Check the system events if the pod doesn't start:
 
     kubectl get events
 
-## Install Flink Operator
+### Run Flink Operator
 
 Create service account and RBAC role:
 
@@ -147,7 +161,7 @@ Create the CRD with command:
 
 ## Create Custom Object representing Flink cluster
 
-Make sure the CDR has been installed (see above).
+Make sure the CRD has been installed (see above).
 
 Create a Docker file like:
 
@@ -179,23 +193,16 @@ Create a resource file:
       clusterName: test
       environment: test
       pullSecrets: regcred
+      pullPolicy: Always
       flinkImage: nextbreakpoint/flink:1.7.2-1
       sidecarImage: some-registry/flink-submit-with-jobs:1.0.0
+      sidecarServiceAccount: flink-operator
+      sidecarClassName: your-main-class
+      sidecarJarPath: /flink-jobs.jar
       sidecarArguments:
-       - submit
-       - --cluster-name
-       - test
-       - --class-name
-       - your-main-class
-       - --jar-path
-       - /flink-jobs.jar
-       - --argument
        - --INPUT
-       - --argument
        - A
-       - --argument
        - --OUTPUT
-       - --argument
        - B
     EOF
 
@@ -271,8 +278,7 @@ Execute the command:
         --cluster-name=test \
         --image-pull-secrets=regcred \
         --flink-image=nextbreakpoint/flink:1.7.2-1 \
-        --sidecar-image=nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha \
-        --sidecar-arguments="watch --cluster-name=test"
+        --sidecar-image=nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha
 
 Show more options with the command:
 
@@ -310,14 +316,12 @@ Execute the command:
         --image-pull-secrets=regcred \
         --flink-image=nextbreakpoint/flink:1.7.2-1 \
         --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
-        --sidecar-argument=submit \
-        --sidecar-argument=--cluster-name=test \
-        --sidecar-argument=--class-name=your-main-class \
-        --sidecar-argument=--jar-path=/flink-jobs.jar \
-        --sidecar-argument=--argument=--INPUT \
-        --sidecar-argument=--argument=A \
-        --sidecar-argument=--argument=--OUTPUT \
-        --sidecar-argument=--argument=B
+        --sidecar-class-name=your-main-class \
+        --sidecar-jar-path=/flink-jobs.jar \
+        --sidecar-argument=--INPUT \
+        --sidecar-argument=A \
+        --sidecar-argument=--OUTPUT \
+        --sidecar-argument=B
 
 ### How to delete a cluster
 
@@ -344,10 +348,8 @@ Execute the command:
         --environment=test \
         --image-pull-secrets=regcred \
         --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
-        --sidecar-argument=submit \
-        --sidecar-argument=--cluster-name=test \
-        --sidecar-argument=--class-name=your-main-class \
-        --sidecar-argument=--jar-path=/flink-jobs.jar
+        --sidecar-class-name=your-main-class \
+        --sidecar-jar-path=/flink-jobs.jar
 
 Show more options with the command:
 
@@ -362,16 +364,14 @@ Execute the command:
         run \
         --cluster-name=my-flink-cluster \
         --environment=test \
-        --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
         --image-pull-secrets=regcred \
-        --sidecar-argument=submit \
-        --sidecar-argument=--cluster-name=test \
-        --sidecar-argument=--class-name=your-main-class \
-        --sidecar-argument=--jar-path=/flink-jobs.jar \
-        --sidecar-argument=--argument=--INPUT \
-        --sidecar-argument=--argument=A \
-        --sidecar-argument=--argument=--OUTPUT \
-        --sidecar-argument=--argument=B
+        --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
+        --sidecar-class-name=your-main-class \
+        --sidecar-jar-path=/flink-jobs.jar
+        --sidecar-argument=--INPUT \
+        --sidecar-argument=A \
+        --sidecar-argument=--OUTPUT \
+        --sidecar-argument=B
 
 Or execute the command:
 
@@ -380,11 +380,11 @@ Or execute the command:
         run \
         --cluster-name=my-flink-cluster \
         --environment=test \
-        --sidecar-argument=submit \
-        --sidecar-argument=--cluster-name=test \
-        --sidecar-argument=--class-name=your-main-class \
-        --sidecar-argument=--jar-path=/flink-jobs.jar \
-        --sidecar-argument=--arguments="--INPUT A --OUTPUT B"
+        --image-pull-secrets=regcred \
+        --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
+        --sidecar-class-name=your-main-class \
+        --sidecar-jar-path=/flink-jobs.jar
+        --sidecar-arguments="--INPUT A --OUTPUT B"
 
 ### How to cancel a job
 
@@ -462,11 +462,6 @@ Run the sidecar outside Kubernetes:
 Show more options with the command:
 
     java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar sidecar submit --help
-        --sidecar-argument=submit \
-        --sidecar-argument=--cluster-name=test \
-        --sidecar-argument=--class-name=your-main-class \
-        --sidecar-argument=--jar-path=/your-job-jar.jar \
-        --sidecar-argument=--arguments="--input A --output B"
 
 ### How to run the operator
 
