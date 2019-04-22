@@ -26,6 +26,8 @@ public class V1FlinkClusterSpec {
     private Integer jobmanagerStorageSize;
     @SerializedName("jobmanagerStorageClass")
     private String jobmanagerStorageClass;
+    @SerializedName("jobmanagerServiceAccount")
+    private String jobmanagerServiceAccount;
     @SerializedName("taskmanagerCpus")
     private Float taskmanagerCpus;
     @SerializedName("taskmanagerMemory")
@@ -38,10 +40,18 @@ public class V1FlinkClusterSpec {
     private Integer taskmanagerReplicas;
     @SerializedName("taskmanagerTaskSlots")
     private Integer taskmanagerTaskSlots;
+    @SerializedName("taskmanagerServiceAccount")
+    private String taskmanagerServiceAccount;
     @SerializedName("sidecarImage")
     private String sidecarImage;
+    @SerializedName("sidecarClassName")
+    private String sidecarClassName;
+    @SerializedName("sidecarJarPath")
+    private String sidecarJarPath;
     @SerializedName("sidecarArguments")
     private List<String> sidecarArguments;
+    @SerializedName("sidecarServiceAccount")
+    private String sidecarServiceAccount;
 
     public String getPullPolicy() {
         return pullPolicy;
@@ -187,28 +197,49 @@ public class V1FlinkClusterSpec {
         this.sidecarArguments = sidecarArguments;
     }
 
-    @Override
-    public String toString() {
-        return "class V1FlinkClusterSpec {" +
-                "clusterName='" + clusterName + '\'' +
-                ", environment='" + environment + '\'' +
-                ", pullSecrets='" + pullSecrets + '\'' +
-                ", pullPolicy='" + pullPolicy + '\'' +
-                ", flinkImage='" + flinkImage + '\'' +
-                ", serviceMode='" + serviceMode + '\'' +
-                ", jobmanagerCpus=" + jobmanagerCpus +
-                ", jobmanagerMemory=" + jobmanagerMemory +
-                ", jobmanagerStorageSize=" + jobmanagerStorageSize +
-                ", jobmanagerStorageClass='" + jobmanagerStorageClass + '\'' +
-                ", taskmanagerCpus=" + taskmanagerCpus +
-                ", taskmanagerMemory=" + taskmanagerMemory +
-                ", taskmanagerStorageSize=" + taskmanagerStorageSize +
-                ", taskmanagerStorageClass='" + taskmanagerStorageClass + '\'' +
-                ", taskmanagerReplicas=" + taskmanagerReplicas +
-                ", taskmanagerTaskSlots=" + taskmanagerTaskSlots +
-                ", sidecarImage='" + sidecarImage + '\'' +
-                ", sidecarArguments=" + sidecarArguments +
-                '}';
+    public String getJobmanagerServiceAccount() {
+        return jobmanagerServiceAccount;
+    }
+
+    public V1FlinkClusterSpec setJobmanagerServiceAccount(String jobmanagerServiceAccount) {
+        this.jobmanagerServiceAccount = jobmanagerServiceAccount;
+        return this;
+    }
+
+    public String getTaskmanagerServiceAccount() {
+        return taskmanagerServiceAccount;
+    }
+
+    public V1FlinkClusterSpec setTaskmanagerServiceAccount(String taskmanagerServiceAccount) {
+        this.taskmanagerServiceAccount = taskmanagerServiceAccount;
+        return this;
+    }
+
+    public String getSidecarServiceAccount() {
+        return sidecarServiceAccount;
+    }
+
+    public V1FlinkClusterSpec setSidecarServiceAccount(String sidecarServiceAccount) {
+        this.sidecarServiceAccount = sidecarServiceAccount;
+        return this;
+    }
+
+    public String getSidecarClassName() {
+        return sidecarClassName;
+    }
+
+    public V1FlinkClusterSpec setSidecarClassName(String sidecarClassName) {
+        this.sidecarClassName = sidecarClassName;
+        return this;
+    }
+
+    public String getSidecarJarPath() {
+        return sidecarJarPath;
+    }
+
+    public V1FlinkClusterSpec setSidecarJarPath(String sidecarJarPath) {
+        this.sidecarJarPath = sidecarJarPath;
+        return this;
     }
 
     @Override
@@ -226,18 +257,52 @@ public class V1FlinkClusterSpec {
                 Objects.equals(jobmanagerMemory, that.jobmanagerMemory) &&
                 Objects.equals(jobmanagerStorageSize, that.jobmanagerStorageSize) &&
                 Objects.equals(jobmanagerStorageClass, that.jobmanagerStorageClass) &&
+                Objects.equals(jobmanagerServiceAccount, that.jobmanagerServiceAccount) &&
                 Objects.equals(taskmanagerCpus, that.taskmanagerCpus) &&
                 Objects.equals(taskmanagerMemory, that.taskmanagerMemory) &&
                 Objects.equals(taskmanagerStorageSize, that.taskmanagerStorageSize) &&
                 Objects.equals(taskmanagerStorageClass, that.taskmanagerStorageClass) &&
                 Objects.equals(taskmanagerReplicas, that.taskmanagerReplicas) &&
                 Objects.equals(taskmanagerTaskSlots, that.taskmanagerTaskSlots) &&
+                Objects.equals(taskmanagerServiceAccount, that.taskmanagerServiceAccount) &&
                 Objects.equals(sidecarImage, that.sidecarImage) &&
-                Objects.equals(sidecarArguments, that.sidecarArguments);
+                Objects.equals(sidecarClassName, that.sidecarClassName) &&
+                Objects.equals(sidecarJarPath, that.sidecarJarPath) &&
+                Objects.equals(sidecarArguments, that.sidecarArguments) &&
+                Objects.equals(sidecarServiceAccount, that.sidecarServiceAccount);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(clusterName, environment, pullSecrets, pullPolicy, flinkImage, serviceMode, jobmanagerCpus, jobmanagerMemory, jobmanagerStorageSize, jobmanagerStorageClass, taskmanagerCpus, taskmanagerMemory, taskmanagerStorageSize, taskmanagerStorageClass, taskmanagerReplicas, taskmanagerTaskSlots, sidecarImage, sidecarArguments);
+        return Objects.hash(clusterName, environment, pullSecrets, pullPolicy, flinkImage, serviceMode, jobmanagerCpus, jobmanagerMemory, jobmanagerStorageSize, jobmanagerStorageClass, jobmanagerServiceAccount, taskmanagerCpus, taskmanagerMemory, taskmanagerStorageSize, taskmanagerStorageClass, taskmanagerReplicas, taskmanagerTaskSlots, taskmanagerServiceAccount, sidecarImage, sidecarClassName, sidecarJarPath, sidecarArguments, sidecarServiceAccount);
+    }
+
+    @Override
+    public String toString() {
+        return "V1FlinkClusterSpec {" +
+                "clusterName='" + clusterName + '\'' +
+                ", environment='" + environment + '\'' +
+                ", pullSecrets='" + pullSecrets + '\'' +
+                ", pullPolicy='" + pullPolicy + '\'' +
+                ", flinkImage='" + flinkImage + '\'' +
+                ", serviceMode='" + serviceMode + '\'' +
+                ", jobmanagerCpus=" + jobmanagerCpus +
+                ", jobmanagerMemory=" + jobmanagerMemory +
+                ", jobmanagerStorageSize=" + jobmanagerStorageSize +
+                ", jobmanagerStorageClass='" + jobmanagerStorageClass + '\'' +
+                ", jobmanagerServiceAccount='" + jobmanagerServiceAccount + '\'' +
+                ", taskmanagerCpus=" + taskmanagerCpus +
+                ", taskmanagerMemory=" + taskmanagerMemory +
+                ", taskmanagerStorageSize=" + taskmanagerStorageSize +
+                ", taskmanagerStorageClass='" + taskmanagerStorageClass + '\'' +
+                ", taskmanagerReplicas=" + taskmanagerReplicas +
+                ", taskmanagerTaskSlots=" + taskmanagerTaskSlots +
+                ", taskmanagerServiceAccount='" + taskmanagerServiceAccount + '\'' +
+                ", sidecarImage='" + sidecarImage + '\'' +
+                ", sidecarClassName='" + sidecarClassName + '\'' +
+                ", sidecarJarPath='" + sidecarJarPath + '\'' +
+                ", sidecarArguments=" + sidecarArguments +
+                ", sidecarServiceAccount='" + sidecarServiceAccount + '\'' +
+                '}';
     }
 }

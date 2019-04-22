@@ -1,0 +1,96 @@
+{{- $fullname := include "flink-k8s-toolbox.fullname" . -}}
+{{- $name := include "flink-k8s-toolbox.name" . -}}
+{{- $chart := include "flink-k8s-toolbox.chart" . -}}
+{{- $root := . }}
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-controller
+  labels:
+    app: {{ $fullname }}-controller
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink-controller
+      chart: {{ $chart }}
+      release: {{ $root.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: flink-controller
+        chart: {{ $chart }}
+        release: {{ $root.Release.Name }}
+    spec:
+      containers:
+        - name: {{ $root.Chart.Name }}-controller
+          image: "{{ $root.Values.image.repository }}:{{ $root.Values.image.tag }}"
+          imagePullPolicy: {{ $root.Values.image.pullPolicy }}
+          ports:
+            - name: admin
+              containerPort: 8080
+              protocol: TCP
+          args:
+            - controller
+            - run
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+{{ toYaml $root.Values.resources | indent 12 }}
+      serviceAccountName: flink-controller
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-operator
+  labels:
+    app: {{ $fullname }}-operator
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink-operator
+      chart: {{ $chart }}
+      release: {{ $root.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: flink-operator
+        chart: {{ $chart }}
+        release: {{ $root.Release.Name }}
+    spec:
+      containers:
+        - name: {{ $root.Chart.Name }}-operator
+          image: "{{ $root.Values.image.repository }}:{{ $root.Values.image.tag }}"
+          imagePullPolicy: {{ $root.Values.image.pullPolicy }}
+          args:
+            - operator
+            - run
+            - --namespace
+            - {{ $root.Release.Namespace }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+{{ toYaml $root.Values.resources | indent 12 }}
+      serviceAccountName: flink-operator

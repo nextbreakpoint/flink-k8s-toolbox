@@ -1,0 +1,25 @@
+{{- $fullname := include "flink-k8s-toolbox.fullname" . -}}
+{{- $name := include "flink-k8s-toolbox.name" . -}}
+{{- $chart := include "flink-k8s-toolbox.chart" . -}}
+{{- $root := . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-controller
+  labels:
+    app: {{ $name }}
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: admin
+      protocol: TCP
+      name: admin
+  selector:
+    app: flink-controller
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}

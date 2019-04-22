@@ -6,21 +6,12 @@ spec:
   clusterName: test
   environment: test
   pullSecrets: regcred
+  pullPolicy: Always
   flinkImage: nextbreakpoint/flink:1.7.2-1
-  sidecarImage: some-registry/flink-submit-with-jobs:1.0.0
+  sidecarImage: 192.168.1.11:30000/nextbreakpoint/flink-workshop-jobs:2
+  sidecarServiceAccount: flink-operator
+  sidecarClassName: com.nextbreakpoint.flink.jobs.TestJob
+  sidecarJarPath: /com.nextbreakpoint.flinkworkshop-1.0.0.jar
   sidecarArguments:
-    - submit
-    - --cluster-name
-    - test
-    - --class-name
-    - your-main-class
-    - --jar-path
-    - /flink-jobs.jar
-    - --argument
-    - --INPUT
-    - --argument
-    - A
-    - --argument
-    - --OUTPUT
-    - --argument
-    - B
+    - --BUCKET_BASE_PATH
+    - file:///var/tmp

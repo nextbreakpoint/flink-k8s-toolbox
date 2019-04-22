@@ -1,13 +1,11 @@
 package com.nextbreakpoint.handler
 
-import com.nextbreakpoint.Arguments
 import com.nextbreakpoint.model.ClusterDescriptor
 import com.nextbreakpoint.model.JobRunParams
 import io.kubernetes.client.apis.AppsV1Api
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.*
 import org.apache.log4j.Logger
-import java.util.regex.Pattern
 
 object JobRunHandler {
     private val logger = Logger.getLogger(JobRunHandler::class.simpleName)
@@ -15,8 +13,6 @@ object JobRunHandler {
     fun execute(runParams: JobRunParams): String {
         try {
             val api = AppsV1Api()
-
-            val results = Pattern.compile(Arguments.PATTERN).matcher(runParams.sidecar.arguments).results()
 
             deleteDeployment(api, runParams.descriptor)
 
@@ -37,14 +33,39 @@ object JobRunHandler {
 
             arguments.add("sidecar")
 
-            results.forEach { result ->
-                if (result.group(7) != null) {
-                    arguments.add(result.group(7))
-                } else if (result.group(2) != null) {
-                    arguments.add("--${result.group(2)}=${result.group(3)}")
-                } else {
-                    arguments.add("--${result.group(5)}=${result.group(6)}")
+            if (runParams.sidecar.jarPath != null) {
+                arguments.addAll(listOf(
+                    "sidecar",
+                    "submit",
+                    "--namespace",
+                    runParams.descriptor.namespace,
+                    "--environment",
+                    runParams.descriptor.environment,
+                    "--cluster-name",
+                    runParams.descriptor.name,
+                    "--jar-path",
+                    runParams.sidecar.jarPath
+                ))
+
+                if (runParams.sidecar.className != null) {
+                    arguments.add("--class-name")
+                    arguments.add(runParams.sidecar.className)
                 }
+
+                runParams.sidecar.arguments?.split(" ")?.forEach { argument ->
+                    arguments.add("--argument=$argument")
+                }
+            } else {
+                arguments.addAll(listOf(
+                    "sidecar",
+                    "watch",
+                    "--cluster-name",
+                    runParams.descriptor.name,
+                    "--namespace",
+                    runParams.descriptor.namespace,
+                    "--environment",
+                    runParams.descriptor.environment)
+                )
             }
 
             val componentLabel = Pair("component", "flink")

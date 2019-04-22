@@ -1,0 +1,97 @@
+{{- $fullname := include "flink-k8s-toolbox.fullname" . -}}
+{{- $name := include "flink-k8s-toolbox.name" . -}}
+{{- $chart := include "flink-k8s-toolbox.chart" . -}}
+{{- $root := . }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink-controller
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flink-controller
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: flink-controller
+subjects:
+  - kind: ServiceAccount
+    name: flink-controller
+    namespace: {{ $root.Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flink-controller
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+rules:
+  - apiGroups: [""]
+    resources: ["services", "pods", "services", "pods/portforward", "persistentvolumeclaims"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink-operator
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flink-operator
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: flink-operator
+subjects:
+  - kind: ServiceAccount
+    name: flink-operator
+    namespace: {{ $root.Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flink-operator
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+rules:
+  - apiGroups: [""]
+    resources: ["services", "pods", "services", "pods/portforward", "persistentvolumeclaims"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+  - apiGroups: ["beta.nextbreakpoint.com"]
+    resources: ["flinkclusters"]
+    verbs: ["get", "watch", "list"]

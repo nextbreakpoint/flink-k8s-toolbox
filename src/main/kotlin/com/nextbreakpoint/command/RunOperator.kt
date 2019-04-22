@@ -25,6 +25,7 @@ import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.util.Watch
 import io.vertx.rxjava.ext.web.client.WebClient
 import org.apache.log4j.Logger
+import java.net.SocketTimeoutException
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -75,7 +76,12 @@ class RunOperator {
                     }
                 } catch (e : InterruptedException) {
                     break
+                } catch (e : RuntimeException) {
+                    if (!(e.cause is SocketTimeoutException)) {
+                        e.printStackTrace()
+                    }
                 } catch (e : Exception) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -100,7 +106,12 @@ class RunOperator {
                     }
                 } catch (e : InterruptedException) {
                     break
+                } catch (e : RuntimeException) {
+                    if (!(e.cause is SocketTimeoutException)) {
+                        e.printStackTrace()
+                    }
                 } catch (e : Exception) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -125,7 +136,12 @@ class RunOperator {
                     }
                 } catch (e : InterruptedException) {
                     break
+                } catch (e : RuntimeException) {
+                    if (!(e.cause is SocketTimeoutException)) {
+                        e.printStackTrace()
+                    }
                 } catch (e : Exception) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -158,7 +174,12 @@ class RunOperator {
                     }
                 } catch (e : InterruptedException) {
                     break
+                } catch (e : RuntimeException) {
+                    if (!(e.cause is SocketTimeoutException)) {
+                        e.printStackTrace()
+                    }
                 } catch (e : Exception) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -191,13 +212,22 @@ class RunOperator {
                     }
                 } catch (e : InterruptedException) {
                     break
+                } catch (e : RuntimeException) {
+                    if (!(e.cause is SocketTimeoutException)) {
+                        e.printStackTrace()
+                    }
                 } catch (e : Exception) {
+                    e.printStackTrace()
                 }
             }
         }
 
         try {
+            Thread.sleep(10000L)
+
             while (true) {
+                logger.info("Wait for next event...")
+
                 val values = queue.poll(60, TimeUnit.SECONDS)
 
                 if (values != null) {
@@ -412,10 +442,6 @@ class RunOperator {
             return true
         }
 
-        if (deployment.spec.template.spec.imagePullSecrets.size != 1) {
-            return true
-        }
-
         if (deployment.metadata.labels.get("cluster") == null) {
             return true
         }
@@ -510,20 +536,61 @@ class RunOperator {
 
         val sidecarImage = deployment.spec.template.spec.containers.get(0).image
         val sidecarPullPolicy = deployment.spec.template.spec.containers.get(0).imagePullPolicy
-        val sidecarArguments = deployment.spec.template.spec.containers.get(0).args.subList(1, deployment.spec.template.spec.containers.get(0).args.size)
+        val sidecarServiceAccount = deployment.spec.template.spec.serviceAccount
 
-        val pullSecrets = deployment.spec.template.spec.imagePullSecrets.get(0).name
+        val containerArguments = deployment.spec.template.spec.containers.get(0).args
+
+        if (containerArguments.get(0) != "sidecar") {
+            logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
+            return true
+        }
+
+        if (containerArguments.get(1) != "submit" && containerArguments.get(1) != "watch") {
+            logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
+            return true
+        }
+
+        if (containerArguments.get(2) != "--namespace") {
+            logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
+            return true
+        }
+
+        if (containerArguments.get(4) != "--environment") {
+            logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
+            return true
+        }
+
+        if (containerArguments.get(6) != "--cluster-name") {
+            logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
+            return true
+        }
+
+        if (containerArguments.get(1) == "submit" && containerArguments.get(8) != "--jar-path") {
+            logger.warn("Sidecar argument are: ${containerArguments.joinToString(" ")}}")
+            return true
+        }
+
+        val sidecarArguments = if (containerArguments.get(1) == "submit" && containerArguments.get(10) == "--class-name") {
+            containerArguments.subList(12, containerArguments.size).filter { it.startsWith("--argument=") }.map { it.substring(11) }.toList()
+        } else if (containerArguments.get(1) == "submit" && containerArguments.get(10) != "--class-name") {
+            containerArguments.subList(10, containerArguments.size).filter { it.startsWith("--argument=") }.map { it.substring(11) }.toList()
+        } else {
+            null
+        }
+
+        val sidecarJarPath = if (containerArguments.get(1) == "submit" && containerArguments.get(8) != "--jar-path") containerArguments.get(9) else null
+
+        val sidecarClassName = if (containerArguments.get(1) == "submit" && containerArguments.get(10) == "--class-name") containerArguments.get(11) else null
+
+        val pullSecrets = if (deployment.spec.template.spec.imagePullSecrets != null && !deployment.spec.template.spec.imagePullSecrets.isEmpty()) deployment.spec.template.spec.imagePullSecrets.get(0).name else null
 
         if (jobmanagerStatefulSet.spec.template.spec.containers.size != 1) {
             return true
         }
 
-        if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
-            return true
-        }
-
         val jobmanagerImage = jobmanagerStatefulSet.spec.template.spec.containers.get(0).image
         val jobmanagerPullPolicy = jobmanagerStatefulSet.spec.template.spec.containers.get(0).imagePullPolicy
+        val jobmanagerServiceAccount = jobmanagerStatefulSet.spec.template.spec.serviceAccount
 
         val jobmanagerCpuQuantity = jobmanagerStatefulSet.spec.template.spec.containers.get(0).resources.limits.get("cpu")
 
@@ -550,12 +617,9 @@ class RunOperator {
             return true
         }
 
-        if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
-            return true
-        }
-
         val taskmanagerImage = taskmanagerStatefulSet.spec.template.spec.containers.get(0).image
         val taskmanagerPullPolicy = taskmanagerStatefulSet.spec.template.spec.containers.get(0).imagePullPolicy
+        val taskmanagerServiceAccount = taskmanagerStatefulSet.spec.template.spec.serviceAccount
 
         val taskmanagerCpuQuantity = taskmanagerStatefulSet.spec.template.spec.containers.get(0).resources.limits.get("cpu")
 
@@ -599,6 +663,7 @@ class RunOperator {
                 pullSecrets = pullSecrets,
                 pullPolicy = jobmanagerPullPolicy,
                 serviceMode = serviceMode,
+                serviceAccount = jobmanagerServiceAccount,
                 resources = ResourcesConfig(
                     cpus = jobmanagerCpu,
                     memory = jobmanagerMemory
@@ -612,6 +677,7 @@ class RunOperator {
                 image = taskmanagerImage,
                 pullSecrets = pullSecrets,
                 pullPolicy = taskmanagerPullPolicy,
+                serviceAccount = taskmanagerServiceAccount,
                 replicas = taskmanagerReplicas,
                 taskSlots = taskmanagerTaskSlots,
                 resources = ResourcesConfig(
@@ -627,7 +693,10 @@ class RunOperator {
                 image = sidecarImage,
                 pullSecrets = pullSecrets,
                 pullPolicy = sidecarPullPolicy,
-                arguments = sidecarArguments.joinToString(separator = " ")
+                serviceAccount = sidecarServiceAccount,
+                className = sidecarClassName,
+                jarPath = sidecarJarPath,
+                arguments = sidecarArguments?.joinToString(" ")
             )
         )
 
@@ -675,6 +744,7 @@ class RunOperator {
                 pullSecrets = spec.pullSecrets,
                 pullPolicy = spec.pullPolicy ?: "Always",
                 serviceMode = spec.serviceMode ?: "NodePort",
+                serviceAccount = spec.jobmanagerServiceAccount ?: "default",
                 resources = ResourcesConfig(
                     cpus = spec.jobmanagerCpus ?: 1f,
                     memory = spec.jobmanagerMemory ?: 512
@@ -688,6 +758,7 @@ class RunOperator {
                 image = spec.flinkImage,
                 pullSecrets = spec.pullSecrets,
                 pullPolicy = spec.pullPolicy ?: "Always",
+                serviceAccount = spec.taskmanagerServiceAccount ?: "default",
                 replicas = spec.taskmanagerReplicas ?: 1,
                 taskSlots = spec.taskmanagerTaskSlots ?: 1,
                 resources = ResourcesConfig(
@@ -703,7 +774,10 @@ class RunOperator {
                 image = spec.sidecarImage,
                 pullSecrets = spec.pullSecrets,
                 pullPolicy = spec.pullPolicy ?: "Always",
-                arguments = spec.sidecarArguments.joinToString(" ")
+                serviceAccount = spec.sidecarServiceAccount ?: "default",
+                className = spec.sidecarClassName,
+                jarPath = spec.sidecarJarPath,
+                arguments = spec.sidecarArguments?.joinToString(" ")
             )
         )
         return clusterConfig
