@@ -8,5 +8,5 @@ data class JobManagerConfig(
     val resources: ResourcesConfig,
     val serviceMode: String,
     val serviceAccount: String,
-    val savepointLocation: String
+    val environmentVariables: List<EnvironmentVariable>
 )

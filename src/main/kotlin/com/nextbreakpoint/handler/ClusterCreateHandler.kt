@@ -100,16 +100,6 @@ object ClusterCreateHandler {
                 clusterConfig.taskmanager.taskSlots.toString()
             )
 
-            val jobmanagerSavepointLocationEnvVar = createEnvVar(
-                "FLINK_SAVEPOINTS_LOCATION",
-                clusterConfig.jobmanager.savepointLocation
-            )
-
-            val taskmanagerSavepointLocationEnvVar = createEnvVar(
-                "FLINK_SAVEPOINTS_LOCATION",
-                clusterConfig.taskmanager.savepointLocation
-            )
-
             val podNameEnvVar =
                 createEnvVarFromField("POD_NAME", "metadata.name")
 
@@ -159,6 +149,19 @@ object ClusterCreateHandler {
                 jobmanagerServiceOut.metadata.name
             )
 
+            val jobmanagerVariables = mutableListOf(
+                podNameEnvVar,
+                podNamespaceEnvVar,
+                environmentEnvVar,
+                rpcAddressEnvVar,
+                jobManagerHeapEnvVar
+            )
+
+            val jobmanagerUserVariables = clusterConfig.jobmanager.environmentVariables
+                .map { createEnvVar(it.name, it.value) }.toList()
+
+            jobmanagerVariables.addAll(jobmanagerUserVariables)
+
             val jobmanager = V1Container()
                 .image(clusterConfig.jobmanager.image)
                 .imagePullPolicy(clusterConfig.jobmanager.pullPolicy)
@@ -176,14 +179,7 @@ object ClusterCreateHandler {
                 )
                 .volumeMounts(listOf(jobmanagerVolumeMount))
                 .env(
-                    listOf(
-                        podNameEnvVar,
-                        podNamespaceEnvVar,
-                        environmentEnvVar,
-                        rpcAddressEnvVar,
-                        jobManagerHeapEnvVar,
-                        jobmanagerSavepointLocationEnvVar
-                    )
+                    jobmanagerVariables
                 )
                 .resources(jobmanagerResourceRequirements)
 
@@ -336,6 +332,20 @@ object ClusterCreateHandler {
 
             logger.info("Deployment created ${sidecarDeploymentOut.metadata.name}")
 
+            val taskmanagerVariables = mutableListOf(
+                podNameEnvVar,
+                podNamespaceEnvVar,
+                environmentEnvVar,
+                rpcAddressEnvVar,
+                taskManagerHeapEnvVar,
+                numberOfTaskSlotsEnvVar
+            )
+
+            val taskmanagerUserVariables = clusterConfig.taskmanager.environmentVariables
+                .map { createEnvVar(it.name, it.value) }.toList()
+
+            taskmanagerVariables.addAll(taskmanagerUserVariables)
+
             val taskmanager = V1Container()
                 .image(clusterConfig.taskmanager.image)
                 .imagePullPolicy(clusterConfig.taskmanager.pullPolicy)
@@ -353,15 +363,7 @@ object ClusterCreateHandler {
                     listOf(taskmanagerVolumeMount)
                 )
                 .env(
-                    listOf(
-                        podNameEnvVar,
-                        podNamespaceEnvVar,
-                        environmentEnvVar,
-                        rpcAddressEnvVar,
-                        taskManagerHeapEnvVar,
-                        taskmanagerSavepointLocationEnvVar,
-                        numberOfTaskSlotsEnvVar
-                    )
+                    taskmanagerVariables
                 )
                 .resources(taskmanagerResourceRequirements)
 
