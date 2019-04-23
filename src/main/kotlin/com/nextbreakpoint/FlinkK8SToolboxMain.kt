@@ -256,7 +256,7 @@ class FlinkK8SToolboxMain {
         private val namespace: String by option(help="The namespace where to create the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val environment: String by option(help="The name of the environment").default("test")
-        private val onlyRunning: Boolean by option(help="List only running jobs").flag(default = true)
+        private val onlyRunning: Boolean by option(help="List only running jobs").flag(default = false)
 
         override fun run() {
             val config = JobsListParams(
