@@ -3,16 +3,7 @@ package com.nextbreakpoint.command
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.handler.ClusterCreateHandler
 import com.nextbreakpoint.handler.ClusterDeleteHandler
-import com.nextbreakpoint.model.ClusterConfig
-import com.nextbreakpoint.model.ClusterDescriptor
-import com.nextbreakpoint.model.JobManagerConfig
-import com.nextbreakpoint.model.ResourcesConfig
-import com.nextbreakpoint.model.OperatorConfig
-import com.nextbreakpoint.model.SidecarConfig
-import com.nextbreakpoint.model.StorageConfig
-import com.nextbreakpoint.model.TaskManagerConfig
-import com.nextbreakpoint.model.V1FlinkCluster
-import com.nextbreakpoint.model.V1FlinkClusterSpec
+import com.nextbreakpoint.model.*
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.apis.AppsV1Api
 import io.kubernetes.client.apis.CoreV1Api
@@ -643,13 +634,48 @@ class RunOperator {
 
         val environment = jobmanagerStatefulSet.metadata.labels.get("environment").orEmpty()
 
-        val jobmanagerMemory = jobmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(4).value.toInt()
-        val taskmanagerMemory = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(4).value.toInt()
+        val jobmanagerMemoryEnvVar = jobmanagerStatefulSet.spec.template.spec.containers.get(0).env.filter { it.name == "FLINK_JM_HEAP" }.firstOrNull()
 
-        val taskmanagerTaskSlots = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(5).value.toInt()
+        if (jobmanagerMemoryEnvVar == null) {
+            return true
+        }
 
-        val jobmanagerSavepointLocation = jobmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(5).value
-        val taskmanagerSavepointLocation = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env.get(5).value
+        val taskmanagerMemoryEnvVar = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env.filter { it.name == "FLINK_TM_HEAP" }.firstOrNull()
+
+        if (taskmanagerMemoryEnvVar == null) {
+            return true
+        }
+
+        val taskmanagerTaskSlotsEnvVar = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env.filter { it.name == "TASK_MANAGER_NUMBER_OF_TASK_SLOTS" }.firstOrNull()
+
+        if (taskmanagerTaskSlotsEnvVar == null) {
+            return true
+        }
+
+        val jobmanagerEnvironmentVariables = jobmanagerStatefulSet.spec.template.spec.containers.get(0).env
+            .filter { it.name != "JOB_MANAGER_RPC_ADDRESS" }
+            .filter { it.name != "FLINK_JM_HEAP" }
+            .filter { it.name != "FLINK_ENVIRONMENT" }
+            .filter { it.name != "POD_NAMESPACE" }
+            .filter { it.name != "POD_NAME" }
+            .map { EnvironmentVariable(it.name, it.value) }
+            .toList()
+
+        val taskmanagerEnvironmentVariables = taskmanagerStatefulSet.spec.template.spec.containers.get(0).env
+            .filter { it.name != "JOB_MANAGER_RPC_ADDRESS" }
+            .filter { it.name != "FLINK_TM_HEAP" }
+            .filter { it.name != "FLINK_ENVIRONMENT" }
+            .filter { it.name != "TASK_MANAGER_NUMBER_OF_TASK_SLOTS" }
+            .filter { it.name != "POD_NAMESPACE" }
+            .filter { it.name != "POD_NAME" }
+            .map { EnvironmentVariable(it.name, it.value) }
+            .toList()
+
+        val jobmanagerMemory = jobmanagerMemoryEnvVar.value.toInt()
+
+        val taskmanagerMemory = taskmanagerMemoryEnvVar.value.toInt()
+
+        val taskmanagerTaskSlots = taskmanagerTaskSlotsEnvVar.value.toInt()
 
         val serviceMode = service.spec.type
 
@@ -665,7 +691,7 @@ class RunOperator {
                 pullPolicy = jobmanagerPullPolicy,
                 serviceMode = serviceMode,
                 serviceAccount = jobmanagerServiceAccount,
-                savepointLocation = jobmanagerSavepointLocation,
+                environmentVariables = jobmanagerEnvironmentVariables,
                 resources = ResourcesConfig(
                     cpus = jobmanagerCpu,
                     memory = jobmanagerMemory
@@ -680,7 +706,7 @@ class RunOperator {
                 pullSecrets = pullSecrets,
                 pullPolicy = taskmanagerPullPolicy,
                 serviceAccount = taskmanagerServiceAccount,
-                savepointLocation = taskmanagerSavepointLocation,
+                environmentVariables = taskmanagerEnvironmentVariables,
                 replicas = taskmanagerReplicas,
                 taskSlots = taskmanagerTaskSlots,
                 resources = ResourcesConfig(
@@ -731,7 +757,7 @@ class RunOperator {
                 pullPolicy = spec.pullPolicy ?: "Always",
                 serviceMode = spec.serviceMode ?: "NodePort",
                 serviceAccount = spec.jobmanagerServiceAccount ?: "default",
-                savepointLocation = spec.jobmanagerSavepointLocation ?: "file://var/tmp/savepoints",
+                environmentVariables = spec.jobmanagerEnvironmentVariables?.map { EnvironmentVariable(it.name, it.value) }?.toList() ?: listOf(),
                 resources = ResourcesConfig(
                     cpus = spec.jobmanagerCpus ?: 1f,
                     memory = spec.jobmanagerMemory ?: 512
@@ -746,7 +772,7 @@ class RunOperator {
                 pullSecrets = spec.pullSecrets,
                 pullPolicy = spec.pullPolicy ?: "Always",
                 serviceAccount = spec.taskmanagerServiceAccount ?: "default",
-                savepointLocation = spec.taskmanagerSavepointLocation ?: "file://var/tmp/savepoints",
+                environmentVariables = spec.taskmanagerEnvironmentVariables?.map { EnvironmentVariable(it.name, it.value) }?.toList() ?: listOf(),
                 replicas = spec.taskmanagerReplicas ?: 1,
                 taskSlots = spec.taskmanagerTaskSlots ?: 1,
                 resources = ResourcesConfig(

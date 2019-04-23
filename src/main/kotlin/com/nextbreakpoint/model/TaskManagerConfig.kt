@@ -9,5 +9,5 @@ data class TaskManagerConfig(
     val replicas: Int,
     val storage: StorageConfig,
     val resources: ResourcesConfig,
-    val savepointLocation: String
+    val environmentVariables: List<EnvironmentVariable>
 )

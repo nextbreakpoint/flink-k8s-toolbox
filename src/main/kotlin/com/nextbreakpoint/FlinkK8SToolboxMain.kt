@@ -127,7 +127,8 @@ class FlinkK8SToolboxMain {
         private val jobmanagerServiceMode: String by option(help="The JobManager's service type").default("clusterIP")
         private val jobmanagerServiceAccount: String by option(help="The JobManager's service account").default("default")
         private val taskmanagerServiceAccount: String by option(help="The TaskManager's service account").default("default")
-        private val savepointLocation: String by option(help="The location of savepoints").default("file:///var/tmp/savepoints")
+        private val jobmanagerEnvVar: List<String> by option(help="A JobManager's environment variable").multiple()
+        private val taskmanagerEnvVar: List<String> by option(help="A TaskManager's environment variable").multiple()
 
         override fun run() {
             val config = ClusterConfig(
@@ -142,7 +143,7 @@ class FlinkK8SToolboxMain {
                     pullSecrets = imagePullSecrets,
                     serviceMode = jobmanagerServiceMode,
                     serviceAccount = jobmanagerServiceAccount,
-                    savepointLocation = savepointLocation,
+                    environmentVariables = expandVariables(jobmanagerEnvVar),
                     storage = StorageConfig(
                         size = jobmanagerStorageSize,
                         storageClass = jobmanagerStorageClass
@@ -159,7 +160,7 @@ class FlinkK8SToolboxMain {
                     serviceAccount = taskmanagerServiceAccount,
                     taskSlots = taskmanagerTaskSlots,
                     replicas = taskmanagerReplicas,
-                    savepointLocation = savepointLocation,
+                    environmentVariables = expandVariables(taskmanagerEnvVar),
                     storage = StorageConfig(
                         size = taskmanagerStorageSize,
                         storageClass = taskmanagerStorageClass
@@ -183,6 +184,12 @@ class FlinkK8SToolboxMain {
             )
             PostClusterCreateRequest().run(ApiParams(host, port), config)
         }
+
+        private fun expandVariables(list: List<String>) =
+            list.filter { it.matches(Regex("[^=]+=[^=]+]")) }
+                .map { it.split("=") }
+                .map { EnvironmentVariable(it.get(0), it.get(1)) }
+                .toList()
     }
 
     class DeleteClusterCommand: CliktCommand(name = "delete", help="Delete a cluster") {

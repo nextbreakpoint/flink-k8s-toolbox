@@ -4,7 +4,6 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class V1FlinkClusterSpec {
     @SerializedName("clusterName")
@@ -29,8 +28,8 @@ public class V1FlinkClusterSpec {
     private String jobmanagerStorageClass;
     @SerializedName("jobmanagerServiceAccount")
     private String jobmanagerServiceAccount;
-    @SerializedName("jobmanagerSavepointLocation")
-    private String jobmanagerSavepointLocation;
+    @SerializedName("jobmanagerEnvironmentVariables")
+    private List<V1FlinkClusterEnvVar> jobmanagerEnvironmentVariables;
     @SerializedName("taskmanagerCpus")
     private Float taskmanagerCpus;
     @SerializedName("taskmanagerMemory")
@@ -45,8 +44,8 @@ public class V1FlinkClusterSpec {
     private Integer taskmanagerTaskSlots;
     @SerializedName("taskmanagerServiceAccount")
     private String taskmanagerServiceAccount;
-    @SerializedName("taskmanagerSavepointLocation")
-    private String taskmanagerSavepointLocation;
+    @SerializedName("taskmanagerEnvironmentVariables")
+    private List<V1FlinkClusterEnvVar> taskmanagerEnvironmentVariables;
     @SerializedName("sidecarImage")
     private String sidecarImage;
     @SerializedName("sidecarClassName")
@@ -269,21 +268,21 @@ public class V1FlinkClusterSpec {
         return this;
     }
 
-    public String getJobmanagerSavepointLocation() {
-        return jobmanagerSavepointLocation;
+    public List<V1FlinkClusterEnvVar> getJobmanagerEnvironmentVariables() {
+        return jobmanagerEnvironmentVariables;
     }
 
-    public V1FlinkClusterSpec setJobmanagerSavepointLocation(String jobmanagerSavepointLocation) {
-        this.jobmanagerSavepointLocation = jobmanagerSavepointLocation;
+    public V1FlinkClusterSpec setJobmanagerEnvironmentVariables(List<V1FlinkClusterEnvVar> jobmanagerEnvironmentVariables) {
+        this.jobmanagerEnvironmentVariables = jobmanagerEnvironmentVariables;
         return this;
     }
 
-    public String getTaskmanagerSavepointLocation() {
-        return taskmanagerSavepointLocation;
+    public List<V1FlinkClusterEnvVar> getTaskmanagerEnvironmentVariables() {
+        return taskmanagerEnvironmentVariables;
     }
 
-    public V1FlinkClusterSpec setTaskmanagerSavepointLocation(String taskmanagerSavepointLocation) {
-        this.taskmanagerSavepointLocation = taskmanagerSavepointLocation;
+    public V1FlinkClusterSpec setTaskmanagerEnvironmentVariables(List<V1FlinkClusterEnvVar> taskmanagerEnvironmentVariables) {
+        this.taskmanagerEnvironmentVariables = taskmanagerEnvironmentVariables;
         return this;
     }
 
@@ -303,7 +302,7 @@ public class V1FlinkClusterSpec {
                 Objects.equals(jobmanagerStorageSize, that.jobmanagerStorageSize) &&
                 Objects.equals(jobmanagerStorageClass, that.jobmanagerStorageClass) &&
                 Objects.equals(jobmanagerServiceAccount, that.jobmanagerServiceAccount) &&
-                Objects.equals(jobmanagerSavepointLocation, that.jobmanagerSavepointLocation) &&
+                Objects.equals(jobmanagerEnvironmentVariables, that.jobmanagerEnvironmentVariables) &&
                 Objects.equals(taskmanagerCpus, that.taskmanagerCpus) &&
                 Objects.equals(taskmanagerMemory, that.taskmanagerMemory) &&
                 Objects.equals(taskmanagerStorageSize, that.taskmanagerStorageSize) &&
@@ -311,7 +310,7 @@ public class V1FlinkClusterSpec {
                 Objects.equals(taskmanagerReplicas, that.taskmanagerReplicas) &&
                 Objects.equals(taskmanagerTaskSlots, that.taskmanagerTaskSlots) &&
                 Objects.equals(taskmanagerServiceAccount, that.taskmanagerServiceAccount) &&
-                Objects.equals(taskmanagerSavepointLocation, that.taskmanagerSavepointLocation) &&
+                Objects.equals(taskmanagerEnvironmentVariables, that.taskmanagerEnvironmentVariables) &&
                 Objects.equals(sidecarImage, that.sidecarImage) &&
                 Objects.equals(sidecarClassName, that.sidecarClassName) &&
                 Objects.equals(sidecarJarPath, that.sidecarJarPath) &&
@@ -323,12 +322,12 @@ public class V1FlinkClusterSpec {
 
     @Override
     public int hashCode() {
-        return Objects.hash(clusterName, environment, pullSecrets, pullPolicy, flinkImage, serviceMode, jobmanagerCpus, jobmanagerMemory, jobmanagerStorageSize, jobmanagerStorageClass, jobmanagerServiceAccount, jobmanagerSavepointLocation, taskmanagerCpus, taskmanagerMemory, taskmanagerStorageSize, taskmanagerStorageClass, taskmanagerReplicas, taskmanagerTaskSlots, taskmanagerServiceAccount, taskmanagerSavepointLocation, sidecarImage, sidecarClassName, sidecarJarPath, sidecarArguments, sidecarServiceAccount, sidecarSavepoint, sidecarParallelism);
+        return Objects.hash(clusterName, environment, pullSecrets, pullPolicy, flinkImage, serviceMode, jobmanagerCpus, jobmanagerMemory, jobmanagerStorageSize, jobmanagerStorageClass, jobmanagerServiceAccount, jobmanagerEnvironmentVariables, taskmanagerCpus, taskmanagerMemory, taskmanagerStorageSize, taskmanagerStorageClass, taskmanagerReplicas, taskmanagerTaskSlots, taskmanagerServiceAccount, taskmanagerEnvironmentVariables, sidecarImage, sidecarClassName, sidecarJarPath, sidecarArguments, sidecarServiceAccount, sidecarSavepoint, sidecarParallelism);
     }
 
     @Override
     public String toString() {
-        return "V1FlinkClusterSpec{" +
+        return "V1FlinkClusterSpec {" +
                 "clusterName='" + clusterName + '\'' +
                 ", environment='" + environment + '\'' +
                 ", pullSecrets='" + pullSecrets + '\'' +
@@ -340,7 +339,7 @@ public class V1FlinkClusterSpec {
                 ", jobmanagerStorageSize=" + jobmanagerStorageSize +
                 ", jobmanagerStorageClass='" + jobmanagerStorageClass + '\'' +
                 ", jobmanagerServiceAccount='" + jobmanagerServiceAccount + '\'' +
-                ", jobmanagerSavepointLocation='" + jobmanagerSavepointLocation + '\'' +
+                ", jobmanagerEnvironmentVariables=" + jobmanagerEnvironmentVariables +
                 ", taskmanagerCpus=" + taskmanagerCpus +
                 ", taskmanagerMemory=" + taskmanagerMemory +
                 ", taskmanagerStorageSize=" + taskmanagerStorageSize +
@@ -348,11 +347,11 @@ public class V1FlinkClusterSpec {
                 ", taskmanagerReplicas=" + taskmanagerReplicas +
                 ", taskmanagerTaskSlots=" + taskmanagerTaskSlots +
                 ", taskmanagerServiceAccount='" + taskmanagerServiceAccount + '\'' +
-                ", taskmanagerSavepointLocation='" + taskmanagerSavepointLocation + '\'' +
+                ", taskmanagerEnvironmentVariables=" + taskmanagerEnvironmentVariables +
                 ", sidecarImage='" + sidecarImage + '\'' +
                 ", sidecarClassName='" + sidecarClassName + '\'' +
                 ", sidecarJarPath='" + sidecarJarPath + '\'' +
-                ", sidecarArguments=\'" + String.join(" ", sidecarArguments) + '\'' +
+                ", sidecarArguments=" + sidecarArguments +
                 ", sidecarServiceAccount='" + sidecarServiceAccount + '\'' +
                 ", sidecarSavepoint='" + sidecarSavepoint + '\'' +
                 ", sidecarParallelism=" + sidecarParallelism +
