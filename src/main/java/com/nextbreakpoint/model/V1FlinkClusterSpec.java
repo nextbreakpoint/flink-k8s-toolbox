@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class V1FlinkClusterSpec {
     @SerializedName("clusterName")
@@ -339,7 +340,7 @@ public class V1FlinkClusterSpec {
                 ", jobmanagerStorageSize=" + jobmanagerStorageSize +
                 ", jobmanagerStorageClass='" + jobmanagerStorageClass + '\'' +
                 ", jobmanagerServiceAccount='" + jobmanagerServiceAccount + '\'' +
-                ", jobmanagerEnvironmentVariables=" + jobmanagerEnvironmentVariables +
+                ", jobmanagerEnvironmentVariables=" + jobmanagerEnvironmentVariables.stream().map(V1FlinkClusterEnvVar::toString).collect(Collectors.joining(",")) +
                 ", taskmanagerCpus=" + taskmanagerCpus +
                 ", taskmanagerMemory=" + taskmanagerMemory +
                 ", taskmanagerStorageSize=" + taskmanagerStorageSize +
@@ -347,7 +348,7 @@ public class V1FlinkClusterSpec {
                 ", taskmanagerReplicas=" + taskmanagerReplicas +
                 ", taskmanagerTaskSlots=" + taskmanagerTaskSlots +
                 ", taskmanagerServiceAccount='" + taskmanagerServiceAccount + '\'' +
-                ", taskmanagerEnvironmentVariables=" + taskmanagerEnvironmentVariables +
+                ", taskmanagerEnvironmentVariables=" + taskmanagerEnvironmentVariables.stream().map(V1FlinkClusterEnvVar::toString).collect(Collectors.joining(",")) +
                 ", sidecarImage='" + sidecarImage + '\'' +
                 ", sidecarClassName='" + sidecarClassName + '\'' +
                 ", sidecarJarPath='" + sidecarJarPath + '\'' +

@@ -22,7 +22,10 @@ class RunController {
                 if (Thread.interrupted()) {
                     break
                 }
+                Thread.sleep(60000)
             }
+        } catch (e: InterruptedException) {
+            logger.error("Terminating...")
         } catch (e: Exception) {
             logger.error("An error occurred while launching the server", e)
             throw RuntimeException(e)
