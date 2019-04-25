@@ -466,17 +466,17 @@ object ClusterCreateHandler {
         .generateName(name)
         .labels(jobmanagerLabels)
 
-    private fun createVolumeMount(s: String) = V1VolumeMount()
+    private fun createVolumeMount(name: String) = V1VolumeMount()
         .mountPath("/var/tmp/data")
-        .subPath("data")
-        .name(s)
+        .subPath(name)
+        .name(name)
 
-    private fun createEnvVarFromField(s: String, s1: String) = V1EnvVar()
-        .name(s)
+    private fun createEnvVarFromField(name: String, fieldPath: String) = V1EnvVar()
+        .name(name)
         .valueFrom(
             V1EnvVarSource()
                 .fieldRef(
-                    V1ObjectFieldSelector().fieldPath(s1)
+                    V1ObjectFieldSelector().fieldPath(fieldPath)
                 )
         )
 
