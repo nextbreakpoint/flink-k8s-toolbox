@@ -6,7 +6,7 @@ spec:
   clusterName: test
   environment: test
   pullSecrets: regcred
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   flinkImage: nextbreakpoint/flink:1.7.2-1
   sidecarImage: 192.168.1.11:30000/nextbreakpoint/flink-workshop-jobs:2
   sidecarServiceAccount: flink-operator
@@ -16,3 +16,9 @@ spec:
   sidecarArguments:
     - --BUCKET_BASE_PATH
     - file:///var/tmp
+  jobmanagerEnvironmentVariables:
+    - name: FLINK_GRAPHITE_HOST
+      value: graphite.default.svc.cluster.local
+  taskmanagerEnvironmentVariables:
+    - name: FLINK_GRAPHITE_HOST
+      value: graphite.default.svc.cluster.local
