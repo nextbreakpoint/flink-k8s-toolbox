@@ -2,66 +2,79 @@ package com.nextbreakpoint
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
-import com.github.ajalt.clikt.parameters.options.*
-import com.github.ajalt.clikt.parameters.types.float
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.prompt
+import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
-import com.nextbreakpoint.command.*
-import com.nextbreakpoint.model.*
-import io.kubernetes.client.Configuration
+import com.nextbreakpoint.common.CommandFactory
+import com.nextbreakpoint.common.DefaultCommandFactory
+import com.nextbreakpoint.common.FlinkClusterSpecification
+import com.nextbreakpoint.common.Kubernetes
+import com.nextbreakpoint.common.model.Address
+import com.nextbreakpoint.common.model.FlinkOptions
+import com.nextbreakpoint.common.model.ScaleOptions
+import com.nextbreakpoint.common.model.StartOptions
+import com.nextbreakpoint.common.model.StopOptions
+import com.nextbreakpoint.common.model.TaskManagerId
+import com.nextbreakpoint.common.model.UploadOptions
+import com.nextbreakpoint.operator.OperatorConfig
+import org.apache.log4j.Logger
+import java.io.File
+import java.nio.file.Files
 
-class FlinkK8SToolboxMain {
+class FlinkK8SToolboxMain(private val factory: CommandFactory) {
     companion object {
+        val logger = Logger.getLogger(FlinkK8SToolboxMain::class.simpleName)
+
         @JvmStatic
         fun main(args: Array<String>) {
-            try {
-                MainCommand().subcommands(
-                    Controller().subcommands(
-                        RunControllerCommand()
-                    ),
-                    Operator().subcommands(
-                        RunOperatorCommand()
-                    ),
-                    Cluster().subcommands(
-                        CreateClusterCommand(),
-                        DeleteClusterCommand()
-                    ),
-                    Sidecar().subcommands(
-                        SidecarSubmitCommand(),
-                        SidecarWatchCommand()
-                    ),
-                    Job().subcommands(
-                        RunJobCommand(),
-                        ScaleJobCommand(),
-                        CancelJobCommand(),
-                        GetJobDetailsCommand(),
-                        GetJobMetricsCommand()
-                    ),
-                    Jobs().subcommands(
-                        ListJobsCommand()
-                    ),
-                    JobManager().subcommands(
-                        GetJobManagerMetricsCommand()
-                    ),
-                    TaskManager().subcommands(
-                        GetTaskManagerDetailsCommand(),
-                        GetTaskManagerMetricsCommand()
-                    ),
-                    TaskManagers().subcommands(
-                        ListTaskManagersCommand()
-                    )
-                ).main(args)
-                System.exit(0)
-            } catch (e: Exception) {
-                System.exit(-1)
-            }
+            FlinkK8SToolboxMain(DefaultCommandFactory).run(args)
+        }
+    }
+
+    fun run(args: Array<String>) {
+        try {
+            MainCommand().subcommands(
+                Operator().subcommands(
+                    RunOperatorCommand(factory)
+                ),
+                Cluster().subcommands(
+                    StartClusterCommand(factory),
+                    StopClusterCommand(factory),
+                    CreateClusterCommand(factory),
+                    DeleteClusterCommand(factory)
+                ),
+                Upload().subcommands(
+                    UploadJARCommand(factory)
+                ),
+                Job().subcommands(
+                    StartJobCommand(factory),
+                    StopJobCommand(factory),
+                    ScaleJobCommand(factory),
+                    GetJobDetailsCommand(factory),
+                    GetJobMetricsCommand(factory)
+                ),
+                JobManager().subcommands(
+                    GetJobManagerMetricsCommand(factory)
+                ),
+                TaskManager().subcommands(
+                    GetTaskManagerDetailsCommand(factory),
+                    GetTaskManagerMetricsCommand(factory)
+                ),
+                TaskManagers().subcommands(
+                    ListTaskManagersCommand(factory)
+                )
+            ).main(args)
+            System.exit(0)
+        } catch (e: Exception) {
+            logger.error("An error occurred while lunching the application", e)
+            System.exit(-1)
         }
     }
 
     class MainCommand: CliktCommand(name = "flink-k8s-toolbox") {
-        override fun run() = Unit
-    }
-
-    class Controller: CliktCommand(name = "controller", help = "Access controller subcommands") {
         override fun run() = Unit
     }
 
@@ -73,15 +86,11 @@ class FlinkK8SToolboxMain {
         override fun run() = Unit
     }
 
-    class Sidecar: CliktCommand(name = "sidecar", help = "Access sidecar subcommands") {
+    class Upload: CliktCommand(name = "upload", help = "Access upload subcommands") {
         override fun run() = Unit
     }
 
     class Job: CliktCommand(name = "job", help = "Access job subcommands") {
-        override fun run() = Unit
-    }
-
-    class Jobs: CliktCommand(name = "jobs", help = "Access jobs subcommands") {
         override fun run() = Unit
     }
 
@@ -97,419 +106,214 @@ class FlinkK8SToolboxMain {
         override fun run() = Unit
     }
 
-    class CreateClusterCommand: CliktCommand(name = "create", help="Create a cluster") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val clusterName: String by option(help="The name of the new Flink cluster").required()
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
-        private val environment: String by option(help="The name of the environment").default("test")
-        private val flinkImage: String by option(help="The image to use for JobManager and TaskManager").required()
-        private val sidecarImage: String by option(help="The image to use for sidecar").required()
-        private val sidecarClassName: String? by option(help="The class name of the job to run")
-        private val sidecarJarPath: String by option(help="The path of the JAR to upload").required()
-        private val sidecarSavepoint: String? by option(help="Resume the job from the savepoint")
-        private val sidecarArgument: List<String> by option(help="Pass a job's argument").multiple()
-        private val sidecarArguments: String by option(help="The job's arguments (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
-        private val sidecarServiceAccount: String by option(help="The Sidecar's service account").default("default")
-        private val sidecarParallelism: Int by option(help="The parallelism of the job").int().default(1)
-        private val imagePullPolicy: String by option(help="The image pull policy").default("IfNotPresent")
-        private val imagePullSecrets: String? by option(help="The image pull secrets")
-        private val jobmanagerCpus: Float by option(help="The JobManager's cpus limit").float().default(1f)
-        private val taskmanagerCpus: Float by option(help="The TaskManager's cpus limit").float().default(1f)
-        private val jobmanagerMemory: Int by option(help="The JobManager's memory limit in Mb").int().default(512)
-        private val taskmanageMemory: Int by option(help="The TaskManager's memory limit in Mb").int().default(1024)
-        private val jobmanagerStorageSize: Int by option(help="The JobManager's storage size in Gb").int().default(2)
-        private val taskmanagerStorageSize: Int by option(help="The TaskManager's storage size in Gb").int().default(5)
-        private val jobmanagerStorageClass: String by option(help="The JobManager's storage class").default("standard")
-        private val taskmanagerStorageClass: String by option(help="The TaskManager's storage class").default("standard")
-        private val taskmanagerTaskSlots: Int by option(help="The number of task slots for each TaskManager").int().default(1)
-        private val taskmanagerReplicas: Int by option(help="The number of TaskManager replicas").int().default(1)
-        private val jobmanagerServiceMode: String by option(help="The JobManager's service type").default("clusterIP")
-        private val jobmanagerServiceAccount: String by option(help="The JobManager's service account").default("default")
-        private val taskmanagerServiceAccount: String by option(help="The TaskManager's service account").default("default")
-        private val jobmanagerEnvVar: List<String> by option(help="A JobManager's environment variable").multiple()
-        private val taskmanagerEnvVar: List<String> by option(help="A TaskManager's environment variable").multiple()
-
-        override fun run() {
-            val config = ClusterConfig(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
-                jobmanager = JobManagerConfig(
-                    image = flinkImage,
-                    pullPolicy = imagePullPolicy,
-                    pullSecrets = imagePullSecrets,
-                    serviceMode = jobmanagerServiceMode,
-                    serviceAccount = jobmanagerServiceAccount,
-                    environmentVariables = expandVariables(jobmanagerEnvVar),
-                    storage = StorageConfig(
-                        size = jobmanagerStorageSize,
-                        storageClass = jobmanagerStorageClass
-                    ),
-                    resources = ResourcesConfig(
-                        cpus = jobmanagerCpus,
-                        memory = jobmanagerMemory
-                    )
-                ),
-                taskmanager = TaskManagerConfig(
-                    image = flinkImage,
-                    pullPolicy = imagePullPolicy,
-                    pullSecrets = imagePullSecrets,
-                    serviceAccount = taskmanagerServiceAccount,
-                    taskSlots = taskmanagerTaskSlots,
-                    replicas = taskmanagerReplicas,
-                    environmentVariables = expandVariables(taskmanagerEnvVar),
-                    storage = StorageConfig(
-                        size = taskmanagerStorageSize,
-                        storageClass = taskmanagerStorageClass
-                    ),
-                    resources = ResourcesConfig(
-                        cpus = taskmanagerCpus,
-                        memory = taskmanageMemory
-                    )
-                ),
-                sidecar = SidecarConfig(
-                    image = sidecarImage,
-                    pullPolicy = imagePullPolicy,
-                    serviceAccount = sidecarServiceAccount,
-                    pullSecrets = imagePullSecrets,
-                    jarPath = sidecarJarPath,
-                    className = sidecarClassName,
-                    savepoint = sidecarSavepoint,
-                    arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" "),
-                    parallelism = sidecarParallelism
-                )
-            )
-            PostClusterCreateRequest().run(ApiParams(host, port), config)
-        }
-
-        private fun expandVariables(list: List<String>) =
-            list.filter { it.matches(Regex("[^=]+=[^=]+]")) }
-                .map { it.split("=") }
-                .map { EnvironmentVariable(it.get(0), it.get(1)) }
-                .toList()
-    }
-
-    class DeleteClusterCommand: CliktCommand(name = "delete", help="Delete a cluster") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class CreateClusterCommand(private val factory: CommandFactory): CliktCommand(name = "create", help="Create a cluster") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
+        private val clusterSpec: String by option(help="The specification of the Flink cluster in JSON format").required()
 
         override fun run() {
-            val descriptor = ClusterDescriptor(
-                namespace = namespace,
-                name = clusterName,
-                environment = environment
-            )
-            PostClusterDeleteRequest().run(ApiParams(host, port), descriptor)
+//            val flinkClusterSpec = FlinkClusterSpecification.parse(Files.readString(File(System.getProperty("user.dir", ".") + "/" + clusterSpec).toPath()))
+            val flinkClusterSpec = FlinkClusterSpecification.parse(Files.readString(File(clusterSpec).toPath()))
+            factory.createCreateClusterCommand().run(Address(host, port), clusterName, flinkClusterSpec)
         }
     }
 
-    class RunJobCommand: CliktCommand(name="run", help="Run a job") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class DeleteClusterCommand(private val factory: CommandFactory): CliktCommand(name = "delete", help="Delete a cluster") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-        private val sidecarImage: String by option(help="The image to use for sidecar").required()
-        private val sidecarClassName: String? by option(help="The class name of the job to run")
-        private val sidecarJarPath: String by option(help="The path of the JAR to upload").required()
-        private val sidecarArgument: List<String> by option(help="Pass a job's argument").multiple()
-        private val sidecarArguments: String by option(help="The job's arguments (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
-        private val sidecarSavepoint: String by option(help="Resume the job from the savepoint").default("")
-        private val sidecarServiceAccount: String by option(help="The Sidecar's service account").default("default")
-        private val sidecarParallelism: Int by option(help="The parallelism of the job").int().default(1)
-        private val imagePullPolicy: String by option(help="The image pull policy").default("IfNotPresent")
-        private val imagePullSecrets: String? by option(help="The image pull secrets")
 
         override fun run() {
-            val config = JobRunParams(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
-                sidecar = SidecarConfig(
-                    image = sidecarImage,
-                    pullPolicy = imagePullPolicy,
-                    pullSecrets = imagePullSecrets,
-                    serviceAccount = sidecarServiceAccount,
-                    jarPath = sidecarJarPath,
-                    className = sidecarClassName,
-                    savepoint = sidecarSavepoint,
-                    arguments = if (sidecarArguments.isNotBlank()) sidecarArguments else sidecarArgument.joinToString(" "),
-                    parallelism = sidecarParallelism
-                )
-            )
-            PostJobRunRequest().run(ApiParams(host, port), config)
-            System.exit(0)
+            factory.createDeleteClusterCommand().run(Address(host, port), clusterName)
         }
     }
 
-    class ListJobsCommand: CliktCommand(name="list", help="List jobs") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class StartClusterCommand(private val factory: CommandFactory): CliktCommand(name="start", help="Start the cluster") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-        private val onlyRunning: Boolean by option(help="List only running jobs").flag(default = false)
+        private val withoutSavepoint: Boolean by option(help="Reset savepoint when starting the job").flag(default = false)
+        private val startOnlyCluster: Boolean by option(help="Create the cluster but don't run the job").flag(default = false)
 
         override fun run() {
-            val config = JobsListParams(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
-                running = onlyRunning
+            val params = StartOptions(
+                withoutSavepoint = withoutSavepoint,
+                startOnlyCluster = startOnlyCluster
             )
-            PostJobsListRequest().run(ApiParams(host, port), config)
+            factory.createStartClusterCommand().run(Address(host, port), clusterName, params)
         }
     }
 
-    class ScaleJobCommand: CliktCommand(name = "scale", help="Scale a job") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class StopClusterCommand(private val factory: CommandFactory): CliktCommand(name = "stop", help="Stop the cluster") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-        private val jobId: String by option(help="The id of the job to cancel").prompt("Insert job id")
+        private val withSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
+        private val stopOnlyJob: Boolean by option(help="Stop the job but don't delete the cluster").flag(default = false)
+
+        override fun run() {
+            val params = StopOptions(
+                withSavepoint = withSavepoint,
+                stopOnlyJob = stopOnlyJob
+            )
+            factory.createStopClusterCommand().run(Address(host, port), clusterName, params)
+        }
+    }
+
+    class StartJobCommand(private val factory: CommandFactory): CliktCommand(name="start", help="Start the job") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val withoutSavepoint: Boolean by option(help="Reset savepoint when starting the job").flag(default = false)
+
+        override fun run() {
+            val params = StartOptions(
+                withoutSavepoint = withoutSavepoint,
+                startOnlyCluster = true
+            )
+            factory.createStartClusterCommand().run(Address(host, port), clusterName, params)
+        }
+    }
+
+    class StopJobCommand(private val factory: CommandFactory): CliktCommand(name = "stop", help="Stop the job") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val withSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
+
+        override fun run() {
+            val params = StopOptions(
+                withSavepoint = withSavepoint,
+                stopOnlyJob = false
+            )
+            factory.createStopClusterCommand().run(Address(host, port), clusterName, params)
+        }
+    }
+
+    class ScaleJobCommand(private val factory: CommandFactory): CliktCommand(name = "scale", help="Scale the job") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
 
         override fun run() {
-            val config = JobScaleParams(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
-                jobId = jobId,
+            val params = ScaleOptions(
                 parallelism = parallelism
             )
-            PostJobScaleRequest().run(ApiParams(host, port), config)
+            factory.createScaleJobCommand().run(Address(host, port), clusterName, params)
         }
     }
 
-    class CancelJobCommand: CliktCommand(name = "cancel", help="Cancel a job") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class GetJobDetailsCommand(private val factory: CommandFactory): CliktCommand(name = "details", help="Get job's details") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-        private val createSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
-        private val savepointPath: String by option(help="Directory where to save savepoint").default("file:///var/tmp/savepoints")
-        private val jobId: String by option(help="The id of the job to cancel").prompt("Insert job id")
 
         override fun run() {
-            val config = JobCancelParams(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
-                savepoint = createSavepoint,
-                savepointPath = savepointPath,
-                jobId = jobId
-            )
-            PostJobCancelRequest().run(ApiParams(host, port), config)
+            factory.createGetJobDetailsCommand().run(Address(host, port), clusterName)
         }
     }
 
-    class GetJobDetailsCommand: CliktCommand(name = "details", help="Get job's details") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class GetJobMetricsCommand(private val factory: CommandFactory): CliktCommand(name = "metrics", help="Get job's metrics") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-        private val jobId: String by option(help="The id of the job").prompt("Insert job id")
 
         override fun run() {
-            val config = JobDescriptor(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
-                jobId = jobId
-            )
-            PostJobDetailsRequest().run(ApiParams(host, port), config)
+            factory.createGetJobMetricsCommand().run(Address(host, port), clusterName)
         }
     }
 
-    class GetJobMetricsCommand: CliktCommand(name = "metrics", help="Get job's metrics") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class GetJobManagerMetricsCommand(private val factory: CommandFactory): CliktCommand(name = "metrics", help="Get JobManager's metrics") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-        private val jobId: String by option(help="The id of the job").prompt("Insert job id")
 
         override fun run() {
-            val config = JobDescriptor(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
-                jobId = jobId
-            )
-            PostJobMetricsRequest().run(ApiParams(host, port), config)
+            factory.createGetJobManagerMetricsCommand().run(Address(host, port), clusterName)
         }
     }
 
-    class GetJobManagerMetricsCommand: CliktCommand(name = "metrics", help="Get JobManager's metrics") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class ListTaskManagersCommand(private val factory: CommandFactory): CliktCommand(name="list", help="List TaskManagers") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
 
         override fun run() {
-            val descriptor = ClusterDescriptor(
-                namespace = namespace,
-                name = clusterName,
-                environment = environment
-            )
-            PostJobManagerMetricsRequest().run(ApiParams(host, port), descriptor)
+            factory.createListTaskManagersCommand().run(Address(host, port), clusterName)
         }
     }
 
-    class GetTaskManagerDetailsCommand: CliktCommand(name = "details", help="Get TaskManager's details") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class GetTaskManagerDetailsCommand(private val factory: CommandFactory): CliktCommand(name = "details", help="Get TaskManager's details") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
         private val taskmanagerId: String by option(help="The id of the TaskManager").prompt("Insert TaskManager id")
 
         override fun run() {
-            val config = TaskManagerDescriptor(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
+            val taskManagerId = TaskManagerId(
                 taskmanagerId = taskmanagerId
             )
-            PostTaskManagerDetailsRequest().run(ApiParams(host, port), config)
+            factory.createGetTaskManagerDetailsCommand().run(Address(host, port), clusterName, taskManagerId)
         }
     }
 
-    class GetTaskManagerMetricsCommand: CliktCommand(name = "metrics", help="Get TaskManager's metrics") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+    class GetTaskManagerMetricsCommand(private val factory: CommandFactory): CliktCommand(name = "metrics", help="Get TaskManager's metrics") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
         private val taskmanagerId: String by option(help="The id of the TaskManager").prompt("Insert TaskManager id")
 
         override fun run() {
-            val config = TaskManagerDescriptor(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
+            val taskManagerId = TaskManagerId(
                 taskmanagerId = taskmanagerId
             )
-            PostTaskManagerMetricsRequest().run(ApiParams(host, port), config)
+            factory.createGetTaskManagerMetricsCommand().run(Address(host, port), clusterName, taskManagerId)
         }
     }
 
-    class ListTaskManagersCommand: CliktCommand(name="list", help="List TaskManagers") {
-        private val host: String by option(help="The controller address").default("localhost")
-        private val port: Int by option(help="The controller port").int().default(4444)
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
-        private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-
-        override fun run() {
-            val descriptor = ClusterDescriptor(
-                namespace = namespace,
-                name = clusterName,
-                environment = environment
-            )
-            PostTaskManagersListRequest().run(ApiParams(host, port), descriptor)
-        }
-    }
-
-    class RunControllerCommand: CliktCommand(name = "run", help="Run the controller") {
+    class RunOperatorCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Run the operator") {
         private val port: Int by option(help="Listen on port").int().default(4444)
+        private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
+        private val namespace: String by option(help="The namespace of the resources").default("default")
         private val kubeConfig: String? by option(help="The path of Kubectl config")
+        private val savepointInterval: Int by option(help="The interval between savepoints in seconds").int().default(3600)
 
         override fun run() {
-            val config = ControllerConfig(
+            val config = OperatorConfig(
                 port = port,
+                flinkHostname = flinkHostname,
                 portForward = portForward,
-                kubeConfig = kubeConfig
+                namespace = namespace,
+                useNodePort = kubeConfig != null,
+                savepointInterval = savepointInterval
             )
-            RunController().run(config)
+            Kubernetes.configure(kubeConfig)
+            factory.createRunOperatorCommand().run(config)
         }
     }
 
-    class RunOperatorCommand: CliktCommand(name="run", help="Run the operator") {
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
-        private val kubeConfig: String? by option(help="The path of kuke config")
-
-        override fun run() {
-            Configuration.setDefaultApiClient(CommandUtils.createKubernetesClient(kubeConfig))
-            RunOperator().run(OperatorConfig(namespace))
-        }
-    }
-
-    class SidecarSubmitCommand: CliktCommand(name="submit", help="Submit a job and monitor cluster jobs") {
+    class UploadJARCommand(private val factory: CommandFactory): CliktCommand(name="jar", help="Upload a JAR file") {
+        private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of kuke config")
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
+        private val namespace: String by option(help="The namespace of the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-        private val className: String? by option(help="The name of the class to submit")
-        private val jarPath: String by option(help="The path of the jar to submit").required()
-        private val argument: List<String> by option(help="Pass a job's argument").multiple()
-        private val arguments: String by option(help="The job's arguments (\"--PARAM1 VALUE1 --PARAM2 VALUE2\")").default("")
-        private val savepoint: String? by option(help="Resume the job from the savepoint")
-        private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
+        private val jarPath: String by option(help="The path of the JAR file to upload").required()
 
         override fun run() {
-            val config = JobSubmitParams(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                ),
-                jarPath = jarPath,
-                className = className,
-                arguments = if (arguments.isNotBlank()) arguments else argument.joinToString(" "),
-                savepoint = savepoint,
-                parallelism = parallelism
+            val params = UploadOptions(
+                jarPath = jarPath
             )
-            Configuration.setDefaultApiClient(CommandUtils.createKubernetesClient(kubeConfig))
-            RunSidecarSubmit().run(portForward, kubeConfig != null, config)
-        }
-    }
-
-    class SidecarWatchCommand: CliktCommand(name="watch", help="Monitor cluster jobs") {
-        private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
-        private val kubeConfig: String? by option(help="The path of kuke config")
-        private val namespace: String by option(help="The namespace where to create the resources").default("default")
-        private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val environment: String by option(help="The name of the environment").default("test")
-
-        override fun run() {
-            val config = WatchParams(
-                descriptor = ClusterDescriptor(
-                    namespace = namespace,
-                    name = clusterName,
-                    environment = environment
-                )
+            Kubernetes.configure(kubeConfig)
+            val flinkOptions = FlinkOptions(
+                hostname = flinkHostname,
+                portForward = portForward,
+                useNodePort = kubeConfig != null
             )
-            Configuration.setDefaultApiClient(CommandUtils.createKubernetesClient(kubeConfig))
-            RunSidecarWatch().run(portForward, kubeConfig != null, config)
+            factory.createUploadJARCommand().run(flinkOptions, namespace, clusterName, params)
         }
     }
 }
