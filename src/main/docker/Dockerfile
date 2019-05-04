@@ -11,5 +11,3 @@ EXPOSE ${container.port}
 ENV SERVICE_JAR ${service.jar}
 
 ENTRYPOINT ["sh", "/entrypoint.sh"]
-
-CMD ["controller", "run"]

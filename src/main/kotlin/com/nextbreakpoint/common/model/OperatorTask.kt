@@ -1,0 +1,19 @@
+package com.nextbreakpoint.common.model
+
+enum class OperatorTask {
+    DO_NOTHING,
+    INITIALISE_CLUSTER,
+    SUSPEND_CLUSTER,
+    TERMINATE_CLUSTER,
+    RUN_CLUSTER,
+    CREATE_RESOURCES,
+    DELETE_RESOURCES,
+    DELETE_UPLOAD_JOB,
+    TERMINATE_PODS,
+    UPLOAD_JAR,
+    CANCEL_JOB,
+    START_JOB,
+    STOP_JOB,
+    CREATE_SAVEPOINT,
+    ERASE_SAVEPOINT
+}
