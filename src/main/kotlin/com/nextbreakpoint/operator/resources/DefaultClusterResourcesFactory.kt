@@ -65,7 +65,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addToPorts(srvPort6124)
             .addToPorts(srvPort6125)
             .withSelector(serviceLabels)
-            .withType(flinkCluster.spec.jobmanagerServiceMode ?: "ClusterIP")
+            .withType(flinkCluster.spec.jobManagerSpec?.serviceMode ?: "ClusterIP")
             .endSpec()
             .build()
     }
@@ -80,12 +80,16 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             throw RuntimeException("name is required")
         }
 
-        if (flinkCluster.spec.jobImage == null) {
-            throw RuntimeException("jobImage is required")
+        if (flinkCluster.spec.flinkJobSpec == null) {
+            throw RuntimeException("flinkJobSpec is required")
         }
 
-        if (flinkCluster.spec.jobJarPath == null) {
-            throw RuntimeException("jobJarPath is required")
+        if (flinkCluster.spec.flinkJobSpec.image == null) {
+            throw RuntimeException("image is required")
+        }
+
+        if (flinkCluster.spec.flinkJobSpec.jarPath == null) {
+            throw RuntimeException("jarPath is required")
         }
 
         val jobLabels = mapOf(
@@ -104,7 +108,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         )
 
         val arguments = createJarUploadArguments(
-            namespace, flinkCluster.metadata.name, flinkCluster.spec.jobJarPath
+            namespace, flinkCluster.metadata.name, flinkCluster.spec.flinkJobSpec.jarPath
         )
 
         val jobSelector = V1LabelSelector().matchLabels(jobLabels)
@@ -117,7 +121,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addToContainers(V1Container())
             .editFirstContainer()
             .withName("flink-upload")
-            .withImage(flinkCluster.spec.jobImage)
+            .withImage(flinkCluster.spec.flinkJobSpec.image)
             .withImagePullPolicy(flinkCluster.spec.pullPolicy ?: "Always")
             .withArgs(arguments)
             .addToEnv(podNameEnvVar)
@@ -201,7 +205,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         )
 
         val jobManagerHeapEnvVar = createEnvVar(
-            "FLINK_JM_HEAP", flinkCluster.spec.jobmanagerMemory?.toString() ?: "256"
+            "FLINK_JM_HEAP", flinkCluster.spec.jobManagerSpec?.requiredMemory?.toString() ?: "256"
         )
 
         val rpcAddressEnvVar = createEnvVar(
@@ -223,8 +227,8 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             rpcAddressEnvVar
         )
 
-        if (flinkCluster.spec.jobmanagerEnvironment != null) {
-            jobmanagerVariables.addAll(flinkCluster.spec.jobmanagerEnvironment)
+        if (flinkCluster.spec.jobManagerSpec?.environment != null) {
+            jobmanagerVariables.addAll(flinkCluster.spec.jobManagerSpec.environment)
         }
 
         val jobmanagerContainer = V1ContainerBuilder()
@@ -240,8 +244,8 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withEnv(jobmanagerVariables)
             .withResources(
                 createResourceRequirements(
-                    flinkCluster.spec.jobmanagerCPUs ?: 1.0f,
-                    flinkCluster.spec.jobmanagerMemory ?: 256
+                    flinkCluster.spec.jobManagerSpec?.requiredCPUs ?: 1.0f,
+                    flinkCluster.spec.jobManagerSpec?.requiredMemory ?: 256
                 )
             )
             .build()
@@ -264,8 +268,8 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         )
 
         val jobmanagerVolumeClaim = createPersistentVolumeClaimSpec(
-            flinkCluster.spec.jobmanagerStorageClass ?: "standard",
-            flinkCluster.spec.jobmanagerStorageSize ?: 1
+            flinkCluster.spec.jobManagerSpec?.storageClass ?: "standard",
+            flinkCluster.spec.jobManagerSpec?.requiredStorageSize ?: 1
         )
 
         return V1StatefulSetBuilder()
@@ -336,7 +340,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         )
 
         val taskManagerHeapEnvVar = createEnvVar(
-            "FLINK_TM_HEAP", flinkCluster.spec.taskmanagerMemory?.toString() ?: "1024"
+            "FLINK_TM_HEAP", flinkCluster.spec.taskManagerSpec?.requiredMemory?.toString() ?: "1024"
         )
 
         val rpcAddressEnvVar = createEnvVar(
@@ -344,7 +348,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         )
 
         val numberOfTaskSlotsEnvVar = createEnvVar(
-            "TASK_MANAGER_NUMBER_OF_TASK_SLOTS", flinkCluster.spec.taskmanagerTaskSlots?.toString() ?: "1"
+            "TASK_MANAGER_NUMBER_OF_TASK_SLOTS", flinkCluster.spec.taskManagerSpec?.taskSlots?.toString() ?: "1"
         )
 
         val jobmanagerSelector = V1LabelSelector().matchLabels(jobmanagerLabels)
@@ -359,8 +363,8 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             numberOfTaskSlotsEnvVar
         )
 
-        if (flinkCluster.spec.taskmanagerEnvironment != null) {
-            taskmanagerVariables.addAll(flinkCluster.spec.taskmanagerEnvironment)
+        if (flinkCluster.spec.taskManagerSpec?.environment != null) {
+            taskmanagerVariables.addAll(flinkCluster.spec.taskManagerSpec.environment)
         }
 
         val taskmanagerContainer = V1ContainerBuilder()
@@ -374,8 +378,8 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withEnv(taskmanagerVariables)
             .withResources(
                 createResourceRequirements(
-                    flinkCluster.spec.taskmanagerCPUs ?: 1.0f,
-                    flinkCluster.spec.taskmanagerMemory ?: 1024
+                    flinkCluster.spec.taskManagerSpec?.requiredCPUs ?: 1.0f,
+                    flinkCluster.spec.taskManagerSpec?.requiredMemory ?: 1024
                 )
             )
             .build()
@@ -402,14 +406,14 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         )
 
         val taskmanagerVolumeClaim = createPersistentVolumeClaimSpec(
-            flinkCluster.spec.taskmanagerStorageClass ?: "standard",
-            flinkCluster.spec.taskmanagerStorageSize ?: 5
+            flinkCluster.spec.taskManagerSpec?.storageClass ?: "standard",
+            flinkCluster.spec.taskManagerSpec?.requiredStorageSize ?: 5
         )
 
         return V1StatefulSetBuilder()
             .withMetadata(taskmanagerMetadata)
             .editOrNewSpec()
-            .withReplicas(flinkCluster.spec.taskmanagerReplicas ?: 1)
+            .withReplicas(flinkCluster.spec.taskManagerSpec?.replicas ?: 1)
             .editOrNewTemplate()
             .withSpec(taskmanagerPodSpec)
             .withMetadata(taskmanagerMetadata)

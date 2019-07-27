@@ -164,19 +164,31 @@ Create a resource file:
     apiVersion: "nextbreakpoint.com/v1"
     kind: FlinkCluster
     metadata:
-      name: test
+      name: test-1
     spec:
       pullSecrets: regcred
-      pullPolicy: Always
-      flinkImage: nextbreakpoint/flink:1.7.2-1
-      jobImage: some-registry/flink-jobs:1
-      jobJarPath: /flink-jobs.jar
-      jobClassName: your-main-class
-      jobArguments:
-       - --INPUT
-       - A
-       - --OUTPUT
-       - B
+      pullPolicy: IfNotPresent
+      flinkImage: registry:30000/flink:1.7.2
+      flinkJobSpec:
+        image: registry:30000/flink-jobs:1
+        jarPath: /flink-jobs.jar
+        className: com.nextbreakpoint.flink.jobs.TestJob
+        parallelism: 1
+        arguments:
+          - --BUCKET_BASE_PATH
+          - file:///var/tmp
+      jobManagerSpec:
+        serviceMode: NodePort
+        storageClass: hostpath
+        environment:
+        - name: FLINK_GRAPHITE_HOST
+          value: graphite.default.svc.cluster.local
+      taskManagerSpec:
+        serviceMode: NodePort
+        storageClass: hostpath
+        environment:
+        - name: FLINK_GRAPHITE_HOST
+          value: graphite.default.svc.cluster.local
     EOF
 
 Create the custom object with command:
@@ -276,36 +288,45 @@ Tag and push the image into your registry:
 
     docker push some-registry/flink-jobs:1
 
-Create a JSON file flink-cluster-test.json like:
+Create a JSON file:
 
+    cat <<EOF >flink-cluster-test.json
     {
-        "pullSecrets": "regcred",
-        "pullPolicy": "IfNotPresent",
-        "flinkImage": "nextbreakpoint/flink:1.7.2-1",
-        "jobImage": "some-registry/flink-jobs:1",
-        "jobJarPath": "/flink-jobs.jar",
-        "jobClassName": "com.nextbreakpoint.flink.jobs.TestJob",
-        "jobParallelism": 1,
-        "jobArguments": [
+      "pullSecrets": "regcred",
+      "pullPolicy": "IfNotPresent",
+      "flinkImage": "registry:30000/flink:1.7.2",
+      "flinkJobSpec": {
+        "image": "registry:30000/flink-jobs:1",
+        "jarPath": "/flink-jobs.jar",
+        "className": "com.nextbreakpoint.flink.jobs.TestJob",
+        "parallelism": 1,
+        "arguments": [
           "--BUCKET_BASE_PATH",
           "file:///var/tmp"
-        ],
-        "jobmanagerServiceMode": "NodePort",
-        "jobmanagerStorageClass": "hostpath",
-        "jobmanagerEnvironmentVariables": [
-          {
-            "name": "FLINK_GRAPHITE_HOST",
-            "value": "graphite.default.svc.cluster.local"
-          }
-        ],
-        "taskmanagerStorageClass": "hostpath",
-        "taskmanagerEnvironmentVariables": [
+        ]
+      },
+      "jobManagerSpec": {
+        "serviceMode": "NodePort",
+        "storageClass": "hostpath",
+        "environment": [
           {
             "name": "FLINK_GRAPHITE_HOST",
             "value": "graphite.default.svc.cluster.local"
           }
         ]
+      },
+      "taskManagerSpec": {
+        "serviceMode": "NodePort",
+        "storageClass": "hostpath",
+        "environment": [
+          {
+            "name": "FLINK_GRAPHITE_HOST",
+            "value": "graphite.default.svc.cluster.local"
+          }
+        ]
+      }
     }
+    EOF
 
 Execute the command:
 

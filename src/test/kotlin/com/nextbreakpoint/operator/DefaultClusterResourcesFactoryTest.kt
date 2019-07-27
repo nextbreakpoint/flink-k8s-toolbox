@@ -80,7 +80,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.args?.get(1)).isEqualTo("jar")
         assertThat(container?.args?.get(2)).isEqualTo("--namespace=test")
         assertThat(container?.args?.get(3)).isEqualTo("--cluster-name=${cluster.metadata.name}")
-        assertThat(container?.args?.get(4)).isEqualTo("--jar-path=${cluster.spec.jobJarPath}")
+        assertThat(container?.args?.get(4)).isEqualTo("--jar-path=${cluster.spec.flinkJobSpec.jarPath}")
         assertThat(container?.env).hasSize(2)
         assertThat(container?.env?.get(0)?.name).isEqualTo("POD_NAME")
         assertThat(container?.env?.get(1)?.name).isEqualTo("POD_NAMESPACE")
@@ -114,8 +114,8 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(matchLabels?.get("role")).isNotNull()
 
         assertThat(statefulset.spec?.volumeClaimTemplates).hasSize(1)
-        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.storageClassName).isEqualTo(cluster.spec.jobmanagerStorageClass ?: "standard")
-        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.number?.toInt()).isEqualTo(cluster.spec.jobmanagerStorageSize ?: 1)
+        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.storageClassName).isEqualTo(cluster.spec.jobManagerSpec.storageClass ?: "standard")
+        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.number?.toInt()).isEqualTo(cluster.spec.jobManagerSpec.requiredStorageSize ?: 1)
 
         val podSpec = statefulset.spec?.template?.spec
         assertThat(podSpec?.serviceAccountName).isEqualTo(cluster.spec.serviceAccount ?: "default")
@@ -146,8 +146,8 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.env?.get(4)?.value).isEqualTo("graphite.default.svc.cluster.local")
         assertThat(container?.volumeMounts).hasSize(1)
         assertThat(container?.volumeMounts?.get(0)?.name).isEqualTo("jobmanager")
-        assertThat(container?.resources?.limits?.get("cpu")?.number?.toFloat()).isEqualTo(cluster.spec.jobmanagerCPUs ?: 1.0f)
-        assertThat(container?.resources?.requests?.get("memory")?.number?.toInt()).isEqualTo((cluster.spec.jobmanagerMemory ?: 256) * 1024 * 1024)
+        assertThat(container?.resources?.limits?.get("cpu")?.number?.toFloat()).isEqualTo(cluster.spec.jobManagerSpec.requiredCPUs ?: 1.0f)
+        assertThat(container?.resources?.requests?.get("memory")?.number?.toInt()).isEqualTo((cluster.spec.jobManagerSpec.requiredMemory ?: 256) * 1024 * 1024)
     }
 
     @Test
@@ -164,7 +164,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(labels?.get("component")).isEqualTo("flink")
         assertThat(labels?.get("role")).isEqualTo("taskmanager")
 
-        assertThat(statefulset.spec?.replicas).isEqualTo(cluster.spec.taskmanagerReplicas ?: 1)
+        assertThat(statefulset.spec?.replicas).isEqualTo(cluster.spec.taskManagerSpec.replicas ?: 1)
         assertThat(statefulset.spec?.updateStrategy).isNotNull()
         assertThat(statefulset.spec?.serviceName).isEqualTo("taskmanager")
         assertThat(statefulset.spec?.selector).isNotNull()
@@ -178,8 +178,8 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(matchLabels?.get("role")).isNotNull()
 
         assertThat(statefulset.spec?.volumeClaimTemplates).hasSize(1)
-        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.storageClassName).isEqualTo(cluster.spec.taskmanagerStorageClass ?: "standard")
-        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.number?.toInt()).isEqualTo(cluster.spec.taskmanagerStorageSize ?: 5)
+        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.storageClassName).isEqualTo(cluster.spec.taskManagerSpec.storageClass ?: "standard")
+        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.number?.toInt()).isEqualTo(cluster.spec.taskManagerSpec.requiredStorageSize ?: 5)
 
         val podSpec = statefulset.spec?.template?.spec
         assertThat(podSpec?.serviceAccountName).isEqualTo(cluster.spec.serviceAccount ?: "default")
@@ -205,12 +205,12 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.env?.get(2)?.name).isEqualTo("FLINK_TM_HEAP")
         assertThat(container?.env?.get(3)?.name).isEqualTo("JOB_MANAGER_RPC_ADDRESS")
         assertThat(container?.env?.get(4)?.name).isEqualTo("TASK_MANAGER_NUMBER_OF_TASK_SLOTS")
-        assertThat(container?.env?.get(4)?.value).isEqualTo("${cluster.spec.taskmanagerTaskSlots ?: 1}")
+        assertThat(container?.env?.get(4)?.value).isEqualTo("${cluster.spec.taskManagerSpec.taskSlots ?: 1}")
         assertThat(container?.env?.get(5)?.name).isEqualTo("FLINK_GRAPHITE_HOST")
         assertThat(container?.env?.get(5)?.value).isEqualTo("graphite.default.svc.cluster.local")
         assertThat(container?.volumeMounts).hasSize(1)
         assertThat(container?.volumeMounts?.get(0)?.name).isEqualTo("taskmanager")
-        assertThat(container?.resources?.limits?.get("cpu")?.number?.toFloat()).isEqualTo(cluster.spec.taskmanagerCPUs ?: 1.0f)
-        assertThat(container?.resources?.requests?.get("memory")?.number?.toInt()).isEqualTo((cluster.spec.taskmanagerMemory ?: 1024) * 1024 * 1024)
+        assertThat(container?.resources?.limits?.get("cpu")?.number?.toFloat()).isEqualTo(cluster.spec.taskManagerSpec.requiredCPUs ?: 1.0f)
+        assertThat(container?.resources?.requests?.get("memory")?.number?.toInt()).isEqualTo((cluster.spec.taskManagerSpec.requiredMemory ?: 1024) * 1024 * 1024)
     }
 }

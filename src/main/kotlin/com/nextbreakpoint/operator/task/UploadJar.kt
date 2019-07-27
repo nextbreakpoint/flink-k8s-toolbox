@@ -51,7 +51,7 @@ class UploadJar : TaskHandler {
         if (jarReadyResponse.status == ResultStatus.SUCCESS) {
             return Result(ResultStatus.SUCCESS, "Jar has been uploaded to cluster ${context.flinkCluster.metadata.name} in ${elapsedTime / 1000} seconds")
         } else {
-            return Result(ResultStatus.AWAIT, "Can't find Jar of cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.AWAIT, "Can't find Jar in cluster ${context.flinkCluster.metadata.name}")
         }
     }
 
