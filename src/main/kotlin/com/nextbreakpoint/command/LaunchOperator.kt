@@ -9,7 +9,7 @@ import org.apache.log4j.Logger
 
 class LaunchOperator : ServerCommand<OperatorConfig> {
     companion object {
-        val logger = Logger.getLogger(LaunchOperator::class.simpleName)
+        private val logger = Logger.getLogger(LaunchOperator::class.simpleName)
     }
 
     override fun run(config: OperatorConfig) {

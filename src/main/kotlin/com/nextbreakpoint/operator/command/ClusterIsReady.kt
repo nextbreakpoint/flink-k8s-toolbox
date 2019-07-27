@@ -11,7 +11,9 @@ import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
 class ClusterIsReady(flinkOptions : FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
-    private val logger = Logger.getLogger(ClusterIsReady::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(ClusterIsReady::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {

@@ -13,9 +13,11 @@ import org.apache.log4j.Logger
 import org.joda.time.DateTime
 
 class FlinkClusterCreate(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?>(flinkOptions) {
-    private val logger = Logger.getLogger(FlinkClusterCreate::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(FlinkClusterCreate::class.simpleName)
 
-    private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
+        private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
+    }
 
     override fun execute(clusterId: ClusterId, params: V1FlinkCluster): Result<Void?> {
         try {

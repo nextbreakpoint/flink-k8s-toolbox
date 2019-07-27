@@ -11,7 +11,9 @@ import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
 class JarRemove(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
-    private val logger = Logger.getLogger(JarRemove::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(JarRemove::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {

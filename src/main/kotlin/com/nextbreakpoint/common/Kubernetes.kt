@@ -68,7 +68,9 @@ object Kubernetes {
             throw RuntimeException("Can't fetch custom object $name")
         }
 
-        return FlinkClusterResource.parse(response.body().source().readUtf8Line())
+        response.body().use {
+            return FlinkClusterResource.parse(it.source().readUtf8Line())
+        }
     }
 
     fun watchFlickClusterResources(objectApi: CustomObjectsApi, namespace: String): Watch<V1FlinkCluster> =

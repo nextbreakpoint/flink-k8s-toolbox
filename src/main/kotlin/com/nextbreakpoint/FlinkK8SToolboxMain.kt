@@ -26,7 +26,7 @@ import java.nio.file.Files
 
 class FlinkK8SToolboxMain(private val factory: CommandFactory) {
     companion object {
-        val logger = Logger.getLogger(FlinkK8SToolboxMain::class.simpleName)
+        private val logger = Logger.getLogger(FlinkK8SToolboxMain::class.simpleName)
 
         @JvmStatic
         fun main(args: Array<String>) {

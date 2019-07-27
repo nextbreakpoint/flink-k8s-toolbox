@@ -16,14 +16,18 @@ import java.util.LinkedList
 import java.util.List
 
 class TaskManagerMetrics(flinkOptions: FlinkOptions) : OperatorCommand<TaskManagerId, String>(flinkOptions) {
-    private val logger = Logger.getLogger(TaskManagerMetrics::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(TaskManagerMetrics::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: TaskManagerId): Result<String> {
         val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)
 
         val response = flinkApi.getTaskManagerMetricsCall(params.taskmanagerId, null, null, null).execute()
         if (response.isSuccessful) {
-            logger.info(response.body().string())
+            response.body().use {
+                logger.info(it.source().readUtf8Line())
+            }
         }
 //
 //        try {

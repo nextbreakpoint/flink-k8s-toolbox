@@ -3,9 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.nextbreakpoint</groupId>
     <artifactId>com.nextbreakpoint.flink-k8s-toolbox</artifactId>
-    <version>1.0.2-alpha</version>
+    <version>1.1.0-beta</version>
     <packaging>jar</packaging>
-    <description>Set of tools for managing Flink clusters on Kubernetes</description>
+    <description>Tool for managing Flink clusters on Kubernetes</description>
     <name>com.nextbreakpoint.flink-k8s-toolbox</name>
     <url>https://github.com/nextbreakpoint/flink-k8s-toolbox</url>
     <licenses>

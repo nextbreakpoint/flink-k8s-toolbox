@@ -17,7 +17,9 @@ import java.util.LinkedList
 import java.util.List
 
 class JobManagerMetrics(flinkOptions: FlinkOptions) : OperatorCommand<Void?, String>(flinkOptions) {
-    private val logger = Logger.getLogger(JobManagerMetrics::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(JobManagerMetrics::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
         val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)

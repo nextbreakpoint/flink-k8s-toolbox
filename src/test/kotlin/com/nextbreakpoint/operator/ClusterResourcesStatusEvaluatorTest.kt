@@ -119,8 +119,8 @@ class ClusterResourcesStatusEvaluatorTest {
         val jobmanagerService = V1Service()
 
         jobmanagerService.metadata = V1ObjectMeta()
-        jobmanagerService.metadata.name = "testCluster"
-        jobmanagerService.metadata.namespace = "testNamespace"
+        jobmanagerService.metadata.name = "flink-jobmanager-test"
+        jobmanagerService.metadata.namespace = "flink"
         jobmanagerService.metadata.labels = mapOf()
 
         jobmanagerService.spec = V1ServiceSpec()
@@ -143,8 +143,8 @@ class ClusterResourcesStatusEvaluatorTest {
         val labels = createLabels("flink-operator", "jobmanager", clusterId, cluster.metadata.name)
 
         jobmanagerService.metadata = V1ObjectMeta()
-        jobmanagerService.metadata.name = "testCluster"
-        jobmanagerService.metadata.namespace = "testNamespace"
+        jobmanagerService.metadata.name = "flink-jobmanager-test"
+        jobmanagerService.metadata.namespace = "flink"
         jobmanagerService.metadata.labels = labels
 
         jobmanagerService.spec = V1ServiceSpec()
@@ -845,14 +845,14 @@ class ClusterResourcesStatusEvaluatorTest {
             taskmanagerStatefulSet = targetResources.taskmanagerStatefulSet,
             jobmanagerPersistentVolumeClaim = createPersistentVolumeClaim(
                 "flink-operator",
-                cluster.spec.jobmanagerStorageClass,
+                cluster.spec.jobManager.storageClass,
                 "jobmanager",
                 clusterId,
                 cluster.metadata.name
             ),
             taskmanagerPersistentVolumeClaim = createPersistentVolumeClaim(
                 "flink-operator",
-                cluster.spec.taskmanagerStorageClass,
+                cluster.spec.taskManager.storageClass,
                 "taskmanager",
                 clusterId,
                 cluster.metadata.name
