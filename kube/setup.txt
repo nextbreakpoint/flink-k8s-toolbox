@@ -38,13 +38,13 @@ Update helm repo:
 
 Create docker-registry files:
 
-    pushd minikube
+    pushd kube
     ./setup.sh
     popd
 
 Create docker-registry:
 
-    kubectl create -f ./minikube/docker-registry.yaml
+    kubectl create -f ./kube/docker-registry.yaml
 
 Add this entry to your hosts file (etc/hosts):
 
@@ -145,7 +145,7 @@ Push custom Flink job Docker image to local Docker registry:
 
 Create Flink Cluster resource:
 
-    kubectl create -f minikube/flink-cluster-test.yaml -n flink
+    kubectl create -f kube/flink-cluster-test.yaml -n flink
 
 Get Flink Cluster resource:
 

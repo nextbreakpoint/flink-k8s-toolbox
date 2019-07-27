@@ -2,7 +2,7 @@
     "pullSecrets": "regcred",
     "pullPolicy": "IfNotPresent",
     "flinkImage": "registry:30000/flink:1.7.2",
-    "jobImage": "registry:30000/flink-jobs:1",
+    "jobImage": "registry:30000/flink-jobs:21",
     "jobJarPath": "/flink-jobs.jar",
     "jobClassName": "com.nextbreakpoint.flink.jobs.TestJob",
     "jobParallelism": 1,
