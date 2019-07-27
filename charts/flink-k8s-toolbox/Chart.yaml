@@ -1,5 +1,0 @@
-apiVersion: v1
-appVersion: "1.0"
-description: A Helm chart for installing Flink Kubernetes Toolbox
-name: flink-k8s-toolbox
-version: 1.0.0-alpha

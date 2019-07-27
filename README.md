@@ -1,11 +1,6 @@
 # Flink Kubernetes Toolbox
 
-Flink K8S Toolbox contains a set of tools for managing Flink clusters on Kubernetes.
-It includes a CLI tool, a controller, a sidecar, and a Kubernetes operator:
-- The command-line interface tool interprets commands for managing clusters and jobs.
-- The controller accepts commands from the CLI tool and executes operations against Kubernetes and Flink clusters.
-- The sidecar is responsible of launching and monitoring a job in a Flink cluster.
-- The Kubernetes operator creates or deletes Flink clusters based on custom resources.
+Flink K8S Toolbox contains tools for managing Flink clusters on Kubernetes.
 
 ## License
 
@@ -45,19 +40,29 @@ Create a namespace with command:
 
     kubectl create namespace flink
 
-Install CRD and roles with command:
+Install CRD and cluster roles with command:
 
-    helm install --name flink-k8s-toolbox-global --namespace flink charts/flink-k8s-toolbox-global
+    helm install --name flink-k8s-toolbox-global charts/flink-k8s-toolbox-global
 
-Install controller and operator with command:
+Install service accounts in namespace with command:
 
-    helm install --name flink-k8s-toolbox --namespace flink charts/flink-k8s-toolbox
+    helm install --name flink-k8s-toolbox-accounts --namespace flink charts/flink-k8s-toolbox-accounts
 
-Remove controller and operator with command:    
+Install operator services in namespace with command:
 
-    helm delete --purge flink-k8s-toolbox
+    helm install --name flink-k8s-toolbox-services --namespace flink charts/flink-k8s-toolbox-services
 
-Remove CRD and roles with command:    
+## Uninstall with Helm
+
+Remove operator services with command:    
+
+    helm delete --purge flink-k8s-toolbox-services
+
+Remove service accounts with command:    
+
+    helm delete --purge flink-k8s-toolbox-accounts
+
+Remove CRD and cluster roles with command:    
 
     helm delete --purge flink-k8s-toolbox-global
 
@@ -65,81 +70,37 @@ Remove namespace with command:
 
     helm delete namespace flink
 
-## Install manually
-
-You can install controller and operator manually for testing.
-
-### Get Docker image
+## Get Docker image
 
 The Docker image can be downloaded from Docker Hub:
 
-    docker fetch nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha
+    docker fetch nextbreakpoint/flink-k8s-toolbox:1.0.2-alpha
 
-Tag and push the image into your registry if required:
+Tag and push the image into your registry:
 
-    docker tag nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha some-registry/flink-k8s-toolbox:1.0.0-alpha
+    docker tag nextbreakpoint/flink-k8s-toolbox:1.0.2-alpha some-registry/flink-k8s-toolbox:1.0.2-alpha
 
     docker login some-registry
 
-    docker push some-registry/flink-k8s-toolbox:1.0.0-alpha
+    docker push some-registry/flink-k8s-toolbox:1.0.2-alpha
 
-### Run Flink Controller
-
-Create service account and RBAC role:
-
-    kubectl create -f flink-controller-rbac.yaml
-
-Verify that the service account has been created:
-
-    kubectl get serviceaccounts flink-controller -o yaml     
-
-Run the controller using the image on Docker Hub:
-
-    kubectl run flink-controller --restart=Never --image=nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-controller" } }, "spec": { "serviceAccountName": "flink-controller", "imagePullPolicy": "Always" } }'
-
-Or run the controller using your own registry:
-
-    kubectl run flink-controller --restart=Never --image=some-registry/flink-k8s-toolbox:1.0.0-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-controller" } }, "spec": { "serviceAccountName": "flink-controller", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }'
-
-Verify that the pod has been created:
-
-    kubectl get pod flink-controller -o yaml     
-
-The pod must have a label app with value *flink-controller* and it must run with *flink-controller* service account.
-
-Verify that there are no errors in the logs:
-
-    kubectl logs flink-controller
-
-Check the system events if the pod doesn't start:
-
-    kubectl get events
-
-### Run Flink Operator
-
-Create service account and RBAC role:
-
-    kubectl create -f flink-operator-rbac.yaml
-
-Verify that the service account has been created:
-
-    kubectl get serviceaccounts flink-operator -o yaml     
+## Run Flink Operator manually
 
 Run the operator using the image on Docker Hub:
 
-    kubectl run flink-operator --restart=Never --image=nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=test
+    kubectl run flink-operator --restart=Never --image=nextbreakpoint/flink-k8s-toolbox:1.0.2-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=test
 
-Or run the operator using your own registry:
+Or run the operator using your own registry and pull secrets:
 
-    kubectl run flink-operator --restart=Never --image=some-registry/flink-k8s-toolbox:1.0.0-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=test
+    kubectl run flink-operator --restart=Never --image=some-registry/flink-k8s-toolbox:1.0.2-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=test
 
-Run one operator for each namespace.
+Please note that you must run only one operator for each namespace to avoid conflicts.
 
 Verify that the pod has been created:
 
     kubectl get pod flink-operator -o yaml     
 
-The pod must have a label app with value *flink-operator* and it must run with *flink-operator* service account.
+The pod should have a label app with value *flink-operator* and it should run with *flink-operator* service account.
 
 Verify that there are no errors in the logs:
 
@@ -149,20 +110,17 @@ Check the system events if the pod doesn't start:
 
     kubectl get events
 
-### Create Custom Resource Definition
+## Custom Resource Definition
 
-Flink Operator requires a CRD (Custom Resource Definition):
+Flink Operator requires a Custom Resource Definition:
 
     apiVersion: apiextensions.k8s.io/v1beta1
     kind: CustomResourceDefinition
     metadata:
-      name: flinkclusters.beta.nextbreakpoint.com
+      name: flinkclusters.nextbreakpoint.com
     spec:
-      group: beta.nextbreakpoint.com
-      versions:
-        - name: v1
-          served: true
-          storage: true
+      group: nextbreakpoint.com
+      version: "v1"
       scope: Namespaced
       names:
         plural: flinkclusters
@@ -171,55 +129,50 @@ Flink Operator requires a CRD (Custom Resource Definition):
         shortNames:
         - fc
 
-Create the CRD with command:
-
-    kubectl create -f flink-operator-crd.yaml
+The Custom Resource Definition is installed with the Helm chart. 
 
 ## How to create a Flink Cluster using CRD
 
-Flink Clusters are created or deleted as any other resource.
+Flink Clusters can be created or deleted as any other resource in Kubernetes.
 
-### Create FlinkCluster resource
+### Create a Flink Cluster 
 
 Make sure the CRD has been installed (see above).
 
 Create a Docker file like:
 
-    FROM nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha
+    FROM nextbreakpoint/flink-k8s-toolbox:1.0.2-alpha
     COPY flink-jobs.jar /flink-jobs.jar
 
 where flink-jobs.jar contains the code of your Flink jobs.
 
 Create a Docker image:
 
-    docker build -t flink-submit-with-jobs:1.0.0 .
+    docker build -t flink-jobs:1 .
 
 Tag and push the image into your registry if required:
 
-    docker tag flink-submit-with-jobs:1.0.0 some-registry/flink-submit-with-jobs:1.0.0
+    docker tag flink-jobs:1 some-registry/flink-jobs:1
 
     docker login some-registry
 
-    docker push some-registry/flink-submit-with-jobs:1.0.0
+    docker push some-registry/flink-jobs:1
 
 Create a resource file:
 
     cat <<EOF >flink-cluster-test.yaml
-    apiVersion: "beta.nextbreakpoint.com/v1"
+    apiVersion: "nextbreakpoint.com/v1"
     kind: FlinkCluster
     metadata:
       name: test
     spec:
-      clusterName: test
-      environment: test
       pullSecrets: regcred
       pullPolicy: Always
       flinkImage: nextbreakpoint/flink:1.7.2-1
-      sidecarImage: some-registry/flink-submit-with-jobs:1.0.0
-      sidecarServiceAccount: flink-operator
-      sidecarClassName: your-main-class
-      sidecarJarPath: /flink-jobs.jar
-      sidecarArguments:
+      jobImage: some-registry/flink-jobs:1
+      jobJarPath: /flink-jobs.jar
+      jobClassName: your-main-class
+      jobArguments:
        - --INPUT
        - A
        - --OUTPUT
@@ -229,6 +182,8 @@ Create a resource file:
 Create the custom object with command:
 
     kubectl create -f flink-cluster-test.yaml
+
+Please note you can use other images of Flink. 
 
 ### Delete FlinkCluster resource
 
@@ -244,253 +199,219 @@ List all custom objects with command:
 
 ## Build from source code
 
-Build the tools using Maven:
+Configure your toolchains (~/.m2/toolchains.xml):
+
+    <?xml version="1.0" encoding="UTF8"?>
+    <toolchains>
+      <toolchain>
+        <type>jdk</type>
+        <provides>
+          <version>11</version>
+          <vendor>adoptjdk</vendor>
+        </provides>
+        <configuration>
+          <jdkHome>/Library/Java/JavaVirtualMachines/adoptopenjdk-11.jdk/Contents/Home</jdkHome>
+        </configuration>
+      </toolchain>
+    </toolchains>
+
+Create fat JAR and Docker image using Maven:
 
     mvn clean package
 
-Maven will create a fat JAR and a Docker image.
+Tag and push the image to your Docker registry:
 
-Create a tag and push the image to your Docker registry:
-
-    docker tag flink-k8s-toolbox:1.0.0-alpha some-registry/flink-k8s-toolbox:1.0.0-alpha
+    docker tag flink-k8s-toolbox:1.0.2-alpha some-registry/flink-k8s-toolbox:1.0.2-alpha
 
     docker login some-registry
 
-    docker push some-registry/flink-k8s-toolbox:1.0.0-alpha
+    docker push some-registry/flink-k8s-toolbox:1.0.2-alpha
 
 ## How to use the CLI tool
 
-CLI tool can be executed as Docker image or as JAR file.   
+CLI commands can be executed as Docker image or as JAR file.   
 
-Show all available commands using the JAR file:
+For instance you can show the command usage using the JAR file:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar --help
 
-Or show all available commands using the Docker image:
+Or you can show the command usage using the Docker image:
 
-    docker run --rm -it nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha --help
+    docker run --rm -it nextbreakpoint/flink-k8s-toolbox:1.0.2-alpha --help
 
 The output should look like:
 
     Usage: flink-k8s-toolbox [OPTIONS] COMMAND [ARGS]...
-
+    
     Options:
       -h, --help  Show this message and exit
-
+    
     Commands:
-      controller    Access controller subcommands
       operator      Access operator subcommands
       cluster       Access cluster subcommands
-      sidecar       Access sidecar subcommands
+      upload        Access upload subcommands
       job           Access job subcommands
-      jobs          Access jobs subcommands
       jobmanager    Access JobManager subcommands
       taskmanager   Access TaskManager subcommands
       taskmanagers  Access TaskManagers subcommands
 
 ### How to create a cluster
 
-Execute the command:
+Create a Docker file like:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar \
-        cluster \
-        create \
-        --cluster-name=test \
-        --image-pull-secrets=regcred \
-        --flink-image=nextbreakpoint/flink:1.7.2-1 \
-        --sidecar-image=nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha
-
-Show more options with the command:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar cluster create --help
-
-### How to create a cluster and submit a job
-
-Create a Docker file:
-
-    cat <<EOF >Dockerfile
-    FROM nextbreakpoint/flink-k8s-toolbox:1.0.0-alpha
+    FROM nextbreakpoint/flink-k8s-toolbox:1.0.2-alpha
     COPY flink-jobs.jar /flink-jobs.jar
-    EOF
 
 where flink-jobs.jar contains the code of your Flink jobs.
 
 Create a Docker image:
 
-    docker build -t flink-k8s-toolbox-with-jobs:1.0.0 .
+    docker build -t flink-jobs:1 .
 
-Create a tag and push the image to your Docker registry:
+Tag and push the image into your registry:
 
-    docker tag flink-k8s-toolbox-with-jobs:1.0.0 some-registry/flink-k8s-toolbox-with-jobs:1.0.0
+    docker tag flink-jobs:1 some-registry/flink-jobs:1
 
     docker login some-registry
 
-    docker push some-registry/flink-k8s-toolbox-with-jobs:1.0.0
+    docker push some-registry/flink-jobs:1
+
+Create a JSON file flink-cluster-test.json like:
+
+    {
+        "pullSecrets": "regcred",
+        "pullPolicy": "IfNotPresent",
+        "flinkImage": "nextbreakpoint/flink:1.7.2-1",
+        "jobImage": "some-registry/flink-jobs:1",
+        "jobJarPath": "/flink-jobs.jar",
+        "jobClassName": "com.nextbreakpoint.flink.jobs.TestJob",
+        "jobParallelism": 1,
+        "jobArguments": [
+          "--BUCKET_BASE_PATH",
+          "file:///var/tmp"
+        ],
+        "jobmanagerServiceMode": "NodePort",
+        "jobmanagerStorageClass": "hostpath",
+        "jobmanagerEnvironmentVariables": [
+          {
+            "name": "FLINK_GRAPHITE_HOST",
+            "value": "graphite.default.svc.cluster.local"
+          }
+        ],
+        "taskmanagerStorageClass": "hostpath",
+        "taskmanagerEnvironmentVariables": [
+          {
+            "name": "FLINK_GRAPHITE_HOST",
+            "value": "graphite.default.svc.cluster.local"
+          }
+        ]
+    }
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar \
         cluster \
         create \
         --cluster-name=test \
-        --image-pull-secrets=regcred \
-        --flink-image=nextbreakpoint/flink:1.7.2-1 \
-        --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
-        --sidecar-class-name=your-main-class \
-        --sidecar-jar-path=/flink-jobs.jar \
-        --sidecar-argument=--INPUT \
-        --sidecar-argument=A \
-        --sidecar-argument=--OUTPUT \
-        --sidecar-argument=B
+        --cluster-spec=flink-cluster-test.json 
+
+Show more options with the command:
+
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar cluster create --help
 
 ### How to delete a cluster
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar \
         cluster \
         delete \
-        --cluster-name=my-flink-cluster \
-        --environment=test
+        --cluster-name=test
 
 Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar cluster delete --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar cluster delete --help
 
-### How to run a job
+### How to stop a running cluster
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar \
-        job \
-        run \
-        --cluster-name=my-flink-cluster \
-        --environment=test \
-        --image-pull-secrets=regcred \
-        --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
-        --sidecar-class-name=your-main-class \
-        --sidecar-jar-path=/flink-jobs.jar
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar \
+        cluster \
+        stop \
+        --cluster-name=test
+        --with-savepoint
 
 Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar job run --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar cluster stop --help
 
-### How to pass multiple arguments to a job
+### How to start a stopped cluster
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar \
-        job \
-        run \
-        --cluster-name=my-flink-cluster \
-        --environment=test \
-        --image-pull-secrets=regcred \
-        --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
-        --sidecar-class-name=your-main-class \
-        --sidecar-jar-path=/flink-jobs.jar
-        --sidecar-argument=--INPUT \
-        --sidecar-argument=A \
-        --sidecar-argument=--OUTPUT \
-        --sidecar-argument=B
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar \
+        cluster \
+        start \
+        --cluster-name=test
 
-Or execute the command:
+Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar \
-        job \
-        run \
-        --cluster-name=my-flink-cluster \
-        --environment=test \
-        --image-pull-secrets=regcred \
-        --sidecar-image=some-registry/flink-k8s-toolbox-with-jobs:1.0.0 \
-        --sidecar-class-name=your-main-class \
-        --sidecar-jar-path=/flink-jobs.jar
-        --sidecar-arguments="--INPUT A --OUTPUT B"
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar cluster start --help
 
-### How to cancel a job
+### How to start a stopped cluster but don't run the job
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar \
-        job \
-        cancel \
-        --cluster-name=my-flink-cluster \
-        --environment=test \
-        --create-savepoint \
-        --job-id=your-job-id
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar \
+        cluster \
+        start \
+        --cluster-name=test
+        --start-only-cluster
 
-Show more options with the command:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar job cancel --help
-
-### How to list the jobs
+### How to start a stopped cluster and run the job without savepoint
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar \
-        jobs \
-        list \
-        --cluster-name=my-flink-cluster \
-        --environment=test
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar \
+        cluster \
+        start \
+        --cluster-name=test
+        --without-savepoint
+
+### How to stop a running cluster without creating a savepoint
+
+Execute the command:
+
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar \
+        cluster \
+        stop \
+        --cluster-name=test
+
+### How to upload the JAR file
+
+Flink jobs must be packaged in a regular JAR file.
+
+Upload the JAR with command when running within Kubernetes:
+
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar upload jar --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+
+Or upload the JAR with command when running outside Kubernetes:
+
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar upload jar --kube-config=/your-kube-config.conf --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar jobs list --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar upload jar --help
 
-## More about controller, operator and sidecar
+### How to run the Operator for testing
 
-The controller and the sidecar are usually executed a containers.
-However it might be necessary to run the controller and the sidecar manually for testing.     
-
-### How to run the controller
-
-Run the controller within Kubernetes:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar controller run
-
-Run the controller outside Kubernetes:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar controller run --port=4444 --kube-config=/your-kube-config.conf
-
-Show more options with the command:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar controller run --help
-
-### How to run the sidecar
-
-Run the sidecar within Kubernetes:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar sidecar watch --cluster-name=test
-
-Run the sidecar outside Kubernetes:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar sidecar watch --kube-config=/your-kube-config.conf --cluster-name=test
-
-Show more options with the command:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar sidecar watch --help
-
-### How to submit a job from the sidecar
-
-Run the sidecar within Kubernetes:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar sidecar submit --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
-
-Run the sidecar outside Kubernetes:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar sidecar submit --kube-config=/your-kube-config.conf --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
-
-Show more options with the command:
-
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.0.0-alpha.jar sidecar submit --help
-
-### How to run the operator
-
-The operator can be executed as Docker image or as JAR file.   
+The Flink operator can be executed as Docker image or as JAR file.   
 
 Run the operator with a given namespace and Kubernetes config using the JAR file:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox:1.0.0-alpha.jar operator run --namespace=test --kube-config=/path/admin.conf
+    java -jar com.nextbreakpoint.flink-k8s-toolbox:1.0.2-alpha.jar operator run --namespace=test --kube-config=/path/admin.conf
 
-Run the operator with a given namespace and Kubernetes config using the Docker image:
+Or run the operator with a given namespace and Kubernetes config using the Docker image:
 
-    docker run --rm -it -v /path/admin.conf:/admin.conf flink-k8s-toolbox:1.0.0-alpha operator run --namespace=test --kube-config=/admin.conf
+    docker run --rm -it -v /path/admin.conf:/admin.conf flink-k8s-toolbox:1.0.2-alpha operator run --namespace=test --kube-config=/admin.conf

@@ -1,0 +1,169 @@
+Install minikube or enable kubernetes in docker for desktop
+
+Run minikube with at least 8gb of memory:
+
+    minikube start --memory=8gb ...
+
+Install kubectl:
+
+    brew install kubectl
+
+Install helm:
+
+    brew install kubernetes-helm
+
+Install tiller:
+
+    helm init --history-max 200 --kube-context docker-for-desktop
+
+Create namespace:
+
+    kubectl create namespace flink
+
+Create cluster roles and CRD:
+
+    helm install --name flink-k8s-toolbox-global --namespace flink charts/flink-k8s-toolbox-global
+
+Create service accounts:
+
+    helm install --name flink-k8s-toolbox-accounts --namespace flink charts/flink-k8s-toolbox-accounts
+
+Create operator services (only if you want to run the operator in the cluster):
+
+    helm install --name flink-k8s-toolbox-services --namespace flink charts/flink-k8s-toolbox-services
+
+Update helm repo:
+
+    helm repo update
+
+Create docker-registry files:
+
+    pushd minikube
+    ./setup.sh
+    popd
+
+Create docker-registry:
+
+    kubectl create -f ./minikube/docker-registry.yaml
+
+Add this entry to your hosts file (etc/hosts):
+
+    127.0.0.1 registry
+
+Install java jdk 11 and configure toolchains (~/.m2/toolchains.xml)
+
+Compile Docker image of Flink operator:
+
+    mvn clean package
+
+Tag Docker image using local Docker registry:
+
+    docker tag flink-k8s-toolbox:1.0.2-alpha registry:30000/flink-k8s-toolbox:1.0.2-alpha
+
+Login to local Docker registry (see docker-registry.yaml for credentials):
+
+    docker login registry:30000
+
+Push Docker image to local Docker registry:
+
+    docker push registry:30000/flink-k8s-toolbox:1.0.2-alpha
+
+Create pull secrets in flink namespace:
+
+    kubectl create secret docker-registry regcred -n flink --docker-server=registry:30000 --docker-username=test --docker-password=password --docker-email=<your-email>
+
+Run Flink Operator using JAR file:
+
+    java -jar target/com.nextbreakpoint.flink-k8s-toolbox-1.0.2-alpha.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
+
+Or run Flink Operator using Docker image:
+
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.0.2-alpha --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+
+Build custom Flink image:
+
+    docker build -t flink:1.7.2 --build-arg flink_version=1.7.2 --build-arg scala_version=2.11 flink
+
+Tag custom Flink Docker image using local Docker registry:
+
+    docker tag flink:1.7.2 registry:30000/flink:1.7.2
+
+Login to local Docker registry (see docker-registry.yaml for credentials):
+
+    docker login registry:30000
+
+Push custom Flink Docker image to local Docker registry:
+
+    docker push registry:30000/flink:1.7.2
+
+Checkout a sample Flink job:
+
+    git clone https://github.com/nextbreakpoint/flink-workshop.git
+
+Change directory:
+
+    cd flink-workshop/flink/com.nextbreakpoint.flinkworkshop
+
+Build Flink JAR file:
+
+    mvn clean package
+
+Create empty directory:
+
+    mkdir ~/flink-jobs
+
+Copy JAR file to empty directory:
+
+    cp target/com.nextbreakpoint.flinkworkshop-1.0.1.jar ~/flink-jobs
+
+Change directory:
+
+    cd ~/flink-jobs
+
+Create Docker file:
+
+    cat <<EOF >Dockerfile
+    FROM flink-k8s-toolbox:1.0.2-alpha
+    COPY com.nextbreakpoint.flinkworkshop-1.0.1.jar /flink-jobs.jar
+    EOF
+
+Create Flink job Docker image:
+
+    docker build -t flink-jobs:1 .
+
+Tag custom Flink job Docker image using local Docker registry:
+
+    docker tag flink-jobs:1 registry:30000/flink-jobs:1
+
+Login to local Docker registry (see docker-registry.yaml for credentials):
+
+    docker login registry:30000
+
+Push custom Flink job Docker image to local Docker registry:
+
+    docker push registry:30000/flink-jobs:1
+
+Create Flink Cluster resource:
+
+    kubectl create -f minikube/flink-cluster-test.yaml -n flink
+
+Get Flink Cluster resource:
+
+    kubectl get fc -o yaml -n flink
+
+Check pods are created:
+
+    kubectl get pods -n flink --watch
+
+Check logs of JobManager:
+
+    kubectl logs -n flink flink-jobmanager-test-0
+
+Check logs of TaskManager:
+
+    kubectl logs -n flink flink-taskmanager-test-0
+
+Force deletion of pods if Kubernetes get stuck:
+
+    kubectl delete pod flink-jobmanager-test-11-0 --grace-period=0 --force -n flink
+    kubectl delete pod flink-taskmanager-test-11-0 --grace-period=0 --force -n flink

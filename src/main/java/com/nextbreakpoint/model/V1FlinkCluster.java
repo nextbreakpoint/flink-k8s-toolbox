@@ -65,6 +65,11 @@ public class V1FlinkCluster {
         this.spec = spec;
     }
 
+    public V1FlinkCluster spec(V1FlinkClusterSpec spec) {
+        this.spec = spec;
+        return this;
+    }
+
     public boolean equals(Object o) {
         if (this == o) {
             return true;
