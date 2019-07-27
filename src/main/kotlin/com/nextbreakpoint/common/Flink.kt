@@ -55,73 +55,75 @@ object Flink {
                 throw RuntimeException("Can't fetch custom object $clusterName")
             }
 
-            val flinkCluster = FlinkClusterResource.parse(response.body().source().readUtf8Line())
+            response.body().use {
+                val flinkCluster = FlinkClusterResource.parse(it.source().readUtf8Line())
 
-            val clusterId = flinkCluster.metadata.uid
+                val clusterId = flinkCluster.metadata.uid
 
-            val services = Kubernetes.coreApi.listNamespacedService(
-                namespace,
-                null,
-                null,
-                null,
-                null,
-                "name=$clusterName,uid=$clusterId,role=jobmanager",
-                1,
-                null,
-                30,
-                null
-            )
+                val services = Kubernetes.coreApi.listNamespacedService(
+                    namespace,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "name=$clusterName,uid=$clusterId,role=jobmanager",
+                    1,
+                    null,
+                    30,
+                    null
+                )
 
-            if (!services.items.isEmpty()) {
-                val service = services.items.get(0)
+                if (!services.items.isEmpty()) {
+                    val service = services.items.get(0)
 
-                logger.debug("Found JobManager service ${service.metadata.name}")
+                    logger.debug("Found JobManager service ${service.metadata.name}")
 
-                if (flinkOptions.useNodePort) {
-                    service.spec.ports.filter {
-                        it.name.equals("ui")
-                    }.filter {
-                        it.nodePort != null
-                    }.map {
-                        it.nodePort
-                    }.firstOrNull()?.let {
-                        jobmanagerPort = it
+                    if (flinkOptions.useNodePort) {
+                        service.spec.ports.filter {
+                            it.name.equals("ui")
+                        }.filter {
+                            it.nodePort != null
+                        }.map {
+                            it.nodePort
+                        }.firstOrNull()?.let {
+                            jobmanagerPort = it
+                        }
+                    } else {
+                        service.spec.ports.filter {
+                            it.name.equals("ui")
+                        }.filter {
+                            it.port != null
+                        }.map {
+                            it.port
+                        }.firstOrNull()?.let {
+                            jobmanagerPort = it
+                        }
+                        jobmanagerHost = service.spec.clusterIP
                     }
                 } else {
-                    service.spec.ports.filter {
-                        it.name.equals("ui")
-                    }.filter {
-                        it.port != null
-                    }.map {
-                        it.port
-                    }.firstOrNull()?.let {
-                        jobmanagerPort = it
-                    }
-                    jobmanagerHost = service.spec.clusterIP
+                    throw RuntimeException("JobManager service not found (name=$clusterName, id=$clusterId)")
                 }
-            } else {
-                throw RuntimeException("JobManager service not found (name=$clusterName, id=$clusterId)")
-            }
 
-            val pods = Kubernetes.coreApi.listNamespacedPod(
-                namespace,
-                null,
-                null,
-                null,
-                null,
-                "name=$clusterName,uid=$clusterId,role=jobmanager",
-                1,
-                null,
-                30,
-                null
-            )
+                val pods = Kubernetes.coreApi.listNamespacedPod(
+                    namespace,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "name=$clusterName,uid=$clusterId,role=jobmanager",
+                    1,
+                    null,
+                    30,
+                    null
+                )
 
-            if (!pods.items.isEmpty()) {
-                val pod = pods.items.get(0)
+                if (!pods.items.isEmpty()) {
+                    val pod = pods.items.get(0)
 
-                logger.debug("Found JobManager pod ${pod.metadata.name}")
-            } else {
-                throw RuntimeException("JobManager pod not found (name=$clusterName, id=$clusterId)")
+                    logger.debug("Found JobManager pod ${pod.metadata.name}")
+                } else {
+                    throw RuntimeException("JobManager pod not found (name=$clusterName, id=$clusterId)")
+                }
             }
         }
 

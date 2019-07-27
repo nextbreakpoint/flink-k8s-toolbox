@@ -14,8 +14,13 @@ import com.nextbreakpoint.operator.resources.ClusterResourcesBuilder
 import com.nextbreakpoint.operator.resources.ClusterResourcesStatus
 import com.nextbreakpoint.operator.resources.ClusterResourcesStatusEvaluator
 import com.nextbreakpoint.operator.resources.DefaultClusterResourcesFactory
+import org.apache.log4j.Logger
 
 class CreateResources : TaskHandler {
+    companion object {
+        private val logger: Logger = Logger.getLogger(CreateResources::class.simpleName)
+    }
+
     private val statusEvaluator = ClusterResourcesStatusEvaluator()
 
     override fun onExecuting(context: OperatorContext): Result<String> {
@@ -52,6 +57,12 @@ class CreateResources : TaskHandler {
         val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
 
         if (haveClusterResourcesDiverged(clusterStatus)) {
+            logger.info(clusterStatus.jobmanagerService.toString())
+            logger.info(clusterStatus.jobmanagerStatefulSet.toString())
+            logger.info(clusterStatus.taskmanagerStatefulSet.toString())
+            logger.info(clusterStatus.jobmanagerPersistentVolumeClaim.toString())
+            logger.info(clusterStatus.taskmanagerPersistentVolumeClaim.toString())
+
             return Result(ResultStatus.AWAIT, "Resources of cluster ${context.flinkCluster.metadata.name} have not been created yet")
         }
 
