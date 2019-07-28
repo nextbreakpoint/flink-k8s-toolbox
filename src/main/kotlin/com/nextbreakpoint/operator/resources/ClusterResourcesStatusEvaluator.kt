@@ -64,7 +64,7 @@ class ClusterResourcesStatusEvaluator {
         if (jarUploadJob.spec.template.spec.imagePullSecrets.size != 1) {
             statusReport.add("unexpected number of pull secrets")
         } else {
-            if (jarUploadJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.pullSecrets) {
+            if (jarUploadJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
                 statusReport.add("pull secrets don't match")
             }
         }
@@ -74,11 +74,11 @@ class ClusterResourcesStatusEvaluator {
         } else {
             val container = jarUploadJob.spec.template.spec.containers.get(0)
 
-            if (container.image != flinkCluster.spec.jobImage) {
+            if (container.image != flinkCluster.spec.flinkJob.image) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 
@@ -102,7 +102,7 @@ class ClusterResourcesStatusEvaluator {
                         statusReport.add("unexpected argument cluster name: ${container.args.joinToString(separator = " ")}")
                     }
 
-                    if (jobJarPath == null || jobJarPath != flinkCluster.spec.jobJarPath) {
+                    if (jobJarPath == null || jobJarPath != flinkCluster.spec.flinkJob.jarPath) {
                         statusReport.add("unexpected argument jar path: ${container.args.joinToString(separator = " ")}")
                     }
                 }
@@ -141,7 +141,7 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (jobmanagerService.spec.type != flinkCluster.spec.jobmanagerServiceMode ?: "ClusterIP") {
+        if (jobmanagerService.spec.type != flinkCluster.spec.jobManager.serviceMode ?: "ClusterIP") {
             statusReport.add("service mode doesn't match")
         }
 
@@ -184,7 +184,7 @@ class ClusterResourcesStatusEvaluator {
         if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
             statusReport.add("unexpected number of pull secrets")
         } else {
-            if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.pullSecrets) {
+            if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
                 statusReport.add("pull secrets don't match")
             }
         }
@@ -192,11 +192,11 @@ class ClusterResourcesStatusEvaluator {
         if (jobmanagerStatefulSet.spec.volumeClaimTemplates.size != 1) {
             statusReport.add("unexpected number of volume claim templates")
         } else {
-            if (jobmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.storageClassName != flinkCluster.spec.jobmanagerStorageClass ?: "standard") {
+            if (jobmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.storageClassName != flinkCluster.spec.jobManager.storageClass ?: "standard") {
                 statusReport.add("volume claim storage class doesn't match")
             }
 
-            if (jobmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.get("storage")?.number?.toInt()?.equals(flinkCluster.spec.jobmanagerStorageSize ?: 1) != true) {
+            if (jobmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.get("storage")?.number?.toInt()?.equals(flinkCluster.spec.jobManager.requiredStorageSize ?: 1) != true) {
                 statusReport.add("volume claim size doesn't match")
             }
         }
@@ -206,19 +206,19 @@ class ClusterResourcesStatusEvaluator {
         } else {
             val container = jobmanagerStatefulSet.spec.template.spec.containers.get(0)
 
-            if (container.image != flinkCluster.spec.flinkImage) {
+            if (container.image != flinkCluster.spec.flinkImage?.flinkImage) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 
-            if (container.resources.limits.get("cpu")?.number?.toFloat()?.equals(flinkCluster.spec.jobmanagerCPUs ?: 1.0f) != true) {
+            if (container.resources.limits.get("cpu")?.number?.toFloat()?.equals(flinkCluster.spec.jobManager.requiredCPUs ?: 1.0f) != true) {
                 statusReport.add("container cpu limit doesn't match")
             }
 
-            if (container.resources.requests.get("memory")?.number?.toInt()?.equals((flinkCluster.spec.jobmanagerMemory ?: 256) * 1024 * 1024) != true) {
+            if (container.resources.requests.get("memory")?.number?.toInt()?.equals((flinkCluster.spec.jobManager.requiredMemory ?: 256) * 1024 * 1024) != true) {
                 statusReport.add("container memory limit doesn't match")
             }
 
@@ -230,7 +230,7 @@ class ClusterResourcesStatusEvaluator {
 
             val jobmanagerMemoryEnvVar = container.env.filter { it.name == "FLINK_JM_HEAP" }.firstOrNull()
 
-            if (jobmanagerMemoryEnvVar?.value == null || jobmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.jobmanagerMemory ?: 256) {
+            if (jobmanagerMemoryEnvVar?.value == null || jobmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.jobManager.requiredMemory ?: 256) {
                 statusReport.add("missing or invalid environment variable FLINK_JM_HEAP")
             }
 
@@ -254,7 +254,7 @@ class ClusterResourcesStatusEvaluator {
                 .map { it }
                 .toList()
 
-            if (jobmanagerEnvironmentVariables != flinkCluster.spec.jobmanagerEnvironment ?: listOf<V1EnvVar>()) {
+            if (jobmanagerEnvironmentVariables != flinkCluster.spec.jobManager.environment ?: listOf<V1EnvVar>()) {
                 statusReport.add("container environment variables don't match")
             }
         }
@@ -298,7 +298,7 @@ class ClusterResourcesStatusEvaluator {
         if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
             statusReport.add("unexpected number of pull secrets")
         } else {
-            if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.pullSecrets) {
+            if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
                 statusReport.add("pull secrets don't match")
             }
         }
@@ -306,16 +306,16 @@ class ClusterResourcesStatusEvaluator {
         if (taskmanagerStatefulSet.spec.volumeClaimTemplates.size != 1) {
             statusReport.add("unexpected number of volume claim templates")
         } else {
-            if (taskmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.storageClassName != flinkCluster.spec.taskmanagerStorageClass ?: "standard") {
+            if (taskmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.storageClassName != flinkCluster.spec.taskManager.storageClass ?: "standard") {
                 statusReport.add("volume claim storage class doesn't match")
             }
 
-            if (taskmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.get("storage")?.number?.toInt()?.equals(flinkCluster.spec.taskmanagerStorageSize ?: 5) != true) {
+            if (taskmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.get("storage")?.number?.toInt()?.equals(flinkCluster.spec.taskManager.requiredStorageSize ?: 5) != true) {
                 statusReport.add("volume claim size doesn't match")
             }
         }
 
-        if (taskmanagerStatefulSet.spec.replicas != flinkCluster.spec.taskmanagerReplicas ?: 1) {
+        if (taskmanagerStatefulSet.spec.replicas != flinkCluster.spec.taskManager.replicas ?: 1) {
             statusReport.add("number of replicas doesn't match")
         }
 
@@ -324,19 +324,19 @@ class ClusterResourcesStatusEvaluator {
         } else {
             val container = taskmanagerStatefulSet.spec.template.spec.containers.get(0)
 
-            if (container.image != flinkCluster.spec.flinkImage) {
+            if (container.image != flinkCluster.spec.flinkImage?.flinkImage) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 
-            if (container.resources.limits.get("cpu")?.number?.toFloat()?.equals(flinkCluster.spec.taskmanagerCPUs ?: 1.0f) != true) {
+            if (container.resources.limits.get("cpu")?.number?.toFloat()?.equals(flinkCluster.spec.taskManager.requiredCPUs ?: 1.0f) != true) {
                 statusReport.add("container cpu limit doesn't match")
             }
 
-            if (container.resources.requests.get("memory")?.number?.toInt()?.equals((flinkCluster.spec.taskmanagerMemory ?: 1024) * 1024 * 1024) != true) {
+            if (container.resources.requests.get("memory")?.number?.toInt()?.equals((flinkCluster.spec.taskManager.requiredMemory ?: 1024) * 1024 * 1024) != true) {
                 statusReport.add("container memory limit doesn't match")
             }
 
@@ -348,13 +348,13 @@ class ClusterResourcesStatusEvaluator {
 
             val taskmanagerMemoryEnvVar = container.env.filter { it.name == "FLINK_TM_HEAP" }.firstOrNull()
 
-            if (taskmanagerMemoryEnvVar?.value == null || taskmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.taskmanagerMemory ?: 1024) {
+            if (taskmanagerMemoryEnvVar?.value == null || taskmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.taskManager.requiredMemory ?: 1024) {
                 statusReport.add("missing or invalid environment variable FLINK_TM_HEAP")
             }
 
             val taskmanagerTaskSlotsEnvVar = container.env.filter { it.name == "TASK_MANAGER_NUMBER_OF_TASK_SLOTS" }.firstOrNull()
 
-            if (taskmanagerTaskSlotsEnvVar?.value == null || taskmanagerTaskSlotsEnvVar.value.toInt() != flinkCluster.spec.taskmanagerTaskSlots ?: 1) {
+            if (taskmanagerTaskSlotsEnvVar?.value == null || taskmanagerTaskSlotsEnvVar.value.toInt() != flinkCluster.spec.taskManager.taskSlots ?: 1) {
                 statusReport.add("missing or invalid environment variable TASK_MANAGER_NUMBER_OF_TASK_SLOTS")
             }
 
@@ -379,7 +379,7 @@ class ClusterResourcesStatusEvaluator {
                 .map { it }
                 .toList()
 
-            if (!taskmanagerEnvironmentVariables.equals(flinkCluster.spec.taskmanagerEnvironment ?: listOf<V1EnvVar>())) {
+            if (!taskmanagerEnvironmentVariables.equals(flinkCluster.spec.taskManager.environment ?: listOf<V1EnvVar>())) {
                 statusReport.add("container environment variables don't match")
             }
         }
@@ -416,7 +416,7 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (jobmanagerPersistentVolumeClaim.spec.storageClassName != flinkCluster.spec.jobmanagerStorageClass ?: "standard") {
+        if (jobmanagerPersistentVolumeClaim.spec.storageClassName != flinkCluster.spec.jobManager.storageClass ?: "standard") {
             statusReport.add("persistent volume storage class doesn't match")
         }
 
@@ -452,7 +452,7 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (taskmanagerPersistentVolumeClaim.spec.storageClassName != flinkCluster.spec.taskmanagerStorageClass ?: "standard") {
+        if (taskmanagerPersistentVolumeClaim.spec.storageClassName != flinkCluster.spec.taskManager.storageClass ?: "standard") {
             statusReport.add("persistent volume storage class doesn't match")
         }
 

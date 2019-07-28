@@ -9,7 +9,9 @@ import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
 class JobHasStopped(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
-    private val logger = Logger.getLogger(JobHasStopped::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(JobHasStopped::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {

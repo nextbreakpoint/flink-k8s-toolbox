@@ -26,48 +26,52 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
                 return Result(ResultStatus.FAILED, null)
             }
 
-            val jarList = Gson().fromJson(listJarsResponse.body().source().readUtf8Line(), JarListInfo::class.java)
+            listJarsResponse.body().use {
+                val jarList = Gson().fromJson(it.source().readUtf8Line(), JarListInfo::class.java)
 
-            val jarFile = jarList.files.toList().sortedByDescending { it.uploaded }.firstOrNull()
+                val jarFile = jarList.files.toList().sortedByDescending { it.uploaded }.firstOrNull()
 
-            if (jarFile != null) {
-                val overviewResponse = flinkApi.getOverviewCall(null, null).execute()
+                if (jarFile != null) {
+                    val overviewResponse = flinkApi.getOverviewCall(null, null).execute()
 
-                if (!overviewResponse.isSuccessful) {
-                    return Result(ResultStatus.FAILED,null)
-                }
-
-                overviewResponse.body().use {
-                    val overview = Gson().fromJson(it.source().readUtf8Line(), ClusterOverviewWithVersion::class.java)
-
-                    if (overview.jobsRunning > 0) {
-                        return Result(ResultStatus.FAILED, null)
+                    if (!overviewResponse.isSuccessful) {
+                        return Result(ResultStatus.FAILED,null)
                     }
 
-                    val runJarResponse = flinkApi.runJarCall(
-                        jarFile.id,
-                        false,
-                        OperatorAnnotations.getSavepointPath(params) ?: params.spec.jobSavepoint,
-                        params.spec.jobArguments.joinToString(separator = " "),
-                        null,
-                        params.spec.jobClassName,
-                        params.spec.jobParallelism,
-                        null,
-                        null
-                    ).execute()
+                    overviewResponse.body().use {
+                        val overview = Gson().fromJson(it.source().readUtf8Line(), ClusterOverviewWithVersion::class.java)
 
-                    if (!runJarResponse.isSuccessful) {
-                        return Result(ResultStatus.FAILED, null)
+                        if (overview.jobsRunning > 0) {
+                            return Result(ResultStatus.FAILED, null)
+                        }
+
+                        val runJarResponse = flinkApi.runJarCall(
+                            jarFile.id,
+                            false,
+                            OperatorAnnotations.getSavepointPath(params) ?: params.spec.flinkJob.savepoint,
+                            params.spec.flinkJob.arguments.joinToString(separator = " "),
+                            null,
+                            params.spec.flinkJob.className,
+                            params.spec.flinkJob.parallelism,
+                            null,
+                            null
+                        ).execute()
+
+                        if (!runJarResponse.isSuccessful) {
+                            return Result(ResultStatus.FAILED, null)
+                        }
+
+                        listJarsResponse.body().use {
+                            logger.debug("Job started: ${it.source().readUtf8Line()}")
+                        }
+
+                        return Result(ResultStatus.SUCCESS, null)
                     }
-
-                    logger.info("Job started: ${Gson().toJson(listJarsResponse)}")
-
-                    return Result(ResultStatus.SUCCESS, null)
-                }
-            } else {
+                } else {
 //                logger.warn("Can't find any JAR files in cluster ${clusterId.name}")
 
-                return Result(ResultStatus.AWAIT, null)
+                    return Result(ResultStatus.AWAIT, null)
+                }
             }
         } catch (e : Exception) {
             logger.error("Can't get the list of JAR files of cluster ${clusterId.name}", e)

@@ -1,7 +1,6 @@
 package com.nextbreakpoint.operator.task
 
 import com.google.gson.Gson
-import com.nextbreakpoint.common.model.ClusterStatus
 import com.nextbreakpoint.common.model.Result
 import com.nextbreakpoint.common.model.ResultStatus
 import com.nextbreakpoint.common.model.TaskHandler

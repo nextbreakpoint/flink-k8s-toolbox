@@ -6,35 +6,46 @@ import io.kubernetes.client.models.V1ObjectMeta
 
 object TestFactory {
     fun aCluster(): V1FlinkCluster {
-        val flinkClusterSpec = FlinkClusterSpecification.parse("""
-        {
-            "pullSecrets": "regcred",
-            "pullPolicy": "IfNotPresent",
-            "flinkImage": "registry:30000/flink:1.7.2",
-            "jobImage": "registry:30000/flink-jobs:1",
-            "jobJarPath": "/flink-jobs-1.0.0.jar",
-            "jobClassName": "com.nextbreakpoint.flink.jobs.TestJob",
-            "jobParallelism": 1,
-            "jobArguments": [
-              "--BUCKET_BASE_PATH",
-              "file:///var/tmp"
-            ],
-            "jobmanagerStorageClass": "hostpath",
-            "jobmanagerEnvironment": [
-              {
-                "name": "FLINK_GRAPHITE_HOST",
-                "value": "graphite.default.svc.cluster.local"
+        val flinkClusterSpec = FlinkClusterSpecification.parse(
+            """
+            {
+              "flinkImage": {
+                "pullSecrets": "regcred",
+                "pullPolicy": "IfNotPresent",
+                "flinkImage": "registry:30000/flink:1.7.2"
+              },
+              "flinkJob": {
+                "image": "registry:30000/flink-jobs:1",
+                "jarPath": "/flink-jobs.jar",
+                "className": "com.nextbreakpoint.flink.jobs.TestJob",
+                "parallelism": 1,
+                "arguments": [
+                  "--BUCKET_BASE_PATH",
+                  "file:///var/tmp"
+                ]
+              },
+              "jobManager": {
+                "serviceMode": "ClusterIP",
+                "storageClass": "hostpath",
+                "environment": [
+                  {
+                    "name": "FLINK_GRAPHITE_HOST",
+                    "value": "graphite.default.svc.cluster.local"
+                  }
+                ]
+              },
+              "taskManager": {
+                "serviceMode": "NodePort",
+                "storageClass": "hostpath",
+                "environment": [
+                  {
+                    "name": "FLINK_GRAPHITE_HOST",
+                    "value": "graphite.default.svc.cluster.local"
+                  }
+                ]
               }
-            ],
-            "taskmanagerStorageClass": "hostpath",
-            "taskmanagerEnvironment": [
-              {
-                "name": "FLINK_GRAPHITE_HOST",
-                "value": "graphite.default.svc.cluster.local"
-              }
-            ]
-        }
-        """.trimIndent())
+            }
+            """.trimIndent())
         return makeV1FlinkCluster("test", "flink", flinkClusterSpec)
     }
 
