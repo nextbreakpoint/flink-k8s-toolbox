@@ -8,6 +8,7 @@ import com.nextbreakpoint.common.model.OperatorTask
 import com.nextbreakpoint.common.model.Result
 import com.nextbreakpoint.common.model.ResultStatus
 import com.nextbreakpoint.common.model.StartOptions
+import com.nextbreakpoint.common.model.TaskStatus
 import com.nextbreakpoint.operator.OperatorAnnotations
 import com.nextbreakpoint.operator.OperatorCache
 import com.nextbreakpoint.operator.OperatorCommand
@@ -24,80 +25,93 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
 
             val clusterStatus = OperatorAnnotations.getClusterStatus(flinkCluster)
 
+            val operatorStatus = OperatorAnnotations.getCurrentOperatorStatus(flinkCluster)
+
             val operatorTask = OperatorAnnotations.getCurrentOperatorTask(flinkCluster)
 
-            val statusList = if (params.startOnlyCluster) {
-                when (clusterStatus) {
-                    ClusterStatus.TERMINATED ->
-                        listOf(
-                            operatorTask,
-                            OperatorTask.CREATE_RESOURCES,
-                            OperatorTask.DELETE_UPLOAD_JOB,
-                            OperatorTask.UPLOAD_JAR,
-                            OperatorTask.SUSPEND_CLUSTER,
-                            OperatorTask.DO_NOTHING
-                        )
-                    ClusterStatus.SUSPENDED ->
-                        listOf(
-                            operatorTask,
-                            OperatorTask.DELETE_UPLOAD_JOB,
-                            OperatorTask.UPLOAD_JAR,
-                            OperatorTask.SUSPEND_CLUSTER,
-                            OperatorTask.DO_NOTHING
-                        )
-                    else -> listOf()
-                }
-            } else {
-                when (clusterStatus) {
-                    ClusterStatus.TERMINATED ->
-                        if (params.withoutSavepoint) {
+            if (operatorStatus == TaskStatus.IDLE) {
+                val statusList = if (params.startOnlyCluster) {
+                    when (clusterStatus) {
+                        ClusterStatus.TERMINATED ->
                             listOf(
                                 operatorTask,
+                                OperatorTask.STARTING_CLUSTER,
                                 OperatorTask.CREATE_RESOURCES,
                                 OperatorTask.DELETE_UPLOAD_JOB,
                                 OperatorTask.UPLOAD_JAR,
-                                OperatorTask.ERASE_SAVEPOINT,
-                                OperatorTask.START_JOB,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.SUSPEND_CLUSTER,
+                                OperatorTask.DO_NOTHING
                             )
-                        } else {
+                        ClusterStatus.SUSPENDED ->
                             listOf(
                                 operatorTask,
-                                OperatorTask.CREATE_RESOURCES,
+                                OperatorTask.STARTING_CLUSTER,
                                 OperatorTask.DELETE_UPLOAD_JOB,
                                 OperatorTask.UPLOAD_JAR,
-                                OperatorTask.START_JOB,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.SUSPEND_CLUSTER,
+                                OperatorTask.DO_NOTHING
                             )
-                        }
-                    ClusterStatus.SUSPENDED ->
-                        if (params.withoutSavepoint) {
-                            listOf(
-                                operatorTask,
-                                OperatorTask.DELETE_UPLOAD_JOB,
-                                OperatorTask.UPLOAD_JAR,
-                                OperatorTask.ERASE_SAVEPOINT,
-                                OperatorTask.START_JOB,
-                                OperatorTask.RUN_CLUSTER
-                            )
-                        } else {
-                            listOf(
-                                operatorTask,
-                                OperatorTask.DELETE_UPLOAD_JOB,
-                                OperatorTask.UPLOAD_JAR,
-                                OperatorTask.START_JOB,
-                                OperatorTask.RUN_CLUSTER
-                            )
-                        }
-                    else -> listOf()
+                        else -> listOf()
+                    }
+                } else {
+                    when (clusterStatus) {
+                        ClusterStatus.TERMINATED ->
+                            if (params.withoutSavepoint) {
+                                listOf(
+                                    operatorTask,
+                                    OperatorTask.STARTING_CLUSTER,
+                                    OperatorTask.CREATE_RESOURCES,
+                                    OperatorTask.DELETE_UPLOAD_JOB,
+                                    OperatorTask.UPLOAD_JAR,
+                                    OperatorTask.ERASE_SAVEPOINT,
+                                    OperatorTask.START_JOB,
+                                    OperatorTask.RUN_CLUSTER
+                                )
+                            } else {
+                                listOf(
+                                    operatorTask,
+                                    OperatorTask.STARTING_CLUSTER,
+                                    OperatorTask.CREATE_RESOURCES,
+                                    OperatorTask.DELETE_UPLOAD_JOB,
+                                    OperatorTask.UPLOAD_JAR,
+                                    OperatorTask.START_JOB,
+                                    OperatorTask.RUN_CLUSTER
+                                )
+                            }
+                        ClusterStatus.SUSPENDED ->
+                            if (params.withoutSavepoint) {
+                                listOf(
+                                    operatorTask,
+                                    OperatorTask.STARTING_CLUSTER,
+                                    OperatorTask.DELETE_UPLOAD_JOB,
+                                    OperatorTask.UPLOAD_JAR,
+                                    OperatorTask.ERASE_SAVEPOINT,
+                                    OperatorTask.START_JOB,
+                                    OperatorTask.RUN_CLUSTER
+                                )
+                            } else {
+                                listOf(
+                                    operatorTask,
+                                    OperatorTask.STARTING_CLUSTER,
+                                    OperatorTask.DELETE_UPLOAD_JOB,
+                                    OperatorTask.UPLOAD_JAR,
+                                    OperatorTask.START_JOB,
+                                    OperatorTask.RUN_CLUSTER
+                                )
+                            }
+                        else -> listOf()
+                    }
                 }
-            }
 
-            if (statusList.isNotEmpty()) {
-                OperatorAnnotations.setClusterStatus(flinkCluster, ClusterStatus.STARTING)
-                OperatorAnnotations.resetOperatorTasks(flinkCluster, statusList)
-                Kubernetes.updateAnnotations(flinkCluster)
-                return Result(ResultStatus.SUCCESS, statusList)
+                if (statusList.isNotEmpty()) {
+                    OperatorAnnotations.resetOperatorTasks(flinkCluster, statusList)
+                    Kubernetes.updateAnnotations(flinkCluster)
+                    return Result(ResultStatus.SUCCESS, statusList)
+                } else {
+                    logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
+
+                    return Result(ResultStatus.AWAIT, OperatorAnnotations.getCurrentOperatorTasks(flinkCluster))
+                }
             } else {
                 logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
 

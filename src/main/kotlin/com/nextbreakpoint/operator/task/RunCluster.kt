@@ -80,10 +80,11 @@ class RunCluster : TaskHandler {
                             OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
                             OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                            OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
+                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STOPPING_CLUSTER)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CANCEL_JOB)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.TERMINATE_PODS)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.DELETE_RESOURCES)
+                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STARTING_CLUSTER)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CREATE_RESOURCES)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
@@ -106,8 +107,9 @@ class RunCluster : TaskHandler {
                             OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
                             OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                            OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
+                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STOPPING_CLUSTER)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CANCEL_JOB)
+                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STARTING_CLUSTER)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
@@ -126,8 +128,7 @@ class RunCluster : TaskHandler {
             val lastSavepointsTimestamp = OperatorAnnotations.getSavepointTimestamp(context.flinkCluster)
 
             if (System.currentTimeMillis() - lastSavepointsTimestamp > context.controller.savepointInterval) {
-                // change status here to prevent start/stop commands to change the status
-                OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.CHECKPOINTING)
+                OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CHECKPOINTING_CLUSTER)
                 OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CREATE_SAVEPOINT)
                 OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
             }

@@ -76,9 +76,10 @@ class DoNothing : TaskHandler {
                             OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
                             OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                            OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
+                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STOPPING_CLUSTER)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.TERMINATE_PODS)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.DELETE_RESOURCES)
+                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STARTING_CLUSTER)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CREATE_RESOURCES)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
@@ -101,7 +102,7 @@ class DoNothing : TaskHandler {
                             OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
                             OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                            OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
+                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STARTING_CLUSTER)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
                             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
