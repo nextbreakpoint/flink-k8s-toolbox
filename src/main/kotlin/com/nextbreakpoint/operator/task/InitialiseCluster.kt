@@ -18,17 +18,17 @@ class InitialiseCluster : TaskHandler {
         OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
         OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
 
-        val flinkClusterSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec)
-        val jobManagerSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec.jobManager)
-        val taskManagerSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec.taskManager)
-        val flinkImageSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec.flinkImage)
-        val flinkJobSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec.flinkJob)
+        val flinkClusterDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec)
+        val jobManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.jobManager)
+        val taskManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.taskManager)
+        val flinkImageDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.flinkImage)
+        val flinkJobDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.flinkJob)
 
-        OperatorAnnotations.setFlinkClusterSpecDigest(context.flinkCluster, flinkClusterSpecDigest)
-        OperatorAnnotations.setJobManagerSpecDigest(context.flinkCluster, jobManagerSpecDigest)
-        OperatorAnnotations.setTaskManagerSpecDigest(context.flinkCluster, taskManagerSpecDigest)
-        OperatorAnnotations.setFlinkImageSpecDigest(context.flinkCluster, flinkImageSpecDigest)
-        OperatorAnnotations.setFlinkJobSpecDigest(context.flinkCluster, flinkJobSpecDigest)
+        OperatorAnnotations.setFlinkClusterDigest(context.flinkCluster, flinkClusterDigest)
+        OperatorAnnotations.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
+        OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
+        OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, flinkImageDigest)
+        OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, flinkJobDigest)
 
         return Result(ResultStatus.SUCCESS, "Cluster status updated")
     }

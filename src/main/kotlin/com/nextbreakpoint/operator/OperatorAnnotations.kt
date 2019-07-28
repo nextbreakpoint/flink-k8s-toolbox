@@ -1,8 +1,8 @@
 package com.nextbreakpoint.operator
 
 import com.nextbreakpoint.common.model.ClusterStatus
-import com.nextbreakpoint.common.model.TaskStatus
 import com.nextbreakpoint.common.model.OperatorTask
+import com.nextbreakpoint.common.model.TaskStatus
 import com.nextbreakpoint.model.V1FlinkCluster
 
 object OperatorAnnotations {
@@ -125,35 +125,50 @@ object OperatorAnnotations {
         flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_STATUS] = status.toString()
     }
 
-    fun setFlinkClusterSpecDigest(flinkCluster: V1FlinkCluster, digest: String) {
+    fun setFlinkClusterDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_DIGEST] = digest
     }
 
-    fun setJobManagerSpecDigest(flinkCluster: V1FlinkCluster, digest: String) {
+    fun setJobManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_JOBMANAGER_DIGEST] = digest
     }
 
-    fun setTaskManagerSpecDigest(flinkCluster: V1FlinkCluster, digest: String) {
+    fun setTaskManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKMANAGER_DIGEST] = digest
     }
 
-    fun setFlinkImageSpecDigest(flinkCluster: V1FlinkCluster, digest: String) {
+    fun setFlinkImageDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_IMAGE_DIGEST] = digest
     }
 
-    fun setFlinkJobSpecDigest(flinkCluster: V1FlinkCluster, digest: String) {
+    fun setFlinkJobDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_JOB_DIGEST] = digest
     }
+
+    fun getFlinkClusterDigest(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_DIGEST]
+
+    fun getJobManagerDigest(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_JOBMANAGER_DIGEST]
+
+    fun getTaskManagerDigest(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKMANAGER_DIGEST]
+
+    fun getFlinkImageDigest(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_IMAGE_DIGEST]
+
+    fun getFlinkJobDigest(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_JOB_DIGEST]
 
     private fun ensureAnnotations(flinkCluster: V1FlinkCluster) {
         if (flinkCluster.metadata.annotations == null) {
