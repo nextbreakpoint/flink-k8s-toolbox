@@ -9,7 +9,9 @@ import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
 class ClusterGetTask(flinkOptions: FlinkOptions, val cache: OperatorCache) : OperatorCommand<Void?, Map<String, String>>(flinkOptions) {
-    private val logger = Logger.getLogger(ClusterGetTask::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(ClusterGetTask::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Map<String, String>> {
         try {

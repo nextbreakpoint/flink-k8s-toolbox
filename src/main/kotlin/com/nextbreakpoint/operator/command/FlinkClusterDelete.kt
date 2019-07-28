@@ -10,9 +10,11 @@ import io.kubernetes.client.models.V1DeleteOptions
 import org.apache.log4j.Logger
 
 class FlinkClusterDelete(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
-    private val logger = Logger.getLogger(FlinkClusterDelete::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(FlinkClusterDelete::class.simpleName)
 
-    private val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
+        private val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
+    }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {
