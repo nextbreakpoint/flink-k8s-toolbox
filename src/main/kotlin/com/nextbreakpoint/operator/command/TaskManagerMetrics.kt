@@ -25,7 +25,9 @@ class TaskManagerMetrics(flinkOptions: FlinkOptions) : OperatorCommand<TaskManag
 
         val response = flinkApi.getTaskManagerMetricsCall(params.taskmanagerId, null, null, null).execute()
         if (response.isSuccessful) {
-            logger.info(response.body().string())
+            response.body().use {
+                logger.info(it.source().readUtf8Line())
+            }
         }
 //
 //        try {

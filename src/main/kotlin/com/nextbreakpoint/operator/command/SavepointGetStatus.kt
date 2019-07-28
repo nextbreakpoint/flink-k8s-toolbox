@@ -32,7 +32,10 @@ class SavepointGetStatus(flinkOptions: FlinkOptions) : OperatorCommand<Map<Strin
             }.filter {
                 it.second.code() == 200
             }.map {
-                val asynchronousOperationResult = Gson().fromJson(it.second.body().source().readUtf8Line(), AsynchronousOperationResult::class.java)
+                val asynchronousOperationResult = it.second.body().use {
+                    Gson().fromJson(it.source().readUtf8Line(), AsynchronousOperationResult::class.java)
+
+                }
 
                 if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
                     logger.info("Savepoint still in progress for job ${it.first} in cluster ${clusterId.name}")
@@ -55,7 +58,9 @@ class SavepointGetStatus(flinkOptions: FlinkOptions) : OperatorCommand<Map<Strin
                 }.filter {
                     it.second.code() == 200
                 }.map {
-                    val checkpointingStatistics = Gson().fromJson(it.second.body().source().readUtf8Line(), CheckpointingStatistics::class.java)
+                    val checkpointingStatistics = it.second.body().use {
+                        Gson().fromJson(it.source().readUtf8Line(), CheckpointingStatistics::class.java)
+                    }
 
                     val savepoint = checkpointingStatistics.latest?.savepoint
 
