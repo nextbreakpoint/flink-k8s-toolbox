@@ -1,7 +1,7 @@
 apiVersion: "nextbreakpoint.com/v1"
 kind: FlinkCluster
 metadata:
-  name: test-1
+  name: test
 spec:
   flinkImage:
     pullSecrets: regcred
