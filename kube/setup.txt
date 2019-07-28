@@ -72,6 +72,10 @@ Create pull secrets in flink namespace:
 
     kubectl create secret docker-registry regcred -n flink --docker-server=registry:30000 --docker-username=test --docker-password=password --docker-email=<your-email>
 
+Associate pull secrets to flink-operator service account:
+
+    kubectl patch serviceaccount flink-operator -n flink -p '{"imagePullSecrets": [{"name": "regcred"}]}'
+
 Run Flink Operator using JAR file:
 
     java -jar target/com.nextbreakpoint.flink-k8s-toolbox-1.1.0-beta.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
@@ -79,6 +83,10 @@ Run Flink Operator using JAR file:
 Or run Flink Operator using Docker image:
 
     kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.0-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+
+Or run Flink Operator using Helm chart:
+
+    helm install --name flink-k8s-toolbox-services --namespace flink charts/flink-k8s-toolbox-services --set image.repository=registry:30000/flink-k8s-toolbox
 
 Build custom Flink image:
 

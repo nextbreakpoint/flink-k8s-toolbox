@@ -6,3 +6,6 @@ image:
   repository: nextbreakpoint/flink-k8s-toolbox
   tag: 1.1.0-beta
   pullPolicy: Always
+
+savepoint:
+  interval: 600

@@ -3,7 +3,7 @@
 {{- $chart := include "flink-k8s-toolbox.chart" . -}}
 {{- $root := . }}
 ---
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $fullname }}-operator
@@ -32,13 +32,15 @@ spec:
           imagePullPolicy: {{ $root.Values.image.pullPolicy }}
           ports:
             - name: admin
-              containerPort: 8080
+              containerPort: 4444
               protocol: TCP
           args:
             - operator
-            - post
+            - run
             - --namespace
             - {{ $root.Release.Namespace }}
+            - --savepoint-interval
+            - "{{ $root.Values.savepoint.interval }}"
           env:
             - name: POD_NAME
               valueFrom:
