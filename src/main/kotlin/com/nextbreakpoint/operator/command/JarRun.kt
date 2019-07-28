@@ -47,11 +47,11 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
                     val runJarResponse = flinkApi.runJarCall(
                         jarFile.id,
                         false,
-                        OperatorAnnotations.getSavepointPath(params) ?: params.spec.flinkJobSpec.savepoint,
-                        params.spec.flinkJobSpec.arguments.joinToString(separator = " "),
+                        OperatorAnnotations.getSavepointPath(params) ?: params.spec.flinkJob.savepoint,
+                        params.spec.flinkJob.arguments.joinToString(separator = " "),
                         null,
-                        params.spec.flinkJobSpec.className,
-                        params.spec.flinkJobSpec.parallelism,
+                        params.spec.flinkJob.className,
+                        params.spec.flinkJob.parallelism,
                         null,
                         null
                     ).execute()

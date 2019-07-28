@@ -1,5 +1,6 @@
 package com.nextbreakpoint.operator.task
 
+import com.nextbreakpoint.common.FlinkClusterSpecification
 import com.nextbreakpoint.common.model.ClusterStatus
 import com.nextbreakpoint.common.model.OperatorTask
 import com.nextbreakpoint.common.model.Result
@@ -16,6 +17,18 @@ class InitialiseCluster : TaskHandler {
         OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
         OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
         OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
+
+        val flinkClusterSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec)
+        val jobManagerSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec.jobManager)
+        val taskManagerSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec.taskManager)
+        val flinkImageSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec.flinkImage)
+        val flinkJobSpecDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec.flinkJob)
+
+        OperatorAnnotations.setFlinkClusterSpecDigest(context.flinkCluster, flinkClusterSpecDigest)
+        OperatorAnnotations.setJobManagerSpecDigest(context.flinkCluster, jobManagerSpecDigest)
+        OperatorAnnotations.setTaskManagerSpecDigest(context.flinkCluster, taskManagerSpecDigest)
+        OperatorAnnotations.setFlinkImageSpecDigest(context.flinkCluster, flinkImageSpecDigest)
+        OperatorAnnotations.setFlinkJobSpecDigest(context.flinkCluster, flinkJobSpecDigest)
 
         return Result(ResultStatus.SUCCESS, "Cluster status updated")
     }

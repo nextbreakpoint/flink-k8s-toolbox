@@ -9,10 +9,12 @@ object TestFactory {
         val flinkClusterSpec = FlinkClusterSpecification.parse(
             """
             {
-              "pullSecrets": "regcred",
-              "pullPolicy": "IfNotPresent",
-              "flinkImage": "registry:30000/flink:1.7.2",
-              "flinkJobSpec": {
+              "flinkImage": {
+                "pullSecrets": "regcred",
+                "pullPolicy": "IfNotPresent",
+                "flinkImage": "registry:30000/flink:1.7.2"
+              },
+              "flinkJob": {
                 "image": "registry:30000/flink-jobs:1",
                 "jarPath": "/flink-jobs.jar",
                 "className": "com.nextbreakpoint.flink.jobs.TestJob",
@@ -22,7 +24,7 @@ object TestFactory {
                   "file:///var/tmp"
                 ]
               },
-              "jobManagerSpec": {
+              "jobManager": {
                 "serviceMode": "ClusterIP",
                 "storageClass": "hostpath",
                 "environment": [
@@ -32,7 +34,7 @@ object TestFactory {
                   }
                 ]
               },
-              "taskManagerSpec": {
+              "taskManager": {
                 "serviceMode": "NodePort",
                 "storageClass": "hostpath",
                 "environment": [

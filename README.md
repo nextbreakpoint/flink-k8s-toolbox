@@ -166,10 +166,11 @@ Create a resource file:
     metadata:
       name: test-1
     spec:
-      pullSecrets: regcred
-      pullPolicy: IfNotPresent
-      flinkImage: registry:30000/flink:1.7.2
-      flinkJobSpec:
+      flinkImage:
+        pullSecrets: regcred
+        pullPolicy: IfNotPresent
+        flinkImage: registry:30000/flink:1.7.2
+      flinkJob:
         image: registry:30000/flink-jobs:1
         jarPath: /flink-jobs.jar
         className: com.nextbreakpoint.flink.jobs.TestJob
@@ -177,13 +178,13 @@ Create a resource file:
         arguments:
           - --BUCKET_BASE_PATH
           - file:///var/tmp
-      jobManagerSpec:
+      jobManager:
         serviceMode: NodePort
         storageClass: hostpath
         environment:
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
-      taskManagerSpec:
+      taskManager:
         serviceMode: NodePort
         storageClass: hostpath
         environment:
@@ -292,10 +293,12 @@ Create a JSON file:
 
     cat <<EOF >flink-cluster-test.json
     {
-      "pullSecrets": "regcred",
-      "pullPolicy": "IfNotPresent",
-      "flinkImage": "registry:30000/flink:1.7.2",
-      "flinkJobSpec": {
+      "flinkImage": {
+        "pullSecrets": "regcred",
+        "pullPolicy": "IfNotPresent",
+        "flinkImage": "registry:30000/flink:1.7.2"
+      },
+      "flinkJob": {
         "image": "registry:30000/flink-jobs:1",
         "jarPath": "/flink-jobs.jar",
         "className": "com.nextbreakpoint.flink.jobs.TestJob",
@@ -305,7 +308,7 @@ Create a JSON file:
           "file:///var/tmp"
         ]
       },
-      "jobManagerSpec": {
+      "jobManager": {
         "serviceMode": "NodePort",
         "storageClass": "hostpath",
         "environment": [
@@ -315,7 +318,7 @@ Create a JSON file:
           }
         ]
       },
-      "taskManagerSpec": {
+      "taskManager": {
         "serviceMode": "NodePort",
         "storageClass": "hostpath",
         "environment": [

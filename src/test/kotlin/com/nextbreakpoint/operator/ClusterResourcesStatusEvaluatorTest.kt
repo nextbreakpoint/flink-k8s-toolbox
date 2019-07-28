@@ -845,14 +845,14 @@ class ClusterResourcesStatusEvaluatorTest {
             taskmanagerStatefulSet = targetResources.taskmanagerStatefulSet,
             jobmanagerPersistentVolumeClaim = createPersistentVolumeClaim(
                 "flink-operator",
-                cluster.spec.jobManagerSpec.storageClass,
+                cluster.spec.jobManager.storageClass,
                 "jobmanager",
                 clusterId,
                 cluster.metadata.name
             ),
             taskmanagerPersistentVolumeClaim = createPersistentVolumeClaim(
                 "flink-operator",
-                cluster.spec.taskManagerSpec.storageClass,
+                cluster.spec.taskManager.storageClass,
                 "taskmanager",
                 clusterId,
                 cluster.metadata.name

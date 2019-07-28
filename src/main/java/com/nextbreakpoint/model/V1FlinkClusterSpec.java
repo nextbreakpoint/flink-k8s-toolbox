@@ -5,47 +5,16 @@ import com.google.gson.annotations.SerializedName;
 import java.util.Objects;
 
 public class V1FlinkClusterSpec {
-    @SerializedName("pullSecrets")
-    private String pullSecrets;
-    @SerializedName("pullPolicy")
-    private String pullPolicy;
-    @SerializedName("flinkImage")
-    private String flinkImage;
     @SerializedName("serviceAccount")
     private String serviceAccount;
-    @SerializedName("jobManagerSpec")
-    private V1JobManagerSpec jobManagerSpec;
-    @SerializedName("taskManagerSpec")
-    private V1TaskManagerSpec taskManagerSpec;
-    @SerializedName("flinkJobSpec")
-    private V1FlinkJobSpec flinkJobSpec;
-
-    public String getPullPolicy() {
-        return pullPolicy;
-    }
-
-    public V1FlinkClusterSpec setPullPolicy(String pullPolicy) {
-        this.pullPolicy = pullPolicy;
-        return this;
-    }
-
-    public String getPullSecrets() {
-        return pullSecrets;
-    }
-
-    public V1FlinkClusterSpec setPullSecrets(String pullSecrets) {
-        this.pullSecrets = pullSecrets;
-        return this;
-    }
-
-    public String getFlinkImage() {
-        return flinkImage;
-    }
-
-    public V1FlinkClusterSpec setFlinkImage(String flinkImage) {
-        this.flinkImage = flinkImage;
-        return this;
-    }
+    @SerializedName("jobManager")
+    private V1JobManagerSpec jobManager;
+    @SerializedName("taskManager")
+    private V1TaskManagerSpec taskManager;
+    @SerializedName("flinkImage")
+    private V1FlinkImageSpec flinkImage;
+    @SerializedName("flinkJob")
+    private V1FlinkJobSpec flinkJob;
 
     public String getServiceAccount() {
         return serviceAccount;
@@ -56,30 +25,39 @@ public class V1FlinkClusterSpec {
         return this;
     }
 
-    public V1JobManagerSpec getJobManagerSpec() {
-        return jobManagerSpec;
+    public V1JobManagerSpec getJobManager() {
+        return jobManager;
     }
 
-    public V1FlinkClusterSpec setJobManagerSpec(V1JobManagerSpec jobManagerSpec) {
-        this.jobManagerSpec = jobManagerSpec;
+    public V1FlinkClusterSpec setJobManager(V1JobManagerSpec jobManager) {
+        this.jobManager = jobManager;
         return this;
     }
 
-    public V1TaskManagerSpec getTaskManagerSpec() {
-        return taskManagerSpec;
+    public V1TaskManagerSpec getTaskManager() {
+        return taskManager;
     }
 
-    public V1FlinkClusterSpec setTaskManagerSpec(V1TaskManagerSpec taskManagerSpec) {
-        this.taskManagerSpec = taskManagerSpec;
+    public V1FlinkClusterSpec setTaskManager(V1TaskManagerSpec taskManager) {
+        this.taskManager = taskManager;
         return this;
     }
 
-    public V1FlinkJobSpec getFlinkJobSpec() {
-        return flinkJobSpec;
+    public V1FlinkImageSpec getFlinkImage() {
+        return flinkImage;
     }
 
-    public V1FlinkClusterSpec setFlinkJobSpec(V1FlinkJobSpec flinkJobSpec) {
-        this.flinkJobSpec = flinkJobSpec;
+    public V1FlinkClusterSpec setFlinkImage(V1FlinkImageSpec flinkImage) {
+        this.flinkImage = flinkImage;
+        return this;
+    }
+
+    public V1FlinkJobSpec getFlinkJob() {
+        return flinkJob;
+    }
+
+    public V1FlinkClusterSpec setFlinkJob(V1FlinkJobSpec flinkJob) {
+        this.flinkJob = flinkJob;
         return this;
     }
 
@@ -88,30 +66,26 @@ public class V1FlinkClusterSpec {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         V1FlinkClusterSpec that = (V1FlinkClusterSpec) o;
-        return Objects.equals(getPullSecrets(), that.getPullSecrets()) &&
-                Objects.equals(getPullPolicy(), that.getPullPolicy()) &&
+        return Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
+                Objects.equals(getJobManager(), that.getJobManager()) &&
+                Objects.equals(getTaskManager(), that.getTaskManager()) &&
                 Objects.equals(getFlinkImage(), that.getFlinkImage()) &&
-                Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
-                Objects.equals(getJobManagerSpec(), that.getJobManagerSpec()) &&
-                Objects.equals(getTaskManagerSpec(), that.getTaskManagerSpec()) &&
-                Objects.equals(getFlinkJobSpec(), that.getFlinkJobSpec());
+                Objects.equals(getFlinkJob(), that.getFlinkJob());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getPullSecrets(), getPullPolicy(), getFlinkImage(), getServiceAccount(), getJobManagerSpec(), getTaskManagerSpec(), getFlinkJobSpec());
+        return Objects.hash(getServiceAccount(), getJobManager(), getTaskManager(), getFlinkImage(), getFlinkJob());
     }
 
     @Override
     public String toString() {
         return "V1FlinkClusterSpec{" +
-                "pullSecrets='" + pullSecrets + '\'' +
-                ", pullPolicy='" + pullPolicy + '\'' +
-                ", flinkImage='" + flinkImage + '\'' +
                 ", serviceAccount='" + serviceAccount + '\'' +
-                ", jobManagerSpec=" + jobManagerSpec +
-                ", taskManagerSpec=" + taskManagerSpec +
-                ", flinkJobSpec=" + flinkJobSpec +
+                ", jobManager=" + jobManager +
+                ", taskManager=" + taskManager +
+                ", flinkImage=" + flinkImage +
+                ", flinkJob=" + flinkJob +
                 '}';
     }
 }
