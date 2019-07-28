@@ -9,7 +9,9 @@ import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
 class JobScale(flinkOptions: FlinkOptions) : OperatorCommand<Void?, String>(flinkOptions) {
-    private val logger = Logger.getLogger(JobScale::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(JobScale::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
         val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)

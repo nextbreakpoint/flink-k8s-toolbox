@@ -11,7 +11,9 @@ import io.kubernetes.client.models.V1PodList
 import org.apache.log4j.Logger
 
 class ClusterIsTerminated(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
-    private val logger = Logger.getLogger(ClusterIsTerminated::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(ClusterIsTerminated::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {

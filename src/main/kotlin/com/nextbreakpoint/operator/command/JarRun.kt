@@ -60,7 +60,7 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
                         return Result(ResultStatus.FAILED, null)
                     }
 
-                    logger.info("Job started: ${Gson().toJson(listJarsResponse)}")
+                    logger.debug("Job started: ${Gson().toJson(listJarsResponse)}")
 
                     return Result(ResultStatus.SUCCESS, null)
                 }

@@ -13,7 +13,9 @@ import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
 class SavepointGetStatus(flinkOptions: FlinkOptions) : OperatorCommand<Map<String, String>, String>(flinkOptions) {
-    private val logger = Logger.getLogger(SavepointGetStatus::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(SavepointGetStatus::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: Map<String, String>): Result<String> {
         try {

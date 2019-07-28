@@ -8,13 +8,15 @@ import com.nextbreakpoint.common.model.OperatorTask
 import com.nextbreakpoint.common.model.Result
 import com.nextbreakpoint.common.model.ResultStatus
 import com.nextbreakpoint.common.model.StartOptions
-import com.nextbreakpoint.operator.OperatorCache
 import com.nextbreakpoint.operator.OperatorAnnotations
+import com.nextbreakpoint.operator.OperatorCache
 import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
 class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : OperatorCommand<StartOptions, List<OperatorTask>>(flinkOptions) {
-    private val logger = Logger.getLogger(ClusterStart::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(ClusterStart::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: StartOptions): Result<List<OperatorTask>> {
         try {

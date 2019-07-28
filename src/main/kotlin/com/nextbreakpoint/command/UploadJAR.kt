@@ -10,7 +10,7 @@ import java.io.File
 
 class UploadJAR : UploadCommand<UploadOptions> {
     companion object {
-        val logger = Logger.getLogger(UploadJAR::class.simpleName)
+        private val logger = Logger.getLogger(UploadJAR::class.simpleName)
     }
 
     override fun run(flinkOptions: FlinkOptions, namespace: String, clusterName: String, params: UploadOptions) {

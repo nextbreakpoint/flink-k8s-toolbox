@@ -10,7 +10,9 @@ import com.nextbreakpoint.operator.resources.ClusterResources
 import org.apache.log4j.Logger
 
 class JarUpload(flinkOptions: FlinkOptions) : OperatorCommand<ClusterResources, Void?>(flinkOptions) {
-    private val logger = Logger.getLogger(JarUpload::class.simpleName)
+    companion object {
+        private val logger = Logger.getLogger(JarUpload::class.simpleName)
+    }
 
     override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
