@@ -3,31 +3,7 @@ package com.nextbreakpoint.operator
 import com.nextbreakpoint.common.Kubernetes
 import com.nextbreakpoint.common.model.*
 import com.nextbreakpoint.model.V1FlinkCluster
-import com.nextbreakpoint.operator.command.ClusterCreateResources
-import com.nextbreakpoint.operator.command.ClusterDeleteResources
-import com.nextbreakpoint.operator.command.ClusterGetTask
-import com.nextbreakpoint.operator.command.ClusterIsReady
-import com.nextbreakpoint.operator.command.ClusterIsRunning
-import com.nextbreakpoint.operator.command.ClusterIsSuspended
-import com.nextbreakpoint.operator.command.ClusterIsTerminated
-import com.nextbreakpoint.operator.command.PodsAreTerminated
-import com.nextbreakpoint.operator.command.ClusterStart
-import com.nextbreakpoint.operator.command.ClusterStop
-import com.nextbreakpoint.operator.command.PodsTerminate
-import com.nextbreakpoint.operator.command.ClusterUpdateStatus
-import com.nextbreakpoint.operator.command.FlinkClusterCreate
-import com.nextbreakpoint.operator.command.FlinkClusterDelete
-import com.nextbreakpoint.operator.command.JarIsReady
-import com.nextbreakpoint.operator.command.JarRemove
-import com.nextbreakpoint.operator.command.JarRun
-import com.nextbreakpoint.operator.command.JarUpload
-import com.nextbreakpoint.operator.command.JobCancel
-import com.nextbreakpoint.operator.command.JobHasStarted
-import com.nextbreakpoint.operator.command.JobHasStopped
-import com.nextbreakpoint.operator.command.JobStop
-import com.nextbreakpoint.operator.command.SavepointGetStatus
-import com.nextbreakpoint.operator.command.SavepointTrigger
-import com.nextbreakpoint.operator.command.UploadJobDeleteResource
+import com.nextbreakpoint.operator.command.*
 import com.nextbreakpoint.operator.resources.ClusterResources
 
 class OperatorController(val flinkOptions: FlinkOptions, val savepointInterval: Int) {
@@ -72,6 +48,9 @@ class OperatorController(val flinkOptions: FlinkOptions, val savepointInterval: 
 
     fun terminatePods(clusterId: ClusterId) : Result<Void?> =
         PodsTerminate(flinkOptions).execute(clusterId, null)
+
+    fun restartPods(clusterId: ClusterId, clusterResources: ClusterResources): Result<Void?> =
+        PodsRestart(flinkOptions).execute(clusterId, clusterResources)
 
     fun arePodsTerminated(clusterId: ClusterId): Result<Void?> =
         PodsAreTerminated(flinkOptions).execute(clusterId, null)

@@ -14,13 +14,19 @@ class StartJob : TaskHandler {
             return Result(ResultStatus.FAILED, "Failed to start job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
-        val response = context.controller.runJar(context.clusterId, context.flinkCluster)
+        val response = context.controller.isJobStarted(context.clusterId)
 
         if (response.status == ResultStatus.SUCCESS) {
-            return Result(ResultStatus.SUCCESS, "Stating job of cluster ${context.flinkCluster.metadata.name}...")
-        } else {
-            return Result(ResultStatus.AWAIT, "Can't start job of cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.SUCCESS, "Job of cluster ${context.flinkCluster.metadata.name} is running already...")
         }
+
+        val runJarResponse = context.controller.runJar(context.clusterId, context.flinkCluster)
+
+        if (runJarResponse.status == ResultStatus.SUCCESS) {
+            return Result(ResultStatus.SUCCESS, "Stating job of cluster ${context.flinkCluster.metadata.name}...")
+        }
+
+        return Result(ResultStatus.AWAIT, "Retry starting job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
@@ -33,10 +39,10 @@ class StartJob : TaskHandler {
         val response = context.controller.isJobStarted(context.clusterId)
 
         if (response.status == ResultStatus.SUCCESS) {
-            return Result(ResultStatus.SUCCESS, "Job of cluster ${context.flinkCluster.metadata.name} has been started")
-        } else {
-            return Result(ResultStatus.AWAIT, "Failed to check job of cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.SUCCESS, "Job of cluster ${context.flinkCluster.metadata.name} has been started in ${elapsedTime / 1000} seconds")
         }
+
+        return Result(ResultStatus.AWAIT, "Wait for creation of job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: OperatorContext): Result<String> {

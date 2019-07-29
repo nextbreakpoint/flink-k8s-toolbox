@@ -10,6 +10,7 @@ import com.nextbreakpoint.operator.OperatorContext
 class StoppingCluster : TaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STOPPING)
+        OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
 
         return Result(ResultStatus.SUCCESS, "Cluster status updated")
     }

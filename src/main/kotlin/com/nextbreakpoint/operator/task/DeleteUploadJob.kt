@@ -20,9 +20,9 @@ class DeleteUploadJob : TaskHandler {
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(ResultStatus.SUCCESS, "Deleting upload job of cluster ${context.flinkCluster.metadata.name}...")
-        } else {
-            return Result(ResultStatus.AWAIT, "Can't delete upload job of cluster ${context.flinkCluster.metadata.name}")
         }
+
+        return Result(ResultStatus.AWAIT, "Retry deleting upload job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
@@ -33,10 +33,10 @@ class DeleteUploadJob : TaskHandler {
         }
 
         if (resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
-            return Result(ResultStatus.SUCCESS, "Upload job of cluster ${context.flinkCluster.metadata.name} has been removed")
-        } else {
-            return Result(ResultStatus.AWAIT, "Failed to delete upload job of cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.SUCCESS, "Upload job of cluster ${context.flinkCluster.metadata.name} has been removed in ${elapsedTime / 1000} seconds")
         }
+
+        return Result(ResultStatus.AWAIT, "Wait for deletion of upload job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: OperatorContext): Result<String> {

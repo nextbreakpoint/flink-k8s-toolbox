@@ -30,9 +30,7 @@ class ClusterResourcesBuilder(
             jarUploadJob = jarUploadJob,
             jobmanagerService = jobmanagerService,
             jobmanagerStatefulSet = jobmanagerStatefulSet,
-            taskmanagerStatefulSet = taskmanagerStatefulSet,
-            jobmanagerPersistentVolumeClaim = null,
-            taskmanagerPersistentVolumeClaim = null
+            taskmanagerStatefulSet = taskmanagerStatefulSet
         )
     }
 }

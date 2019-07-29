@@ -35,7 +35,7 @@ class ClusterIsSuspended(flinkOptions : FlinkOptions) : OperatorCommand<Void?, V
                 }
             }
         } catch (e : Exception) {
-//            logger.error("Can't get overview of cluster ${clusterId.name}", e)
+            logger.warn("Can't get overview of cluster ${clusterId.name}")
 
             return Result(ResultStatus.FAILED, null)
         }

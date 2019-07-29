@@ -12,7 +12,7 @@ class ClusterStart : Command<StartOptions>(DefaultWebClientFactory) {
         clusterName: String,
         args: StartOptions
     ) {
-        Commands.put(super.factory, address, "/cluster/$clusterName/start", args)
+        Commands.putJson(super.factory, address, "/cluster/$clusterName/start", args)
     }
 }
 

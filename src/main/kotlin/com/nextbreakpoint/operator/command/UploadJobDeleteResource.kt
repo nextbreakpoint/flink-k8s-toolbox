@@ -7,6 +7,7 @@ import com.nextbreakpoint.common.model.Result
 import com.nextbreakpoint.common.model.ResultStatus
 import com.nextbreakpoint.operator.OperatorCommand
 import io.kubernetes.client.apis.BatchV1Api
+import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.models.V1DeleteOptions
 import org.apache.log4j.Logger
 
@@ -23,11 +24,51 @@ class UploadJobDeleteResource(flinkOptions: FlinkOptions) : OperatorCommand<Void
 
             deleteJob(Kubernetes.batchApi, "flink-operator", clusterId)
 
+            deletePod(Kubernetes.coreApi, "flink-operator", clusterId)
+
             return Result(ResultStatus.SUCCESS, null)
         } catch (e : Exception) {
             logger.error("Can't delete upload job of cluster ${clusterId.name}", e)
 
             return Result(ResultStatus.FAILED, null)
+        }
+    }
+
+    private fun deletePod(api: CoreV1Api, owner: String, clusterId: ClusterId) {
+        val pods = api.listNamespacedPod(
+            clusterId.namespace,
+            null,
+            null,
+            null,
+            null,
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=$owner,job-name=flink-upload-${clusterId.name}",
+            null,
+            null,
+            30,
+            null
+        )
+
+        pods.items.forEach { pod ->
+            try {
+                logger.info("Removing Job ${pod.metadata.name}...")
+
+                val status = api.deleteNamespacedPod(
+                    pod.metadata.name,
+                    clusterId.namespace,
+                    deleteOptions,
+                    null,
+                    null,
+                    5,
+                    null,
+                    null
+                )
+
+                logger.info("Response status: ${status.reason}")
+
+                status.details.causes.forEach { logger.info(it.message) }
+            } catch (e: Exception) {
+                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
+            }
         }
     }
 

@@ -31,7 +31,7 @@ class JobHasStarted(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(
                 return Result(ResultStatus.SUCCESS, null)
             }
         } catch (e : Exception) {
-            logger.error("Can't get job of cluster ${clusterId.name}", e)
+            logger.warn("Can't get job of cluster ${clusterId.name}")
 
             return Result(ResultStatus.FAILED, null)
         }

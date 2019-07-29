@@ -27,29 +27,31 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
 
             val operatorStatus = OperatorAnnotations.getCurrentOperatorStatus(flinkCluster)
 
-            val operatorTask = OperatorAnnotations.getCurrentOperatorTask(flinkCluster)
-
             if (operatorStatus == TaskStatus.IDLE) {
                 val statusList = if (params.startOnlyCluster) {
                     when (clusterStatus) {
                         ClusterStatus.TERMINATED ->
                             listOf(
-                                operatorTask,
+                                OperatorTask.STARTING_CLUSTER,
+                                OperatorTask.DELETE_UPLOAD_JOB,
+                                OperatorTask.CREATE_RESOURCES,
+                                OperatorTask.UPLOAD_JAR,
+                                OperatorTask.TERMINATE_PODS,
+                                OperatorTask.SUSPEND_CLUSTER,
+                                OperatorTask.HALT_CLUSTER
+                            )
+                        ClusterStatus.FAILED ->
+                            listOf(
+                                OperatorTask.STOPPING_CLUSTER,
+                                OperatorTask.DELETE_UPLOAD_JOB,
+                                OperatorTask.TERMINATE_PODS,
+                                OperatorTask.DELETE_RESOURCES,
                                 OperatorTask.STARTING_CLUSTER,
                                 OperatorTask.CREATE_RESOURCES,
-                                OperatorTask.DELETE_UPLOAD_JOB,
                                 OperatorTask.UPLOAD_JAR,
+                                OperatorTask.TERMINATE_PODS,
                                 OperatorTask.SUSPEND_CLUSTER,
-                                OperatorTask.DO_NOTHING
-                            )
-                        ClusterStatus.SUSPENDED ->
-                            listOf(
-                                operatorTask,
-                                OperatorTask.STARTING_CLUSTER,
-                                OperatorTask.DELETE_UPLOAD_JOB,
-                                OperatorTask.UPLOAD_JAR,
-                                OperatorTask.SUSPEND_CLUSTER,
-                                OperatorTask.DO_NOTHING
+                                OperatorTask.HALT_CLUSTER
                             )
                         else -> listOf()
                     }
@@ -58,7 +60,6 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                         ClusterStatus.TERMINATED ->
                             if (params.withoutSavepoint) {
                                 listOf(
-                                    operatorTask,
                                     OperatorTask.STARTING_CLUSTER,
                                     OperatorTask.CREATE_RESOURCES,
                                     OperatorTask.DELETE_UPLOAD_JOB,
@@ -69,7 +70,6 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                 )
                             } else {
                                 listOf(
-                                    operatorTask,
                                     OperatorTask.STARTING_CLUSTER,
                                     OperatorTask.CREATE_RESOURCES,
                                     OperatorTask.DELETE_UPLOAD_JOB,
@@ -81,8 +81,8 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                         ClusterStatus.SUSPENDED ->
                             if (params.withoutSavepoint) {
                                 listOf(
-                                    operatorTask,
                                     OperatorTask.STARTING_CLUSTER,
+                                    OperatorTask.RESTART_PODS,
                                     OperatorTask.DELETE_UPLOAD_JOB,
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.ERASE_SAVEPOINT,
@@ -91,9 +91,36 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                 )
                             } else {
                                 listOf(
-                                    operatorTask,
                                     OperatorTask.STARTING_CLUSTER,
+                                    OperatorTask.RESTART_PODS,
                                     OperatorTask.DELETE_UPLOAD_JOB,
+                                    OperatorTask.UPLOAD_JAR,
+                                    OperatorTask.START_JOB,
+                                    OperatorTask.RUN_CLUSTER
+                                )
+                            }
+                        ClusterStatus.FAILED ->
+                            if (params.withoutSavepoint) {
+                                listOf(
+                                    OperatorTask.STOPPING_CLUSTER,
+                                    OperatorTask.DELETE_UPLOAD_JOB,
+                                    OperatorTask.TERMINATE_PODS,
+                                    OperatorTask.DELETE_RESOURCES,
+                                    OperatorTask.STARTING_CLUSTER,
+                                    OperatorTask.RESTART_PODS,
+                                    OperatorTask.UPLOAD_JAR,
+                                    OperatorTask.ERASE_SAVEPOINT,
+                                    OperatorTask.START_JOB,
+                                    OperatorTask.RUN_CLUSTER
+                                )
+                            } else {
+                                listOf(
+                                    OperatorTask.STOPPING_CLUSTER,
+                                    OperatorTask.DELETE_UPLOAD_JOB,
+                                    OperatorTask.TERMINATE_PODS,
+                                    OperatorTask.DELETE_RESOURCES,
+                                    OperatorTask.STARTING_CLUSTER,
+                                    OperatorTask.RESTART_PODS,
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.START_JOB,
                                     OperatorTask.RUN_CLUSTER
@@ -110,15 +137,15 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                 } else {
                     logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
 
-                    return Result(ResultStatus.AWAIT, OperatorAnnotations.getCurrentOperatorTasks(flinkCluster))
+                    return Result(ResultStatus.AWAIT, listOf(OperatorAnnotations.getCurrentOperatorTask(flinkCluster)))
                 }
             } else {
                 logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
 
-                return Result(ResultStatus.AWAIT, OperatorAnnotations.getCurrentOperatorTasks(flinkCluster))
+                return Result(ResultStatus.AWAIT, listOf(OperatorAnnotations.getCurrentOperatorTask(flinkCluster)))
             }
         } catch (e : Exception) {
-            logger.error("Can't set tasks sequence of cluster ${clusterId.name}", e)
+            logger.error("Can't change tasks sequence of cluster ${clusterId.name}", e)
 
             return Result(ResultStatus.FAILED, listOf())
         }
