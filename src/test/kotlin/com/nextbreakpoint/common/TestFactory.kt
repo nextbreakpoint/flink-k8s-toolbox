@@ -18,6 +18,7 @@ object TestFactory {
                 "image": "registry:30000/flink-jobs:1",
                 "jarPath": "/flink-jobs.jar",
                 "className": "com.nextbreakpoint.flink.jobs.TestJob",
+                "targetPath":"file:///var/tmp/test",
                 "parallelism": 1,
                 "arguments": [
                   "--BUCKET_BASE_PATH",

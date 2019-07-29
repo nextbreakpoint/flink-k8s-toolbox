@@ -1,6 +1,5 @@
 package com.nextbreakpoint.operator.command
 
-import com.nextbreakpoint.common.Flink
 import com.nextbreakpoint.common.model.ClusterId
 import com.nextbreakpoint.common.model.FlinkOptions
 import com.nextbreakpoint.common.model.Result
@@ -14,15 +13,12 @@ class JobScale(flinkOptions: FlinkOptions) : OperatorCommand<Void?, String>(flin
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
-        val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)
+//        val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)
 
-//        logger.info("Rescaling job...")
-//
 //        val operation = flinkApi.triggerJobRescaling(scaleParams.jobId, scaleParams.parallelism)
 //
-//        logger.info("done")
-
 //        return "{\"status\":\"SUCCESS\",\"requestId\":\"${operation.requestId}\"}"
-        return Result(ResultStatus.SUCCESS, "{}")
+
+        return Result(ResultStatus.FAILED, "{}")
     }
 }

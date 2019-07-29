@@ -258,7 +258,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val jobmanagerPodSpec = V1PodSpecBuilder()
             .addToContainers(jobmanagerContainer)
-            .withServiceAccountName(flinkCluster.spec.serviceAccount ?: "default")
+            .withServiceAccountName(flinkCluster.spec.jobManager?.serviceAccount ?: "default")
             .withImagePullSecrets(jobmanagerPullSecrets)
             .withAffinity(jobmanagerAffinity)
             .build()
@@ -396,7 +396,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val taskmanagerPodSpec = V1PodSpecBuilder()
             .addToContainers(taskmanagerContainer)
-            .withServiceAccountName(flinkCluster.spec.serviceAccount ?: "default")
+            .withServiceAccountName(flinkCluster.spec.taskManager?.serviceAccount ?: "default")
             .withImagePullSecrets(taskmanagerPullSecrets)
             .withAffinity(taskmanagerAffinity)
             .build()

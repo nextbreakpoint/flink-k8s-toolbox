@@ -58,7 +58,7 @@ Compile Docker image of Flink operator:
 
 Tag Docker image using local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.1.0-beta registry:30000/flink-k8s-toolbox:1.1.0-beta
+    docker tag flink-k8s-toolbox:1.1.1-beta registry:30000/flink-k8s-toolbox:1.1.1-beta
 
 Login to local Docker registry (see docker-registry.yaml for credentials):
 
@@ -66,7 +66,7 @@ Login to local Docker registry (see docker-registry.yaml for credentials):
 
 Push Docker image to local Docker registry:
 
-    docker push registry:30000/flink-k8s-toolbox:1.1.0-beta
+    docker push registry:30000/flink-k8s-toolbox:1.1.1-beta
 
 Create pull secrets in flink namespace:
 
@@ -78,11 +78,11 @@ Associate pull secrets to flink-operator service account:
 
 Run Flink Operator using JAR file:
 
-    java -jar target/com.nextbreakpoint.flink-k8s-toolbox-1.1.0-beta.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
+    java -jar target/com.nextbreakpoint.flink-k8s-toolbox-1.1.1-beta.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
 
 Or run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.0-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.1-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Or run Flink Operator using Helm chart:
 
@@ -131,7 +131,7 @@ Change directory:
 Create Docker file:
 
     cat <<EOF >Dockerfile
-    FROM flink-k8s-toolbox:1.1.0-beta
+    FROM flink-k8s-toolbox:1.1.1-beta
     COPY com.nextbreakpoint.flinkworkshop-1.0.1.jar /flink-jobs.jar
     EOF
 

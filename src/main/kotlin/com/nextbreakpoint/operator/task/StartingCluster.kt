@@ -18,9 +18,11 @@ class StartingCluster : TaskHandler {
         return Result(ResultStatus.SUCCESS, "Cluster starting")
     }
 
-    override fun onIdle(context: OperatorContext) {
+    override fun onIdle(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 
-    override fun onFailed(context: OperatorContext) {
+    override fun onFailed(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 }

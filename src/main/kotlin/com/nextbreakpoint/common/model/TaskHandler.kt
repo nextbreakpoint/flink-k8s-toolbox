@@ -7,7 +7,7 @@ interface TaskHandler {
 
     fun onAwaiting(context: OperatorContext): Result<String>
 
-    fun onIdle(context: OperatorContext)
+    fun onIdle(context: OperatorContext): Result<String>
 
-    fun onFailed(context: OperatorContext)
+    fun onFailed(context: OperatorContext): Result<String>
 }

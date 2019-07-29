@@ -27,3 +27,5 @@ spec:
     environment:
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
+  flinkOperator:
+    targetPath: file:///var/tmp/test
