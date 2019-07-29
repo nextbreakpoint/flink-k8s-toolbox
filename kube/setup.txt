@@ -151,6 +151,10 @@ Push custom Flink job Docker image to local Docker registry:
 
     docker push registry:30000/flink-jobs:1
 
+Create Flink ConfigMap resource:
+
+    kubectl create -f kube/config-map.yaml -n flink
+
 Create Flink Cluster resource:
 
     kubectl create -f kube/flink-cluster-test.yaml -n flink
