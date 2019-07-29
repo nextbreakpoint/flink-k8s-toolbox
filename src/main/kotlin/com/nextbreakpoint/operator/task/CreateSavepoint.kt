@@ -3,6 +3,7 @@ package com.nextbreakpoint.operator.task
 import com.google.gson.Gson
 import com.nextbreakpoint.common.model.Result
 import com.nextbreakpoint.common.model.ResultStatus
+import com.nextbreakpoint.common.model.SavepointOptions
 import com.nextbreakpoint.common.model.TaskHandler
 import com.nextbreakpoint.operator.OperatorAnnotations
 import com.nextbreakpoint.operator.OperatorContext
@@ -16,7 +17,9 @@ class CreateSavepoint : TaskHandler {
             return Result(ResultStatus.FAILED, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
-        val savepointRequest = context.controller.triggerSavepoint(context.clusterId)
+        val options = SavepointOptions(targetPath = context.flinkCluster.spec?.flinkOperator?.targetPath)
+
+        val savepointRequest = context.controller.triggerSavepoint(context.clusterId, options)
 
         if (savepointRequest.status == ResultStatus.SUCCESS) {
             OperatorAnnotations.setSavepointRequest(context.flinkCluster, Gson().toJson(savepointRequest.output))
@@ -49,9 +52,11 @@ class CreateSavepoint : TaskHandler {
         }
     }
 
-    override fun onIdle(context: OperatorContext) {
+    override fun onIdle(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 
-    override fun onFailed(context: OperatorContext) {
+    override fun onFailed(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 }

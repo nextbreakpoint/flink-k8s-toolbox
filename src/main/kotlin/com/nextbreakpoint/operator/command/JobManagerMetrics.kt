@@ -22,14 +22,9 @@ class JobManagerMetrics(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Str
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
-        val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)
-
-//        val response = flinkApi.getJobManagerMetricsCall(null, null, null).execute()
-//        if (response.isSuccessful) {
-//            logger.info(response.body().string())
-//        }
-
         try {
+            val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)
+
             val metrics = getMetric(
                 flinkApi,
                 "Status.JVM.CPU.Time,Status.JVM.CPU.Load,Status.JVM.Threads.Count,Status.JVM.Memory.Heap.Max,Status.JVM.Memory.Heap.Used,Status.JVM.Memory.Heap.Committed,Status.JVM.Memory.NonHeap.Max,Status.JVM.Memory.NonHeap.Used,Status.JVM.Memory.NonHeap.Committed,Status.JVM.Memory.Direct.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Direct.TotalCapacity,Status.JVM.Memory.Mapped.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Mapped.TotalCapacity,Status.JVM.GarbageCollector.Copy.Time,Status.JVM.GarbageCollector.Copy.Count,Status.JVM.GarbageCollector.MarkSweepCompact.Time,Status.JVM.GarbageCollector.MarkSweepCompact.Count,Status.JVM.ClassLoader.ClassesLoaded,Status.JVM.ClassLoader.ClassesUnloaded,taskSlotsTotal,taskSlotsAvailable,numRegisteredTaskManagers,numRunningJobs"

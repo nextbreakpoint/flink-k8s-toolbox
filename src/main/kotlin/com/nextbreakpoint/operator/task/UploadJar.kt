@@ -77,10 +77,12 @@ class UploadJar : TaskHandler {
         }
     }
 
-    override fun onIdle(context: OperatorContext) {
+    override fun onIdle(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 
-    override fun onFailed(context: OperatorContext) {
+    override fun onFailed(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 
     private fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: OperatorResources): ClusterResourcesStatus {

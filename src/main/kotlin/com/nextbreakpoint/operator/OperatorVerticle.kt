@@ -173,12 +173,20 @@ class OperatorVerticle : AbstractVerticle() {
             handleEvent<V1FlinkCluster>(message, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Consumer { resourcesCache.onFlinkClusterDeleted(it) })
         }
 
+        vertx.eventBus().consumer<String>("/resource/flinkcluster/deleteAll") { message ->
+            resourcesCache.onFlinkClusterDeleteAll()
+        }
+
         vertx.eventBus().consumer<String>("/resource/service/change") { message ->
             handleEvent<V1Service>(message, Function { gson.fromJson(it.body(), V1Service::class.java) }, Consumer { resourcesCache.onServiceChanged(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/service/delete") { message ->
             handleEvent<V1Service>(message, Function { gson.fromJson(it.body(), V1Service::class.java) }, Consumer { resourcesCache.onServiceDeleted(it) })
+        }
+
+        vertx.eventBus().consumer<String>("/resource/service/deleteAll") { message ->
+            resourcesCache.onServiceDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/job/change") { message ->
@@ -189,6 +197,10 @@ class OperatorVerticle : AbstractVerticle() {
             handleEvent<V1Job>(message, Function { gson.fromJson(it.body(), V1Job::class.java) }, Consumer { resourcesCache.onJobDeleted(it) })
         }
 
+        vertx.eventBus().consumer<String>("/resource/job/deleteAll") { message ->
+            resourcesCache.onJobDeleteAll()
+        }
+
         vertx.eventBus().consumer<String>("/resource/statefulset/change") { message ->
             handleEvent<V1StatefulSet>(message, Function { gson.fromJson(it.body(), V1StatefulSet::class.java) }, Consumer { resourcesCache.onStatefulSetChanged(it) })
         }
@@ -197,12 +209,20 @@ class OperatorVerticle : AbstractVerticle() {
             handleEvent<V1StatefulSet>(message, Function { gson.fromJson(it.body(), V1StatefulSet::class.java) }, Consumer { resourcesCache.onStatefulSetDeleted(it) })
         }
 
+        vertx.eventBus().consumer<String>("/resource/statefulset/deleteAll") { message ->
+            resourcesCache.onStatefulSetDeleteAll()
+        }
+
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/change") { message ->
             handleEvent<V1PersistentVolumeClaim>(message, Function { gson.fromJson(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { resourcesCache.onPersistentVolumeClaimChanged(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/delete") { message ->
             handleEvent<V1PersistentVolumeClaim>(message, Function { gson.fromJson(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { resourcesCache.onPersistentVolumeClaimDeleted(it) })
+        }
+
+        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/deleteAll") { message ->
+            resourcesCache.onPersistentVolumeClaimDeleteAll()
         }
 
 
@@ -314,8 +334,8 @@ class OperatorVerticle : AbstractVerticle() {
     ) {
         val observable = Observable.from(status.deleteOrphans()).map { clusterId ->
             Runnable {
-                controller.terminateCluster(clusterId)
-                val result = controller.isClusterTerminated(clusterId)
+                controller.terminatePods(clusterId)
+                val result = controller.arePodsTerminated(clusterId)
                 if (result.status == ResultStatus.SUCCESS) {
                     controller.deleteClusterResources(clusterId)
                 }

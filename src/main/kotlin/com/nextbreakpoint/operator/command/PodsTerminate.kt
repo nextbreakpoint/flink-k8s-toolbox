@@ -12,9 +12,9 @@ import io.kubernetes.client.apis.CoreV1Api
 import io.kubernetes.client.models.V1DeleteOptions
 import org.apache.log4j.Logger
 
-class ClusterTerminate(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
+class PodsTerminate(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
     companion object {
-        private val logger = Logger.getLogger(ClusterTerminate::class.simpleName)
+        private val logger = Logger.getLogger(PodsTerminate::class.simpleName)
 
         private val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
     }

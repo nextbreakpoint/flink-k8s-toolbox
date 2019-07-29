@@ -287,10 +287,108 @@ object Kubernetes {
 
     private fun createKubernetesClient(kubeConfig: String?): ApiClient? {
         val client = if (kubeConfig?.isNotBlank() == true) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
-        client.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
-        client.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)
-        client.httpClient.setReadTimeout(30000, TimeUnit.MILLISECONDS)
+        client.httpClient.setConnectTimeout(30000, TimeUnit.MILLISECONDS)
+        client.httpClient.setWriteTimeout(60000, TimeUnit.MILLISECONDS)
+        client.httpClient.setReadTimeout(60000, TimeUnit.MILLISECONDS)
 //            client.isDebugging = true
         return client
+    }
+
+    fun listFlinkClusterResources(objectApi: CustomObjectsApi, namespace: String): List<V1FlinkCluster> {
+        val response = objectApi.listNamespacedCustomObjectCall(
+            "nextbreakpoint.com",
+            "v1",
+            namespace,
+            "flinkclusters",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        ).execute()
+
+        if (!response.isSuccessful) {
+            throw RuntimeException("Can't fetch custom objects")
+        }
+
+        response.body().use {
+            return FlinkClusterListResource.parse(it.source().readUtf8Line()).items
+        }
+    }
+
+    fun listJobResources(batchApi: BatchV1Api, namespace: String): List<V1Job> {
+        return batchApi.listNamespacedJob(
+            namespace,
+            null,
+            null,
+            null,
+            null,
+            "component=flink,owner=flink-operator",
+            null,
+            null,
+            5,
+            null
+        ).items
+    }
+
+    fun listServiceResources(coreApi: CoreV1Api, namespace: String): List<V1Service> {
+        return coreApi.listNamespacedService(
+            namespace,
+            null,
+            null,
+            null,
+            null,
+            "component=flink,owner=flink-operator",
+            null,
+            null,
+            5,
+            null
+        ).items
+    }
+
+    fun listDeploymentResources(appsApi: AppsV1Api, namespace: String): List<V1Deployment> {
+        return appsApi.listNamespacedDeployment(
+            namespace,
+            null,
+            null,
+            null,
+            null,
+            "component=flink,owner=flink-operator",
+            null,
+            null,
+            5,
+            null
+        ).items
+    }
+
+    fun listStatefulSetResources(appsApi: AppsV1Api, namespace: String): List<V1StatefulSet> {
+        return appsApi.listNamespacedStatefulSet(
+            namespace,
+            null,
+            null,
+            null,
+            null,
+            "component=flink,owner=flink-operator",
+            null,
+            null,
+            5,
+            null
+        ).items
+    }
+
+    fun listPermanentVolumeClaimResources(coreApi: CoreV1Api, namespace: String): List<V1PersistentVolumeClaim> {
+        return coreApi.listNamespacedPersistentVolumeClaim(
+            namespace,
+            null,
+            null,
+            null,
+            null,
+            "component=flink,owner=flink-operator",
+            null,
+            null,
+            5,
+            null
+        ).items
     }
 }
