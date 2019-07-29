@@ -2,6 +2,8 @@ package com.nextbreakpoint.model;
 
 import com.google.gson.annotations.SerializedName;
 import io.kubernetes.client.models.V1EnvVar;
+import io.kubernetes.client.models.V1Volume;
+import io.kubernetes.client.models.V1VolumeMount;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,6 +21,12 @@ public class V1JobManagerSpec {
     private List<V1EnvVar> environment;
     @SerializedName("serviceMode")
     private String serviceMode;
+    @SerializedName("serviceAccount")
+    private String serviceAccount;
+    @SerializedName("volumes")
+    private List<V1Volume> volumes;
+    @SerializedName("volumeMounts")
+    private List<V1VolumeMount> volumeMounts;
 
     public Float getRequiredCPUs() {
         return requiredCPUs;
@@ -74,6 +82,33 @@ public class V1JobManagerSpec {
         return this;
     }
 
+    public String getServiceAccount() {
+        return serviceAccount;
+    }
+
+    public V1JobManagerSpec setServiceAccount(String serviceAccount) {
+        this.serviceAccount = serviceAccount;
+        return this;
+    }
+
+    public List<V1Volume> getVolumes() {
+        return volumes;
+    }
+
+    public V1JobManagerSpec setVolumes(List<V1Volume> volumes) {
+        this.volumes = volumes;
+        return this;
+    }
+
+    public List<V1VolumeMount> getVolumeMounts() {
+        return volumeMounts;
+    }
+
+    public V1JobManagerSpec setVolumeMounts(List<V1VolumeMount> volumeMounts) {
+        this.volumeMounts = volumeMounts;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -84,12 +119,15 @@ public class V1JobManagerSpec {
                 Objects.equals(getRequiredStorageSize(), that.getRequiredStorageSize()) &&
                 Objects.equals(getStorageClass(), that.getStorageClass()) &&
                 Objects.equals(getEnvironment(), that.getEnvironment()) &&
-                Objects.equals(getServiceMode(), that.getServiceMode());
+                Objects.equals(getServiceMode(), that.getServiceMode()) &&
+                Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
+                Objects.equals(getVolumes(), that.getVolumes()) &&
+                Objects.equals(getVolumeMounts(), that.getVolumeMounts());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getEnvironment(), getServiceMode());
+        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getEnvironment(), getServiceMode(), getServiceAccount(), getVolumes(), getVolumeMounts());
     }
 
     @Override
@@ -101,6 +139,9 @@ public class V1JobManagerSpec {
                 ", storageClass='" + storageClass + '\'' +
                 ", environment=" + environment +
                 ", serviceMode='" + serviceMode + '\'' +
+                ", serviceAccount='" + serviceAccount + '\'' +
+                ", volumes='" + volumes + '\'' +
+                ", volumeMounts='" + volumeMounts + '\'' +
                 '}';
     }
 }

@@ -4,6 +4,8 @@ import com.nextbreakpoint.model.V1FlinkCluster
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1Affinity
+import io.kubernetes.client.models.V1ConfigMapVolumeSource
+import io.kubernetes.client.models.V1ConfigMapVolumeSourceBuilder
 import io.kubernetes.client.models.V1Container
 import io.kubernetes.client.models.V1ContainerBuilder
 import io.kubernetes.client.models.V1ContainerPort
@@ -27,6 +29,7 @@ import io.kubernetes.client.models.V1ServicePort
 import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.models.V1StatefulSetBuilder
 import io.kubernetes.client.models.V1StatefulSetUpdateStrategy
+import io.kubernetes.client.models.V1Volume
 import io.kubernetes.client.models.V1VolumeMount
 import io.kubernetes.client.models.V1WeightedPodAffinityTerm
 
@@ -241,6 +244,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addToPorts(port6124)
             .addToPorts(port6125)
             .addToVolumeMounts(jobmanagerVolumeMount)
+            .addAllToVolumeMounts(flinkCluster.spec.jobManager?.volumeMounts ?: listOf())
             .withEnv(jobmanagerVariables)
             .withResources(
                 createResourceRequirements(
@@ -258,9 +262,10 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val jobmanagerPodSpec = V1PodSpecBuilder()
             .addToContainers(jobmanagerContainer)
-            .withServiceAccountName(flinkCluster.spec.serviceAccount ?: "default")
+            .withServiceAccountName(flinkCluster.spec.jobManager?.serviceAccount ?: "default")
             .withImagePullSecrets(jobmanagerPullSecrets)
             .withAffinity(jobmanagerAffinity)
+            .withVolumes(flinkCluster.spec.jobManager?.volumes)
             .build()
 
         val jobmanagerMetadata = createObjectMeta(
@@ -375,6 +380,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addToPorts(port6121)
             .addToPorts(port6122)
             .addToVolumeMounts(taskmanagerVolumeMount)
+            .addAllToVolumeMounts(flinkCluster.spec.taskManager?.volumeMounts ?: listOf())
             .withEnv(taskmanagerVariables)
             .withResources(
                 createResourceRequirements(
@@ -396,9 +402,10 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val taskmanagerPodSpec = V1PodSpecBuilder()
             .addToContainers(taskmanagerContainer)
-            .withServiceAccountName(flinkCluster.spec.serviceAccount ?: "default")
+            .withServiceAccountName(flinkCluster.spec.taskManager?.serviceAccount ?: "default")
             .withImagePullSecrets(taskmanagerPullSecrets)
             .withAffinity(taskmanagerAffinity)
+            .withVolumes(flinkCluster.spec.taskManager?.volumes)
             .build()
 
         val taskmanagerMetadata = createObjectMeta(

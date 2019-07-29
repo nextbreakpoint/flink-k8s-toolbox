@@ -5,8 +5,6 @@ import com.google.gson.annotations.SerializedName;
 import java.util.Objects;
 
 public class V1FlinkClusterSpec {
-    @SerializedName("serviceAccount")
-    private String serviceAccount;
     @SerializedName("jobManager")
     private V1JobManagerSpec jobManager;
     @SerializedName("taskManager")
@@ -15,15 +13,8 @@ public class V1FlinkClusterSpec {
     private V1FlinkImageSpec flinkImage;
     @SerializedName("flinkJob")
     private V1FlinkJobSpec flinkJob;
-
-    public String getServiceAccount() {
-        return serviceAccount;
-    }
-
-    public V1FlinkClusterSpec setServiceAccount(String serviceAccount) {
-        this.serviceAccount = serviceAccount;
-        return this;
-    }
+    @SerializedName("flinkOperator")
+    private V1FlinkOperatorSpec flinkOperator;
 
     public V1JobManagerSpec getJobManager() {
         return jobManager;
@@ -61,31 +52,39 @@ public class V1FlinkClusterSpec {
         return this;
     }
 
+    public V1FlinkOperatorSpec getFlinkOperator() {
+        return flinkOperator;
+    }
+
+    public void setFlinkOperator(V1FlinkOperatorSpec flinkOperator) {
+        this.flinkOperator = flinkOperator;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         V1FlinkClusterSpec that = (V1FlinkClusterSpec) o;
-        return Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
-                Objects.equals(getJobManager(), that.getJobManager()) &&
+        return Objects.equals(getJobManager(), that.getJobManager()) &&
                 Objects.equals(getTaskManager(), that.getTaskManager()) &&
                 Objects.equals(getFlinkImage(), that.getFlinkImage()) &&
-                Objects.equals(getFlinkJob(), that.getFlinkJob());
+                Objects.equals(getFlinkJob(), that.getFlinkJob()) &&
+                Objects.equals(getFlinkOperator(), that.getFlinkOperator());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getServiceAccount(), getJobManager(), getTaskManager(), getFlinkImage(), getFlinkJob());
+        return Objects.hash(getJobManager(), getTaskManager(), getFlinkImage(), getFlinkJob(), getFlinkOperator());
     }
 
     @Override
     public String toString() {
         return "V1FlinkClusterSpec{" +
-                ", serviceAccount='" + serviceAccount + '\'' +
                 ", jobManager=" + jobManager +
                 ", taskManager=" + taskManager +
                 ", flinkImage=" + flinkImage +
                 ", flinkJob=" + flinkJob +
+                ", flinkOperator=" + flinkOperator +
                 '}';
     }
 }

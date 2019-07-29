@@ -177,7 +177,7 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (jobmanagerStatefulSet.spec.template.spec.serviceAccountName != flinkCluster.spec.serviceAccount ?: "default") {
+        if (jobmanagerStatefulSet.spec.template.spec.serviceAccountName != flinkCluster.spec.jobManager?.serviceAccount ?: "default") {
             statusReport.add("service account does not match")
         }
 
@@ -291,7 +291,7 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (taskmanagerStatefulSet.spec.template.spec.serviceAccountName != flinkCluster.spec.serviceAccount ?: "default") {
+        if (taskmanagerStatefulSet.spec.template.spec.serviceAccountName != flinkCluster.spec.taskManager?.serviceAccount ?: "default") {
             statusReport.add("service account does not match")
         }
 

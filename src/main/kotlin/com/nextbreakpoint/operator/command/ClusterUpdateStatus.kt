@@ -86,6 +86,10 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
 
                 val taskResult = updateTask(context, operatorStatus, params, taskHandler)
 
+                if (OperatorAnnotations.getOperatorTimestamp(params) != lastUpdated) {
+                    controller.updateAnnotations(params)
+                }
+
 //                logger.info("Cluster ${clusterId.name} will execute tasks: " + OperatorAnnotations.getCurrentOperatorTasks(params).joinToString(", "))
 
                 if (taskResult.status == ResultStatus.SUCCESS) {
@@ -120,10 +124,8 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
                 val result = taskHandler.onExecuting(context)
                 if (result.status == ResultStatus.SUCCESS) {
                     OperatorAnnotations.setOperatorStatus(flinkCluster, TaskStatus.AWAITING)
-                    controller.updateAnnotations(flinkCluster)
                 } else if (result.status == ResultStatus.FAILED) {
                     OperatorAnnotations.setOperatorStatus(flinkCluster, TaskStatus.FAILED)
-                    controller.updateAnnotations(flinkCluster)
                 }
                 result
             }
@@ -131,10 +133,8 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
                 val result = taskHandler.onAwaiting(context)
                 if (result.status == ResultStatus.SUCCESS) {
                     OperatorAnnotations.setOperatorStatus(flinkCluster, TaskStatus.IDLE)
-                    controller.updateAnnotations(flinkCluster)
                 } else if (result.status == ResultStatus.FAILED) {
                     OperatorAnnotations.setOperatorStatus(flinkCluster, TaskStatus.FAILED)
-                    controller.updateAnnotations(flinkCluster)
                 }
                 result
             }
@@ -143,7 +143,6 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
                 if (OperatorAnnotations.getNextOperatorTask(flinkCluster) != null) {
                     OperatorAnnotations.advanceOperatorTask(flinkCluster)
                     OperatorAnnotations.setOperatorStatus(flinkCluster, TaskStatus.EXECUTING)
-                    controller.updateAnnotations(flinkCluster)
                     Result(ResultStatus.SUCCESS, "Task completed")
                 } else {
                     Result(ResultStatus.SUCCESS, "Task Idle")
@@ -154,7 +153,6 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
                 OperatorAnnotations.setClusterStatus(flinkCluster, ClusterStatus.FAILED)
                 OperatorAnnotations.resetOperatorTasks(flinkCluster, listOf(OperatorTask.DO_NOTHING))
                 OperatorAnnotations.setOperatorStatus(flinkCluster, TaskStatus.EXECUTING)
-                controller.updateAnnotations(flinkCluster)
                 Result(ResultStatus.FAILED, "Task failed")
             }
         }

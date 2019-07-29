@@ -10,9 +10,9 @@ import com.nextbreakpoint.flinkclient.model.ClusterOverviewWithVersion
 import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
-class ClusterIsReady(flinkOptions : FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
+class ClusterIsRunning(flinkOptions : FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
     companion object {
-        private val logger = Logger.getLogger(ClusterIsReady::class.simpleName)
+        private val logger = Logger.getLogger(ClusterIsRunning::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
@@ -28,8 +28,7 @@ class ClusterIsReady(flinkOptions : FlinkOptions) : OperatorCommand<Void?, Void?
             response.body().use {
                 val overview = Gson().fromJson(it.source().readUtf8Line(), ClusterOverviewWithVersion::class.java)
 
-                //TODO compute total number of slots from number of replicas and task slots per task manager
-                if (overview.slotsAvailable > 0 && overview.taskmanagers > 0) {
+                if (overview.slotsTotal > 0 && overview.taskmanagers > 0 && overview.jobsRunning >= 1) {
                     return Result(ResultStatus.SUCCESS, null)
                 } else {
                     return Result(ResultStatus.AWAIT, null)

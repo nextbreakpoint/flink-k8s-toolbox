@@ -18,13 +18,11 @@ class InitialiseCluster : TaskHandler {
         OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
         OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
 
-        val flinkClusterDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec)
         val jobManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.jobManager)
         val taskManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.taskManager)
         val flinkImageDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.flinkImage)
         val flinkJobDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.flinkJob)
 
-        OperatorAnnotations.setFlinkClusterDigest(context.flinkCluster, flinkClusterDigest)
         OperatorAnnotations.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
         OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
         OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, flinkImageDigest)
@@ -37,9 +35,11 @@ class InitialiseCluster : TaskHandler {
         return Result(ResultStatus.SUCCESS, "Cluster initialized")
     }
 
-    override fun onIdle(context: OperatorContext) {
+    override fun onIdle(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 
-    override fun onFailed(context: OperatorContext) {
+    override fun onFailed(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 }

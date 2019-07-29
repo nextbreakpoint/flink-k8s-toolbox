@@ -14,7 +14,7 @@ class TerminatePods : TaskHandler {
             return Result(ResultStatus.FAILED, "Failed to terminate pods of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
-        val response = context.controller.terminateCluster(context.clusterId)
+        val response = context.controller.terminatePods(context.clusterId)
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(ResultStatus.SUCCESS, "Terminating pods of cluster ${context.flinkCluster.metadata.name}...")
@@ -30,7 +30,7 @@ class TerminatePods : TaskHandler {
             return Result(ResultStatus.FAILED, "Failed to terminate pods of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
-        val response = context.controller.isClusterTerminated(context.clusterId)
+        val response = context.controller.arePodsTerminated(context.clusterId)
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(ResultStatus.SUCCESS, "Resources of cluster ${context.flinkCluster.metadata.name} have been terminated")
@@ -39,9 +39,11 @@ class TerminatePods : TaskHandler {
         }
     }
 
-    override fun onIdle(context: OperatorContext) {
+    override fun onIdle(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 
-    override fun onFailed(context: OperatorContext) {
+    override fun onFailed(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 }

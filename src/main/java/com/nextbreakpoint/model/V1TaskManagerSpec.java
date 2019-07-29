@@ -2,6 +2,8 @@ package com.nextbreakpoint.model;
 
 import com.google.gson.annotations.SerializedName;
 import io.kubernetes.client.models.V1EnvVar;
+import io.kubernetes.client.models.V1Volume;
+import io.kubernetes.client.models.V1VolumeMount;
 
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +23,12 @@ public class V1TaskManagerSpec {
     private Integer taskSlots;
     @SerializedName("environment")
     private List<V1EnvVar> environment;
+    @SerializedName("serviceAccount")
+    private String serviceAccount;
+    @SerializedName("volumes")
+    private List<V1Volume> volumes;
+    @SerializedName("volumeMounts")
+    private List<V1VolumeMount> volumeMounts;
 
     public Float getRequiredCPUs() {
         return requiredCPUs;
@@ -85,6 +93,33 @@ public class V1TaskManagerSpec {
         return this;
     }
 
+    public String getServiceAccount() {
+        return serviceAccount;
+    }
+
+    public V1TaskManagerSpec setServiceAccount(String serviceAccount) {
+        this.serviceAccount = serviceAccount;
+        return this;
+    }
+
+    public List<V1Volume> getVolumes() {
+        return volumes;
+    }
+
+    public V1TaskManagerSpec setVolumes(List<V1Volume> volumes) {
+        this.volumes = volumes;
+        return this;
+    }
+
+    public List<V1VolumeMount> getVolumeMounts() {
+        return volumeMounts;
+    }
+
+    public V1TaskManagerSpec setVolumeMounts(List<V1VolumeMount> volumeMounts) {
+        this.volumeMounts = volumeMounts;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -96,12 +131,15 @@ public class V1TaskManagerSpec {
                 Objects.equals(getStorageClass(), that.getStorageClass()) &&
                 Objects.equals(getReplicas(), that.getReplicas()) &&
                 Objects.equals(getTaskSlots(), that.getTaskSlots()) &&
-                Objects.equals(getEnvironment(), that.getEnvironment());
+                Objects.equals(getEnvironment(), that.getEnvironment()) &&
+                Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
+                Objects.equals(getVolumes(), that.getVolumes()) &&
+                Objects.equals(getVolumeMounts(), that.getVolumeMounts());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getReplicas(), getTaskSlots(), getEnvironment());
+        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getReplicas(), getTaskSlots(), getEnvironment(), getServiceAccount(), getVolumes(), getVolumeMounts());
     }
 
     @Override
@@ -114,6 +152,9 @@ public class V1TaskManagerSpec {
                 ", replicas=" + replicas +
                 ", taskSlots=" + taskSlots +
                 ", environment=" + environment +
+                ", serviceAccount=" + serviceAccount +
+                ", volumes='" + volumes + '\'' +
+                ", volumeMounts='" + volumeMounts + '\'' +
                 '}';
     }
 }
