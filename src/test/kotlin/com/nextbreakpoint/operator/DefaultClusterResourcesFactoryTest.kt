@@ -118,7 +118,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.number?.toInt()).isEqualTo(cluster.spec.jobManager.requiredStorageSize ?: 1)
 
         val podSpec = statefulset.spec?.template?.spec
-        assertThat(podSpec?.serviceAccountName).isEqualTo(cluster.spec.serviceAccount ?: "default")
+        assertThat(podSpec?.serviceAccountName).isEqualTo(cluster.spec.jobManager?.serviceAccount ?: "default")
         assertThat(podSpec?.imagePullSecrets).hasSize(1)
         assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo(cluster.spec.flinkImage?.pullSecrets)
         assertThat(podSpec?.affinity).isNotNull()
@@ -182,7 +182,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.number?.toInt()).isEqualTo(cluster.spec.taskManager.requiredStorageSize ?: 5)
 
         val podSpec = statefulset.spec?.template?.spec
-        assertThat(podSpec?.serviceAccountName).isEqualTo(cluster.spec.serviceAccount ?: "default")
+        assertThat(podSpec?.serviceAccountName).isEqualTo(cluster.spec.taskManager?.serviceAccount ?: "default")
         assertThat(podSpec?.imagePullSecrets).hasSize(1)
         assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo(cluster.spec.flinkImage?.pullSecrets)
         assertThat(podSpec?.affinity).isNotNull()

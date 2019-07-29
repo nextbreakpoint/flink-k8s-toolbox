@@ -10,10 +10,10 @@ object OperatorAnnotations {
     val FLINK_OPERATOR_TASKS                = "flink-operator-tasks"
     val FLINK_OPERATOR_TASK_STATUS          = "flink-operator-task-status"
     val FLINK_OPERATOR_CLUSTER_STATUS       = "flink-operator-cluster-status"
+    val FLINK_OPERATOR_CLUSTER_ERRORS       = "flink-operator-cluster-errors"
     val FLINK_OPERATOR_SAVEPOINT_PATH       = "flink-operator-savepoint-path"
     val FLINK_OPERATOR_SAVEPOINT_REQUEST    = "flink-operator-savepoint-request"
     val FLINK_OPERATOR_SAVEPOINT_TIESTAMP   = "flink-operator-savepoint-timestamp"
-    val FLINK_OPERATOR_CLUSTER_DIGEST       = "flink-operator-digest-cluster"
     val FLINK_OPERATOR_JOBMANAGER_DIGEST    = "flink-operator-digest-jobmanager"
     val FLINK_OPERATOR_TASKMANAGER_DIGEST   = "flink-operator-digest-taskmanager"
     val FLINK_OPERATOR_IMAGE_DIGEST         = "flink-operator-digest-image"
@@ -99,6 +99,8 @@ object OperatorAnnotations {
         flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_TIESTAMP] = System.currentTimeMillis().toString()
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_REQUEST] = requests
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
     fun setSavepointPath(flinkCluster: V1FlinkCluster, savepointPath: String) {
@@ -109,6 +111,8 @@ object OperatorAnnotations {
         flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_PATH] = savepointPath
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_REQUEST] = "{}"
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
     fun updateSavepointTimestamp(flinkCluster: V1FlinkCluster) {
@@ -117,46 +121,49 @@ object OperatorAnnotations {
         flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_TIESTAMP] = System.currentTimeMillis().toString()
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_REQUEST] = "{}"
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
     fun setClusterStatus(flinkCluster: V1FlinkCluster, status: ClusterStatus) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_STATUS] = status.toString()
-    }
 
-    fun setFlinkClusterDigest(flinkCluster: V1FlinkCluster, digest: String) {
-        ensureAnnotations(flinkCluster)
-
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_DIGEST] = digest
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
     fun setJobManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_JOBMANAGER_DIGEST] = digest
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
     fun setTaskManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKMANAGER_DIGEST] = digest
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
     fun setFlinkImageDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_IMAGE_DIGEST] = digest
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
     fun setFlinkJobDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureAnnotations(flinkCluster)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_JOB_DIGEST] = digest
-    }
 
-    fun getFlinkClusterDigest(flinkCluster: V1FlinkCluster): String? =
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_DIGEST]
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
+    }
 
     fun getJobManagerDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.metadata.annotations[FLINK_OPERATOR_JOBMANAGER_DIGEST]
@@ -169,6 +176,17 @@ object OperatorAnnotations {
 
     fun getFlinkJobDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.metadata.annotations[FLINK_OPERATOR_JOB_DIGEST]
+
+    fun setClusterErrors(flinkCluster: V1FlinkCluster, errors: Int) {
+        ensureAnnotations(flinkCluster)
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_ERRORS] = errors.toString()
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
+    }
+
+    fun getClusterErrors(flinkCluster: V1FlinkCluster): Int =
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_ERRORS]?.toInt() ?: 0
 
     private fun ensureAnnotations(flinkCluster: V1FlinkCluster) {
         if (flinkCluster.metadata.annotations == null) {

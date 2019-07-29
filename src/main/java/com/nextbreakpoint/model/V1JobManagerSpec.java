@@ -19,6 +19,8 @@ public class V1JobManagerSpec {
     private List<V1EnvVar> environment;
     @SerializedName("serviceMode")
     private String serviceMode;
+    @SerializedName("serviceAccount")
+    private String serviceAccount;
 
     public Float getRequiredCPUs() {
         return requiredCPUs;
@@ -74,6 +76,15 @@ public class V1JobManagerSpec {
         return this;
     }
 
+    public String getServiceAccount() {
+        return serviceAccount;
+    }
+
+    public V1JobManagerSpec setServiceAccount(String serviceAccount) {
+        this.serviceAccount = serviceAccount;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -84,12 +95,13 @@ public class V1JobManagerSpec {
                 Objects.equals(getRequiredStorageSize(), that.getRequiredStorageSize()) &&
                 Objects.equals(getStorageClass(), that.getStorageClass()) &&
                 Objects.equals(getEnvironment(), that.getEnvironment()) &&
-                Objects.equals(getServiceMode(), that.getServiceMode());
+                Objects.equals(getServiceMode(), that.getServiceMode()) &&
+                Objects.equals(getServiceAccount(), that.getServiceAccount());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getEnvironment(), getServiceMode());
+        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getEnvironment(), getServiceMode(), getServiceAccount());
     }
 
     @Override
@@ -101,6 +113,7 @@ public class V1JobManagerSpec {
                 ", storageClass='" + storageClass + '\'' +
                 ", environment=" + environment +
                 ", serviceMode='" + serviceMode + '\'' +
+                ", serviceAccount='" + serviceAccount + '\'' +
                 '}';
     }
 }

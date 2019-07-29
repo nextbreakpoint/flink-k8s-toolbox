@@ -18,6 +18,8 @@ class RunCluster : TaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.RUNNING)
 
+        OperatorAnnotations.setClusterErrors(context.flinkCluster, 0)
+
         OperatorAnnotations.updateSavepointTimestamp(context.flinkCluster)
 
         return Result(ResultStatus.SUCCESS, "Cluster status updated")
@@ -27,100 +29,121 @@ class RunCluster : TaskHandler {
         return Result(ResultStatus.SUCCESS, "Cluster running")
     }
 
-    override fun onIdle(context: OperatorContext) {
-        val flinkClusterDigest = OperatorAnnotations.getFlinkClusterDigest(context.flinkCluster)
+    override fun onIdle(context: OperatorContext): Result<String> {
         val jobManagerDigest = OperatorAnnotations.getJobManagerDigest(context.flinkCluster)
         val taskManagerDigest = OperatorAnnotations.getTaskManagerDigest(context.flinkCluster)
         val flinkImageDigest = OperatorAnnotations.getFlinkImageDigest(context.flinkCluster)
         val flinkJobDigest = OperatorAnnotations.getFlinkJobDigest(context.flinkCluster)
 
-        if (flinkClusterDigest == null || jobManagerDigest== null || taskManagerDigest == null || flinkImageDigest == null || flinkJobDigest == null) {
+        if (jobManagerDigest== null || taskManagerDigest == null || flinkImageDigest == null || flinkJobDigest == null) {
             logger.error("Missing required annotations in cluster ${context.clusterId.name}")
 
             OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.FAILED)
             OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.DO_NOTHING)
         } else {
-            val actualFlinkClusterDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec)
             val actualJobManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.jobManager)
             val actualTaskManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.taskManager)
             val actualFlinkImageDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.flinkImage)
             val actualFlinkJobDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.flinkJob)
 
-            if (flinkClusterDigest != actualFlinkClusterDigest) {
-                val changes = mutableListOf<String>()
+            val changes = mutableListOf<String>()
 
-                if (jobManagerDigest != actualJobManagerDigest) {
-                    changes.add("JOB_MANAGER")
-                }
+            if (jobManagerDigest != actualJobManagerDigest) {
+                changes.add("JOB_MANAGER")
+            }
 
-                if (taskManagerDigest != actualTaskManagerDigest) {
-                    changes.add("TASK_MANAGER")
-                }
+            if (taskManagerDigest != actualTaskManagerDigest) {
+                changes.add("TASK_MANAGER")
+            }
 
-                if (flinkImageDigest != actualFlinkImageDigest) {
-                    changes.add("FLINK_IMAGE")
-                }
+            if (flinkImageDigest != actualFlinkImageDigest) {
+                changes.add("FLINK_IMAGE")
+            }
 
-                if (flinkJobDigest != actualFlinkJobDigest) {
-                    changes.add("FLINK_JOB")
-                }
+            if (flinkJobDigest != actualFlinkJobDigest) {
+                changes.add("FLINK_JOB")
+            }
 
-                logger.info("Detected changes in cluster resource: ${changes.joinToString(separator = ",")}")
+            if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("FLINK_IMAGE")) {
+                logger.info("Detected changes in: ${changes.joinToString(separator = ",")}")
 
-                if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("FLINK_IMAGE") || !changes.contains("FLINK_JOB")) {
-                    val clusterStatus = OperatorAnnotations.getClusterStatus(context.flinkCluster)
+                val clusterStatus = OperatorAnnotations.getClusterStatus(context.flinkCluster)
 
-                    when (clusterStatus) {
-                        ClusterStatus.RUNNING -> {
-                            logger.info("Cluster restart required")
+                when (clusterStatus) {
+                    ClusterStatus.RUNNING -> {
+                        logger.info("Cluster restart required")
 
-                            OperatorAnnotations.setFlinkClusterDigest(context.flinkCluster, actualFlinkClusterDigest)
-                            OperatorAnnotations.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
-                            OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
-                            OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
-                            OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
+                        OperatorAnnotations.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
+                        OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
+                        OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
+                        OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STOPPING_CLUSTER)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CANCEL_JOB)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.TERMINATE_PODS)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.DELETE_RESOURCES)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STARTING_CLUSTER)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CREATE_RESOURCES)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
-                        }
-                        else -> {
-                            logger.warn("Cluster restart required, but current status prevents from restarting the cluster")
-                        }
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STOPPING_CLUSTER)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CANCEL_JOB)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.TERMINATE_PODS)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.DELETE_RESOURCES)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STARTING_CLUSTER)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CREATE_RESOURCES)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
                     }
-                } else {
-                    val clusterStatus = OperatorAnnotations.getClusterStatus(context.flinkCluster)
+                    else -> {
+                        logger.warn("Cluster restart required, but current status prevents from restarting the cluster")
+                    }
+                }
+            } else if (changes.contains("FLINK_JOB")) {
+                logger.info("Detected changes in: ${changes.joinToString(separator = ",")}")
 
-                    when (clusterStatus) {
-                        ClusterStatus.RUNNING -> {
-                            logger.info("Job restart required")
+                val clusterStatus = OperatorAnnotations.getClusterStatus(context.flinkCluster)
 
-                            OperatorAnnotations.setFlinkClusterDigest(context.flinkCluster, actualFlinkClusterDigest)
-                            OperatorAnnotations.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
-                            OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
-                            OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
-                            OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
+                when (clusterStatus) {
+                    ClusterStatus.RUNNING -> {
+                        logger.info("Job restart required")
 
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STOPPING_CLUSTER)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CANCEL_JOB)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STARTING_CLUSTER)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
-                            OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
-                        }
-                        else -> {
-                            logger.warn("Job restart required, but current status prevents from restarting the cluster")
-                        }
+                        OperatorAnnotations.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
+                        OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
+                        OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
+                        OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
+
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STOPPING_CLUSTER)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CANCEL_JOB)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.STARTING_CLUSTER)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
+                        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
+                    }
+                    else -> {
+                        logger.warn("Job restart required, but current status prevents from restarting the cluster")
                     }
                 }
             } else {
                 // nothing changed
+            }
+        }
+
+        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+
+        if (elapsedTime > 10000) {
+            val result = context.controller.isClusterRunning(context.clusterId)
+
+            val errors = OperatorAnnotations.getClusterErrors(context.flinkCluster)
+
+            val nextTask = OperatorAnnotations.getNextOperatorTask(context.flinkCluster)
+
+            if (result.status != ResultStatus.SUCCESS) {
+                logger.warn("Cluster ${context.clusterId.name} doesn't have the expected status")
+                OperatorAnnotations.setClusterErrors(context.flinkCluster, errors + 1)
+            }
+
+            if (errors > 0 && result.status == ResultStatus.SUCCESS) {
+                OperatorAnnotations.setClusterErrors(context.flinkCluster, 0)
+            }
+
+            if (nextTask == null && errors >= 3) {
+                OperatorAnnotations.setClusterErrors(context.flinkCluster, 0)
+                OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.FAILED)
+                OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.DO_NOTHING)
             }
         }
 
@@ -133,8 +156,11 @@ class RunCluster : TaskHandler {
                 OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
             }
         }
+
+        return Result(ResultStatus.AWAIT, "")
     }
 
-    override fun onFailed(context: OperatorContext) {
+    override fun onFailed(context: OperatorContext): Result<String> {
+        return Result(ResultStatus.AWAIT, "")
     }
 }

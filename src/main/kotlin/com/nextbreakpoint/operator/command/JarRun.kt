@@ -45,10 +45,12 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
                             return Result(ResultStatus.FAILED, null)
                         }
 
+                        val savepointPath = OperatorAnnotations.getSavepointPath(params)
+
                         val runJarResponse = flinkApi.runJarCall(
                             jarFile.id,
                             false,
-                            OperatorAnnotations.getSavepointPath(params) ?: params.spec.flinkJob.savepoint,
+                            savepointPath ?: params.spec.flinkOperator.savepoint,
                             params.spec.flinkJob.arguments.joinToString(separator = " "),
                             null,
                             params.spec.flinkJob.className,

@@ -21,6 +21,8 @@ public class V1TaskManagerSpec {
     private Integer taskSlots;
     @SerializedName("environment")
     private List<V1EnvVar> environment;
+    @SerializedName("serviceAccount")
+    private String serviceAccount;
 
     public Float getRequiredCPUs() {
         return requiredCPUs;
@@ -85,6 +87,15 @@ public class V1TaskManagerSpec {
         return this;
     }
 
+    public String getServiceAccount() {
+        return serviceAccount;
+    }
+
+    public V1TaskManagerSpec setServiceAccount(String serviceAccount) {
+        this.serviceAccount = serviceAccount;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -96,12 +107,13 @@ public class V1TaskManagerSpec {
                 Objects.equals(getStorageClass(), that.getStorageClass()) &&
                 Objects.equals(getReplicas(), that.getReplicas()) &&
                 Objects.equals(getTaskSlots(), that.getTaskSlots()) &&
-                Objects.equals(getEnvironment(), that.getEnvironment());
+                Objects.equals(getEnvironment(), that.getEnvironment()) &&
+                Objects.equals(getServiceAccount(), that.getServiceAccount());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getReplicas(), getTaskSlots(), getEnvironment());
+        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getReplicas(), getTaskSlots(), getEnvironment(), getServiceAccount());
     }
 
     @Override
@@ -114,6 +126,7 @@ public class V1TaskManagerSpec {
                 ", replicas=" + replicas +
                 ", taskSlots=" + taskSlots +
                 ", environment=" + environment +
+                ", serviceAccount=" + serviceAccount +
                 '}';
     }
 }

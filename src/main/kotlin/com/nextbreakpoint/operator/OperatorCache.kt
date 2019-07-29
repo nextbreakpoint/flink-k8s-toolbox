@@ -159,6 +159,28 @@ class OperatorCache {
         return deletedClusters
     }
 
+    fun onFlinkClusterDeleteAll() {
+        flinkClusters.clear()
+    }
+
+    fun onJobDeleteAll() {
+        jarUploadJobs.clear()
+    }
+
+    fun onServiceDeleteAll() {
+        jobmanagerServices.clear()
+    }
+
+    fun onStatefulSetDeleteAll() {
+        jobmanagerStatefulSets.clear()
+        taskmanagerStatefulSets.clear()
+    }
+
+    fun onPersistentVolumeClaimDeleteAll() {
+        jobmanagerPersistentVolumeClaims.clear()
+        taskmanagerPersistentVolumeClaims.clear()
+    }
+
     private fun extractClusterName(objectMeta: V1ObjectMeta) =
         objectMeta.labels?.get("name") ?: throw RuntimeException("Missing required label name")
 
