@@ -1,6 +1,7 @@
 package com.nextbreakpoint.operator
 
 import com.google.gson.GsonBuilder
+import com.nextbreakpoint.common.FlinkClusterSpecification
 import com.nextbreakpoint.common.model.ClusterId
 import com.nextbreakpoint.common.model.FlinkOptions
 import com.nextbreakpoint.common.model.ResultStatus
@@ -9,7 +10,6 @@ import com.nextbreakpoint.common.model.StopOptions
 import com.nextbreakpoint.common.model.TaskManagerId
 import com.nextbreakpoint.model.DateTimeSerializer
 import com.nextbreakpoint.model.V1FlinkCluster
-import com.nextbreakpoint.model.V1FlinkClusterSpec
 import com.nextbreakpoint.operator.command.JobDetails
 import com.nextbreakpoint.operator.command.JobManagerMetrics
 import com.nextbreakpoint.operator.command.JobMetrics
@@ -261,7 +261,7 @@ class OperatorVerticle : AbstractVerticle() {
 
     private fun makeV1FlinkCluster(context: RoutingContext, namespace: String): V1FlinkCluster {
         val objectMeta = V1ObjectMeta().namespace(namespace).name(context.pathParam("name"))
-        val flinkClusterSpec = gson.fromJson(context.bodyAsString, V1FlinkClusterSpec::class.java)
+        val flinkClusterSpec = FlinkClusterSpecification.parse(context.bodyAsString)
         val flinkCluster = V1FlinkCluster()
         flinkCluster.metadata = objectMeta
         flinkCluster.spec = flinkClusterSpec

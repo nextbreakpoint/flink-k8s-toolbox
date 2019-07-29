@@ -17,8 +17,6 @@ class JobCancel(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, 
         try {
             val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)
 
-            logger.info("Cancelling job of cluster ${clusterId.name}...")
-
             val runningJobs = flinkApi.jobs.jobs.filter {
                     jobIdWithStatus -> jobIdWithStatus.status.value.equals("RUNNING")
             }.map {
@@ -50,6 +48,8 @@ class JobCancel(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, 
             if (inprogressCheckpoints.isEmpty()) {
                 if (runningJobs.size == 1) {
                     val requests = runningJobs.map {
+                        logger.info("Cancelling job of cluster ${clusterId.name}...")
+
                         val requestBody = SavepointTriggerRequestBody().cancelJob(true).targetDirectory(params.targetPath)
 
                         val response = flinkApi.createJobSavepoint(requestBody, it)
@@ -66,9 +66,9 @@ class JobCancel(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, 
                     return Result(ResultStatus.FAILED, mapOf())
                 }
             } else {
-                logger.error("Savepoint in progress for cluster ${clusterId.name}")
+                logger.warn("Savepoint in progress for cluster ${clusterId.name}")
 
-                return Result(ResultStatus.AWAIT, mapOf())
+                return Result(ResultStatus.FAILED, mapOf())
             }
         } catch (e : Exception) {
             logger.error("Can't trigger savepoint for job of cluster ${clusterId.name}", e)

@@ -12,7 +12,7 @@ class JobScale : Command<ScaleOptions>(DefaultWebClientFactory) {
         clusterName: String,
         args: ScaleOptions
     ) {
-        Commands.put(factory, address, "/cluster/$clusterName/scale", args)
+        Commands.putJson(factory, address, "/cluster/$clusterName/scale", args)
     }
 }
 

@@ -35,7 +35,7 @@ class JarRemove(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(flin
                 return Result(ResultStatus.SUCCESS, null)
             }
         } catch (e : Exception) {
-            logger.warn("Can't remove JAR files of cluster ${clusterId.name}", e)
+            logger.error("Can't remove JAR files of cluster ${clusterId.name}", e)
 
             return Result(ResultStatus.FAILED, null)
         }

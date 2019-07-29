@@ -16,26 +16,50 @@ class ClusterCreateResources(flinkOptions: FlinkOptions) : OperatorCommand<Clust
 
     override fun execute(clusterId: ClusterId, resources: ClusterResources): Result<Void?> {
         try {
-            logger.info("Creating resources of cluster ${clusterId.name}...")
-
-            val statefulSets = Kubernetes.appsApi.listNamespacedStatefulSet(
+            val services = Kubernetes.coreApi.listNamespacedService(
                 clusterId.namespace,
                 null,
                 null,
                 null,
                 null,
-                "name=${clusterId.name},owner=flink-operator",
+                "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
                 null,
                 null,
                 30,
                 null
             )
 
-            if (statefulSets.items.size > 0) {
-                throw RuntimeException("Cluster already exists")
+            val jobmanagerStatefulSets = Kubernetes.appsApi.listNamespacedStatefulSet(
+                clusterId.namespace,
+                null,
+                null,
+                null,
+                null,
+                "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
+                null,
+                null,
+                30,
+                null
+            )
+
+            val taskmanagerStatefulSets = Kubernetes.appsApi.listNamespacedStatefulSet(
+                clusterId.namespace,
+                null,
+                null,
+                null,
+                null,
+                "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+                null,
+                null,
+                30,
+                null
+            )
+
+            if (services.items.isNotEmpty() || jobmanagerStatefulSets.items.isNotEmpty() || taskmanagerStatefulSets.items.isNotEmpty()) {
+                throw RuntimeException("Previous resources already exist")
             }
 
-            logger.info("Creating Flink Service ...")
+            logger.info("Creating resources of cluster ${clusterId.name}...")
 
             val jobmanagerServiceOut = Kubernetes.coreApi.createNamespacedService(
                 clusterId.namespace,
@@ -47,8 +71,6 @@ class ClusterCreateResources(flinkOptions: FlinkOptions) : OperatorCommand<Clust
 
             logger.info("Service created ${jobmanagerServiceOut.metadata.name}")
 
-            logger.info("Creating JobManager StatefulSet ...")
-
             val jobmanagerStatefulSetOut = Kubernetes.appsApi.createNamespacedStatefulSet(
                 clusterId.namespace,
                 resources.jobmanagerStatefulSet,
@@ -57,9 +79,7 @@ class ClusterCreateResources(flinkOptions: FlinkOptions) : OperatorCommand<Clust
                 null
             )
 
-            logger.info("StatefulSet created ${jobmanagerStatefulSetOut.metadata.name}")
-
-            logger.info("Creating TaskManager StatefulSet ...")
+            logger.info("JobManager created ${jobmanagerStatefulSetOut.metadata.name}")
 
             val taskmanagerStatefulSetOut = Kubernetes.appsApi.createNamespacedStatefulSet(
                 clusterId.namespace,
@@ -69,7 +89,7 @@ class ClusterCreateResources(flinkOptions: FlinkOptions) : OperatorCommand<Clust
                 null
             )
 
-            logger.info("StatefulSet created ${taskmanagerStatefulSetOut.metadata.name}")
+            logger.info("TaskManager created ${taskmanagerStatefulSetOut.metadata.name}")
 
             return Result(ResultStatus.SUCCESS, null)
         } catch (e : Exception) {

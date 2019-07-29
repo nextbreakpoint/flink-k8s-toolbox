@@ -16,10 +16,6 @@ object FlinkClusterSpecification {
 
     fun parse(body: String): V1FlinkClusterSpec = gson.fromJson(body, V1FlinkClusterSpec::class.java)
 
-    fun computeDigest(spec: V1FlinkClusterSpec?): String {
-        return if (spec == null) "" else String(Base64.getEncoder().encode(MessageDigest.getInstance("MD5").digest(gson.toJson(spec).toByteArray())))
-    }
-
     fun computeDigest(spec: V1FlinkImageSpec?): String {
         return if (spec == null) "" else String(Base64.getEncoder().encode(MessageDigest.getInstance("MD5").digest(gson.toJson(spec).toByteArray())))
     }

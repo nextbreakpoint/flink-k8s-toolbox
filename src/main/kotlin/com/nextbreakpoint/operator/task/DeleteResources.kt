@@ -20,9 +20,9 @@ class DeleteResources : TaskHandler {
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(ResultStatus.SUCCESS, "Deleting resources of cluster ${context.flinkCluster.metadata.name}...")
-        } else {
-            return Result(ResultStatus.AWAIT, "Can't delete resources of cluster ${context.flinkCluster.metadata.name}")
         }
+
+        return Result(ResultStatus.AWAIT, "Retry deleting resources of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
@@ -33,10 +33,10 @@ class DeleteResources : TaskHandler {
         }
 
         if (resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
-            return Result(ResultStatus.SUCCESS, "Resources of cluster ${context.flinkCluster.metadata.name} have been removed")
-        } else {
-            return Result(ResultStatus.AWAIT, "Failed to delete resources of cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.SUCCESS, "Resources of cluster ${context.flinkCluster.metadata.name} have been removed in ${elapsedTime / 1000} seconds")
         }
+
+        return Result(ResultStatus.AWAIT, "Wait for deletion of resources of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: OperatorContext): Result<String> {

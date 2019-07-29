@@ -27,7 +27,7 @@ class UploadJar : TaskHandler {
         val elapsedTime = System.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.UPLOADING_JAR_TIMEOUT) {
-            return Result(ResultStatus.FAILED, "Failed to upload Jar to cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
+            return Result(ResultStatus.FAILED, "Failed to upload JAR file to cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
         val clusterResources = ClusterResourcesBuilder(
@@ -38,43 +38,43 @@ class UploadJar : TaskHandler {
             context.flinkCluster
         ).build()
 
-        val removeJarsResponse = context.controller.removeJar(context.clusterId)
+        val removeJarResponse = context.controller.removeJar(context.clusterId)
 
-        if (removeJarsResponse.status != ResultStatus.SUCCESS) {
-            return Result(ResultStatus.AWAIT, "Can't remove old jars from cluster ${context.flinkCluster.metadata.name}")
+        if (removeJarResponse.status != ResultStatus.SUCCESS) {
+            return Result(ResultStatus.AWAIT, "Retry removing old JAR files from cluster ${context.flinkCluster.metadata.name}...")
         }
 
         val uploadJarResponse = context.controller.uploadJar(context.clusterId, clusterResources)
 
         if (uploadJarResponse.status == ResultStatus.SUCCESS) {
-            return Result(ResultStatus.SUCCESS, "Uploading Jar to cluster ${context.flinkCluster.metadata.name}...")
-        } else {
-            return Result(ResultStatus.AWAIT, "Can't upload Jar to cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.SUCCESS, "Uploading JAR file to cluster ${context.flinkCluster.metadata.name}...")
         }
+
+        return Result(ResultStatus.AWAIT, "Retry uploading JAR file to cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
         val elapsedTime = System.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.UPLOADING_JAR_TIMEOUT) {
-            return Result(ResultStatus.FAILED, "Jar has not been uploaded to cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
+            return Result(ResultStatus.FAILED, "JAR file has not been uploaded to cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
         val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
 
-        if (haveClusterResourcesDiverged(clusterStatus)) {
+        if (haveUploadJobResourceDiverged(clusterStatus)) {
             logger.info(clusterStatus.jarUploadJob.toString())
 
             return Result(ResultStatus.AWAIT, "Resources of cluster ${context.flinkCluster.metadata.name} have not been created yet")
         }
 
-        val jarReadyResponse = context.controller.isJarReady(context.clusterId)
+        val response = context.controller.isJarReady(context.clusterId)
 
-        if (jarReadyResponse.status == ResultStatus.SUCCESS) {
-            return Result(ResultStatus.SUCCESS, "Jar has been uploaded to cluster ${context.flinkCluster.metadata.name} in ${elapsedTime / 1000} seconds")
-        } else {
-            return Result(ResultStatus.AWAIT, "Can't find Jar in cluster ${context.flinkCluster.metadata.name}")
+        if (response.status == ResultStatus.SUCCESS) {
+            return Result(ResultStatus.SUCCESS, "JAR file has been uploaded to cluster ${context.flinkCluster.metadata.name} in ${elapsedTime / 1000} seconds")
         }
+
+        return Result(ResultStatus.AWAIT, "Wait for JAR file of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: OperatorContext): Result<String> {
@@ -90,22 +90,18 @@ class UploadJar : TaskHandler {
         val jobmnagerService = resources.jobmanagerServices.get(clusterId)
         val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
         val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
-        val jobmanagerPersistentVolumeClaim = resources.jobmanagerPersistentVolumeClaims.get(clusterId)
-        val taskmanagerPersistentVolumeClaim = resources.taskmanagerPersistentVolumeClaims.get(clusterId)
 
         val actualResources = ClusterResources(
             jarUploadJob = jarUploadJob,
             jobmanagerService = jobmnagerService,
             jobmanagerStatefulSet = jobmanagerStatefulSet,
-            taskmanagerStatefulSet = taskmanagerStatefulSet,
-            jobmanagerPersistentVolumeClaim = jobmanagerPersistentVolumeClaim,
-            taskmanagerPersistentVolumeClaim = taskmanagerPersistentVolumeClaim
+            taskmanagerStatefulSet = taskmanagerStatefulSet
         )
 
         return statusEvaluator.evaluate(clusterId, cluster, actualResources)
     }
 
-    private fun haveClusterResourcesDiverged(clusterResourcesStatus: ClusterResourcesStatus): Boolean {
+    private fun haveUploadJobResourceDiverged(clusterResourcesStatus: ClusterResourcesStatus): Boolean {
         if (clusterResourcesStatus.jarUploadJob.first != ResourceStatus.VALID) {
             return true
         }

@@ -5,3 +5,4 @@ dependency-reduced-pom.xml
 example/*.jar
 docker-registry.yaml
 pvm.yaml
+helm/charts

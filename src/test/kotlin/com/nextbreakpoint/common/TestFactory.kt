@@ -18,7 +18,6 @@ object TestFactory {
                 "image": "registry:30000/flink-jobs:1",
                 "jarPath": "/flink-jobs.jar",
                 "className": "com.nextbreakpoint.flink.jobs.TestJob",
-                "targetPath":"file:///var/tmp/test",
                 "parallelism": 1,
                 "arguments": [
                   "--BUCKET_BASE_PATH",
@@ -27,23 +26,122 @@ object TestFactory {
               },
               "jobManager": {
                 "serviceMode": "ClusterIP",
-                "storageClass": "hostpath",
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",
                     "value": "graphite.default.svc.cluster.local"
+                  }
+                ],
+                "environmentFrom": [
+                  {
+                    "secretRef": {
+                      "name": "flink-secrets"
+                    }
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config-vol",
+                    "mountPath": "/hadoop/etc/core-site.xml",
+                    "subPath": "core-site.xml"
+                  },
+                  {
+                    "name": "config-vol",
+                    "mountPath": "/docker-entrypoint.sh",
+                    "subPath": "docker-entrypoint.sh"
+                  },
+                  {
+                    "name": "config-vol",
+                    "mountPath": "/opt/flink/conf/flink-conf.yaml",
+                    "subPath": "flink-conf.yaml"
+                  },
+                  {
+                    "name": "jobmanager",
+                    "mountPath": "/var/tmp"
+                  }
+                ],
+                "volumes": [
+                  {
+                    "name": "config-vol",
+                    "configMap": {
+                      "name": "flink-config",
+                      "defaultMode": "511"
+                    }
+                  }
+                ],
+                "persistentVolumeClaimsTemplates": [
+                  {
+                    "metadata": {
+                      "name": "jobmanager"
+                    },
+                    "spec": {
+                      "storageClassName": "hostpath",
+                      "accessModes": [ "ReadWriteOnce" ],
+                      "resources": {
+                        "requests": {
+                          "storage": "1Gi"
+                        }
+                      }
+                    }
                   }
                 ]
               },
               "taskManager": {
-                "serviceMode": "NodePort",
-                "storageClass": "hostpath",
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",
                     "value": "graphite.default.svc.cluster.local"
                   }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config-vol",
+                    "mountPath": "/hadoop/etc/core-site.xml",
+                    "subPath": "core-site.xml"
+                  },
+                  {
+                    "name": "config-vol",
+                    "mountPath": "/docker-entrypoint.sh",
+                    "subPath": "docker-entrypoint.sh"
+                  },
+                  {
+                    "name": "config-vol",
+                    "mountPath": "/opt/flink/conf/flink-conf.yaml",
+                    "subPath": "flink-conf.yaml"
+                  },
+                  {
+                    "name": "taskmanager",
+                    "mountPath": "/var/tmp"
+                  }
+                ],
+                "volumes": [
+                  {
+                    "name": "config-vol",
+                    "configMap": {
+                      "name": "flink-config",
+                      "defaultMode": "511"
+                    }
+                  }
+                ],
+                "persistentVolumeClaimsTemplates": [
+                  {
+                    "metadata": {
+                      "name": "taskmanager"
+                    },
+                    "spec": {
+                      "storageClassName": "hostpath",
+                      "accessModes": [ "ReadWriteOnce" ],
+                      "resources": {
+                        "requests": {
+                          "storage": "5Gi"
+                        }
+                      }
+                    }
+                  }
                 ]
+              },
+              "flinkOperator": {
+                "targetPath": "file:///var/tmp/test"
               }
             }
             """.trimIndent())
