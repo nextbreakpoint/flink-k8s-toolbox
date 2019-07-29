@@ -21,11 +21,41 @@ spec:
     environment:
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
+    volumeMounts:
+      - name: config-vol
+        mountPath: /hadoop/etc/core-site.xml
+        subPath: core-site.xml
+      - name: config-vol
+        mountPath: /docker-entrypoint.sh
+        subPath: docker-entrypoint.sh
+      - name: config-vol
+        mountPath: /opt/flink/conf/flink-conf.yaml
+        subPath: flink-conf.yaml
+    volumes:
+      - name: config-vol
+        configMap:
+          name: flink-config
+          defaultMode: 0777
   taskManager:
     serviceMode: NodePort
     storageClass: hostpath
     environment:
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
+    volumeMounts:
+      - name: config-vol
+        mountPath: /hadoop/etc/core-site.xml
+        subPath: core-site.xml
+      - name: config-vol
+        mountPath: /docker-entrypoint.sh
+        subPath: docker-entrypoint.sh
+      - name: config-vol
+        mountPath: /opt/flink/conf/flink-conf.yaml
+        subPath: flink-conf.yaml
+    volumes:
+      - name: config-vol
+        configMap:
+          name: flink-config
+          defaultMode: 0777
   flinkOperator:
     targetPath: file:///var/tmp/test

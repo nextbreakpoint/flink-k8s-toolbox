@@ -158,13 +158,44 @@ Tag and push the image into your registry if required:
 
     docker push some-registry/flink-jobs:1
 
-Create a resource file:
+Create a ConfigMap file:
+
+    cat <<EOF >config-map.yaml
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: flink-config
+    data:
+      core-site.xml: |
+        <?xml version="1.0" encoding="UTF-8"?>
+        <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+        <configuration>
+        <property>
+        <name>fs.s3.impl</name>
+        <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+        </property>
+        <property>
+        <name>fs.s3a.buffer.dir</name>
+        <value>/tmp</value>
+        </property>
+        <property>
+        <name>fs.s3a.aws.credentials.provider</name>
+        <value>com.amazonaws.auth.EnvironmentVariableCredentialsProvider</value>
+        </property>
+        </configuration>
+    EOF
+
+Create a ConfigMap resource with command:
+
+    kubectl create -f config-map.yaml
+
+Create a FlinkCluster file:
 
     cat <<EOF >flink-cluster-test.yaml
     apiVersion: "nextbreakpoint.com/v1"
     kind: FlinkCluster
     metadata:
-      name: test-1
+      name: test
     spec:
       flinkImage:
         pullSecrets: regcred
@@ -184,16 +215,33 @@ Create a resource file:
         environment:
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
+        volumeMounts:
+          - name: config-vol
+            mountPath: /hadoop/etc/core-site.xml
+            subPath: core-site.xml
+        volumes:
+          - name: config-vol
+            configMap:
+              name: flink-config
       taskManager:
+        serviceMode: NodePort
         storageClass: hostpath
         environment:
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
+        volumeMounts:
+          - name: config-vol
+            mountPath: /hadoop/etc/core-site.xml
+            subPath: core-site.xml
+        volumes:
+          - name: config-vol
+            configMap:
+              name: flink-config
       flinkOperator:
         targetPath: file:///var/tmp/test
     EOF
 
-Create the custom object with command:
+Create a FlinkCluster resource with command:
 
     kubectl create -f flink-cluster-test.yaml
 
@@ -317,19 +365,50 @@ Create a JSON file:
             "name": "FLINK_GRAPHITE_HOST",
             "value": "graphite.default.svc.cluster.local"
           }
+        ],
+        "volumeMounts": [
+          {
+            "name": "config-vol",
+            "mountPath": "/hadoop/etc/core-site.xml",
+            "subPath": "core-site.xml"
+          }
+        ],
+        "volumes": [
+          {
+            "name": "config-vol",
+            "configMap": {
+              "name": "flink-config"
+            }
+          }
         ]
       },
       "taskManager": {
+        "serviceMode": "NodePort",
         "storageClass": "hostpath",
         "environment": [
           {
             "name": "FLINK_GRAPHITE_HOST",
             "value": "graphite.default.svc.cluster.local"
           }
+        ],
+        "volumeMounts": [
+          {
+            "name": "config-vol",
+            "mountPath": "/hadoop/etc/core-site.xml",
+            "subPath": "core-site.xml"
+          }
+        ],
+        "volumes": [
+          {
+            "name": "config-vol",
+            "configMap": {
+              "name": "flink-config"
+            }
+          }
         ]
       },
       "flinkOperator": {
-        "targetPath":"file:///var/tmp/test"
+        "targetPath": "file:///var/tmp/test"
       }
     }
     EOF
