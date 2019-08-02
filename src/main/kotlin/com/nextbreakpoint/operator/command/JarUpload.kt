@@ -16,8 +16,6 @@ class JarUpload(flinkOptions: FlinkOptions) : OperatorCommand<ClusterResources, 
 
     override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
-            logger.info("Creating JAR upload Job ...")
-
             val jobs = Kubernetes.batchApi.listNamespacedJob(
                 clusterId.namespace,
                 null,
@@ -32,6 +30,8 @@ class JarUpload(flinkOptions: FlinkOptions) : OperatorCommand<ClusterResources, 
             )
 
             if (jobs.items.isEmpty()) {
+                logger.info("Creating upload Job of cluster ${clusterId.name}...")
+
                 val jobOut = Kubernetes.batchApi.createNamespacedJob(
                     clusterId.namespace,
                     params.jarUploadJob,
@@ -40,14 +40,16 @@ class JarUpload(flinkOptions: FlinkOptions) : OperatorCommand<ClusterResources, 
                     null
                 )
 
-                logger.info("Job created ${jobOut.metadata.name}")
-            } else {
-                logger.info("Job already created for cluster ${clusterId.name}")
-            }
+                logger.info("Upload job of cluster ${clusterId.name} created with name ${jobOut.metadata.name}")
 
-            return Result(ResultStatus.SUCCESS, null)
+                return Result(ResultStatus.SUCCESS, null)
+            } else {
+                logger.warn("Upload job of cluster ${clusterId.name} already exists")
+
+                return Result(ResultStatus.FAILED, null)
+            }
         } catch (e : Exception) {
-            logger.error("Can't create upload job for cluster ${clusterId.name}", e)
+            logger.error("Can't create upload job of cluster ${clusterId.name}", e)
 
             return Result(ResultStatus.FAILED, null)
         }

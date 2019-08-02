@@ -27,27 +27,25 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
 
             val operatorStatus = OperatorAnnotations.getCurrentOperatorStatus(flinkCluster)
 
-            val operatorTask = OperatorAnnotations.getCurrentOperatorTask(flinkCluster)
-
             if (operatorStatus == TaskStatus.IDLE) {
                 val statusList = if (params.stopOnlyJob) {
                     when (clusterStatus) {
                         ClusterStatus.RUNNING ->
                             if (params.withSavepoint) {
                                 listOf(
-                                    operatorTask,
                                     OperatorTask.STOPPING_CLUSTER,
                                     OperatorTask.CANCEL_JOB,
+                                    OperatorTask.TERMINATE_PODS,
                                     OperatorTask.SUSPEND_CLUSTER,
-                                    OperatorTask.DO_NOTHING
+                                    OperatorTask.HALT_CLUSTER
                                 )
                             } else {
                                 listOf(
-                                    operatorTask,
                                     OperatorTask.STOPPING_CLUSTER,
                                     OperatorTask.STOP_JOB,
+                                    OperatorTask.TERMINATE_PODS,
                                     OperatorTask.SUSPEND_CLUSTER,
-                                    OperatorTask.DO_NOTHING
+                                    OperatorTask.HALT_CLUSTER
                                 )
                             }
                         else -> listOf()
@@ -57,42 +55,38 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                         ClusterStatus.RUNNING ->
                             if (params.withSavepoint) {
                                 listOf(
-                                    operatorTask,
                                     OperatorTask.STOPPING_CLUSTER,
                                     OperatorTask.CANCEL_JOB,
                                     OperatorTask.TERMINATE_PODS,
                                     OperatorTask.DELETE_RESOURCES,
                                     OperatorTask.TERMINATE_CLUSTER,
-                                    OperatorTask.DO_NOTHING
+                                    OperatorTask.HALT_CLUSTER
                                 )
                             } else {
                                 listOf(
-                                    operatorTask,
                                     OperatorTask.STOPPING_CLUSTER,
                                     OperatorTask.STOP_JOB,
                                     OperatorTask.TERMINATE_PODS,
                                     OperatorTask.DELETE_RESOURCES,
                                     OperatorTask.TERMINATE_CLUSTER,
-                                    OperatorTask.DO_NOTHING
+                                    OperatorTask.HALT_CLUSTER
                                 )
                             }
                         ClusterStatus.SUSPENDED ->
                             listOf(
-                                operatorTask,
                                 OperatorTask.STOPPING_CLUSTER,
                                 OperatorTask.TERMINATE_PODS,
                                 OperatorTask.DELETE_RESOURCES,
                                 OperatorTask.TERMINATE_CLUSTER,
-                                OperatorTask.DO_NOTHING
+                                OperatorTask.HALT_CLUSTER
                             )
                         ClusterStatus.FAILED ->
                             listOf(
-                                operatorTask,
                                 OperatorTask.STOPPING_CLUSTER,
                                 OperatorTask.TERMINATE_PODS,
                                 OperatorTask.DELETE_RESOURCES,
                                 OperatorTask.TERMINATE_CLUSTER,
-                                OperatorTask.DO_NOTHING
+                                OperatorTask.HALT_CLUSTER
                             )
                         else -> listOf()
                     }
@@ -105,15 +99,15 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                 } else {
                     logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
 
-                    return Result(ResultStatus.AWAIT, OperatorAnnotations.getCurrentOperatorTasks(flinkCluster))
+                    return Result(ResultStatus.AWAIT, listOf(OperatorAnnotations.getCurrentOperatorTask(flinkCluster)))
                 }
             } else {
                 logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
 
-                return Result(ResultStatus.AWAIT, OperatorAnnotations.getCurrentOperatorTasks(flinkCluster))
+                return Result(ResultStatus.AWAIT, listOf(OperatorAnnotations.getCurrentOperatorTask(flinkCluster)))
             }
         } catch (e : Exception) {
-            logger.error("Can't set tasks sequence of cluster ${clusterId.name}", e)
+            logger.error("Can't change tasks sequence of cluster ${clusterId.name}", e)
 
             return Result(ResultStatus.FAILED, listOf())
         }

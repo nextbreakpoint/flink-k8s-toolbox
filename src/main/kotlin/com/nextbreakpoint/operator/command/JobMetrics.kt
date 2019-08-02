@@ -57,7 +57,9 @@ class JobMetrics(flinkOptions: FlinkOptions) : OperatorCommand<Void?, String>(fl
 
                 return Result(ResultStatus.SUCCESS, Gson().toJson(metricsResponse))
             } else {
-                return Result(ResultStatus.FAILED, "{}")
+                logger.info("No running job found in cluster ${clusterId.name}")
+
+                return Result(ResultStatus.AWAIT, "{}")
             }
         } catch (e : Exception) {
             logger.error("Can't get metrics of job of cluster ${clusterId.name}", e)

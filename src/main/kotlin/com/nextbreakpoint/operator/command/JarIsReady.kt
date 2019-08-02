@@ -28,14 +28,14 @@ class JarIsReady(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(fli
             response.body().use {
                 val jarList = Gson().fromJson(it.source().readUtf8Line(), JarListInfo::class.java)
 
-                if (jarList.files.size > 0) {
+                if (jarList.files.isNotEmpty()) {
                     return Result(ResultStatus.SUCCESS, null)
                 } else {
                     return Result(ResultStatus.AWAIT, null)
                 }
             }
         } catch (e : Exception) {
-            logger.error("Can't get the list of JAR files of cluster ${clusterId.name}", e)
+            logger.error("Can't get JAR files of cluster ${clusterId.name}", e)
 
             return Result(ResultStatus.FAILED, null)
         }

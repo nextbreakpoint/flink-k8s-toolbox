@@ -12,8 +12,6 @@ import com.nextbreakpoint.operator.resources.DefaultClusterResourcesFactory
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1EnvVar
 import io.kubernetes.client.models.V1ObjectMeta
-import io.kubernetes.client.models.V1PersistentVolumeClaim
-import io.kubernetes.client.models.V1PersistentVolumeClaimSpec
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1ServiceSpec
 import org.assertj.core.api.Assertions.assertThat
@@ -44,8 +42,6 @@ class ClusterResourcesStatusEvaluatorTest {
         assertThat(actualStatus.jobmanagerService.first).isEqualTo(ResourceStatus.VALID)
         assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.VALID)
         assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.VALID)
-        assertThat(actualStatus.jobmanagerPersistentVolumeClaim.first).isEqualTo(ResourceStatus.VALID)
-        assertThat(actualStatus.taskmanagerPersistentVolumeClaim.first).isEqualTo(ResourceStatus.VALID)
     }
 
     @Test
@@ -90,28 +86,6 @@ class ClusterResourcesStatusEvaluatorTest {
         printStatus(actualStatus)
 
         assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.MISSING)
-    }
-
-    @Test
-    fun `should return missing resource when the jobmanager persistent volume claim is not present`() {
-        val expectedResources = createTestClusterResources(cluster).withJobManagerPersistenVolumeClaim(null)
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.jobmanagerPersistentVolumeClaim.first).isEqualTo(ResourceStatus.MISSING)
-    }
-
-    @Test
-    fun `should return missing resource when the taskmanager persistent volume claim is not present`() {
-        val expectedResources = createTestClusterResources(cluster).withTaskManagerPersistenVolumeClaim(null)
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.taskmanagerPersistentVolumeClaim.first).isEqualTo(ResourceStatus.MISSING)
     }
 
     @Test
@@ -221,34 +195,6 @@ class ClusterResourcesStatusEvaluatorTest {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.volumeClaimTemplates = listOf()
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jobmanagerStatefulSet.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected volume claims storage class`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.jobmanagerStatefulSet?.spec?.volumeClaimTemplates?.get(0)?.spec?.storageClassName = "xxx"
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jobmanagerStatefulSet.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected volume claims storage size`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.jobmanagerStatefulSet?.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests = mapOf("storage" to Quantity("10"))
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
@@ -427,34 +373,6 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected volume claims storage class`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.taskmanagerStatefulSet?.spec?.volumeClaimTemplates?.get(0)?.spec?.storageClassName = "xxx"
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected volume claims storage size`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.taskmanagerStatefulSet?.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests = mapOf("storage" to Quantity("10"))
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(1)
-    }
-
-    @Test
     fun `should return divergent resource when the taskmanager statefulset does not have containers`() {
         val expectedResources = createTestClusterResources(cluster)
 
@@ -566,62 +484,6 @@ class ClusterResourcesStatusEvaluatorTest {
         assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(1)
     }
 
-    @Test
-    fun `should return divergent resource when the jobmanager persistent volume claim does not have the expected labels`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.jobmanagerPersistentVolumeClaim?.metadata?.labels = mapOf()
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.jobmanagerPersistentVolumeClaim.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jobmanagerPersistentVolumeClaim.second).hasSize(4)
-    }
-
-    @Test
-    fun `should return divergent resource when the jobmanager persistent volume claim does not have the expected storage class`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.jobmanagerPersistentVolumeClaim?.spec?.storageClassName = "xxx"
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.jobmanagerPersistentVolumeClaim.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jobmanagerPersistentVolumeClaim.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the taskmanager persistent volume claim does not have the expected labels`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.taskmanagerPersistentVolumeClaim?.metadata?.labels = mapOf()
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.taskmanagerPersistentVolumeClaim.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.taskmanagerPersistentVolumeClaim.second).hasSize(4)
-    }
-
-    @Test
-    fun `should return divergent resource when the taskmanager persistent volume claim does not have the expected storage class`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.taskmanagerPersistentVolumeClaim?.spec?.storageClassName = "xxx"
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.taskmanagerPersistentVolumeClaim.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.taskmanagerPersistentVolumeClaim.second).hasSize(1)
-    }
-
     private fun printStatus(clusterResourcesStatus: ClusterResourcesStatus) {
         clusterResourcesStatus.jarUploadJob.second.forEach { println("uploadJob job: ${it}") }
 
@@ -630,10 +492,6 @@ class ClusterResourcesStatusEvaluatorTest {
         clusterResourcesStatus.jobmanagerStatefulSet.second.forEach { println("jobmanager statefulset: ${it}") }
 
         clusterResourcesStatus.taskmanagerStatefulSet.second.forEach { println("taskmanager statefulset: ${it}") }
-
-        clusterResourcesStatus.jobmanagerPersistentVolumeClaim.second.forEach { println("jobmanager persistent volume claim: ${it}") }
-
-        clusterResourcesStatus.taskmanagerPersistentVolumeClaim.second.forEach { println("taskmanager persistent volume claim: ${it}") }
     }
 
     @Test
@@ -790,26 +648,6 @@ class ClusterResourcesStatusEvaluatorTest {
         assertThat(actualStatus.jarUploadJob.second).hasSize(3)
     }
 
-    private fun createPersistentVolumeClaim(
-        clusterOwner: String,
-        storageClass: String,
-        role: String,
-        clusterId: String,
-        clusterName: String
-    ): V1PersistentVolumeClaim? {
-        val persistentVolumeClaim = V1PersistentVolumeClaim()
-
-        val labels = createLabels(clusterOwner, role, clusterId, clusterName)
-
-        persistentVolumeClaim.metadata = V1ObjectMeta()
-        persistentVolumeClaim.metadata.labels = labels
-
-        persistentVolumeClaim.spec = V1PersistentVolumeClaimSpec()
-        persistentVolumeClaim.spec.storageClassName = storageClass
-
-        return persistentVolumeClaim
-    }
-
     private fun createLabels(
         clusterOwner: String,
         role: String,
@@ -842,21 +680,7 @@ class ClusterResourcesStatusEvaluatorTest {
             jarUploadJob = targetResources.jarUploadJob,
             jobmanagerService = targetResources.jobmanagerService,
             jobmanagerStatefulSet = targetResources.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = targetResources.taskmanagerStatefulSet,
-            jobmanagerPersistentVolumeClaim = createPersistentVolumeClaim(
-                "flink-operator",
-                cluster.spec.jobManager.storageClass,
-                "jobmanager",
-                clusterId,
-                cluster.metadata.name
-            ),
-            taskmanagerPersistentVolumeClaim = createPersistentVolumeClaim(
-                "flink-operator",
-                cluster.spec.taskManager.storageClass,
-                "taskmanager",
-                clusterId,
-                cluster.metadata.name
-            )
+            taskmanagerStatefulSet = targetResources.taskmanagerStatefulSet
         )
     }
 }

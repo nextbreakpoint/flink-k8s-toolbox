@@ -17,6 +17,14 @@ class CreateSavepoint : TaskHandler {
             return Result(ResultStatus.FAILED, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
+        val requests = OperatorAnnotations.getSavepointRequest(context.flinkCluster) ?: "{}"
+
+        val prevSavepointRequest = Gson().fromJson<Map<String, String>>(requests, Map::class.java)
+
+        if (!prevSavepointRequest.isEmpty()) {
+            return Result(ResultStatus.SUCCESS, "Savepoint of cluster ${context.flinkCluster.metadata.name} is already in progress...")
+        }
+
         val options = SavepointOptions(targetPath = context.flinkCluster.spec?.flinkOperator?.targetPath)
 
         val savepointRequest = context.controller.triggerSavepoint(context.clusterId, options)
@@ -25,9 +33,9 @@ class CreateSavepoint : TaskHandler {
             OperatorAnnotations.setSavepointRequest(context.flinkCluster, Gson().toJson(savepointRequest.output))
 
             return Result(ResultStatus.SUCCESS, "Creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
-        } else {
-            return Result(ResultStatus.AWAIT, "Can't create savepoint of cluster ${context.flinkCluster.metadata.name}")
         }
+
+        return Result(ResultStatus.AWAIT, "Retry creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
@@ -37,19 +45,21 @@ class CreateSavepoint : TaskHandler {
             return Result(ResultStatus.FAILED, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
-        val requests = OperatorAnnotations.getSavepointRequest(context.flinkCluster) ?: return Result(ResultStatus.FAILED, "Savepoint request not found in cluster ${context.flinkCluster.metadata.name}")
+        val requests = OperatorAnnotations.getSavepointRequest(context.flinkCluster) ?: "{}"
 
         val savepointRequest = Gson().fromJson<Map<String, String>>(requests, Map::class.java)
 
         val completedSavepoint = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
 
         if (completedSavepoint.status == ResultStatus.SUCCESS) {
-            OperatorAnnotations.setSavepointPath(context.flinkCluster, completedSavepoint.output)
+            if (OperatorAnnotations.getSavepointPath(context.flinkCluster) != completedSavepoint.output) {
+                OperatorAnnotations.setSavepointPath(context.flinkCluster, completedSavepoint.output)
+            }
 
             return Result(ResultStatus.SUCCESS, "Savepoint of cluster ${context.flinkCluster.metadata.name} has been created")
-        } else {
-            return Result(ResultStatus.AWAIT, "Failed to check savepoint status of cluster ${context.flinkCluster.metadata.name}")
         }
+
+        return Result(ResultStatus.AWAIT, "Wait for completion of savepoint of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: OperatorContext): Result<String> {

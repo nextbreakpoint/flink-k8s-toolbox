@@ -12,7 +12,7 @@ class ClusterStop : Command<StopOptions>(DefaultWebClientFactory) {
         clusterName: String,
         args: StopOptions
     ) {
-        Commands.put(super.factory, address, "/cluster/$clusterName/stop", args)
+        Commands.putJson(super.factory, address, "/cluster/$clusterName/stop", args)
     }
 }
 

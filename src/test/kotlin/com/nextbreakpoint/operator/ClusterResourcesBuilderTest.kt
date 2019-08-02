@@ -63,8 +63,6 @@ class ClusterResourcesBuilderTest {
         assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
         assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
-        assertThat(resources.jobmanagerPersistentVolumeClaim).isNull()
-        assertThat(resources.taskmanagerPersistentVolumeClaim).isNull()
 
         verify(factory, times(1)).createJarUploadJob(eq("test"), eq(clusterId), eq("myself"), eq(cluster))
         verify(factory, times(1)).createJobManagerService(eq("test"), eq(clusterId), eq("myself"), eq(cluster))
@@ -81,8 +79,6 @@ class ClusterResourcesBuilderTest {
         assertThat(resources.jobmanagerService).isNull()
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
         assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
-        assertThat(resources.jobmanagerPersistentVolumeClaim).isNull()
-        assertThat(resources.taskmanagerPersistentVolumeClaim).isNull()
     }
 
     @Test
@@ -94,8 +90,6 @@ class ClusterResourcesBuilderTest {
         assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
         assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
-        assertThat(resources.jobmanagerPersistentVolumeClaim).isNull()
-        assertThat(resources.taskmanagerPersistentVolumeClaim).isNull()
     }
 
     @Test
@@ -107,8 +101,6 @@ class ClusterResourcesBuilderTest {
         assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
         assertThat(resources.jobmanagerStatefulSet).isNull()
         assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
-        assertThat(resources.jobmanagerPersistentVolumeClaim).isNull()
-        assertThat(resources.taskmanagerPersistentVolumeClaim).isNull()
     }
 
     @Test
@@ -120,7 +112,5 @@ class ClusterResourcesBuilderTest {
         assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
         assertThat(resources.taskmanagerStatefulSet).isNull()
-        assertThat(resources.jobmanagerPersistentVolumeClaim).isNull()
-        assertThat(resources.taskmanagerPersistentVolumeClaim).isNull()
     }
 }

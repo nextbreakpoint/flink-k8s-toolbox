@@ -33,6 +33,8 @@ class JobDetails(flinkOptions: FlinkOptions) : OperatorCommand<Void?, String>(fl
 
                 return Result(ResultStatus.SUCCESS, Gson().toJson(details))
             } else {
+                logger.info("No running job found in cluster ${clusterId.name}")
+
                 return Result(ResultStatus.FAILED, "{}")
             }
         } catch (e : Exception) {

@@ -4,15 +4,14 @@ import com.nextbreakpoint.common.Command
 import com.nextbreakpoint.common.Commands
 import com.nextbreakpoint.common.DefaultWebClientFactory
 import com.nextbreakpoint.common.model.Address
-import com.nextbreakpoint.model.V1FlinkClusterSpec
 
-class ClusterCreate : Command<V1FlinkClusterSpec>(DefaultWebClientFactory) {
+class ClusterCreate : Command<String>(DefaultWebClientFactory) {
     override fun run(
         address: Address,
         clusterName: String,
-        args: V1FlinkClusterSpec
+        args: String
     ) {
-        Commands.post(super.factory, address, "/cluster/$clusterName", args)
+        Commands.postText(super.factory, address, "/cluster/$clusterName", args)
     }
 }
 
