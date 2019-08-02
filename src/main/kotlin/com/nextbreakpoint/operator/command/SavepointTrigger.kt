@@ -64,7 +64,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOp
                     return Result(ResultStatus.FAILED, mapOf())
                 }
             } else {
-                logger.error("Savepoint in progress for cluster ${clusterId.name}")
+                logger.warn("Savepoint in progress for cluster ${clusterId.name}")
 
                 return Result(ResultStatus.AWAIT, mapOf())
             }

@@ -12,11 +12,16 @@ import com.nextbreakpoint.operator.OperatorContext
 class InitialiseCluster : TaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
+        OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
 
-        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.CREATE_RESOURCES)
-        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.UPLOAD_JAR)
-        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.START_JOB)
-        OperatorAnnotations.appendOperatorTask(context.flinkCluster, OperatorTask.RUN_CLUSTER)
+        OperatorAnnotations.resetOperatorTasks(context.flinkCluster,
+            listOf(
+                OperatorTask.CREATE_RESOURCES,
+                OperatorTask.UPLOAD_JAR,
+                OperatorTask.START_JOB,
+                OperatorTask.RUN_CLUSTER
+            )
+        )
 
         val jobManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.jobManager)
         val taskManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.taskManager)

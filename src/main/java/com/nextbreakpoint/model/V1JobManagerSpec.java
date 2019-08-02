@@ -1,7 +1,9 @@
 package com.nextbreakpoint.model;
 
 import com.google.gson.annotations.SerializedName;
+import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
+import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 
@@ -13,12 +15,10 @@ public class V1JobManagerSpec {
     private Float requiredCPUs;
     @SerializedName("requiredMemory")
     private Integer requiredMemory;
-    @SerializedName("requiredStorageSize")
-    private Integer requiredStorageSize;
-    @SerializedName("storageClass")
-    private String storageClass;
     @SerializedName("environment")
     private List<V1EnvVar> environment;
+    @SerializedName("environmentFrom")
+    private List<V1EnvFromSource> environmentFrom;
     @SerializedName("serviceMode")
     private String serviceMode;
     @SerializedName("serviceAccount")
@@ -27,6 +27,8 @@ public class V1JobManagerSpec {
     private List<V1Volume> volumes;
     @SerializedName("volumeMounts")
     private List<V1VolumeMount> volumeMounts;
+    @SerializedName("persistentVolumeClaimsTemplates")
+    private List<V1PersistentVolumeClaim> persistentVolumeClaimsTemplates;
 
     public Float getRequiredCPUs() {
         return requiredCPUs;
@@ -46,24 +48,6 @@ public class V1JobManagerSpec {
         return this;
     }
 
-    public Integer getRequiredStorageSize() {
-        return requiredStorageSize;
-    }
-
-    public V1JobManagerSpec setRequiredStorageSize(Integer requiredStorageSize) {
-        this.requiredStorageSize = requiredStorageSize;
-        return this;
-    }
-
-    public String getStorageClass() {
-        return storageClass;
-    }
-
-    public V1JobManagerSpec setStorageClass(String storageClass) {
-        this.storageClass = storageClass;
-        return this;
-    }
-
     public List<V1EnvVar> getEnvironment() {
         return environment;
     }
@@ -71,6 +55,14 @@ public class V1JobManagerSpec {
     public V1JobManagerSpec setEnvironment(List<V1EnvVar> environment) {
         this.environment = environment;
         return this;
+    }
+
+    public List<V1EnvFromSource> getEnvironmentFrom() {
+        return environmentFrom;
+    }
+
+    public void setEnvironmentFrom(List<V1EnvFromSource> environmentFrom) {
+        this.environmentFrom = environmentFrom;
     }
 
     public String getServiceMode() {
@@ -109,6 +101,15 @@ public class V1JobManagerSpec {
         return this;
     }
 
+    public List<V1PersistentVolumeClaim> getPersistentVolumeClaimsTemplates() {
+        return persistentVolumeClaimsTemplates;
+    }
+
+    public V1JobManagerSpec setPersistentVolumeClaimsTemplates(List<V1PersistentVolumeClaim> persistentVolumeClaimsTemplates) {
+        this.persistentVolumeClaimsTemplates = persistentVolumeClaimsTemplates;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -116,18 +117,18 @@ public class V1JobManagerSpec {
         V1JobManagerSpec that = (V1JobManagerSpec) o;
         return Objects.equals(getRequiredCPUs(), that.getRequiredCPUs()) &&
                 Objects.equals(getRequiredMemory(), that.getRequiredMemory()) &&
-                Objects.equals(getRequiredStorageSize(), that.getRequiredStorageSize()) &&
-                Objects.equals(getStorageClass(), that.getStorageClass()) &&
                 Objects.equals(getEnvironment(), that.getEnvironment()) &&
+                Objects.equals(getEnvironmentFrom(), that.getEnvironmentFrom()) &&
                 Objects.equals(getServiceMode(), that.getServiceMode()) &&
                 Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
                 Objects.equals(getVolumes(), that.getVolumes()) &&
-                Objects.equals(getVolumeMounts(), that.getVolumeMounts());
+                Objects.equals(getVolumeMounts(), that.getVolumeMounts()) &&
+                Objects.equals(getPersistentVolumeClaimsTemplates(), that.getPersistentVolumeClaimsTemplates());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getRequiredStorageSize(), getStorageClass(), getEnvironment(), getServiceMode(), getServiceAccount(), getVolumes(), getVolumeMounts());
+        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getEnvironment(), getEnvironmentFrom(), getServiceMode(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates());
     }
 
     @Override
@@ -135,13 +136,13 @@ public class V1JobManagerSpec {
         return "V1JobManagerSpec{" +
                 "requiredCPUs=" + requiredCPUs +
                 ", requiredMemory=" + requiredMemory +
-                ", requiredStorageSize=" + requiredStorageSize +
-                ", storageClass='" + storageClass + '\'' +
                 ", environment=" + environment +
+                ", environmentFrom=" + environmentFrom +
                 ", serviceMode='" + serviceMode + '\'' +
                 ", serviceAccount='" + serviceAccount + '\'' +
                 ", volumes='" + volumes + '\'' +
                 ", volumeMounts='" + volumeMounts + '\'' +
+                ", persistentVolumeClaimsTemplates='" + persistentVolumeClaimsTemplates + '\'' +
                 '}';
     }
 }

@@ -9,8 +9,8 @@ object OperatorAnnotations {
     val FLINK_OPERATOR_TIMESTAMP            = "flink-operator-timestamp"
     val FLINK_OPERATOR_TASKS                = "flink-operator-tasks"
     val FLINK_OPERATOR_TASK_STATUS          = "flink-operator-task-status"
+    val FLINK_OPERATOR_TASK_ATTEMPTS        = "flink-operator-task-attempts"
     val FLINK_OPERATOR_CLUSTER_STATUS       = "flink-operator-cluster-status"
-    val FLINK_OPERATOR_CLUSTER_ERRORS       = "flink-operator-cluster-errors"
     val FLINK_OPERATOR_SAVEPOINT_PATH       = "flink-operator-savepoint-path"
     val FLINK_OPERATOR_SAVEPOINT_REQUEST    = "flink-operator-savepoint-request"
     val FLINK_OPERATOR_SAVEPOINT_TIESTAMP   = "flink-operator-savepoint-timestamp"
@@ -23,10 +23,7 @@ object OperatorAnnotations {
         flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS) != null
 
     fun getCurrentOperatorTask(flinkCluster: V1FlinkCluster) : OperatorTask =
-        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(" ")?.filter { it.isNotBlank() }?.map { OperatorTask.valueOf(it) }?.firstOrNull() ?: OperatorTask.DO_NOTHING
-
-    fun getCurrentOperatorTasks(flinkCluster: V1FlinkCluster): List<OperatorTask> =
-        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(" ")?.filter { it.isNotBlank() }?.map { OperatorTask.valueOf(it) }?.toList() ?: listOf(OperatorTask.DO_NOTHING)
+        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(" ")?.filter { it.isNotBlank() }?.map { OperatorTask.valueOf(it) }?.firstOrNull() ?: OperatorTask.HALT_CLUSTER
 
     fun getCurrentOperatorStatus(flinkCluster: V1FlinkCluster) : TaskStatus {
         val status = flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASK_STATUS)
@@ -53,22 +50,10 @@ object OperatorAnnotations {
     fun getNextOperatorTask(flinkCluster: V1FlinkCluster) : OperatorTask? =
         flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(' ')?.drop(1)?.map { OperatorTask.valueOf(it) }?.firstOrNull()
 
-    fun appendOperatorTask(flinkCluster: V1FlinkCluster, task: OperatorTask) {
-        ensureAnnotations(flinkCluster)
-
-        val tasks = flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKS] ?: ""
-
-        val newTasks = tasks.split(" ") + task.toString()
-
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKS] = newTasks.joinToString(separator = " ")
-
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
-    }
-
     fun advanceOperatorTask(flinkCluster: V1FlinkCluster) {
         ensureAnnotations(flinkCluster)
 
-        val task = flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(' ')?.firstOrNull() ?: "DO_NOTHING"
+        val task = flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(' ')?.firstOrNull() ?: OperatorTask.HALT_CLUSTER.toString()
 
         val tasks = flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(' ')?.drop(1)?.joinToString(separator = " ") ?: ""
 
@@ -80,7 +65,9 @@ object OperatorAnnotations {
     fun resetOperatorTasks(flinkCluster: V1FlinkCluster, task: List<OperatorTask>) {
         ensureAnnotations(flinkCluster)
 
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKS] = task.joinToString(separator = " ")
+        val currentTask = flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS) ?: ""
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKS] = (currentTask + " " + task.joinToString(separator = " ")).trim()
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
@@ -177,16 +164,16 @@ object OperatorAnnotations {
     fun getFlinkJobDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.metadata.annotations[FLINK_OPERATOR_JOB_DIGEST]
 
-    fun setClusterErrors(flinkCluster: V1FlinkCluster, errors: Int) {
+    fun setOperatorTaskAttempts(flinkCluster: V1FlinkCluster, attempts: Int) {
         ensureAnnotations(flinkCluster)
 
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_ERRORS] = errors.toString()
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TASK_ATTEMPTS] = attempts.toString()
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
-    fun getClusterErrors(flinkCluster: V1FlinkCluster): Int =
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_CLUSTER_ERRORS]?.toInt() ?: 0
+    fun getOperatorTaskAttempts(flinkCluster: V1FlinkCluster): Int =
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TASK_ATTEMPTS]?.toInt() ?: 0
 
     private fun ensureAnnotations(flinkCluster: V1FlinkCluster) {
         if (flinkCluster.metadata.annotations == null) {

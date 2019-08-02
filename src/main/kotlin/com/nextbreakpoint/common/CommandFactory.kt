@@ -13,7 +13,7 @@ interface CommandFactory {
 
     fun createUploadJARCommand() : UploadCommand<UploadOptions>
 
-    fun createCreateClusterCommand() : Command<V1FlinkClusterSpec>
+    fun createCreateClusterCommand() : Command<String>
 
     fun createDeleteClusterCommand() : CommandNoArgs
 

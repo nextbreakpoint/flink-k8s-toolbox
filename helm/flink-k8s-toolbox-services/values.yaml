@@ -4,8 +4,18 @@
 
 image:
   repository: nextbreakpoint/flink-k8s-toolbox
-  tag: 1.1.1-beta
+  tag: 1.1.2-beta
   pullPolicy: Always
+
+replicas: 0
 
 savepoint:
   interval: 600
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "50m"
+  limits:
+    memory: "256Mi"
+    cpu: "250m"

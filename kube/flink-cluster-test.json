@@ -1,11 +1,10 @@
 {
   "flinkImage": {
-    "pullSecrets": "regcred",
-    "pullPolicy": "IfNotPresent",
-    "flinkImage": "registry:30000/flink:1.7.2"
+    "pullPolicy": "Never",
+    "flinkImage": "flink:1.7.2"
   },
   "flinkJob": {
-    "image": "registry:30000/flink-jobs:1",
+    "image": "flink-jobs:1",
     "jarPath": "/flink-jobs.jar",
     "className": "com.nextbreakpoint.flink.jobs.TestJob",
     "parallelism": 1,
@@ -16,11 +15,17 @@
   },
   "jobManager": {
     "serviceMode": "NodePort",
-    "storageClass": "hostpath",
     "environment": [
       {
         "name": "FLINK_GRAPHITE_HOST",
         "value": "graphite.default.svc.cluster.local"
+      }
+    ],
+    "environmentFrom": [
+      {
+        "secretRef": {
+          "name": "flink-secrets"
+        }
       }
     ],
     "volumeMounts": [
@@ -38,6 +43,10 @@
         "name": "config-vol",
         "mountPath": "/opt/flink/conf/flink-conf.yaml",
         "subPath": "flink-conf.yaml"
+      },
+      {
+        "name": "jobmanager",
+        "mountPath": "/var/tmp"
       }
     ],
     "volumes": [
@@ -48,11 +57,25 @@
           "defaultMode": "511"
         }
       }
+    ],
+    "persistentVolumeClaimsTemplates": [
+      {
+        "metadata": {
+          "name": "jobmanager"
+        },
+        "spec": {
+          "storageClassName": "hostpath",
+          "accessModes": [ "ReadWriteOnce" ],
+          "resources": {
+            "requests": {
+              "storage": "1Gi"
+            }
+          }
+        }
+      }
     ]
   },
   "taskManager": {
-    "serviceMode": "NodePort",
-    "storageClass": "hostpath",
     "environment": [
       {
         "name": "FLINK_GRAPHITE_HOST",
@@ -74,6 +97,10 @@
         "name": "config-vol",
         "mountPath": "/opt/flink/conf/flink-conf.yaml",
         "subPath": "flink-conf.yaml"
+      },
+      {
+        "name": "taskmanager",
+        "mountPath": "/var/tmp"
       }
     ],
     "volumes": [
@@ -82,6 +109,22 @@
         "configMap": {
           "name": "flink-config",
           "defaultMode": "511"
+        }
+      }
+    ],
+    "persistentVolumeClaimsTemplates": [
+      {
+        "metadata": {
+          "name": "taskmanager"
+        },
+        "spec": {
+          "storageClassName": "hostpath",
+          "accessModes": [ "ReadWriteOnce" ],
+          "resources": {
+            "requests": {
+              "storage": "5Gi"
+            }
+          }
         }
       }
     ]

@@ -1,33 +1,22 @@
 package com.nextbreakpoint.common
 
 import com.nextbreakpoint.common.model.Address
+import io.vertx.rxjava.core.buffer.Buffer
 
 object Commands {
-    fun <T> post(factory: WebClientFactory, address: Address, path: String, body: T?) {
+    fun postText(factory: WebClientFactory, address: Address, path: String, body: String) {
         try {
             val client = factory.create(address)
             try {
-                if (body != null) {
-                    client.post(path)
-                        .putHeader("content-type", "application/json")
-                        .putHeader("accept", "application/json")
-                        .rxSendJson(body)
-                        .doOnSuccess {
-                            println(it.bodyAsString())
-                        }
-                        .toCompletable()
-                        .await()
-                } else {
-                    client.post(path)
-                        .putHeader("content-type", "application/json")
-                        .putHeader("accept", "application/json")
-                        .rxSend()
-                        .doOnSuccess {
-                            println(it.bodyAsString())
-                        }
-                        .toCompletable()
-                        .await()
-                }
+                client.post(path)
+                    .putHeader("content-type", "application/json")
+                    .putHeader("accept", "application/json")
+                    .rxSendBuffer(Buffer.buffer(body))
+                    .doOnSuccess {
+                        println(it.bodyAsString())
+                    }
+                    .toCompletable()
+                    .await()
             } finally {
                 client.close()
             }
@@ -36,31 +25,19 @@ object Commands {
         }
     }
 
-    fun <T> put(factory: WebClientFactory, address: Address, path: String, body: T?) {
+    fun <T> putJson(factory: WebClientFactory, address: Address, path: String, body: T) {
         try {
             val client = factory.create(address)
             try {
-                if (body != null) {
-                    client.put(path)
-                        .putHeader("content-type", "application/json")
-                        .putHeader("accept", "application/json")
-                        .rxSendJson(body)
-                        .doOnSuccess {
-                            println(it.bodyAsString())
-                        }
-                        .toCompletable()
-                        .await()
-                } else {
-                    client.put(path)
-                        .putHeader("content-type", "application/json")
-                        .putHeader("accept", "application/json")
-                        .rxSend()
-                        .doOnSuccess {
-                            println(it.bodyAsString())
-                        }
-                        .toCompletable()
-                        .await()
-                }
+                client.put(path)
+                    .putHeader("content-type", "application/json")
+                    .putHeader("accept", "application/json")
+                    .rxSendJson(body)
+                    .doOnSuccess {
+                        println(it.bodyAsString())
+                    }
+                    .toCompletable()
+                    .await()
             } finally {
                 client.close()
             }

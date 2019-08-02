@@ -19,17 +19,11 @@ class ClusterResourcesStatusEvaluator {
 
         val taskmanagerStatefulSetStatus = evaluateTaskManagerStatefulSetStatus(clusterResources, clusterId, flinkCluster)
 
-        val jobmanagerPersistentVolumeClaimStatus = evaluateJobManagerPersistentVolumeClaimStatus(clusterResources, clusterId, flinkCluster)
-
-        val taskmanagerPersistentVolumeClaimStatus = evaluateTaskManagerPersistentVolumeClaimStatus(clusterResources, clusterId, flinkCluster)
-
         return ClusterResourcesStatus(
             jarUploadJob = uploadJobStatus,
             jobmanagerService = jobmanagerServiceStatus,
             jobmanagerStatefulSet = jobmanagerStatefulSetStatus,
-            taskmanagerStatefulSet = taskmanagerStatefulSetStatus,
-            jobmanagerPersistentVolumeClaim = jobmanagerPersistentVolumeClaimStatus,
-            taskmanagerPersistentVolumeClaim = taskmanagerPersistentVolumeClaimStatus
+            taskmanagerStatefulSet = taskmanagerStatefulSetStatus
         )
     }
 
@@ -189,16 +183,8 @@ class ClusterResourcesStatusEvaluator {
             }
         }
 
-        if (jobmanagerStatefulSet.spec.volumeClaimTemplates.size != 1) {
+        if (jobmanagerStatefulSet.spec.volumeClaimTemplates?.size != flinkCluster.spec.jobManager?.persistentVolumeClaimsTemplates?.size) {
             statusReport.add("unexpected number of volume claim templates")
-        } else {
-            if (jobmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.storageClassName != flinkCluster.spec.jobManager.storageClass ?: "standard") {
-                statusReport.add("volume claim storage class doesn't match")
-            }
-
-            if (jobmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.get("storage")?.number?.toInt()?.equals(flinkCluster.spec.jobManager.requiredStorageSize ?: 1) != true) {
-                statusReport.add("volume claim size doesn't match")
-            }
         }
 
         if (jobmanagerStatefulSet.spec.template.spec.containers.size != 1) {
@@ -303,16 +289,8 @@ class ClusterResourcesStatusEvaluator {
             }
         }
 
-        if (taskmanagerStatefulSet.spec.volumeClaimTemplates.size != 1) {
+        if (taskmanagerStatefulSet.spec.volumeClaimTemplates?.size != flinkCluster.spec.taskManager?.persistentVolumeClaimsTemplates?.size) {
             statusReport.add("unexpected number of volume claim templates")
-        } else {
-            if (taskmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.storageClassName != flinkCluster.spec.taskManager.storageClass ?: "standard") {
-                statusReport.add("volume claim storage class doesn't match")
-            }
-
-            if (taskmanagerStatefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.get("storage")?.number?.toInt()?.equals(flinkCluster.spec.taskManager.requiredStorageSize ?: 5) != true) {
-                statusReport.add("volume claim size doesn't match")
-            }
         }
 
         if (taskmanagerStatefulSet.spec.replicas != flinkCluster.spec.taskManager.replicas ?: 1) {
@@ -382,78 +360,6 @@ class ClusterResourcesStatusEvaluator {
             if (!taskmanagerEnvironmentVariables.equals(flinkCluster.spec.taskManager.environment ?: listOf<V1EnvVar>())) {
                 statusReport.add("container environment variables don't match")
             }
-        }
-
-        if (statusReport.size > 0) {
-            return ResourceStatus.DIVERGENT to statusReport
-        }
-
-        return ResourceStatus.VALID to listOf()
-    }
-
-    private fun evaluateJobManagerPersistentVolumeClaimStatus(
-        actualClusterResources: ClusterResources,
-        clusterId: ClusterId,
-        flinkCluster: V1FlinkCluster
-    ): Pair<ResourceStatus, List<String>> {
-        val jobmanagerPersistentVolumeClaim = actualClusterResources.jobmanagerPersistentVolumeClaim ?: return ResourceStatus.MISSING to listOf()
-
-        val statusReport = mutableListOf<String>()
-
-        if (jobmanagerPersistentVolumeClaim.metadata.labels["role"]?.equals("jobmanager") != true) {
-            statusReport.add("role label missing or invalid")
-        }
-
-        if (jobmanagerPersistentVolumeClaim.metadata.labels["component"]?.equals("flink") != true) {
-            statusReport.add("component label missing or invalid")
-        }
-
-        if (jobmanagerPersistentVolumeClaim.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
-            statusReport.add("name label missing or invalid")
-        }
-
-        if (jobmanagerPersistentVolumeClaim.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
-            statusReport.add("uid label missing or invalid")
-        }
-
-        if (jobmanagerPersistentVolumeClaim.spec.storageClassName != flinkCluster.spec.jobManager.storageClass ?: "standard") {
-            statusReport.add("persistent volume storage class doesn't match")
-        }
-
-        if (statusReport.size > 0) {
-            return ResourceStatus.DIVERGENT to statusReport
-        }
-
-        return ResourceStatus.VALID to listOf()
-    }
-
-    private fun evaluateTaskManagerPersistentVolumeClaimStatus(
-        actualClusterResources: ClusterResources,
-        clusterId: ClusterId,
-        flinkCluster: V1FlinkCluster
-    ): Pair<ResourceStatus, List<String>> {
-        val taskmanagerPersistentVolumeClaim = actualClusterResources.taskmanagerPersistentVolumeClaim ?: return ResourceStatus.MISSING to listOf()
-
-        val statusReport = mutableListOf<String>()
-
-        if (taskmanagerPersistentVolumeClaim.metadata.labels["role"]?.equals("taskmanager") != true) {
-            statusReport.add("role label missing or invalid")
-        }
-
-        if (taskmanagerPersistentVolumeClaim.metadata.labels["component"]?.equals("flink") != true) {
-            statusReport.add("component label missing or invalid")
-        }
-
-        if (taskmanagerPersistentVolumeClaim.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
-            statusReport.add("name label missing or invalid")
-        }
-
-        if (taskmanagerPersistentVolumeClaim.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
-            statusReport.add("uid label missing or invalid")
-        }
-
-        if (taskmanagerPersistentVolumeClaim.spec.storageClassName != flinkCluster.spec.taskManager.storageClass ?: "standard") {
-            statusReport.add("persistent volume storage class doesn't match")
         }
 
         if (statusReport.size > 0) {

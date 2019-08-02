@@ -20,6 +20,18 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
         try {
             val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)
 
+            val runningJobs = flinkApi.jobs.jobs.filter {
+                    jobIdWithStatus -> jobIdWithStatus.status.value.equals("RUNNING")
+            }.map {
+                it.id
+            }.toList()
+
+            if (runningJobs.isNotEmpty()) {
+                logger.warn("Expected no job running in cluster ${clusterId.name}")
+
+                return Result(ResultStatus.FAILED, null)
+            }
+
             val listJarsResponse = flinkApi.listJarsCall(null, null).execute()
 
             if (!listJarsResponse.isSuccessful) {
@@ -70,13 +82,13 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
                         return Result(ResultStatus.SUCCESS, null)
                     }
                 } else {
-//                logger.warn("Can't find any JAR files in cluster ${clusterId.name}")
+                    logger.warn("Can't find any JAR file in cluster ${clusterId.name}")
 
                     return Result(ResultStatus.AWAIT, null)
                 }
             }
         } catch (e : Exception) {
-            logger.error("Can't get the list of JAR files of cluster ${clusterId.name}", e)
+            logger.warn("Can't get the list of JAR files of cluster ${clusterId.name}")
 
             return Result(ResultStatus.FAILED, null)
         }

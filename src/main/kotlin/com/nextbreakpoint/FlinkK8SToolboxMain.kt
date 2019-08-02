@@ -10,7 +10,6 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.nextbreakpoint.common.CommandFactory
 import com.nextbreakpoint.common.DefaultCommandFactory
-import com.nextbreakpoint.common.FlinkClusterSpecification
 import com.nextbreakpoint.common.Kubernetes
 import com.nextbreakpoint.common.model.Address
 import com.nextbreakpoint.common.model.FlinkOptions
@@ -113,9 +112,7 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
         private val clusterSpec: String by option(help="The specification of the Flink cluster in JSON format").required()
 
         override fun run() {
-//            val flinkClusterSpec = FlinkClusterSpecification.parse(Files.readString(File(System.getProperty("user.dir", ".") + "/" + clusterSpec).toPath()))
-            val flinkClusterSpec = FlinkClusterSpecification.parse(Files.readString(File(clusterSpec).toPath()))
-            factory.createCreateClusterCommand().run(Address(host, port), clusterName, flinkClusterSpec)
+            factory.createCreateClusterCommand().run(Address(host, port), clusterName, Files.readString(File(clusterSpec).toPath()))
         }
     }
 

@@ -14,13 +14,19 @@ class StopJob : TaskHandler {
             return Result(ResultStatus.FAILED, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
-        val response = context.controller.stopJob(context.clusterId)
+        val response = context.controller.isJobStopped(context.clusterId)
 
         if (response.status == ResultStatus.SUCCESS) {
-            return Result(ResultStatus.SUCCESS, "Stopping job of cluster ${context.flinkCluster.metadata.name}...")
-        } else {
-            return Result(ResultStatus.AWAIT, "Can't stop job of cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.SUCCESS, "Job of cluster ${context.flinkCluster.metadata.name} has been stopped already")
         }
+
+        val stopJobResponse = context.controller.stopJob(context.clusterId)
+
+        if (stopJobResponse.status == ResultStatus.SUCCESS) {
+            return Result(ResultStatus.SUCCESS, "Stopping job of cluster ${context.flinkCluster.metadata.name}...")
+        }
+
+        return Result(ResultStatus.AWAIT, "Retry stopping job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
@@ -33,10 +39,10 @@ class StopJob : TaskHandler {
         val response = context.controller.isJobStopped(context.clusterId)
 
         if (response.status == ResultStatus.SUCCESS) {
-            return Result(ResultStatus.SUCCESS, "Job of cluster ${context.flinkCluster.metadata.name} has been stopped")
-        } else {
-            return Result(ResultStatus.AWAIT, "Failed to check job of cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.SUCCESS, "Job of cluster ${context.flinkCluster.metadata.name} has been stopped in ${elapsedTime / 1000} seconds")
         }
+
+        return Result(ResultStatus.AWAIT, "Wait for termination of job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: OperatorContext): Result<String> {

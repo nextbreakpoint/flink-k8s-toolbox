@@ -21,7 +21,7 @@ class ClusterGetTask(flinkOptions: FlinkOptions, val cache: OperatorCache) : Ope
 
             return Result(ResultStatus.SUCCESS, result)
         } catch (e : Exception) {
-            logger.error("Can't get status of cluster ${clusterId.name}", e)
+            logger.error("Can't get current task of cluster ${clusterId.name}", e)
 
             return Result(ResultStatus.FAILED, mapOf())
         }

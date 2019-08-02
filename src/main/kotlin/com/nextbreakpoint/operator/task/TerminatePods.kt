@@ -10,7 +10,7 @@ class TerminatePods : TaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         val elapsedTime = System.currentTimeMillis() - context.lastUpdated
 
-        if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
+        if (elapsedTime > OperatorTimeouts.TERMINATING_PODS_TIMEOUT) {
             return Result(ResultStatus.FAILED, "Failed to terminate pods of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
@@ -18,25 +18,25 @@ class TerminatePods : TaskHandler {
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(ResultStatus.SUCCESS, "Terminating pods of cluster ${context.flinkCluster.metadata.name}...")
-        } else {
-            return Result(ResultStatus.AWAIT, "Can't terminate pods of cluster ${context.flinkCluster.metadata.name}")
         }
+
+        return Result(ResultStatus.AWAIT, "Retry terminating pods of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
         val elapsedTime = System.currentTimeMillis() - context.lastUpdated
 
-        if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
+        if (elapsedTime > OperatorTimeouts.TERMINATING_PODS_TIMEOUT) {
             return Result(ResultStatus.FAILED, "Failed to terminate pods of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds")
         }
 
         val response = context.controller.arePodsTerminated(context.clusterId)
 
         if (response.status == ResultStatus.SUCCESS) {
-            return Result(ResultStatus.SUCCESS, "Resources of cluster ${context.flinkCluster.metadata.name} have been terminated")
-        } else {
-            return Result(ResultStatus.AWAIT, "Failed to check pods of cluster ${context.flinkCluster.metadata.name}")
+            return Result(ResultStatus.SUCCESS, "Resources of cluster ${context.flinkCluster.metadata.name} have been terminated in ${elapsedTime / 1000} seconds")
         }
+
+        return Result(ResultStatus.AWAIT, "Wait for termination of pods of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: OperatorContext): Result<String> {

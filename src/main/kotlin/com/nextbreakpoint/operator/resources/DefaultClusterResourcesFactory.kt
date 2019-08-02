@@ -4,8 +4,6 @@ import com.nextbreakpoint.model.V1FlinkCluster
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1Affinity
-import io.kubernetes.client.models.V1ConfigMapVolumeSource
-import io.kubernetes.client.models.V1ConfigMapVolumeSourceBuilder
 import io.kubernetes.client.models.V1Container
 import io.kubernetes.client.models.V1ContainerBuilder
 import io.kubernetes.client.models.V1ContainerPort
@@ -17,7 +15,6 @@ import io.kubernetes.client.models.V1LabelSelector
 import io.kubernetes.client.models.V1LocalObjectReference
 import io.kubernetes.client.models.V1ObjectFieldSelector
 import io.kubernetes.client.models.V1ObjectMeta
-import io.kubernetes.client.models.V1PersistentVolumeClaimSpec
 import io.kubernetes.client.models.V1PodAffinity
 import io.kubernetes.client.models.V1PodAffinityTerm
 import io.kubernetes.client.models.V1PodAntiAffinity
@@ -29,8 +26,6 @@ import io.kubernetes.client.models.V1ServicePort
 import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.models.V1StatefulSetBuilder
 import io.kubernetes.client.models.V1StatefulSetUpdateStrategy
-import io.kubernetes.client.models.V1Volume
-import io.kubernetes.client.models.V1VolumeMount
 import io.kubernetes.client.models.V1WeightedPodAffinityTerm
 
 object DefaultClusterResourcesFactory : ClusterResourcesFactory {
@@ -190,8 +185,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             Pair("role", "taskmanager")
         )
 
-        val jobmanagerVolumeMount = createVolumeMount("jobmanager")
-
         val updateStrategy = V1StatefulSetUpdateStrategy().type("RollingUpdate")
 
         val port8081 = createContainerPort(8081, "ui")
@@ -243,9 +236,9 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addToPorts(port6123)
             .addToPorts(port6124)
             .addToPorts(port6125)
-            .addToVolumeMounts(jobmanagerVolumeMount)
             .addAllToVolumeMounts(flinkCluster.spec.jobManager?.volumeMounts ?: listOf())
             .withEnv(jobmanagerVariables)
+            .withEnvFrom(flinkCluster.spec.jobManager?.environmentFrom)
             .withResources(
                 createResourceRequirements(
                     flinkCluster.spec.jobManager?.requiredCPUs ?: 1.0f,
@@ -272,11 +265,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             "flink-jobmanager-${flinkCluster.metadata.name}", jobmanagerLabels
         )
 
-        val jobmanagerVolumeClaim = createPersistentVolumeClaimSpec(
-            flinkCluster.spec.jobManager?.storageClass ?: "standard",
-            flinkCluster.spec.jobManager?.requiredStorageSize ?: 1
-        )
-
         return V1StatefulSetBuilder()
             .withMetadata(jobmanagerMetadata)
             .editOrNewSpec()
@@ -288,13 +276,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withUpdateStrategy(updateStrategy)
             .withServiceName("jobmanager")
             .withSelector(jobmanagerSelector)
-            .addNewVolumeClaimTemplate()
-            .withSpec(jobmanagerVolumeClaim)
-            .editOrNewMetadata()
-            .withName("jobmanager")
-            .withLabels(jobmanagerLabels)
-            .endMetadata()
-            .endVolumeClaimTemplate()
+            .addAllToVolumeClaimTemplates(flinkCluster.spec.jobManager?.persistentVolumeClaimsTemplates ?: listOf())
             .endSpec()
             .build()
     }
@@ -328,8 +310,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             Pair("component", "flink"),
             Pair("role", "taskmanager")
         )
-
-        val taskmanagerVolumeMount = createVolumeMount("taskmanager")
 
         val updateStrategy = V1StatefulSetUpdateStrategy().type("RollingUpdate")
 
@@ -379,9 +359,9 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withArgs(listOf("taskmanager"))
             .addToPorts(port6121)
             .addToPorts(port6122)
-            .addToVolumeMounts(taskmanagerVolumeMount)
             .addAllToVolumeMounts(flinkCluster.spec.taskManager?.volumeMounts ?: listOf())
             .withEnv(taskmanagerVariables)
+            .withEnvFrom(flinkCluster.spec.taskManager?.environmentFrom)
             .withResources(
                 createResourceRequirements(
                     flinkCluster.spec.taskManager?.requiredCPUs ?: 1.0f,
@@ -412,11 +392,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             "flink-taskmanager-${flinkCluster.metadata.name}", taskmanagerLabels
         )
 
-        val taskmanagerVolumeClaim = createPersistentVolumeClaimSpec(
-            flinkCluster.spec.taskManager?.storageClass ?: "standard",
-            flinkCluster.spec.taskManager?.requiredStorageSize ?: 5
-        )
-
         return V1StatefulSetBuilder()
             .withMetadata(taskmanagerMetadata)
             .editOrNewSpec()
@@ -428,13 +403,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withUpdateStrategy(updateStrategy)
             .withServiceName("taskmanager")
             .withSelector(taskmanagerSelector)
-            .addNewVolumeClaimTemplate()
-            .withSpec(taskmanagerVolumeClaim)
-            .editOrNewMetadata()
-            .withName("taskmanager")
-            .withLabels(taskmanagerLabels)
-            .endMetadata()
-            .endVolumeClaimTemplate()
+            .addAllToVolumeClaimTemplates(flinkCluster.spec.taskManager?.persistentVolumeClaimsTemplates ?: listOf())
             .endSpec()
             .build()
     }
@@ -475,22 +444,20 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             )
         )
 
-    private fun createPersistentVolumeClaimSpec(
-        storageClass: String,
-        storageSize: Int
-    ) = V1PersistentVolumeClaimSpec()
-        .accessModes(listOf("ReadWriteOnce"))
-        .storageClassName(storageClass)
-        .resources(
-            V1ResourceRequirements()
-                .requests(
-                    mapOf("storage" to Quantity(storageSize.toString()))
-                )
-        )
+//    private fun createPersistentVolumeClaimSpec(
+//        storageClass: String,
+//        storageSize: Int
+//    ) = V1PersistentVolumeClaimSpec()
+//        .accessModes(listOf("ReadWriteOnce"))
+//        .storageClassName(storageClass)
+//        .resources(
+//            V1ResourceRequirements()
+//                .requests(
+//                    mapOf("storage" to Quantity(storageSize.toString()))
+//                )
+//        )
 
     private fun createObjectMeta(name: String, labels: Map<String, String>) = V1ObjectMeta().name(name).labels(labels)
-
-    private fun createVolumeMount(name: String) = V1VolumeMount().mountPath("/var/tmp").subPath(name).name(name)
 
     private fun createEnvVarFromField(name: String, fieldPath: String) =
         V1EnvVar().name(name).valueFrom(
