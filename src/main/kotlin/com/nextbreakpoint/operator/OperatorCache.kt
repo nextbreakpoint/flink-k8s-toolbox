@@ -19,6 +19,8 @@ class OperatorCache {
         private val taskmanagerPersistentVolumeClaims = mutableMapOf<ClusterId, V1PersistentVolumeClaim>()
     }
 
+    fun getFlinkClusters(): List<V1FlinkCluster> = flinkClusters.values.toList()
+
     fun getFlinkCluster(clusterId: ClusterId) = flinkClusters.get(clusterId) ?: throw RuntimeException("Cluster not found ${clusterId.name}")
 
     fun getClusterIdentity(namespace: String, name: String) =

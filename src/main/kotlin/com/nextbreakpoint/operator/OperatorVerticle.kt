@@ -2,12 +2,7 @@ package com.nextbreakpoint.operator
 
 import com.google.gson.GsonBuilder
 import com.nextbreakpoint.common.FlinkClusterSpecification
-import com.nextbreakpoint.common.model.ClusterId
-import com.nextbreakpoint.common.model.FlinkOptions
-import com.nextbreakpoint.common.model.ResultStatus
-import com.nextbreakpoint.common.model.StartOptions
-import com.nextbreakpoint.common.model.StopOptions
-import com.nextbreakpoint.common.model.TaskManagerId
+import com.nextbreakpoint.common.model.*
 import com.nextbreakpoint.model.DateTimeSerializer
 import com.nextbreakpoint.model.V1FlinkCluster
 import com.nextbreakpoint.operator.command.JobDetails
@@ -21,9 +16,15 @@ import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PersistentVolumeClaim
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
+import io.micrometer.core.instrument.ImmutableTag
+import io.micrometer.core.instrument.MeterRegistry
 import io.vertx.core.eventbus.DeliveryOptions
+import io.vertx.core.http.ClientAuth
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.JsonObject
+import io.vertx.core.net.JksOptions
 import io.vertx.ext.web.handler.LoggerFormat
+import io.vertx.micrometer.backends.BackendRegistries
 import io.vertx.rxjava.core.AbstractVerticle
 import io.vertx.rxjava.core.WorkerExecutor
 import io.vertx.rxjava.core.eventbus.Message
@@ -33,11 +34,13 @@ import io.vertx.rxjava.ext.web.RoutingContext
 import io.vertx.rxjava.ext.web.handler.BodyHandler
 import io.vertx.rxjava.ext.web.handler.LoggerHandler
 import io.vertx.rxjava.ext.web.handler.TimeoutHandler
+import io.vertx.rxjava.micrometer.PrometheusScrapingHandler
 import org.apache.log4j.Logger
 import org.joda.time.DateTime
 import rx.Completable
 import rx.Observable
 import rx.Single
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
 import java.util.function.Consumer
 import java.util.function.Function
@@ -56,15 +59,38 @@ class OperatorVerticle : AbstractVerticle() {
     private fun createServer(config: JsonObject): Single<HttpServer> {
         val port: Int = config.getInteger("port") ?: 4444
 
-        val flinkHostname: String? = config.getString("flinkHostname") ?: null
+        val flinkHostname: String? = config.getString("flink_hostname") ?: null
 
-        val portForward: Int? = config.getInteger("portForward") ?: null
+        val portForward: Int? = config.getInteger("port_forward") ?: null
 
-        val useNodePort: Boolean = config.getBoolean("useNodePort", false)
+        val useNodePort: Boolean = config.getBoolean("use_node_port", false)
 
-        val savepointInterval: Int = config.getInteger("savepointInterval") ?: throw RuntimeException("Missing required property savepointInterval")
+        val savepointInterval: Int = config.getInteger("savepoint_interval") ?: throw RuntimeException("Missing required property savepoint_interval")
 
         val namespace: String = config.getString("namespace") ?: throw RuntimeException("Missing required property namespace")
+
+        val jksKeyStorePath = config.getString("server_keystore_path")
+
+        val jksKeyStoreSecret = config.getString("server_keystore_secret")
+
+        val jksTrustStorePath = config.getString("server_truststore_path")
+
+        val jksTrustStoreSecret = config.getString("server_truststore_secret")
+
+        val serverOptions = HttpServerOptions()
+
+        if (jksKeyStorePath != null && jksTrustStorePath != null) {
+            logger.info("Enabling HTTPS with required client auth")
+
+            serverOptions
+                .setSsl(true)
+                .setSni(false)
+                .setKeyStoreOptions(JksOptions().setPath(jksKeyStorePath).setPassword(jksKeyStoreSecret))
+                .setTrustStoreOptions(JksOptions().setPath(jksTrustStorePath).setPassword(jksTrustStoreSecret))
+                .setClientAuth(ClientAuth.REQUIRED)
+        } else {
+            logger.warn("HTTPS not enabled!")
+        }
 
         val watch = OperatorWatch(gson)
 
@@ -79,6 +105,10 @@ class OperatorVerticle : AbstractVerticle() {
         val resourcesCache = OperatorCache()
 
         val mainRouter = Router.router(vertx)
+
+        val registry = BackendRegistries.getNow("flink-operator")
+
+        val gauges = registerMetrics(registry, namespace)
 
         val worker = vertx.createSharedWorkerExecutor("execution-queue", 1)
 
@@ -138,6 +168,9 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.post("/cluster/:name").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/create", BiFunction { context, namespace -> gson.toJson(makeV1FlinkCluster(context, namespace)) })
         }
+
+
+        mainRouter.route("/metrics").handler(PrometheusScrapingHandler.create("flink-operator"))
 
 
         vertx.eventBus().consumer<String>("/cluster/start") { message ->
@@ -249,12 +282,37 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.setPeriodic(5000L) {
+            updateMetrics(resourcesCache, gauges)
+
             doUpdateClusters(controller, resourcesCache, worker)
 
             doDeleteOrphans(controller, resourcesCache, worker)
         }
 
-        return vertx.createHttpServer().requestHandler(mainRouter).rxListen(port)
+        return vertx.createHttpServer(serverOptions).requestHandler(mainRouter).rxListen(port)
+    }
+
+    private fun registerMetrics(registry: MeterRegistry, namespace: String): Map<ClusterStatus, AtomicInteger> {
+        return ClusterStatus.values().map {
+            it to registry.gauge(
+                "flink_operator.clusters_status.${it.name.toLowerCase()}",
+                listOf(ImmutableTag("namespace", namespace)),
+                AtomicInteger(0)
+            )
+        }.toMap()
+    }
+
+    private fun updateMetrics(resourcesCache: OperatorCache, gauges: Map<ClusterStatus, AtomicInteger>) {
+        val counters = resourcesCache.getFlinkClusters()
+            .foldRight(mutableMapOf<ClusterStatus, Int>()) { flinkCluster, counters ->
+                val status = OperatorAnnotations.getClusterStatus(flinkCluster)
+                counters.compute(status) { _, value -> if (value != null) value + 1 else 1 }
+                counters
+            }
+
+        ClusterStatus.values().forEach {
+            gauges.get(it)?.set(counters.get(it) ?: 0)
+        }
     }
 
     private fun makeError(error: Throwable) = "{\"status\":\"FAILURE\",\"error\":\"${error.message}\"}"
@@ -280,7 +338,7 @@ class OperatorVerticle : AbstractVerticle() {
     private fun handleRequest(context: RoutingContext, namespace: String, address: String, handler: BiFunction<RoutingContext, String, String>) {
         Single.just(context)
             .map { handler.apply(context, namespace) }
-            .flatMap { context.vertx().eventBus().rxSend<String>(address, it, DeliveryOptions().setSendTimeout(30000)) }
+            .flatMap { context.vertx().eventBus().rxRequest<String>(address, it, DeliveryOptions().setSendTimeout(30000)) }
             .doOnSuccess { context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it.body()) }
             .doOnError { context.response().setStatusCode(500).end(makeError(it)) }
             .doOnError { logger.warn("Can't process request", it) }
