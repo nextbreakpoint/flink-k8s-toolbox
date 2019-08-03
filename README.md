@@ -5,18 +5,16 @@ Flink K8S Toolbox contains tools for managing Flink clusters and jobs on Kuberne
 - Flink Operator
 - Flink Operator CLI
 
-The Flink Operator is an implementation of the Kubernetes Operator pattern for managing Flink clusters.
+The Flink Operator is an implementation of the Kubernetes Operator pattern for managing Flink clusters and jobs.
 The operator uses a Custom Resource to represent a Flink cluster with a single Flink job.
 The operator detect changes to the resource and modifies the Flink cluster and job accordingly.
-The operator takes care of creating savepoints periodically and it automatically restarts 
-the job from the latest savepoint if needed.
-The operator stores the status of the cluster as annotations on the custom resource.
+The operator takes care of creating savepoints periodically and restarting the job from the latest savepoint if needed.
 
-The Flink Operator CLI provides an interface for controlling Flink clusters and jobs. 
-It provides commands for creating/deleting clusters, starting/stopping clusters and jobs, 
+The Flink Operator CLI provides an interface for controlling Flink clusters and jobs from a terminal. 
+It supports commands for creating or deleting clusters, starting or stopping clusters and jobs, 
 getting metrics and other information about clusters and jobs. 
 
-*Flink Operator support only long-running stream jobs. Batch jobs are not supported at the moment.*           
+*Flink Operator supports only long-running stream jobs. Batch jobs are not supported at the moment.*           
 
 ## License
 
@@ -52,11 +50,10 @@ The tools are distributed under the terms of BSD 3-Clause License.
 
 ## Flink Operator and Cluster status
 
-The Flink Operator keeps a copy of Kubernetes resources in memory, and updates the resources when they change. 
-The operator detects new resource of kind FlinkCluster (primary resource), and automatically creates other managed 
-resources (secondary resources) based on the configuration provided in the primary resource. 
-The operator manages FlinkCluster resources in a given namespace, and persists its status as annotations on the primary resources. 
-The operator performs several tasks automatically, like creating savepoints periodically or recreating the cluster when the primary resource is modified. 
+The operator detects new resource of kind FlinkCluster (primary resource) in a namespace, and automatically creates other managed 
+resources (secondary resources), like StatefulSet, Service, and Job, based on the configuration provided in the primary resource.  
+The operator persists some status as annotations on the primary resources, and performs several tasks automatically, 
+like creating savepoints periodically or recreating the cluster when the primary resource is modified. 
 
 The possible states of a FlinkCluster resource are represented in this graph:
 
@@ -183,6 +180,25 @@ The possible tasks which are executed to transition from one status to another a
 - **ERASE_SAVEPOINT** 
 
   Remove savepoint from primary resource. 
+
+## Flink Operator REST API
+
+The operator has a REST API accessible on port 4444 by default. 
+The API provides information about the status of the resources, metrics of the clusters and jobs, and more:
+
+    http://localhost:4444/cluster/<name>/status
+    
+    http://localhost:4444/cluster/<name>/job/details
+    
+    http://localhost:4444/cluster/<name>/job/metrics
+    
+    http://localhost:4444/cluster/<name>/jobmanager/metrics
+    
+    http://localhost:4444/cluster/<name>/taskmanagers
+    
+    http://localhost:4444/cluster/<name>/taskmanagers/<taskmanager>/metrics
+
+**The API should not be exposed on a public network. SSL is not supported at the moment**
 
 ## Install Flink Operator
 
