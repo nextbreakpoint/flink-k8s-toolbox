@@ -1,18 +1,19 @@
 # Flink Kubernetes Toolbox
 
-Flink K8S Toolbox contains tools for managing Flink clusters on Kubernetes:
+Flink K8S Toolbox contains tools for managing Flink clusters and jobs on Kubernetes:
 
 - Flink Operator
 - Flink Operator CLI
 
-Flink Operator is an implementation of the Kubernetes Operator pattern for managing Flink clusters.
-The operator uses a Custom Resource in Kubernetes to represent a Flink Cluster with a single Flink Job.
-The operator detect changes to the Flink Cluster resource and it modifies the Flink Cluster or Flink Job accordingly.
-The operator takes care of creating savepoints periodically and it automatically pass the latest savepoint to the Flink Job.
-The operator stores the cluster status as annotations of the Flink Cluster resource.
+The Flink Operator is an implementation of the Kubernetes Operator pattern for managing Flink clusters.
+The operator uses a Custom Resource to represent a Flink cluster with a single Flink job.
+The operator detect changes to the resource and modifies the Flink cluster and job accordingly.
+The operator takes care of creating savepoints periodically and it automatically restarts 
+the job from the latest savepoint if needed.
+The operator stores the status of the cluster as annotations on the custom resource.
 
-Flink Operator CLI provides an interface for controlling the Flink clusters and jobs. 
-There CLI commands for creating/deleting clusters, starting/stopping clusters and jobs, 
+The Flink Operator CLI provides an interface for controlling Flink clusters and jobs. 
+It provides commands for creating/deleting clusters, starting/stopping clusters and jobs, 
 getting metrics and other information about clusters and jobs. 
 
 *Flink Operator support only long-running stream jobs. Batch jobs are not supported at the moment.*           
@@ -51,10 +52,11 @@ The tools are distributed under the terms of BSD 3-Clause License.
 
 ## Flink Operator and Cluster status
 
-Flink Operator keeps a copy of Kubernetes resources in memory, and updates the cached resources when they change. 
-The operator detects new resource of kind FlinkCluster (primary resource), and automatically creates other managed resources (secondary resources) based on the configuration provided in the primary resource. 
-The operator manages only FlinkCluster resources in a given namespace, and persists the status as annotations on the primary resource. 
-The operator performs several tasks if needed, like creating savepoints periodically or recreating the cluster when the primary resource is modified. 
+The Flink Operator keeps a copy of Kubernetes resources in memory, and updates the resources when they change. 
+The operator detects new resource of kind FlinkCluster (primary resource), and automatically creates other managed 
+resources (secondary resources) based on the configuration provided in the primary resource. 
+The operator manages FlinkCluster resources in a given namespace, and persists its status as annotations on the primary resources. 
+The operator performs several tasks automatically, like creating savepoints periodically or recreating the cluster when the primary resource is modified. 
 
 The possible states of a FlinkCluster resource are represented in this graph:
 
@@ -112,7 +114,7 @@ Each arrow in this graph represents a specific sequence of tasks which are execu
   
   The task didn't complete and some errors occurred. The cluster status is changed to FAILED and the DO_NOTHING task is scheduled for execution. 
 
-The possible tasks which are executed as sequence to transition from one status to another are:
+The possible tasks which are executed to transition from one status to another are:
 
 - **INITIALISE_CLUSTER** 
 
