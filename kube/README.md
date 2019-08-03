@@ -75,7 +75,7 @@ Change directory:
 Create Docker file:
 
     cat <<EOF >Dockerfile
-    FROM flink-k8s-toolbox:1.1.2-beta
+    FROM flink-k8s-toolbox:1.1.3-beta
     COPY com.nextbreakpoint.flinkworkshop-1.0.1.jar /flink-jobs.jar
     EOF
 
@@ -186,27 +186,25 @@ Compile Docker image of Flink Operator:
 
 Optionally tag and push Docker image to your local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.1.2-beta registry:30000/flink-k8s-toolbox:1.1.2-beta
+    docker tag flink-k8s-toolbox:1.1.3-beta registry:30000/flink-k8s-toolbox:1.1.3-beta
     docker login registry:30000
-    docker push registry:30000/flink-k8s-toolbox:1.1.2-beta
+    docker push registry:30000/flink-k8s-toolbox:1.1.3-beta
 
 Run Flink Operator using JAR file:
 
-    java -jar target/com.nextbreakpoint.flink-k8s-toolbox-1.1.2-beta.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
+    java -jar target/com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
 
 Run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.2-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.3-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Run Flink Operator using Helm and local registry:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=registry:30000/flink-k8s-toolbox
+    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
 
 Run Flink Operator using Helm and local image:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
-
-
+    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never 
 
 ## Use Minikube instead of Docker for Desktop
 

@@ -1,9 +1,9 @@
 package com.nextbreakpoint.common
 
-import com.nextbreakpoint.common.model.Address
+import com.nextbreakpoint.common.model.ConnectionConfig
 
 abstract class CommandNoArgs(val factory: WebClientFactory) {
-    abstract fun run(address: Address, clusterName: String)
+    abstract fun run(connectionConfig: ConnectionConfig, clusterName: String)
 }
 
 

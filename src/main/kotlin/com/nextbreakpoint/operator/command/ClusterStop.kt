@@ -93,7 +93,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                 }
 
                 if (statusList.isNotEmpty()) {
-                    OperatorAnnotations.resetOperatorTasks(flinkCluster, statusList)
+                    OperatorAnnotations.appendOperatorTasks(flinkCluster, statusList)
                     Kubernetes.updateAnnotations(flinkCluster)
                     return Result(ResultStatus.SUCCESS, statusList)
                 } else {
