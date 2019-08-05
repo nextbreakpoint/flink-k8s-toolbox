@@ -19,7 +19,10 @@ import io.kubernetes.client.models.V1StatefulSet
 import io.micrometer.core.instrument.ImmutableTag
 import io.micrometer.core.instrument.MeterRegistry
 import io.vertx.core.eventbus.DeliveryOptions
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.JsonObject
+import io.vertx.core.net.JksOptions
+import io.vertx.core.net.TrustOptions
 import io.vertx.ext.web.handler.LoggerFormat
 import io.vertx.micrometer.backends.BackendRegistries
 import io.vertx.rxjava.core.AbstractVerticle
@@ -56,15 +59,33 @@ class OperatorVerticle : AbstractVerticle() {
     private fun createServer(config: JsonObject): Single<HttpServer> {
         val port: Int = config.getInteger("port") ?: 4444
 
-        val flinkHostname: String? = config.getString("flinkHostname") ?: null
+        val flinkHostname: String? = config.getString("flink_hostname") ?: null
 
-        val portForward: Int? = config.getInteger("portForward") ?: null
+        val portForward: Int? = config.getInteger("port_forward") ?: null
 
-        val useNodePort: Boolean = config.getBoolean("useNodePort", false)
+        val useNodePort: Boolean = config.getBoolean("use_node_port", false)
 
-        val savepointInterval: Int = config.getInteger("savepointInterval") ?: throw RuntimeException("Missing required property savepointInterval")
+        val savepointInterval: Int = config.getInteger("savepoint_interval") ?: throw RuntimeException("Missing required property savepoint_interval")
 
         val namespace: String = config.getString("namespace") ?: throw RuntimeException("Missing required property namespace")
+
+        val jksKeyStorePath = config.getString("server_keystore_path") ?: throw RuntimeException("Missing required property server_keystore_path")
+
+        val jksKeyStoreSecret = config.getString("server_keystore_secret")
+
+        val jksTrustStorePath = config.getString("server_truststore_path") ?: throw RuntimeException("Missing required property server_truststore_path")
+
+        val jksTrustStoreSecret = config.getString("server_truststore_secret")
+
+        val storeOptions = JksOptions().setPath(jksKeyStorePath).setPassword(jksKeyStoreSecret)
+
+        val trustStoreOptions = JksOptions().setPath(jksTrustStorePath).setPassword(jksTrustStoreSecret)
+
+        val serverOptions = HttpServerOptions()
+            .setSsl(true)
+            .setSni(false)
+            .setKeyStoreOptions(storeOptions)
+            .setTrustStoreOptions(trustStoreOptions)
 
         val watch = OperatorWatch(gson)
 
@@ -263,7 +284,7 @@ class OperatorVerticle : AbstractVerticle() {
             doDeleteOrphans(controller, resourcesCache, worker)
         }
 
-        return vertx.createHttpServer().requestHandler(mainRouter).rxListen(port)
+        return vertx.createHttpServer(serverOptions).requestHandler(mainRouter).rxListen(port)
     }
 
     private fun registerMetrics(registry: MeterRegistry, namespace: String): Map<ClusterStatus, AtomicInteger> {

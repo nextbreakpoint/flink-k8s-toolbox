@@ -1,17 +1,14 @@
 package com.nextbreakpoint.command
 
-import com.google.gson.Gson
 import com.nextbreakpoint.common.ServerCommand
 import com.nextbreakpoint.operator.OperatorConfig
 import com.nextbreakpoint.operator.OperatorVerticle
 import io.vertx.core.DeploymentOptions
-import io.vertx.core.Launcher
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
 import io.vertx.core.impl.launcher.VertxCommandLauncher
 import io.vertx.core.impl.launcher.VertxLifecycleHooks
 import io.vertx.core.json.JsonObject
-import io.vertx.micrometer.Label
 import io.vertx.micrometer.MicrometerMetricsOptions
 import io.vertx.micrometer.VertxPrometheusOptions
 import org.apache.log4j.Logger
@@ -31,7 +28,17 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerComman
 //            System.setProperty("vertx.metrics.options.jmxEnabled", "true")
 //            System.setProperty("vertx.prometheus.options.enabled", "true")
 
-            dispatch(this, arrayOf("run", OperatorVerticle::class.java.canonicalName, "-conf", Gson().toJson(config)))
+            val jsonObject = JsonObject()
+                .put("flink_hostname", config.flinkHostname)
+                .put("port_forward", config.portForward)
+                .put("use_node_port", config.useNodePort)
+                .put("savepoint_interval", config.savepointInterval)
+                .put("server_keystore_path", config.keystorePath)
+                .put("server_keystore_secret", config.keystoreSecret)
+                .put("server_truststore_path", config.truststoreSecret)
+                .put("server_truststore_secret", config.truststoreSecret)
+
+            dispatch(this, arrayOf("run", OperatorVerticle::class.java.canonicalName, "-conf", jsonObject.toString()))
 
             waitUntilInterrupted()
         } catch (e: InterruptedException) {

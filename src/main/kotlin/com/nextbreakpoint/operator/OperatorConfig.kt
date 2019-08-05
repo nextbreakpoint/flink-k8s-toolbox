@@ -6,5 +6,9 @@ data class OperatorConfig(
     val flinkHostname: String?,
     val portForward: Int?,
     val useNodePort: Boolean,
-    val savepointInterval: Int
+    val savepointInterval: Int,
+    val keystorePath: String,
+    val keystoreSecret: String?,
+    val truststorePath: String,
+    val truststoreSecret: String?
 )

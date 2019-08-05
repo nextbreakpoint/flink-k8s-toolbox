@@ -6,3 +6,4 @@ example/*.jar
 docker-registry.yaml
 pvm.yaml
 helm/charts
+secrets
