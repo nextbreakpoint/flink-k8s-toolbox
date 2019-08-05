@@ -11,17 +11,20 @@ object DefaultWebClientFactory : WebClientFactory {
         host = params.host,
         port = params.port,
         keystorePath = params.keystorePath,
-        keystoreSecret = params.keystoreSecret
+        keystoreSecret = params.keystoreSecret,
+        truststorePath = params.truststorePath,
+        truststoreSecret = params.truststoreSecret
     )
 
-    private fun createWebClient(host: String = "localhost", port: Int, keystorePath: String, keystoreSecret: String): WebClient {
+    private fun createWebClient(host: String = "localhost", port: Int, keystorePath: String, keystoreSecret: String?, truststorePath: String, truststoreSecret: String?): WebClient {
         val clientOptions = WebClientOptions()
 //        clientOptions.logActivity = true
         clientOptions.isFollowRedirects = true
         clientOptions.defaultHost = host
         clientOptions.defaultPort = port
         val keystoreOptions = JksOptions().setPath(keystorePath).setPassword(keystoreSecret)
-        clientOptions.setSsl(true).setKeyStoreOptions(keystoreOptions)
+        val truststoreOptions = JksOptions().setPath(truststorePath).setPassword(truststoreSecret)
+        clientOptions.setSsl(true).setForceSni(false).setKeyStoreOptions(keystoreOptions).setTrustOptions(truststoreOptions)
         return WebClient.create(Vertx.vertx(), clientOptions)
     }
 }

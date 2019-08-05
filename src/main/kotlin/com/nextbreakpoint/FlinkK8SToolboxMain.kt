@@ -108,33 +108,39 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
     class CreateClusterCommand(private val factory: CommandFactory): CliktCommand(name = "create", help="Create a cluster") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val clusterSpec: String by option(help="The specification of the Flink cluster in JSON format").required()
 
         override fun run() {
-            factory.createCreateClusterCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName, Files.readString(File(clusterSpec).toPath()))
+            factory.createCreateClusterCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, Files.readString(File(clusterSpec).toPath()))
         }
     }
 
     class DeleteClusterCommand(private val factory: CommandFactory): CliktCommand(name = "delete", help="Delete a cluster") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
-            factory.createDeleteClusterCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName)
+            factory.createDeleteClusterCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName)
         }
     }
 
     class StartClusterCommand(private val factory: CommandFactory): CliktCommand(name="start", help="Start the cluster") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val withoutSavepoint: Boolean by option(help="Reset savepoint when starting the job").flag(default = false)
         private val startOnlyCluster: Boolean by option(help="Create the cluster but don't run the job").flag(default = false)
@@ -144,15 +150,17 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
                 withoutSavepoint = withoutSavepoint,
                 startOnlyCluster = startOnlyCluster
             )
-            factory.createStartClusterCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName, params)
+            factory.createStartClusterCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
         }
     }
 
     class StopClusterCommand(private val factory: CommandFactory): CliktCommand(name = "stop", help="Stop the cluster") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val withSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
         private val stopOnlyJob: Boolean by option(help="Stop the job but don't delete the cluster").flag(default = false)
@@ -162,15 +170,17 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
                 withSavepoint = withSavepoint,
                 stopOnlyJob = stopOnlyJob
             )
-            factory.createStopClusterCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName, params)
+            factory.createStopClusterCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
         }
     }
 
     class StartJobCommand(private val factory: CommandFactory): CliktCommand(name="start", help="Start the job") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val withoutSavepoint: Boolean by option(help="Reset savepoint when starting the job").flag(default = false)
 
@@ -179,15 +189,17 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
                 withoutSavepoint = withoutSavepoint,
                 startOnlyCluster = true
             )
-            factory.createStartClusterCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName, params)
+            factory.createStartClusterCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
         }
     }
 
     class StopJobCommand(private val factory: CommandFactory): CliktCommand(name = "stop", help="Stop the job") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val withSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
 
@@ -196,15 +208,17 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
                 withSavepoint = withSavepoint,
                 stopOnlyJob = false
             )
-            factory.createStopClusterCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName, params)
+            factory.createStopClusterCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
         }
     }
 
     class ScaleJobCommand(private val factory: CommandFactory): CliktCommand(name = "scale", help="Scale the job") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
 
@@ -212,63 +226,73 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
             val params = ScaleOptions(
                 parallelism = parallelism
             )
-            factory.createScaleJobCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName, params)
+            factory.createScaleJobCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
         }
     }
 
     class GetJobDetailsCommand(private val factory: CommandFactory): CliktCommand(name = "details", help="Get job's details") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
-            factory.createGetJobDetailsCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName)
+            factory.createGetJobDetailsCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName)
         }
     }
 
     class GetJobMetricsCommand(private val factory: CommandFactory): CliktCommand(name = "metrics", help="Get job's metrics") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
-            factory.createGetJobMetricsCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName)
+            factory.createGetJobMetricsCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName)
         }
     }
 
     class GetJobManagerMetricsCommand(private val factory: CommandFactory): CliktCommand(name = "metrics", help="Get JobManager's metrics") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
-            factory.createGetJobManagerMetricsCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName)
+            factory.createGetJobManagerMetricsCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName)
         }
     }
 
     class ListTaskManagersCommand(private val factory: CommandFactory): CliktCommand(name="list", help="List TaskManagers") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
-            factory.createListTaskManagersCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName)
+            factory.createListTaskManagersCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName)
         }
     }
 
     class GetTaskManagerDetailsCommand(private val factory: CommandFactory): CliktCommand(name = "details", help="Get TaskManager's details") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val taskmanagerId: String by option(help="The id of the TaskManager").prompt("Insert TaskManager id")
 
@@ -276,15 +300,17 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
             val taskManagerId = TaskManagerId(
                 taskmanagerId = taskmanagerId
             )
-            factory.createGetTaskManagerDetailsCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName, taskManagerId)
+            factory.createGetTaskManagerDetailsCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, taskManagerId)
         }
     }
 
     class GetTaskManagerMetricsCommand(private val factory: CommandFactory): CliktCommand(name = "metrics", help="Get TaskManager's metrics") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String by option(help="The operator's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
-        private val keystoreSecret: String? by option(help="The operator's keystore secret")
+        private val keystorePath: String by option(help="The operator cli's keystore path").default("~/flink-k8s-toolbox/keystore.jks")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String by option(help="The operator cli's truststore path").default("~/flink-k8s-toolbox/truststore.jks")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val taskmanagerId: String by option(help="The id of the TaskManager").prompt("Insert TaskManager id")
 
@@ -292,7 +318,7 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
             val taskManagerId = TaskManagerId(
                 taskmanagerId = taskmanagerId
             )
-            factory.createGetTaskManagerMetricsCommand().run(Address(host, port, keystorePath, keystoreSecret), clusterName, taskManagerId)
+            factory.createGetTaskManagerMetricsCommand().run(Address(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, taskManagerId)
         }
     }
 

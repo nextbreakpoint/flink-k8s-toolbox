@@ -11,14 +11,14 @@ mkdir -p $OUTPUT_GEN
 echo '[extended]\nextendedKeyUsage=serverAuth,clientAuth\nkeyUsage=digitalSignature,keyAgreement' > $OUTPUT_GEN/openssl.cnf
 
 ## Create certificate authority (CA)
-openssl req -new -x509 -keyout $OUTPUT_GEN/ca_key.pem -out $OUTPUT_GEN/ca_cert.pem -days 365 -passin pass:$KEY_PASSWORD -passout pass:$KEY_PASSWORD -subj "/CN=${HOSTED_ZONE_NAME}"
+openssl req -new -x509 -keyout $OUTPUT_GEN/ca_key.pem -out $OUTPUT_GEN/ca_cert.pem -days 365 -passin pass:$KEY_PASSWORD -passout pass:$KEY_PASSWORD -subj "/CN=localhost"
 
 ## Create client keystore
-keytool -noprompt -keystore $OUTPUT_GEN/keystore-client.jks -genkey -alias selfsigned -dname "CN=${HOSTED_ZONE_NAME}" -storetype PKCS12 -keyalg RSA -keysize 2048 -validity 365 -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD
+keytool -noprompt -keystore $OUTPUT_GEN/keystore-client.jks -genkey -alias selfsigned -dname "CN=localhost" -storetype PKCS12 -keyalg RSA -keysize 2048 -validity 365 -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD
 openssl pkcs12 -in $OUTPUT_GEN/keystore-client.jks -nocerts -nodes -passin pass:$KEYSTORE_PASSWORD -out $OUTPUT_GEN/client_key.pem
 
 ## Create server keystore
-keytool -noprompt -keystore $OUTPUT_GEN/keystore-server.jks -genkey -alias selfsigned -dname "CN=${HOSTED_ZONE_NAME}" -storetype PKCS12 -keyalg RSA -keysize 2048 -validity 365 -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD
+keytool -noprompt -keystore $OUTPUT_GEN/keystore-server.jks -genkey -alias selfsigned -dname "CN=localhost" -storetype PKCS12 -keyalg RSA -keysize 2048 -validity 365 -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD
 openssl pkcs12 -in $OUTPUT_GEN/keystore-server.jks -nocerts -nodes -passin pass:$KEYSTORE_PASSWORD -out $OUTPUT_GEN/server_key.pem
 
 ## Sign client certificate
@@ -43,6 +43,4 @@ keytool -noprompt -keystore $OUTPUT_GEN/truststore-client.jks -alias CARoot -imp
 ## Import CA into server truststore
 keytool -noprompt -keystore $OUTPUT_GEN/truststore-server.jks -alias CARoot -import -file $OUTPUT_GEN/ca_cert.pem -storepass $TRUSTSTORE_PASSWORD
 
-cat $OUTPUT_GEN/client_cert.pem $OUTPUT_GEN/ca_cert.pem > $OUTPUT_GEN/ca_and_client_cert.pem
-cat $OUTPUT_GEN/server_cert.pem $OUTPUT_GEN/ca_cert.pem > $OUTPUT_GEN/ca_and_server_cert.pem
 

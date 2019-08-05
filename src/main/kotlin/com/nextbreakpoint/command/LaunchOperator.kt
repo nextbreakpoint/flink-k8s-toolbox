@@ -29,13 +29,14 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerComman
 //            System.setProperty("vertx.prometheus.options.enabled", "true")
 
             val jsonObject = JsonObject()
+                .put("namespace", config.namespace)
                 .put("flink_hostname", config.flinkHostname)
                 .put("port_forward", config.portForward)
                 .put("use_node_port", config.useNodePort)
                 .put("savepoint_interval", config.savepointInterval)
                 .put("server_keystore_path", config.keystorePath)
                 .put("server_keystore_secret", config.keystoreSecret)
-                .put("server_truststore_path", config.truststoreSecret)
+                .put("server_truststore_path", config.truststorePath)
                 .put("server_truststore_secret", config.truststoreSecret)
 
             dispatch(this, arrayOf("run", OperatorVerticle::class.java.canonicalName, "-conf", jsonObject.toString()))
