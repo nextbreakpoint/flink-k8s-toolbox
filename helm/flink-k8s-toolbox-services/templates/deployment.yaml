@@ -26,6 +26,10 @@ spec:
         chart: {{ $chart }}
         release: {{ $root.Release.Name }}
     spec:
+      volumes:
+        - name: ssl-secret-vol
+          secret:
+            secretName: {{ $root.Values.ssl.secretName }}
       containers:
         - name: {{ $root.Chart.Name }}-operator
           image: "{{ $root.Values.image.repository }}:{{ $root.Values.image.tag }}"
@@ -41,6 +45,14 @@ spec:
             - {{ $root.Release.Namespace }}
             - --savepoint-interval
             - "{{ $root.Values.savepoint.interval }}"
+            - --keystore-path
+            - /etc/keystore.jks
+            - --keystore-secret
+            - "{{ $root.Values.ssl.keystore.secret }}"
+            - --truststore-path
+            - /etc/truststore.jks
+            - --truststore-secret
+            - "{{ $root.Values.ssl.truststore.secret }}"
           env:
             - name: POD_NAME
               valueFrom:
@@ -50,6 +62,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+          volumeMounts:
+            - name: ssl-secret-vol
+              readOnly: true
+              mountPath: /etc/keystore.jks
+              subPath: keystore-operator.jks
+            - name: ssl-secret-vol
+              readOnly: true
+              mountPath: /etc/truststore.jks
+              subPath: truststore-operator.jks
           resources:
 {{ toYaml $root.Values.resources | indent 12 }}
       serviceAccountName: flink-operator

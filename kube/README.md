@@ -205,8 +205,7 @@ Run Flink Operator using Helm and local registry:
 Run Flink Operator using Helm and local image:
 
     helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
-
-
+    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set replicas=1 --set ssl.secretName=flink-operator-ssl --set ssl.keystore.secret=password  --set ssl.truststore.secret=password  --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
 
 ## Use Minikube instead of Docker for Desktop
 

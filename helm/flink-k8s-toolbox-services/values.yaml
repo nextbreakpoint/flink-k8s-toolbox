@@ -15,7 +15,14 @@ savepoint:
 resources:
   requests:
     memory: "128Mi"
-    cpu: "50m"
+    cpu: "200m"
   limits:
-    memory: "256Mi"
-    cpu: "250m"
+    memory: "512Mi"
+    cpu: "1000m"
+
+ssl:
+  secretName: flink-operator-ssl
+  keystore:
+    secret:
+  truststore:
+    secret:

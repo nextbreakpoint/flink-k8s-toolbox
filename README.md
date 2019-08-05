@@ -183,7 +183,8 @@ The possible tasks which are executed to transition from one status to another a
 
 ## Flink Operator REST API
 
-The operator has a REST API accessible on port 4444 by default. 
+The operator has a REST API which is exposed on port 4444 by default using HTTPS protocol and it requires client authentication based on SSL certificate (see instructions for generating SSL certificates).
+
 The API provides information about the status of the resources, metrics of the clusters and jobs, and more:
 
     http://localhost:4444/cluster/<name>/status
@@ -198,7 +199,13 @@ The API provides information about the status of the resources, metrics of the c
     
     http://localhost:4444/cluster/<name>/taskmanagers/<taskmanager>/metrics
 
-**The API should not be exposed on a public network. SSL is not supported at the moment**
+## Generate SSL certificates and keystores
+
+Execute the script secrets.sh to generate self-signed certificates and keystores required to run the Flink Operator.
+
+    ./secrets.sh flink-operator key-password keystore-password truststore-password
+
+This command will generate new certificates and keystores in the directory secrets. 
 
 ## Install Flink Operator
 
@@ -206,13 +213,17 @@ Create a namespace with command:
 
     kubectl create namespace flink
 
+Create a secret which contain the keystore and the truststore files:
+
+    kubectl create secret generic flink-operator-ssl -n flink  --from-file=secrets/keystore-operator.jks --from-file=secrets/truststore-operator.jks
+
 Install the operator global resources with commands:
 
     helm install --name flink-k8s-toolbox-global helm/flink-k8s-toolbox-global
 
 Install the operator namespaced resources with commands:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set replicas=1
+    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set replicas=1 --set ssl.secretName=flink-operator-ssl --set ssl.keystore.password=password  --set ssl.truststore.password=password  
 
 ## Uninstall Flink Operator
 
