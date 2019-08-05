@@ -16,15 +16,24 @@ object DefaultWebClientFactory : WebClientFactory {
         truststoreSecret = params.truststoreSecret
     )
 
-    private fun createWebClient(host: String = "localhost", port: Int, keystorePath: String, keystoreSecret: String?, truststorePath: String, truststoreSecret: String?): WebClient {
-        val clientOptions = WebClientOptions()
-//        clientOptions.logActivity = true
-        clientOptions.isFollowRedirects = true
-        clientOptions.defaultHost = host
-        clientOptions.defaultPort = port
-        val keystoreOptions = JksOptions().setPath(keystorePath).setPassword(keystoreSecret)
-        val truststoreOptions = JksOptions().setPath(truststorePath).setPassword(truststoreSecret)
-        clientOptions.setSsl(true).setForceSni(false).setKeyStoreOptions(keystoreOptions).setTrustOptions(truststoreOptions)
-        return WebClient.create(Vertx.vertx(), clientOptions)
+    private fun createWebClient(
+        host: String = "localhost",
+        port: Int,
+        keystorePath: String,
+        keystoreSecret: String?,
+        truststorePath: String,
+        truststoreSecret: String?
+    ): WebClient {
+        val webClientOptions = WebClientOptions()
+            .setSsl(true)
+            .setForceSni(false)
+            .setVerifyHost(false)
+            .setFollowRedirects(true)
+            .setDefaultHost(host)
+            .setDefaultPort(port)
+//            .setLogActivity(true)
+            .setKeyStoreOptions(JksOptions().setPath(keystorePath).setPassword(keystoreSecret))
+            .setTrustOptions(JksOptions().setPath(truststorePath).setPassword(truststoreSecret))
+        return WebClient.create(Vertx.vertx(), webClientOptions)
     }
 }

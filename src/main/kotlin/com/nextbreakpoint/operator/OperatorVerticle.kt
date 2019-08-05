@@ -19,6 +19,7 @@ import io.kubernetes.client.models.V1StatefulSet
 import io.micrometer.core.instrument.ImmutableTag
 import io.micrometer.core.instrument.MeterRegistry
 import io.vertx.core.eventbus.DeliveryOptions
+import io.vertx.core.http.ClientAuth
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.JsonObject
 import io.vertx.core.net.JksOptions
@@ -86,6 +87,7 @@ class OperatorVerticle : AbstractVerticle() {
             .setSni(false)
             .setKeyStoreOptions(storeOptions)
             .setTrustStoreOptions(trustStoreOptions)
+            .setClientAuth(ClientAuth.REQUIRED)
 
         val watch = OperatorWatch(gson)
 
