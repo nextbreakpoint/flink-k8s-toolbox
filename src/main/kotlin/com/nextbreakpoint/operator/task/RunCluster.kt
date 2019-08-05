@@ -18,7 +18,7 @@ class RunCluster : TaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.RUNNING)
         OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
-        OperatorAnnotations.resetOperatorTasks(context.flinkCluster, listOf())
+        OperatorAnnotations.appendOperatorTasks(context.flinkCluster, listOf())
 
         OperatorAnnotations.updateSavepointTimestamp(context.flinkCluster)
 
@@ -75,7 +75,7 @@ class RunCluster : TaskHandler {
                         OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
                         OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                        OperatorAnnotations.resetOperatorTasks(context.flinkCluster,
+                        OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
                             listOf(
                                 OperatorTask.STOPPING_CLUSTER,
                                 OperatorTask.CANCEL_JOB,
@@ -110,7 +110,7 @@ class RunCluster : TaskHandler {
                         OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
                         OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                        OperatorAnnotations.resetOperatorTasks(context.flinkCluster,
+                        OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
                             listOf(
                                 OperatorTask.STOPPING_CLUSTER,
                                 OperatorTask.CANCEL_JOB,
@@ -162,7 +162,7 @@ class RunCluster : TaskHandler {
             val lastSavepointsTimestamp = OperatorAnnotations.getSavepointTimestamp(context.flinkCluster)
 
             if (System.currentTimeMillis() - lastSavepointsTimestamp > context.controller.savepointInterval) {
-                OperatorAnnotations.resetOperatorTasks(context.flinkCluster,
+                OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
                     listOf(
                         OperatorTask.CHECKPOINTING_CLUSTER,
                         OperatorTask.CREATE_SAVEPOINT,
