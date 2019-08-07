@@ -15,10 +15,14 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: {{ $root.Values.service.port }}
-      targetPort: admin
+    - port: {{ $root.Values.service.ports.console }}
+      targetPort: console
       protocol: TCP
-      name: admin
+      name: console
+    - port: {{ $root.Values.service.ports.metrics }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
   selector:
     app: flink-operator
     chart: {{ $chart }}

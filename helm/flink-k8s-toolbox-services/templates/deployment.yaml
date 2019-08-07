@@ -42,8 +42,11 @@ spec:
           image: "{{ $root.Values.image.repository }}:{{ $root.Values.image.tag }}"
           imagePullPolicy: {{ $root.Values.image.pullPolicy }}
           ports:
-            - name: admin
+            - name: console
               containerPort: 4444
+              protocol: TCP
+            - name: metrics
+              containerPort: 8080
               protocol: TCP
           args:
             - operator

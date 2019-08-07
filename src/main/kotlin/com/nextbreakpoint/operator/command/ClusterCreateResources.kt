@@ -14,7 +14,7 @@ class ClusterCreateResources(flinkOptions: FlinkOptions) : OperatorCommand<Clust
         private val logger = Logger.getLogger(ClusterCreateResources::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, resources: ClusterResources): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
             val services = Kubernetes.coreApi.listNamespacedService(
                 clusterId.namespace,
@@ -63,7 +63,7 @@ class ClusterCreateResources(flinkOptions: FlinkOptions) : OperatorCommand<Clust
 
             val jobmanagerServiceOut = Kubernetes.coreApi.createNamespacedService(
                 clusterId.namespace,
-                resources.jobmanagerService,
+                params.jobmanagerService,
                 null,
                 null,
                 null
@@ -73,7 +73,7 @@ class ClusterCreateResources(flinkOptions: FlinkOptions) : OperatorCommand<Clust
 
             val jobmanagerStatefulSetOut = Kubernetes.appsApi.createNamespacedStatefulSet(
                 clusterId.namespace,
-                resources.jobmanagerStatefulSet,
+                params.jobmanagerStatefulSet,
                 null,
                 null,
                 null
@@ -83,7 +83,7 @@ class ClusterCreateResources(flinkOptions: FlinkOptions) : OperatorCommand<Clust
 
             val taskmanagerStatefulSetOut = Kubernetes.appsApi.createNamespacedStatefulSet(
                 clusterId.namespace,
-                resources.taskmanagerStatefulSet,
+                params.taskmanagerStatefulSet,
                 null,
                 null,
                 null

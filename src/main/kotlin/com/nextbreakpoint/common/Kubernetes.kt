@@ -53,26 +53,6 @@ object Kubernetes {
         )
     }
 
-    fun loadFlinkCluster(namespace: String, name: String): V1FlinkCluster {
-        val response = Kubernetes.objectApi.getNamespacedCustomObjectCall(
-            "nextbreakpoint.com",
-            "v1",
-            namespace,
-            "flinkclusters",
-            name,
-            null,
-            null
-        ).execute()
-
-        if (!response.isSuccessful) {
-            throw RuntimeException("Can't fetch custom object $name")
-        }
-
-        response.body().use {
-            return FlinkClusterResource.parse(it.source().readUtf8Line())
-        }
-    }
-
     fun watchFlickClusterResources(objectApi: CustomObjectsApi, namespace: String): Watch<V1FlinkCluster> =
         Watch.createWatch(
             objectApi.apiClient,
@@ -84,6 +64,7 @@ object Kubernetes {
                 null,
                 null,
                 null,
+                600,
                 true,
                 null,
                 null
@@ -305,6 +286,7 @@ object Kubernetes {
             null,
             null,
             null,
+            null,
             null
         ).execute()
 
@@ -312,8 +294,28 @@ object Kubernetes {
             throw RuntimeException("Can't fetch custom objects")
         }
 
-        response.body().use {
-            return FlinkClusterListResource.parse(it.source().readUtf8Line()).items
+        return response.body().use {
+            FlinkClusterListResource.parse(it.source().readUtf8Line()).items
+        }
+    }
+
+    fun getFlinkCluster(namespace: String, name: String): V1FlinkCluster {
+        val response = Kubernetes.objectApi.getNamespacedCustomObjectCall(
+            "nextbreakpoint.com",
+            "v1",
+            namespace,
+            "flinkclusters",
+            name,
+            null,
+            null
+        ).execute()
+
+        if (!response.isSuccessful) {
+            throw RuntimeException("Can't fetch custom object $name")
+        }
+
+        return response.body().use {
+            FlinkClusterResource.parse(it.source().readUtf8Line())
         }
     }
 

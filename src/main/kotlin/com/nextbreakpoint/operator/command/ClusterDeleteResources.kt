@@ -60,8 +60,8 @@ class ClusterDeleteResources(flinkOptions: FlinkOptions) : OperatorCommand<Void?
                 val status = api.deleteNamespacedStatefulSet(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    deleteOptions,
                     null,
+                    deleteOptions,
                     null,
                     5,
                     null,
@@ -98,8 +98,8 @@ class ClusterDeleteResources(flinkOptions: FlinkOptions) : OperatorCommand<Void?
                 val status = coreApi.deleteNamespacedService(
                     service.metadata.name,
                     clusterId.namespace,
-                    deleteOptions,
                     null,
+                    deleteOptions,
                     null,
                     5,
                     null,
@@ -136,8 +136,8 @@ class ClusterDeleteResources(flinkOptions: FlinkOptions) : OperatorCommand<Void?
                 val status = coreApi.deleteNamespacedPersistentVolumeClaim(
                     volumeClaim.metadata.name,
                     clusterId.namespace,
-                    deleteOptions,
                     null,
+                    deleteOptions,
                     null,
                     5,
                     null,
@@ -174,8 +174,8 @@ class ClusterDeleteResources(flinkOptions: FlinkOptions) : OperatorCommand<Void?
                 val status = api.deleteNamespacedJob(
                     job.metadata.name,
                     clusterId.namespace,
-                    deleteOptions,
                     null,
+                    deleteOptions,
                     null,
                     5,
                     null,
