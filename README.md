@@ -183,9 +183,7 @@ The possible tasks which are executed to transition from one status to another a
 
 ## Flink Operator REST API
 
-The operator has a REST API which is exposed on port 4444 by default using HTTPS protocol and it requires client authentication based on SSL certificate (see instructions for generating SSL certificates).
-
-The API provides information about the status of the resources, metrics of the clusters and jobs, and more:
+The operator has a REST API which is exposed on port 4444 by default. The API provides information about the status of the resources, metrics of the clusters and jobs, and more:
 
     http://localhost:4444/cluster/<name>/status
     
@@ -199,6 +197,10 @@ The API provides information about the status of the resources, metrics of the c
     
     http://localhost:4444/cluster/<name>/taskmanagers/<taskmanager>/metrics
 
+Please note that you must use SSL certificates when HTTPS is enabled (see instructions for generating SSL certificates):
+
+    curl --cacert secrets/ca_cert.pem --cert secrets/operator-cli_cert.pem --key secrets/operator-cli_key.pem https://localhost:4444/cluster/test/status 
+
 ## Generate SSL certificates and keystores
 
 Execute the script secrets.sh to generate self-signed certificates and keystores required to run the Flink Operator.
@@ -207,6 +209,12 @@ Execute the script secrets.sh to generate self-signed certificates and keystores
 
 This command will generate new certificates and keystores in the directory secrets. 
 
+## Monitoring Flink Operator
+
+The operator exposes metrics to Prometheus on port 8080 by default. The metrics are exposed using HTTP protocol.
+
+    http://localhost:8080/metrics
+     
 ## Install Flink Operator
 
 Create a namespace with command:
@@ -244,23 +252,23 @@ Remove namespace with command:
 
 The Docker image can be downloaded from Docker Hub:
 
-    docker fetch nextbreakpoint/flink-k8s-toolbox:1.1.3-beta
+    docker fetch nextbreakpoint/flink-k8s-toolbox:1.1.4-beta
 
 Tag and push the image into your registry if needed:
 
-    docker tag nextbreakpoint/flink-k8s-toolbox:1.1.3-beta some-registry/flink-k8s-toolbox:1.1.3-beta
+    docker tag nextbreakpoint/flink-k8s-toolbox:1.1.4-beta some-registry/flink-k8s-toolbox:1.1.4-beta
     docker login some-registry
-    docker push some-registry/flink-k8s-toolbox:1.1.3-beta
+    docker push some-registry/flink-k8s-toolbox:1.1.4-beta
 
 ## Run Flink Operator manually
 
 Run the operator using the image on Docker Hub:
 
-    kubectl run flink-operator --restart=Never -n flink --image=nextbreakpoint/flink-k8s-toolbox:1.1.3-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=nextbreakpoint/flink-k8s-toolbox:1.1.4-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Or run the operator using your own registry and pull secrets:
 
-    kubectl run flink-operator --restart=Never -n flink --image=some-registry/flink-k8s-toolbox:1.1.3-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=some-registry/flink-k8s-toolbox:1.1.4-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=flink
 
 Please note that you **MUST** run only one operator for each namespace to avoid conflicts.
 
@@ -305,7 +313,7 @@ Make sure the CRD has been installed (see above).
 
 Create a Docker file like:
 
-    FROM nextbreakpoint/flink-k8s-toolbox:1.1.3-beta
+    FROM nextbreakpoint/flink-k8s-toolbox:1.1.4-beta
     COPY flink-jobs.jar /flink-jobs.jar
 
 where flink-jobs.jar contains the code of your Flink jobs.
@@ -437,13 +445,13 @@ Create a file toolchains.xml:
 
 Create fat JAR and Docker image using Maven:
 
-    mvn -t toolchains.xml clean package
+    mvn -t toolchains.xml clean package -Dbuild-docker-image=true
 
 Tag and push the image to your Docker registry if needed:
 
-    docker tag flink-k8s-toolbox:1.1.3-beta some-registry/flink-k8s-toolbox:1.1.3-beta
+    docker tag flink-k8s-toolbox:1.1.4-beta some-registry/flink-k8s-toolbox:1.1.4-beta
     docker login some-registry
-    docker push some-registry/flink-k8s-toolbox:1.1.3-beta
+    docker push some-registry/flink-k8s-toolbox:1.1.4-beta
 
 ## How to use the CLI tool
 
@@ -451,11 +459,11 @@ CLI commands can be executed as Docker image or as JAR file.
 
 For instance you can show the command usage using the JAR file:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar --help
 
 Or you can show the command usage using the Docker image:
 
-    docker run --rm -it nextbreakpoint/flink-k8s-toolbox:1.1.3-beta --help
+    docker run --rm -it nextbreakpoint/flink-k8s-toolbox:1.1.4-beta --help
 
 The output should look like:
 
@@ -477,7 +485,7 @@ The output should look like:
 
 Create a Docker file like:
 
-    FROM nextbreakpoint/flink-k8s-toolbox:1.1.3-beta
+    FROM nextbreakpoint/flink-k8s-toolbox:1.1.4-beta
     COPY flink-jobs.jar /flink-jobs.jar
 
 where flink-jobs.jar contains the code of your Flink jobs.
@@ -565,7 +573,7 @@ Create a JSON file:
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar \
         cluster \
         create \
         --cluster-name=test \
@@ -573,26 +581,26 @@ Execute the command:
 
 Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar cluster create --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar cluster create --help
 
 ### How to delete a cluster
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar \
         cluster \
         delete \
         --cluster-name=test
 
 Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar cluster delete --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar cluster delete --help
 
 ### How to stop a running cluster
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar \
         cluster \
         stop \
         --cluster-name=test
@@ -600,26 +608,26 @@ Execute the command:
 
 Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar cluster stop --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar cluster stop --help
 
 ### How to start a stopped cluster
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar \
         cluster \
         start \
         --cluster-name=test
 
 Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar cluster start --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar cluster start --help
 
 ### How to start a stopped cluster but don't run the job
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar \
         cluster \
         start \
         --cluster-name=test
@@ -629,7 +637,7 @@ Execute the command:
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar \
         cluster \
         start \
         --cluster-name=test
@@ -639,7 +647,7 @@ Execute the command:
 
 Execute the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar \
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar \
         cluster \
         stop \
         --cluster-name=test
@@ -650,15 +658,15 @@ Flink jobs must be packaged in a regular JAR file.
 
 Upload the JAR with command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar upload jar --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar upload jar --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 When running outside Kubernetes use the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar upload jar --kube-config=/your-kube-config.conf --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar upload jar --kube-config=/your-kube-config.conf --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 Show more options with the command:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.3-beta.jar upload jar --help
+    java -jar com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar upload jar --help
 
 ### How to run the Operator for testing
 
@@ -666,8 +674,8 @@ The Flink operator can be executed as Docker image or as JAR file.
 
 Run the operator with a given namespace and Kubernetes config using the JAR file:
 
-    java -jar com.nextbreakpoint.flink-k8s-toolbox:1.1.3-beta.jar operator run --namespace=test --kube-config=/path/admin.conf
+    java -jar com.nextbreakpoint.flink-k8s-toolbox:1.1.4-beta.jar operator run --namespace=test --kube-config=/path/admin.conf
 
 Or run the operator with a given namespace and Kubernetes config using the Docker image:
 
-    docker run --rm -it -v /path/admin.conf:/admin.conf flink-k8s-toolbox:1.1.3-beta operator run --namespace=test --kube-config=/admin.conf
+    docker run --rm -it -v /path/admin.conf:/admin.conf flink-k8s-toolbox:1.1.4-beta operator run --namespace=test --kube-config=/admin.conf

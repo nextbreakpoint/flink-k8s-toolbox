@@ -156,6 +156,19 @@ class RunCluster : TaskHandler {
 
                 return Result(ResultStatus.FAILED, "")
             }
+
+            if (result.status == ResultStatus.SUCCESS && result.output) {
+                OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
+                    listOf(
+                        OperatorTask.STOPPING_CLUSTER,
+                        OperatorTask.TERMINATE_PODS,
+                        OperatorTask.SUSPEND_CLUSTER,
+                        OperatorTask.HALT_CLUSTER
+                    )
+                )
+
+                return Result(ResultStatus.AWAIT, "")
+            }
         }
 
         if (OperatorAnnotations.getNextOperatorTask(context.flinkCluster) == null) {

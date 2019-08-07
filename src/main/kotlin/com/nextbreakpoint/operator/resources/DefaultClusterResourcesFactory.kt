@@ -141,7 +141,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withCompletions(1)
             .withParallelism(1)
             .withBackoffLimit(3)
-            .withNewTtlSecondsAfterFinished(30)
+            .withTtlSecondsAfterFinished(30)
             .editOrNewTemplate()
             .editOrNewMetadata()
             .withName("flink-upload-${flinkCluster.metadata.name}")
