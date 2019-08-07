@@ -55,11 +55,13 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("service account does not match")
         }
 
-        if (jarUploadJob.spec.template.spec.imagePullSecrets.size != 1) {
-            statusReport.add("unexpected number of pull secrets")
-        } else {
-            if (jarUploadJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
-                statusReport.add("pull secrets don't match")
+        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+            if (jarUploadJob.spec.template.spec.imagePullSecrets.size != 1) {
+                statusReport.add("unexpected number of pull secrets")
+            } else {
+                if (jarUploadJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                    statusReport.add("pull secrets don't match")
+                }
             }
         }
 
@@ -175,11 +177,13 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("service account does not match")
         }
 
-        if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
-            statusReport.add("unexpected number of pull secrets")
-        } else {
-            if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
-                statusReport.add("pull secrets don't match")
+        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+            if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets?.size != 1) {
+                statusReport.add("unexpected number of pull secrets")
+            } else {
+                if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                    statusReport.add("pull secrets don't match")
+                }
             }
         }
 
@@ -281,11 +285,13 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("service account does not match")
         }
 
-        if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
-            statusReport.add("unexpected number of pull secrets")
-        } else {
-            if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
-                statusReport.add("pull secrets don't match")
+        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+            if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
+                statusReport.add("unexpected number of pull secrets")
+            } else {
+                if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                    statusReport.add("pull secrets don't match")
+                }
             }
         }
 

@@ -11,7 +11,7 @@ class CheckpointingCluster : TaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.CHECKPOINTING)
         OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
-        OperatorAnnotations.resetOperatorTasks(context.flinkCluster, listOf())
+        OperatorAnnotations.appendOperatorTasks(context.flinkCluster, listOf())
 
         return Result(ResultStatus.SUCCESS, "Cluster status updated")
     }

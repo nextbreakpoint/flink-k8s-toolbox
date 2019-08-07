@@ -14,7 +14,7 @@ class InitialiseCluster : TaskHandler {
         OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
         OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
 
-        OperatorAnnotations.resetOperatorTasks(context.flinkCluster,
+        OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
             listOf(
                 OperatorTask.CREATE_RESOURCES,
                 OperatorTask.UPLOAD_JAR,

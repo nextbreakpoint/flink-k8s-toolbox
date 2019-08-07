@@ -92,16 +92,13 @@ public class V1FlinkClusterList {
         return Objects.hash(this.apiVersion, this.items, this.kind, this.metadata);
     }
 
+    @Override
     public String toString() {
-        return "class V1FlinkClusterList {\n" +
-                "    apiVersion: " + this.toIndentedString(this.apiVersion) + "\n" +
-                "    items: " + this.toIndentedString(this.items) + "\n" +
-                "    kind: " + this.toIndentedString(this.kind) + "\n" +
-                "    metadata: " + this.toIndentedString(this.metadata) + "\n" +
-                "}";
-    }
-
-    private String toIndentedString(Object o) {
-        return o == null ? "null" : o.toString().replace("\n", "\n    ");
+        return "V1FlinkClusterList{" +
+                "apiVersion='" + apiVersion + '\'' +
+                ", items=" + items +
+                ", kind='" + kind + '\'' +
+                ", metadata=" + metadata +
+                '}';
     }
 }

@@ -71,7 +71,7 @@ class HaltCluster : TaskHandler {
                         OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
                         OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                        OperatorAnnotations.resetOperatorTasks(context.flinkCluster,
+                        OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
                             listOf(
                                 OperatorTask.STOPPING_CLUSTER,
                                 OperatorTask.TERMINATE_PODS,
@@ -105,7 +105,7 @@ class HaltCluster : TaskHandler {
                         OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
                         OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                        OperatorAnnotations.resetOperatorTasks(context.flinkCluster,
+                        OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
                             listOf(
                                 OperatorTask.STARTING_CLUSTER,
                                 OperatorTask.DELETE_UPLOAD_JOB,
@@ -148,7 +148,7 @@ class HaltCluster : TaskHandler {
                         }
 
                         if (nextTask == null && errors >= 3) {
-                            OperatorAnnotations.resetOperatorTasks(context.flinkCluster, listOf(OperatorTask.RUN_CLUSTER))
+                            OperatorAnnotations.appendOperatorTasks(context.flinkCluster, listOf(OperatorTask.RUN_CLUSTER))
 
                             return Result(ResultStatus.AWAIT, "")
                         }
