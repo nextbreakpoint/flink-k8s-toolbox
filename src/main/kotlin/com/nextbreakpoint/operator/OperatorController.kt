@@ -67,7 +67,7 @@ class OperatorController(val flinkOptions: FlinkOptions, val savepointInterval: 
     fun isClusterReady(clusterId: ClusterId): Result<Void?> =
         ClusterIsReady(flinkOptions).execute(clusterId, null)
 
-    fun isClusterRunning(clusterId: ClusterId): Result<Void?> =
+    fun isClusterRunning(clusterId: ClusterId): Result<Boolean> =
         ClusterIsRunning(flinkOptions).execute(clusterId, null)
 
     fun isClusterSuspended(clusterId: ClusterId): Result<Void?> =

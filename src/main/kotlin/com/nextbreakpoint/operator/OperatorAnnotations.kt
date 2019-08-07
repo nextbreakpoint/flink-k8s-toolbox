@@ -6,18 +6,18 @@ import com.nextbreakpoint.common.model.TaskStatus
 import com.nextbreakpoint.model.V1FlinkCluster
 
 object OperatorAnnotations {
-    val FLINK_OPERATOR_TIMESTAMP            = "flink-operator-timestamp"
-    val FLINK_OPERATOR_TASKS                = "flink-operator-tasks"
-    val FLINK_OPERATOR_TASK_STATUS          = "flink-operator-task-status"
-    val FLINK_OPERATOR_TASK_ATTEMPTS        = "flink-operator-task-attempts"
-    val FLINK_OPERATOR_CLUSTER_STATUS       = "flink-operator-cluster-status"
-    val FLINK_OPERATOR_SAVEPOINT_PATH       = "flink-operator-savepoint-path"
-    val FLINK_OPERATOR_SAVEPOINT_REQUEST    = "flink-operator-savepoint-request"
-    val FLINK_OPERATOR_SAVEPOINT_TIESTAMP   = "flink-operator-savepoint-timestamp"
-    val FLINK_OPERATOR_JOBMANAGER_DIGEST    = "flink-operator-digest-jobmanager"
-    val FLINK_OPERATOR_TASKMANAGER_DIGEST   = "flink-operator-digest-taskmanager"
-    val FLINK_OPERATOR_IMAGE_DIGEST         = "flink-operator-digest-image"
-    val FLINK_OPERATOR_JOB_DIGEST           = "flink-operator-digest-job"
+    val FLINK_OPERATOR_TIMESTAMP            = "nextbreakpoint.com/flink-operator-timestamp"
+    val FLINK_OPERATOR_TASKS                = "nextbreakpoint.com/flink-operator-tasks"
+    val FLINK_OPERATOR_TASK_STATUS          = "nextbreakpoint.com/flink-operator-task-status"
+    val FLINK_OPERATOR_TASK_ATTEMPTS        = "nextbreakpoint.com/flink-operator-task-attempts"
+    val FLINK_OPERATOR_CLUSTER_STATUS       = "nextbreakpoint.com/flink-operator-cluster-status"
+    val FLINK_OPERATOR_SAVEPOINT_PATH       = "nextbreakpoint.com/flink-operator-savepoint-path"
+    val FLINK_OPERATOR_SAVEPOINT_REQUEST    = "nextbreakpoint.com/flink-operator-savepoint-request"
+    val FLINK_OPERATOR_SAVEPOINT_TIESTAMP   = "nextbreakpoint.com/flink-operator-savepoint-timestamp"
+    val FLINK_OPERATOR_JOBMANAGER_DIGEST    = "nextbreakpoint.com/flink-operator-digest-jobmanager"
+    val FLINK_OPERATOR_TASKMANAGER_DIGEST   = "nextbreakpoint.com/flink-operator-digest-taskmanager"
+    val FLINK_OPERATOR_IMAGE_DIGEST         = "nextbreakpoint.com/flink-operator-digest-image"
+    val FLINK_OPERATOR_JOB_DIGEST           = "nextbreakpoint.com/flink-operator-digest-job"
 
     fun hasCurrentOperatorTask(flinkCluster: V1FlinkCluster) : Boolean =
         flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS) != null

@@ -55,8 +55,8 @@ class UploadJobDeleteResource(flinkOptions: FlinkOptions) : OperatorCommand<Void
                 val status = api.deleteNamespacedPod(
                     pod.metadata.name,
                     clusterId.namespace,
-                    deleteOptions,
                     null,
+                    deleteOptions,
                     null,
                     5,
                     null,
@@ -93,8 +93,8 @@ class UploadJobDeleteResource(flinkOptions: FlinkOptions) : OperatorCommand<Void
                 val status = api.deleteNamespacedJob(
                     job.metadata.name,
                     clusterId.namespace,
-                    deleteOptions,
                     null,
+                    deleteOptions,
                     null,
                     5,
                     null,

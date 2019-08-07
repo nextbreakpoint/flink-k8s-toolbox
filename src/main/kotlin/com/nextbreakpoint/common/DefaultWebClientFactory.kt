@@ -5,11 +5,8 @@ import io.vertx.core.net.JksOptions
 import io.vertx.ext.web.client.WebClientOptions
 import io.vertx.rxjava.core.Vertx
 import io.vertx.rxjava.ext.web.client.WebClient
-import org.apache.log4j.Logger
 
 object DefaultWebClientFactory : WebClientFactory {
-    private val logger: Logger = Logger.getLogger(DefaultWebClientFactory::class.simpleName)
-
     override fun create(params: ConnectionConfig) = createWebClient(
         host = params.host,
         port = params.port,
@@ -34,16 +31,12 @@ object DefaultWebClientFactory : WebClientFactory {
 //          .setLogActivity(true)
 
         if (keystorePath != null && truststorePath != null) {
-            logger.info("Enabling HTTPS with host verification")
-
             webClientOptions
                 .setSsl(true)
                 .setForceSni(false)
                 .setVerifyHost(true)
                 .setKeyStoreOptions(JksOptions().setPath(keystorePath).setPassword(keystoreSecret))
                 .setTrustOptions(JksOptions().setPath(truststorePath).setPassword(truststoreSecret))
-        } else {
-            logger.warn("HTTPS not enabled!")
         }
 
         return WebClient.create(Vertx.vertx(), webClientOptions)
