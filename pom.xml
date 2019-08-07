@@ -26,7 +26,7 @@
         <url>git@github.com:nextbreakpoint/flink-k8s-toolbox.git</url>
     </scm>
     <properties>
-        <java.image>openjdk:14-jdk</java.image>
+        <java.image>openjdk:14-jdk-alpine</java.image>
         <container.port>4444</container.port>
         <service.jar>${project.build.finalName}.${project.packaging}</service.jar>
         <java.version>11</java.version>
