@@ -6,6 +6,7 @@ import com.nextbreakpoint.operator.OperatorVerticle
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.impl.launcher.VertxCommandLauncher
 import io.vertx.core.impl.launcher.VertxLifecycleHooks
 import io.vertx.core.json.JsonObject
@@ -64,7 +65,13 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerComman
     override fun beforeStartingVertx(vertxOptions: VertxOptions?) {
         vertxOptions?.metricsOptions =
             MicrometerMetricsOptions().setPrometheusOptions(
-                VertxPrometheusOptions().setEnabled(true)
+                VertxPrometheusOptions()
+                    .setEnabled(true)
+                    .setStartEmbeddedServer(true)
+                    .setEmbeddedServerEndpoint("/metrics")
+                    .setEmbeddedServerOptions(
+                        HttpServerOptions().setSsl(false).setPort(8080)
+                    )
             )
             .setEnabled(true)
             .setRegistryName("flink-operator")
