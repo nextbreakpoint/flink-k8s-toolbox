@@ -62,12 +62,20 @@ object OperatorAnnotations {
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
-    fun resetOperatorTasks(flinkCluster: V1FlinkCluster, task: List<OperatorTask>) {
+    fun appendOperatorTasks(flinkCluster: V1FlinkCluster, task: List<OperatorTask>) {
         ensureAnnotations(flinkCluster)
 
         val currentTask = flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS) ?: ""
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKS] = (currentTask + " " + task.joinToString(separator = " ")).trim()
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
+    }
+
+    fun resetOperatorTasks(flinkCluster: V1FlinkCluster, task: List<OperatorTask>) {
+        ensureAnnotations(flinkCluster)
+
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_TASKS] = task.joinToString(separator = " ")
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }

@@ -1,12 +1,12 @@
 package com.nextbreakpoint.common
 
-import com.nextbreakpoint.common.model.Address
+import com.nextbreakpoint.common.model.ConnectionConfig
 import io.vertx.rxjava.core.buffer.Buffer
 
 object Commands {
-    fun postText(factory: WebClientFactory, address: Address, path: String, body: String) {
+    fun postText(factory: WebClientFactory, connectionConfig: ConnectionConfig, path: String, body: String) {
         try {
-            val client = factory.create(address)
+            val client = factory.create(connectionConfig)
             try {
                 client.post(path)
                     .putHeader("content-type", "application/json")
@@ -25,9 +25,9 @@ object Commands {
         }
     }
 
-    fun <T> putJson(factory: WebClientFactory, address: Address, path: String, body: T) {
+    fun <T> putJson(factory: WebClientFactory, connectionConfig: ConnectionConfig, path: String, body: T) {
         try {
-            val client = factory.create(address)
+            val client = factory.create(connectionConfig)
             try {
                 client.put(path)
                     .putHeader("content-type", "application/json")
@@ -46,9 +46,9 @@ object Commands {
         }
     }
 
-    fun delete(factory: WebClientFactory, address: Address, path: String) {
+    fun delete(factory: WebClientFactory, connectionConfig: ConnectionConfig, path: String) {
         try {
-            val client = factory.create(address)
+            val client = factory.create(connectionConfig)
             try {
                 client.delete(path)
                     .putHeader("accept", "application/json")
@@ -66,9 +66,9 @@ object Commands {
         }
     }
 
-    fun get(factory: WebClientFactory, address: Address, path: String) {
+    fun get(factory: WebClientFactory, connectionConfig: ConnectionConfig, path: String) {
         try {
-            val client = factory.create(address)
+            val client = factory.create(connectionConfig)
             try {
                 client.get(path)
                     .putHeader("accept", "application/json")
@@ -86,9 +86,9 @@ object Commands {
         }
     }
 
-    fun get(factory: WebClientFactory, address: Address, path: String, queryParams: List<Pair<String, String>>) {
+    fun get(factory: WebClientFactory, connectionConfig: ConnectionConfig, path: String, queryParams: List<Pair<String, String>>) {
         try {
-            val client = factory.create(address)
+            val client = factory.create(connectionConfig)
             try {
                 val request = client.get(path)
                     .putHeader("accept", "application/json")

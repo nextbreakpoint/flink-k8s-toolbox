@@ -131,7 +131,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                 }
 
                 if (statusList.isNotEmpty()) {
-                    OperatorAnnotations.resetOperatorTasks(flinkCluster, statusList)
+                    OperatorAnnotations.appendOperatorTasks(flinkCluster, statusList)
                     Kubernetes.updateAnnotations(flinkCluster)
                     return Result(ResultStatus.SUCCESS, statusList)
                 } else {

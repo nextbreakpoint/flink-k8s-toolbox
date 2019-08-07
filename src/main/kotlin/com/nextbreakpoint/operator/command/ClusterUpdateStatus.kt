@@ -56,7 +56,7 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
             val operatorStatus = OperatorAnnotations.getCurrentOperatorStatus(params)
 
             if (!OperatorAnnotations.hasCurrentOperatorTask(params)) {
-                OperatorAnnotations.resetOperatorTasks(params, listOf(OperatorTask.INITIALISE_CLUSTER))
+                OperatorAnnotations.appendOperatorTasks(params, listOf(OperatorTask.INITIALISE_CLUSTER))
 
                 controller.updateAnnotations(params)
 
