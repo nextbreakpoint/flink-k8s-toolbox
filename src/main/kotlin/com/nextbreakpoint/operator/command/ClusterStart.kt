@@ -1,6 +1,5 @@
 package com.nextbreakpoint.operator.command
 
-import com.nextbreakpoint.common.Kubernetes
 import com.nextbreakpoint.common.model.ClusterId
 import com.nextbreakpoint.common.model.ClusterStatus
 import com.nextbreakpoint.common.model.FlinkOptions
@@ -28,30 +27,28 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
             val operatorStatus = OperatorAnnotations.getCurrentOperatorStatus(flinkCluster)
 
             if (operatorStatus == TaskStatus.IDLE) {
-                val statusList = if (params.startOnlyCluster) {
+                val statusList = if (flinkCluster.spec?.flinkJob == null) {
                     when (clusterStatus) {
                         ClusterStatus.TERMINATED ->
                             listOf(
                                 OperatorTask.STARTING_CLUSTER,
-                                OperatorTask.DELETE_UPLOAD_JOB,
                                 OperatorTask.CREATE_RESOURCES,
-                                OperatorTask.UPLOAD_JAR,
-                                OperatorTask.TERMINATE_PODS,
-                                OperatorTask.SUSPEND_CLUSTER,
-                                OperatorTask.HALT_CLUSTER
+                                OperatorTask.RUN_CLUSTER
+                            )
+                        ClusterStatus.SUSPENDED ->
+                            listOf(
+                                OperatorTask.STARTING_CLUSTER,
+                                OperatorTask.RESTART_PODS,
+                                OperatorTask.RUN_CLUSTER
                             )
                         ClusterStatus.FAILED ->
                             listOf(
                                 OperatorTask.STOPPING_CLUSTER,
-                                OperatorTask.DELETE_UPLOAD_JOB,
                                 OperatorTask.TERMINATE_PODS,
                                 OperatorTask.DELETE_RESOURCES,
                                 OperatorTask.STARTING_CLUSTER,
                                 OperatorTask.CREATE_RESOURCES,
-                                OperatorTask.UPLOAD_JAR,
-                                OperatorTask.TERMINATE_PODS,
-                                OperatorTask.SUSPEND_CLUSTER,
-                                OperatorTask.HALT_CLUSTER
+                                OperatorTask.RUN_CLUSTER
                             )
                         else -> listOf()
                     }
@@ -132,7 +129,6 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
 
                 if (statusList.isNotEmpty()) {
                     OperatorAnnotations.appendOperatorTasks(flinkCluster, statusList)
-                    Kubernetes.updateAnnotations(flinkCluster)
                     return Result(ResultStatus.SUCCESS, statusList)
                 } else {
                     logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")

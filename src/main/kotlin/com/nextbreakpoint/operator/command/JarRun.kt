@@ -9,8 +9,8 @@ import com.nextbreakpoint.common.model.ResultStatus
 import com.nextbreakpoint.flinkclient.model.ClusterOverviewWithVersion
 import com.nextbreakpoint.flinkclient.model.JarListInfo
 import com.nextbreakpoint.model.V1FlinkCluster
-import com.nextbreakpoint.operator.OperatorAnnotations
 import com.nextbreakpoint.operator.OperatorCommand
+import com.nextbreakpoint.operator.OperatorParameters
 import org.apache.log4j.Logger
 
 class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?>(flinkOptions) {
@@ -57,12 +57,12 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
                             return Result(ResultStatus.FAILED, null)
                         }
 
-                        val savepointPath = OperatorAnnotations.getSavepointPath(params)
+                        val savepointPath = OperatorParameters.getSavepointPath(params)
 
                         val runJarResponse = flinkApi.runJarCall(
                             jarFile.id,
                             false,
-                            savepointPath ?: params.spec.flinkOperator.savepoint,
+                            savepointPath,
                             params.spec.flinkJob.arguments.joinToString(separator = " "),
                             null,
                             params.spec.flinkJob.className,

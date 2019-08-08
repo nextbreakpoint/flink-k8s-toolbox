@@ -3,7 +3,13 @@ package com.nextbreakpoint.operator.command
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.common.Flink
-import com.nextbreakpoint.common.model.*
+import com.nextbreakpoint.common.model.ClusterId
+import com.nextbreakpoint.common.model.FlinkOptions
+import com.nextbreakpoint.common.model.JobManagerStats
+import com.nextbreakpoint.common.model.Metric
+import com.nextbreakpoint.common.model.Result
+import com.nextbreakpoint.common.model.ResultStatus
+import com.nextbreakpoint.common.model.TaskManagerId
 import com.nextbreakpoint.flinkclient.api.FlinkApi
 import com.nextbreakpoint.operator.OperatorCommand
 import io.kubernetes.client.JSON

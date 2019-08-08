@@ -1,11 +1,9 @@
 package com.nextbreakpoint.common
 
-import com.nextbreakpoint.common.model.ScaleOptions
 import com.nextbreakpoint.common.model.StartOptions
 import com.nextbreakpoint.common.model.StopOptions
 import com.nextbreakpoint.common.model.TaskManagerId
 import com.nextbreakpoint.common.model.UploadOptions
-import com.nextbreakpoint.model.V1FlinkClusterSpec
 import com.nextbreakpoint.operator.OperatorConfig
 
 interface CommandFactory {
@@ -21,7 +19,9 @@ interface CommandFactory {
 
     fun createStopClusterCommand() : Command<StopOptions>
 
-    fun createScaleJobCommand() : Command<ScaleOptions>
+    fun createGetClusterStatusCommand(): CommandNoArgs
+
+    fun createTriggerSavepointCommand(): CommandNoArgs
 
     fun createGetJobDetailsCommand() : CommandNoArgs
 

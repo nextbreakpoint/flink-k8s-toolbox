@@ -1,6 +1,5 @@
 package com.nextbreakpoint.operator.command
 
-import com.nextbreakpoint.common.Kubernetes
 import com.nextbreakpoint.common.model.ClusterId
 import com.nextbreakpoint.common.model.ClusterStatus
 import com.nextbreakpoint.common.model.FlinkOptions
@@ -28,44 +27,32 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
             val operatorStatus = OperatorAnnotations.getCurrentOperatorStatus(flinkCluster)
 
             if (operatorStatus == TaskStatus.IDLE) {
-                val statusList = if (params.stopOnlyJob) {
+                val statusList = if (params.deleteResources) {
                     when (clusterStatus) {
                         ClusterStatus.RUNNING ->
-                            if (params.withSavepoint) {
-                                listOf(
-                                    OperatorTask.STOPPING_CLUSTER,
-                                    OperatorTask.CANCEL_JOB,
-                                    OperatorTask.TERMINATE_PODS,
-                                    OperatorTask.SUSPEND_CLUSTER,
-                                    OperatorTask.HALT_CLUSTER
-                                )
+                            if (flinkCluster.spec?.flinkJob != null) {
+                                if (params.withoutSavepoint) {
+                                    listOf(
+                                        OperatorTask.STOPPING_CLUSTER,
+                                        OperatorTask.STOP_JOB,
+                                        OperatorTask.TERMINATE_PODS,
+                                        OperatorTask.DELETE_RESOURCES,
+                                        OperatorTask.TERMINATE_CLUSTER,
+                                        OperatorTask.HALT_CLUSTER
+                                    )
+                                } else {
+                                    listOf(
+                                        OperatorTask.STOPPING_CLUSTER,
+                                        OperatorTask.CANCEL_JOB,
+                                        OperatorTask.TERMINATE_PODS,
+                                        OperatorTask.DELETE_RESOURCES,
+                                        OperatorTask.TERMINATE_CLUSTER,
+                                        OperatorTask.HALT_CLUSTER
+                                    )
+                                }
                             } else {
                                 listOf(
                                     OperatorTask.STOPPING_CLUSTER,
-                                    OperatorTask.STOP_JOB,
-                                    OperatorTask.TERMINATE_PODS,
-                                    OperatorTask.SUSPEND_CLUSTER,
-                                    OperatorTask.HALT_CLUSTER
-                                )
-                            }
-                        else -> listOf()
-                    }
-                } else {
-                    when (clusterStatus) {
-                        ClusterStatus.RUNNING ->
-                            if (params.withSavepoint) {
-                                listOf(
-                                    OperatorTask.STOPPING_CLUSTER,
-                                    OperatorTask.CANCEL_JOB,
-                                    OperatorTask.TERMINATE_PODS,
-                                    OperatorTask.DELETE_RESOURCES,
-                                    OperatorTask.TERMINATE_CLUSTER,
-                                    OperatorTask.HALT_CLUSTER
-                                )
-                            } else {
-                                listOf(
-                                    OperatorTask.STOPPING_CLUSTER,
-                                    OperatorTask.STOP_JOB,
                                     OperatorTask.TERMINATE_PODS,
                                     OperatorTask.DELETE_RESOURCES,
                                     OperatorTask.TERMINATE_CLUSTER,
@@ -90,11 +77,41 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                             )
                         else -> listOf()
                     }
+                } else {
+                    when (clusterStatus) {
+                        ClusterStatus.RUNNING ->
+                            if (flinkCluster.spec?.flinkJob != null) {
+                                if (params.withoutSavepoint) {
+                                    listOf(
+                                        OperatorTask.STOPPING_CLUSTER,
+                                        OperatorTask.STOP_JOB,
+                                        OperatorTask.TERMINATE_PODS,
+                                        OperatorTask.SUSPEND_CLUSTER,
+                                        OperatorTask.HALT_CLUSTER
+                                    )
+                                } else {
+                                    listOf(
+                                        OperatorTask.STOPPING_CLUSTER,
+                                        OperatorTask.CANCEL_JOB,
+                                        OperatorTask.TERMINATE_PODS,
+                                        OperatorTask.SUSPEND_CLUSTER,
+                                        OperatorTask.HALT_CLUSTER
+                                    )
+                                }
+                            } else {
+                                listOf(
+                                    OperatorTask.STOPPING_CLUSTER,
+                                    OperatorTask.TERMINATE_PODS,
+                                    OperatorTask.SUSPEND_CLUSTER,
+                                    OperatorTask.HALT_CLUSTER
+                                )
+                            }
+                        else -> listOf()
+                    }
                 }
 
                 if (statusList.isNotEmpty()) {
                     OperatorAnnotations.appendOperatorTasks(flinkCluster, statusList)
-                    Kubernetes.updateAnnotations(flinkCluster)
                     return Result(ResultStatus.SUCCESS, statusList)
                 } else {
                     logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")

@@ -6,22 +6,25 @@ import com.nextbreakpoint.common.model.ClusterId
 import com.nextbreakpoint.common.model.FlinkOptions
 import com.nextbreakpoint.common.model.Result
 import com.nextbreakpoint.common.model.ResultStatus
+import com.nextbreakpoint.common.model.SavepointRequest
 import com.nextbreakpoint.flinkclient.model.AsynchronousOperationResult
 import com.nextbreakpoint.flinkclient.model.CheckpointingStatistics
 import com.nextbreakpoint.flinkclient.model.QueueStatus
 import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
-class SavepointGetStatus(flinkOptions: FlinkOptions) : OperatorCommand<Map<String, String>, String>(flinkOptions) {
+class SavepointGetStatus(flinkOptions: FlinkOptions) : OperatorCommand<SavepointRequest, String>(flinkOptions) {
     companion object {
         private val logger = Logger.getLogger(SavepointGetStatus::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Map<String, String>): Result<String> {
+    override fun execute(clusterId: ClusterId, params: SavepointRequest): Result<String> {
         try {
             val flinkApi = Flink.find(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val inprogressRequests = params.map { (jobId, requestId) ->
+            val requests = mapOf(params.jobId to params.triggerId)
+
+            val inprogressRequests = requests.map { (jobId, requestId) ->
                 val response = flinkApi.getJobSavepointStatusCall(jobId, requestId, null, null).execute()
 
                 if (response.code() != 200) {
@@ -47,7 +50,7 @@ class SavepointGetStatus(flinkOptions: FlinkOptions) : OperatorCommand<Map<Strin
             }.toMap()
 
             if (inprogressRequests.isEmpty()) {
-                val savepoints = params.map { (jobId, _) ->
+                val savepoints = requests.map { (jobId, _) ->
                     val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
 
                     if (response.code() != 200) {
