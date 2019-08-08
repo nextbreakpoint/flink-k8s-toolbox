@@ -81,4 +81,6 @@ spec:
             requests:
               storage: 5Gi
   flinkOperator:
-    targetPath: file:///var/tmp/test
+    savepointMode: AUTOMATIC
+    savepointInterval: 60
+    savepointTargetPath: file:///var/tmp/test

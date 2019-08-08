@@ -13,7 +13,25 @@ import com.nextbreakpoint.operator.OperatorCommand
 import com.nextbreakpoint.operator.OperatorContext
 import com.nextbreakpoint.operator.OperatorController
 import com.nextbreakpoint.operator.OperatorResources
-import com.nextbreakpoint.operator.task.*
+import com.nextbreakpoint.operator.task.CancelJob
+import com.nextbreakpoint.operator.task.CheckpointingCluster
+import com.nextbreakpoint.operator.task.CreateResources
+import com.nextbreakpoint.operator.task.CreateSavepoint
+import com.nextbreakpoint.operator.task.DeleteResources
+import com.nextbreakpoint.operator.task.DeleteUploadJob
+import com.nextbreakpoint.operator.task.EraseSavepoint
+import com.nextbreakpoint.operator.task.HaltCluster
+import com.nextbreakpoint.operator.task.InitialiseCluster
+import com.nextbreakpoint.operator.task.RestartPods
+import com.nextbreakpoint.operator.task.RunCluster
+import com.nextbreakpoint.operator.task.StartJob
+import com.nextbreakpoint.operator.task.StartingCluster
+import com.nextbreakpoint.operator.task.StopJob
+import com.nextbreakpoint.operator.task.StoppingCluster
+import com.nextbreakpoint.operator.task.SuspendCluster
+import com.nextbreakpoint.operator.task.TerminateCluster
+import com.nextbreakpoint.operator.task.TerminatePods
+import com.nextbreakpoint.operator.task.UploadJar
 import org.apache.log4j.Logger
 
 class ClusterUpdateStatus(val controller: OperatorController, val resources: OperatorResources) : OperatorCommand<V1FlinkCluster, Void?>(controller.flinkOptions) {
@@ -58,7 +76,7 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
             if (!OperatorAnnotations.hasCurrentOperatorTask(params)) {
                 OperatorAnnotations.appendOperatorTasks(params, listOf(OperatorTask.INITIALISE_CLUSTER))
 
-                controller.updateAnnotations(params)
+                controller.updateAnnotations(clusterId, params.metadata.annotations)
 
                 logger.info("Initialising cluster ${clusterId.name}...")
 
@@ -70,8 +88,14 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
 
                 val taskResult = updateTask(context, operatorStatus, params, taskHandler)
 
-                if (OperatorAnnotations.getOperatorTimestamp(params) != lastUpdated) {
-                    controller.updateAnnotations(params)
+                val currentTimestamp = OperatorAnnotations.getOperatorTimestamp(params)
+
+                if (currentTimestamp != lastUpdated) {
+                    controller.updateAnnotations(clusterId, params.metadata.annotations)
+                }
+
+                if (currentTimestamp - System.currentTimeMillis() < 30000 && OperatorAnnotations.getSavepointPath(params) != params.spec.flinkOperator.savepointPath) {
+                    controller.updateSavepoint(clusterId, OperatorAnnotations.getSavepointPath(params) ?: "")
                 }
 
                 if (taskResult.status == ResultStatus.SUCCESS) {

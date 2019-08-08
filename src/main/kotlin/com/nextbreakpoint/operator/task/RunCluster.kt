@@ -8,6 +8,7 @@ import com.nextbreakpoint.common.model.ResultStatus
 import com.nextbreakpoint.common.model.TaskHandler
 import com.nextbreakpoint.operator.OperatorAnnotations
 import com.nextbreakpoint.operator.OperatorContext
+import com.nextbreakpoint.operator.OperatorParameters
 import org.apache.log4j.Logger
 
 class RunCluster : TaskHandler {
@@ -135,12 +136,12 @@ class RunCluster : TaskHandler {
 
         val elapsedTime = System.currentTimeMillis() - context.lastUpdated
 
-        if (elapsedTime > 10000) {
+        val nextTask = OperatorAnnotations.getNextOperatorTask(context.flinkCluster)
+
+        if (context.flinkCluster.spec?.flinkJob != null && elapsedTime > 10000) {
             val result = context.controller.isClusterRunning(context.clusterId)
 
             val errors = OperatorAnnotations.getOperatorTaskAttempts(context.flinkCluster)
-
-            val nextTask = OperatorAnnotations.getNextOperatorTask(context.flinkCluster)
 
             if (result.status != ResultStatus.SUCCESS) {
                 logger.warn("Cluster ${context.clusterId.name} doesn't have the expected status")
@@ -171,10 +172,14 @@ class RunCluster : TaskHandler {
             }
         }
 
-        if (OperatorAnnotations.getNextOperatorTask(context.flinkCluster) == null) {
+        if (context.flinkCluster.spec.flinkJob != null && nextTask == null) {
+            val savepointMode = OperatorParameters.getSavepointMode(context.flinkCluster)
+
             val lastSavepointsTimestamp = OperatorAnnotations.getSavepointTimestamp(context.flinkCluster)
 
-            if (System.currentTimeMillis() - lastSavepointsTimestamp > context.controller.savepointInterval) {
+            val savepointIntervalInSeconds = OperatorParameters.getSavepointInterval(context.flinkCluster)
+
+            if (savepointMode == "AUTOMATIC" && System.currentTimeMillis() - lastSavepointsTimestamp > savepointIntervalInSeconds * 1000L) {
                 OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
                     listOf(
                         OperatorTask.CHECKPOINTING_CLUSTER,

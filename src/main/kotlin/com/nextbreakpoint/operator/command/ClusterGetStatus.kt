@@ -8,16 +8,16 @@ import com.nextbreakpoint.operator.OperatorCache
 import com.nextbreakpoint.operator.OperatorCommand
 import org.apache.log4j.Logger
 
-class ClusterGetTask(flinkOptions: FlinkOptions, val cache: OperatorCache) : OperatorCommand<Void?, Map<String, String>>(flinkOptions) {
+class ClusterGetStatus(flinkOptions: FlinkOptions, val cache: OperatorCache) : OperatorCommand<Void?, Map<String, String>>(flinkOptions) {
     companion object {
-        private val logger = Logger.getLogger(ClusterGetTask::class.simpleName)
+        private val logger = Logger.getLogger(ClusterGetStatus::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Map<String, String>> {
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            val result = flinkCluster.metadata.annotations?.filter { it.key.startsWith("flink-operator-") }?.toMap() ?: mapOf()
+            val result = flinkCluster.metadata.annotations?.filter { it.key.startsWith("nextbreakpoint.com/flink-operator-") }?.toMap() ?: mapOf()
 
             return Result(ResultStatus.SUCCESS, result)
         } catch (e : Exception) {

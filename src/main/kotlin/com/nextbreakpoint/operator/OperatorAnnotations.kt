@@ -1,7 +1,9 @@
 package com.nextbreakpoint.operator
 
+import com.google.gson.Gson
 import com.nextbreakpoint.common.model.ClusterStatus
 import com.nextbreakpoint.common.model.OperatorTask
+import com.nextbreakpoint.common.model.SavepointRequest
 import com.nextbreakpoint.common.model.TaskStatus
 import com.nextbreakpoint.model.V1FlinkCluster
 
@@ -13,7 +15,7 @@ object OperatorAnnotations {
     val FLINK_OPERATOR_CLUSTER_STATUS       = "nextbreakpoint.com/flink-operator-cluster-status"
     val FLINK_OPERATOR_SAVEPOINT_PATH       = "nextbreakpoint.com/flink-operator-savepoint-path"
     val FLINK_OPERATOR_SAVEPOINT_REQUEST    = "nextbreakpoint.com/flink-operator-savepoint-request"
-    val FLINK_OPERATOR_SAVEPOINT_TIESTAMP   = "nextbreakpoint.com/flink-operator-savepoint-timestamp"
+    val FLINK_OPERATOR_SAVEPOINT_TIMESTAMP  = "nextbreakpoint.com/flink-operator-savepoint-timestamp"
     val FLINK_OPERATOR_JOBMANAGER_DIGEST    = "nextbreakpoint.com/flink-operator-digest-jobmanager"
     val FLINK_OPERATOR_TASKMANAGER_DIGEST   = "nextbreakpoint.com/flink-operator-digest-taskmanager"
     val FLINK_OPERATOR_IMAGE_DIGEST         = "nextbreakpoint.com/flink-operator-digest-image"
@@ -39,13 +41,15 @@ object OperatorAnnotations {
         flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TIMESTAMP)?.toLong() ?: 0
 
     fun getSavepointPath(flinkCluster: V1FlinkCluster) : String? =
-        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_SAVEPOINT_PATH)?.trim('\"')
+        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_SAVEPOINT_PATH)
 
-    fun getSavepointRequest(flinkCluster: V1FlinkCluster) : String? =
-        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_SAVEPOINT_REQUEST)
+    fun getSavepointRequest(flinkCluster: V1FlinkCluster) : SavepointRequest? {
+        val request = flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_SAVEPOINT_REQUEST)
+        return if (request != null && request != "") Gson().fromJson(request, SavepointRequest::class.java) else null
+    }
 
     fun getSavepointTimestamp(flinkCluster: V1FlinkCluster) : Long =
-        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_SAVEPOINT_TIESTAMP)?.toLong() ?: 0
+        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_SAVEPOINT_TIMESTAMP)?.toLong() ?: 0
 
     fun getNextOperatorTask(flinkCluster: V1FlinkCluster) : OperatorTask? =
         flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(' ')?.drop(1)?.map { OperatorTask.valueOf(it) }?.firstOrNull()
@@ -88,24 +92,22 @@ object OperatorAnnotations {
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
-    fun setSavepointRequest(flinkCluster: V1FlinkCluster, requests: String) {
+    fun setSavepointPath(flinkCluster: V1FlinkCluster, path: String) {
         ensureAnnotations(flinkCluster)
 
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_TIESTAMP] = System.currentTimeMillis().toString()
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_TIMESTAMP] = System.currentTimeMillis().toString()
 
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_REQUEST] = requests
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_PATH] = path
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
 
-    fun setSavepointPath(flinkCluster: V1FlinkCluster, savepointPath: String) {
+    fun setSavepointRequest(flinkCluster: V1FlinkCluster, request: SavepointRequest) {
         ensureAnnotations(flinkCluster)
 
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_TIESTAMP] = System.currentTimeMillis().toString()
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_TIMESTAMP] = System.currentTimeMillis().toString()
 
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_PATH] = savepointPath
-
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_REQUEST] = "{}"
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_REQUEST] = Gson().toJson(request)
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }
@@ -113,9 +115,9 @@ object OperatorAnnotations {
     fun updateSavepointTimestamp(flinkCluster: V1FlinkCluster) {
         ensureAnnotations(flinkCluster)
 
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_TIESTAMP] = System.currentTimeMillis().toString()
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_TIMESTAMP] = System.currentTimeMillis().toString()
 
-        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_REQUEST] = "{}"
+        flinkCluster.metadata.annotations[FLINK_OPERATOR_SAVEPOINT_REQUEST] = ""
 
         flinkCluster.metadata.annotations[FLINK_OPERATOR_TIMESTAMP] = System.currentTimeMillis().toString()
     }

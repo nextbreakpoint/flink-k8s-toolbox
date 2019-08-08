@@ -14,14 +14,23 @@ class InitialiseCluster : TaskHandler {
         OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
         OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
 
-        OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
-            listOf(
-                OperatorTask.CREATE_RESOURCES,
-                OperatorTask.UPLOAD_JAR,
-                OperatorTask.START_JOB,
-                OperatorTask.RUN_CLUSTER
+        if (context.flinkCluster.spec.flinkJob != null) {
+            OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
+                listOf(
+                    OperatorTask.CREATE_RESOURCES,
+                    OperatorTask.UPLOAD_JAR,
+                    OperatorTask.START_JOB,
+                    OperatorTask.RUN_CLUSTER
+                )
             )
-        )
+        } else {
+            OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
+                listOf(
+                    OperatorTask.CREATE_RESOURCES,
+                    OperatorTask.RUN_CLUSTER
+                )
+            )
+        }
 
         val jobManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.jobManager)
         val taskManagerDigest = FlinkClusterSpecification.computeDigest(context.flinkCluster.spec?.taskManager)
