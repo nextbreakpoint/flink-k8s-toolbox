@@ -13,7 +13,6 @@ import com.nextbreakpoint.common.DefaultCommandFactory
 import com.nextbreakpoint.common.Kubernetes
 import com.nextbreakpoint.common.model.ConnectionConfig
 import com.nextbreakpoint.common.model.FlinkOptions
-import com.nextbreakpoint.common.model.ScaleOptions
 import com.nextbreakpoint.common.model.StartOptions
 import com.nextbreakpoint.common.model.StopOptions
 import com.nextbreakpoint.common.model.TaskManagerId
@@ -40,18 +39,19 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
                     RunOperatorCommand(factory)
                 ),
                 Cluster().subcommands(
-                    StartClusterCommand(factory),
-                    StopClusterCommand(factory),
                     CreateClusterCommand(factory),
-                    DeleteClusterCommand(factory)
+                    DeleteClusterCommand(factory),
+                    GetClusterStatusCommand(factory),
+                    StartClusterCommand(factory),
+                    StopClusterCommand(factory)
+                ),
+                Savepoint().subcommands(
+                    TriggerSavepointCommand(factory)
                 ),
                 Upload().subcommands(
                     UploadJARCommand(factory)
                 ),
                 Job().subcommands(
-                    StartJobCommand(factory),
-                    StopJobCommand(factory),
-                    ScaleJobCommand(factory),
                     GetJobDetailsCommand(factory),
                     GetJobMetricsCommand(factory)
                 ),
@@ -82,6 +82,10 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
     }
 
     class Cluster: CliktCommand(name = "cluster", help = "Access cluster subcommands") {
+        override fun run() = Unit
+    }
+
+    class Savepoint: CliktCommand(name = "savepoint", help = "Access savepoint subcommands") {
         override fun run() = Unit
     }
 
@@ -116,7 +120,7 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
         private val clusterSpec: String by option(help="The specification of the Flink cluster in JSON format").required()
 
         override fun run() {
-            factory.createCreateClusterCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, Files.readString(File(clusterSpec).toPath()))
+            factory.createCreateClusterCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, String(Files.readAllBytes(File(clusterSpec).toPath())))
         }
     }
 
@@ -134,6 +138,20 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
         }
     }
 
+    class GetClusterStatusCommand(private val factory: CommandFactory): CliktCommand(name="status", help="Get status of cluster") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The operator cli's keystore path")
+        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
+        private val truststorePath: String? by option(help="The operator cli's truststore path")
+        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+
+        override fun run() {
+            factory.createGetClusterStatusCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName)
+        }
+    }
+
     class StartClusterCommand(private val factory: CommandFactory): CliktCommand(name="start", help="Start the cluster") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
@@ -143,12 +161,10 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
         private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val withoutSavepoint: Boolean by option(help="Reset savepoint when starting the job").flag(default = false)
-        private val startOnlyCluster: Boolean by option(help="Create the cluster but don't run the job").flag(default = false)
 
         override fun run() {
             val params = StartOptions(
-                withoutSavepoint = withoutSavepoint,
-                startOnlyCluster = startOnlyCluster
+                withoutSavepoint = withoutSavepoint
             )
             factory.createStartClusterCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
         }
@@ -162,57 +178,19 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
         private val truststorePath: String? by option(help="The operator cli's truststore path")
         private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val withSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
-        private val stopOnlyJob: Boolean by option(help="Stop the job but don't delete the cluster").flag(default = false)
+        private val withoutSavepoint: Boolean by option(help="Skip savepoint when stopping the job").flag(default = false)
+        private val deleteResources: Boolean by option(help="Delete the cluster's resources").flag(default = false)
 
         override fun run() {
             val params = StopOptions(
-                withSavepoint = withSavepoint,
-                stopOnlyJob = stopOnlyJob
-            )
-            factory.createStopClusterCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
-        }
-    }
-
-    class StartJobCommand(private val factory: CommandFactory): CliktCommand(name="start", help="Start the job") {
-        private val host: String by option(help="The operator host").default("localhost")
-        private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String? by option(help="The operator cli's keystore path")
-        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
-        private val truststorePath: String? by option(help="The operator cli's truststore path")
-        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
-        private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val withoutSavepoint: Boolean by option(help="Reset savepoint when starting the job").flag(default = false)
-
-        override fun run() {
-            val params = StartOptions(
                 withoutSavepoint = withoutSavepoint,
-                startOnlyCluster = true
-            )
-            factory.createStartClusterCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
-        }
-    }
-
-    class StopJobCommand(private val factory: CommandFactory): CliktCommand(name = "stop", help="Stop the job") {
-        private val host: String by option(help="The operator host").default("localhost")
-        private val port: Int by option(help="The operator port").int().default(4444)
-        private val keystorePath: String? by option(help="The operator cli's keystore path")
-        private val keystoreSecret: String? by option(help="The operator cli's keystore secret")
-        private val truststorePath: String? by option(help="The operator cli's truststore path")
-        private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
-        private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val withSavepoint: Boolean by option(help="Create savepoint before stopping the job").flag(default = false)
-
-        override fun run() {
-            val params = StopOptions(
-                withSavepoint = withSavepoint,
-                stopOnlyJob = false
+                deleteResources = deleteResources
             )
             factory.createStopClusterCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
         }
     }
 
-    class ScaleJobCommand(private val factory: CommandFactory): CliktCommand(name = "scale", help="Scale the job") {
+    class TriggerSavepointCommand(private val factory: CommandFactory): CliktCommand(name="trigger", help="Trigger savepoint") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
         private val keystorePath: String? by option(help="The operator cli's keystore path")
@@ -220,13 +198,9 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
         private val truststorePath: String? by option(help="The operator cli's truststore path")
         private val truststoreSecret: String? by option(help="The operator cli's truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val parallelism: Int by option(help="The parallelism of the job").int().default(1)
 
         override fun run() {
-            val params = ScaleOptions(
-                parallelism = parallelism
-            )
-            factory.createScaleJobCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName, params)
+            factory.createTriggerSavepointCommand().run(ConnectionConfig(host, port, keystorePath, keystoreSecret, truststorePath, truststoreSecret), clusterName)
         }
     }
 
@@ -328,7 +302,6 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val namespace: String by option(help="The namespace of the resources").default("default")
         private val kubeConfig: String? by option(help="The path of Kubectl config")
-        private val savepointInterval: Int by option(help="The interval between savepoints in seconds").int().default(3600)
         private val keystorePath: String? by option(help="The operator's keystore path")
         private val keystoreSecret: String? by option(help="The operator's keystore secret")
         private val truststorePath: String? by option(help="The operator's truststore path")
@@ -341,7 +314,6 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
                 portForward = portForward,
                 namespace = namespace,
                 useNodePort = kubeConfig != null,
-                savepointInterval = savepointInterval,
                 keystorePath = keystorePath,
                 keystoreSecret = keystoreSecret,
                 truststorePath = truststorePath,

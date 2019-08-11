@@ -2,6 +2,7 @@ package com.nextbreakpoint.common
 
 import com.google.common.io.ByteStreams
 import com.google.gson.reflect.TypeToken
+import com.nextbreakpoint.common.model.ClusterId
 import com.nextbreakpoint.model.V1FlinkCluster
 import io.kubernetes.client.ApiClient
 import io.kubernetes.client.Configuration
@@ -42,15 +43,27 @@ object Kubernetes {
         appsApi.apiClient = Configuration.getDefaultApiClient()
     }
 
-    fun updateAnnotations(flinkCluster: V1FlinkCluster) {
-        objectApi.patchNamespacedCustomObject(
+    fun updateAnnotations(clusterId: ClusterId, annotations: Map<String, String>) {
+        val patch = mapOf<String, Any?>(
+            "metadata" to mapOf<String, Any?>(
+                "annotations" to annotations
+            )
+        )
+
+        val response = objectApi.patchNamespacedCustomObjectCall(
             "nextbreakpoint.com",
             "v1",
-            flinkCluster.metadata.namespace,
+            clusterId.namespace,
             "flinkclusters",
-            flinkCluster.metadata.name,
-            flinkCluster
-        )
+            clusterId.name,
+            patch,
+            null,
+            null
+        ).execute()
+
+        if (!response.isSuccessful) {
+            throw RuntimeException("Can't update annotations of cluster ${clusterId.name}")
+        }
     }
 
     fun watchFlickClusterResources(objectApi: CustomObjectsApi, namespace: String): Watch<V1FlinkCluster> =

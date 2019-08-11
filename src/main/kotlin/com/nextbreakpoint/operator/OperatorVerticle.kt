@@ -2,7 +2,13 @@ package com.nextbreakpoint.operator
 
 import com.google.gson.GsonBuilder
 import com.nextbreakpoint.common.FlinkClusterSpecification
-import com.nextbreakpoint.common.model.*
+import com.nextbreakpoint.common.model.ClusterId
+import com.nextbreakpoint.common.model.ClusterStatus
+import com.nextbreakpoint.common.model.FlinkOptions
+import com.nextbreakpoint.common.model.ResultStatus
+import com.nextbreakpoint.common.model.StartOptions
+import com.nextbreakpoint.common.model.StopOptions
+import com.nextbreakpoint.common.model.TaskManagerId
 import com.nextbreakpoint.model.DateTimeSerializer
 import com.nextbreakpoint.model.V1FlinkCluster
 import com.nextbreakpoint.operator.command.JobDetails
@@ -34,7 +40,6 @@ import io.vertx.rxjava.ext.web.RoutingContext
 import io.vertx.rxjava.ext.web.handler.BodyHandler
 import io.vertx.rxjava.ext.web.handler.LoggerHandler
 import io.vertx.rxjava.ext.web.handler.TimeoutHandler
-import io.vertx.rxjava.micrometer.PrometheusScrapingHandler
 import org.apache.log4j.Logger
 import org.joda.time.DateTime
 import rx.Completable
@@ -64,8 +69,6 @@ class OperatorVerticle : AbstractVerticle() {
         val portForward: Int? = config.getInteger("port_forward") ?: null
 
         val useNodePort: Boolean = config.getBoolean("use_node_port", false)
-
-        val savepointInterval: Int = config.getInteger("savepoint_interval") ?: throw RuntimeException("Missing required property savepoint_interval")
 
         val namespace: String = config.getString("namespace") ?: throw RuntimeException("Missing required property namespace")
 
@@ -100,7 +103,7 @@ class OperatorVerticle : AbstractVerticle() {
             useNodePort = useNodePort
         )
 
-        val controller = OperatorController(flinkOptions, savepointInterval * 1000)
+        val controller = OperatorController(flinkOptions)
 
         val resourcesCache = OperatorCache()
 
@@ -126,14 +129,13 @@ class OperatorVerticle : AbstractVerticle() {
             handleRequest(routingContext, namespace, "/cluster/stop", BiFunction { context, namespace -> gson.toJson(OperatorMessage(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), context.bodyAsString)) })
         }
 
-        mainRouter.put("/cluster/:name/scale").handler { routingContext ->
-            // TODO implement cluster scaling
-            handleRequest(routingContext, Function { _ -> "{}" })
+        mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
+            handleRequest(routingContext, namespace, "/cluster/savepoint", BiFunction { context, namespace -> gson.toJson(OperatorMessage(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), context.bodyAsString)) })
         }
 
 
         mainRouter.get("/cluster/:name/status").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(controller.getClusterTask(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), resourcesCache)) })
+            handleRequest(routingContext, Function { context -> gson.toJson(controller.getClusterStatus(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), resourcesCache)) })
         }
 
         mainRouter.get("/cluster/:name/job/details").handler { routingContext ->
@@ -170,9 +172,6 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
 
-//        mainRouter.route("/metrics").handler(PrometheusScrapingHandler.create("flink-operator"))
-
-
         vertx.eventBus().consumer<String>("/cluster/start") { message ->
             handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
                 gson.toJson(controller.startCluster(it.clusterId, gson.fromJson(it.json, StartOptions::class.java), resourcesCache))
@@ -194,6 +193,12 @@ class OperatorVerticle : AbstractVerticle() {
         vertx.eventBus().consumer<String>("/cluster/create") { message ->
             handleCommand<V1FlinkCluster>(message, worker, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Function {
                 gson.toJson(controller.createFlinkCluster(ClusterId(it.metadata.namespace, it.metadata.name, ""), it))
+            })
+        }
+
+        vertx.eventBus().consumer<String>("/cluster/savepoint") { message ->
+            handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
+                gson.toJson(controller.createSavepoint(it.clusterId, resourcesCache))
             })
         }
 

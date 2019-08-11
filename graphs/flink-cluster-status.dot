@@ -24,49 +24,49 @@ digraph state_machine {
   STARTING -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources created<BR/>and job running</TD>
+              <TD>Resources created<BR/>and job running<BR/>or not present</TD>
           </TR>
       </TABLE>
   > ];
   STARTING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources<BR/>not created<BR/>or job<BR/>not running</TD>
+              <TD>Resources<BR/>not created<BR/>or job present<BR/>but not running</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> CHECKPOINTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Time to create<BR/>a savepoint</TD>
+              <TD>Automatic savepoint<BR/>or manual savepoint</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Job is no<BR/>longer running</TD>
+              <TD>Job is present<BR/>but it is no<BR/>longer running</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped<BR/>the cluster<BR/>or the job</TD>
+              <TD>User stopped<BR/>the cluster</TD>
           </TR>
       </TABLE>
   > ];
   STOPPING -> SUSPENDED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped<BR/>the job</TD>
+              <TD>User stopped<BR/>the cluster<BR/>but didn't ask to<BR/>delete resources</TD>
           </TR>
       </TABLE>
   > ];
   STOPPING -> TERMINATED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped<BR/>the cluster</TD>
+              <TD>User stopped<BR/>the cluster<BR/>and asked to<BR/>delete resources</TD>
           </TR>
       </TABLE>
   > ];
@@ -94,21 +94,21 @@ digraph state_machine {
   SUSPENDED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User started<BR/>the job</TD>
+              <TD>User started<BR/>the cluster</TD>
           </TR>
       </TABLE>
   > ];
   SUSPENDED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped<BR/>the cluster</TD>
+              <TD>User stopped<BR/>the cluster<BR/>and asked to<BR/>delete resources</TD>
           </TR>
       </TABLE>
   > ];
   TERMINATED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User started<BR/>the cluster<BR/>or the job</TD>
+              <TD>User started<BR/>the cluster</TD>
           </TR>
       </TABLE>
   > ];
