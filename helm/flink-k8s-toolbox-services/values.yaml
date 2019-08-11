@@ -4,7 +4,7 @@
 
 image:
   repository: nextbreakpoint/flink-k8s-toolbox
-  tag: 1.1.5-beta
+  tag: 1.1.6-beta
   pullPolicy: Always
 
 replicas: 1
@@ -13,9 +13,6 @@ service:
   ports:
     console: 4444
     metrics: 8080
-
-savepoint:
-  interval: 600
 
 annotations:
 
