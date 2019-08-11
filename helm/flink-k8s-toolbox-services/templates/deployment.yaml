@@ -53,8 +53,6 @@ spec:
             - run
             - --namespace
             - {{ $root.Release.Namespace }}
-            - --savepoint-interval
-            - "{{ $root.Values.savepoint.interval }}"
             {{- if and $root.Values.ssl.secretName}}
             - --keystore-path
             - /etc/keystore.jks
