@@ -14,9 +14,6 @@ service:
     console: 4444
     metrics: 8080
 
-savepoint:
-  interval: 600
-
 annotations:
 
 resources:
