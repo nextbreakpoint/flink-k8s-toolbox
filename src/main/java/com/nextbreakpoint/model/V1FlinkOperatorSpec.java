@@ -2,30 +2,51 @@ package com.nextbreakpoint.model;
 
 import com.google.gson.annotations.SerializedName;
 
-import java.util.List;
 import java.util.Objects;
 
 public class V1FlinkOperatorSpec {
-    @SerializedName("savepoint")
-    private String savepoint;
-    @SerializedName("targetPath")
-    private String targetPath;
+    @SerializedName("savepointMode")
+    private String savepointMode;
+    @SerializedName("savepointPath")
+    private String savepointPath;
+    @SerializedName("savepointInterval")
+    private Long savepointInterval;
+    @SerializedName("savepointTargetPath")
+    private String savepointTargetPath;
 
-    public String getSavepoint() {
-        return savepoint;
+    public String getSavepointMode() {
+        return savepointMode;
     }
 
-    public V1FlinkOperatorSpec setSavepoint(String savepoint) {
-        this.savepoint = savepoint;
+    public V1FlinkOperatorSpec setSavepointMode(String savepointMode) {
+        this.savepointMode = savepointMode;
         return this;
     }
 
-    public String getTargetPath() {
-        return targetPath;
+    public String getSavepointPath() {
+        return savepointPath;
     }
 
-    public void setTargetPath(String targetPath) {
-        this.targetPath = targetPath;
+    public V1FlinkOperatorSpec setSavepointPath(String savepointPath) {
+        this.savepointPath = savepointPath;
+        return this;
+    }
+
+    public Long getSavepointInterval() {
+        return savepointInterval;
+    }
+
+    public V1FlinkOperatorSpec setSavepointInterval(Long savepointInterval) {
+        this.savepointInterval = savepointInterval;
+        return this;
+    }
+
+    public String getSavepointTargetPath() {
+        return savepointTargetPath;
+    }
+
+    public void setSavepointTargetPath(String savepointTargetPath) {
+        this.savepointTargetPath = savepointTargetPath;
     }
 
     @Override
@@ -33,20 +54,24 @@ public class V1FlinkOperatorSpec {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         V1FlinkOperatorSpec that = (V1FlinkOperatorSpec) o;
-        return Objects.equals(getTargetPath(), that.getTargetPath()) &&
-                Objects.equals(getSavepoint(), that.getSavepoint());
+        return Objects.equals(getSavepointMode(), that.getSavepointMode()) &&
+                Objects.equals(getSavepointPath(), that.getSavepointPath()) &&
+                Objects.equals(getSavepointInterval(), that.getSavepointInterval()) &&
+                Objects.equals(getSavepointTargetPath(), that.getSavepointTargetPath());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getSavepoint(), getTargetPath());
+        return Objects.hash(getSavepointPath(), getSavepointMode(), getSavepointInterval(), getSavepointTargetPath());
     }
 
     @Override
     public String toString() {
         return "V1FlinkOperatorSpec{" +
-                ", savepoint='" + savepoint +
-                ", targetPath=" + targetPath + '\'' +
+                ", savepointMode='" + savepointMode +
+                ", savepointPath='" + savepointPath +
+                ", savepointInterval='" + savepointInterval +
+                ", savepointTargetPath=" + savepointTargetPath + '\'' +
                 '}';
     }
 }

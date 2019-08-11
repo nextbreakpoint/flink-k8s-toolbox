@@ -34,7 +34,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1Service {
+    ): V1Service? {
         if (flinkCluster.metadata.name == null) {
             throw RuntimeException("name is required")
         }
@@ -73,13 +73,13 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1Job {
-        if (flinkCluster.metadata.name == null) {
-            throw RuntimeException("name is required")
+    ): V1Job? {
+        if (flinkCluster.spec.flinkJob == null) {
+            return null
         }
 
-        if (flinkCluster.spec.flinkJob == null) {
-            throw RuntimeException("flinkJobSpec is required")
+        if (flinkCluster.metadata.name == null) {
+            throw RuntimeException("name is required")
         }
 
         if (flinkCluster.spec.flinkJob.image == null) {
@@ -160,7 +160,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet {
+    ): V1StatefulSet? {
         if (flinkCluster.metadata.name == null) {
             throw RuntimeException("name is required")
         }
@@ -286,7 +286,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet {
+    ): V1StatefulSet? {
         if (flinkCluster.metadata.name == null) {
             throw RuntimeException("name is required")
         }

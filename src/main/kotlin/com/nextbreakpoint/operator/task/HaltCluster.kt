@@ -127,7 +127,7 @@ class HaltCluster : TaskHandler {
 
             val elapsedTime = System.currentTimeMillis() - context.lastUpdated
 
-            if (elapsedTime > 10000) {
+            if (context.flinkCluster.spec?.flinkJob != null && elapsedTime > 10000) {
                 val clusterStatus = OperatorAnnotations.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {

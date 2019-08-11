@@ -6,7 +6,7 @@ Follow these instructions to setup a local environment for testing the Flink Ope
 
 ## Configure Docker for Desktop   
 
-We assume you are using Docker for Desktop 2.0.0.3 and you have enabled Kubernetes.
+We assume you are using Docker for Desktop 2.0.0.3 or later and you have enabled Kubernetes.
 
 **Please verify that Docker is using at least 8Gb of memory (see Docker for Desktop settings).**
 
@@ -75,7 +75,7 @@ Change directory:
 Create Docker file:
 
     cat <<EOF >Dockerfile
-    FROM flink-k8s-toolbox:1.1.4-beta
+    FROM flink-k8s-toolbox:1.1.5-beta
     COPY com.nextbreakpoint.flinkworkshop-1.0.1.jar /flink-jobs.jar
     EOF
 
@@ -162,7 +162,7 @@ You can tag and push images to your local registry:
 
 ## Build Flink Operator from source code
 
-Install OpenJDK 11 or AdoptJDK 11.
+Install AdoptJDK 8 (OpenJDK 8 should work too).
 
 Configure toolchains in order to use correct version of JDK:
 
@@ -171,11 +171,11 @@ Configure toolchains in order to use correct version of JDK:
       <toolchain>
         <type>jdk</type>
         <provides>
-          <version>11</version>
+          <version>8</version>
           <vendor>adoptjdk</vendor>
         </provides>
         <configuration>
-          <jdkHome>/Library/Java/JavaVirtualMachines/adoptopenjdk-11.jdk/Contents/Home</jdkHome>
+          <jdkHome>/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home</jdkHome>
         </configuration>
       </toolchain>
     </toolchains>
@@ -186,17 +186,17 @@ Compile Docker image of Flink Operator:
 
 Optionally tag and push Docker image to your local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.1.4-beta registry:30000/flink-k8s-toolbox:1.1.4-beta
+    docker tag flink-k8s-toolbox:1.1.5-beta registry:30000/flink-k8s-toolbox:1.1.5-beta
     docker login registry:30000
-    docker push registry:30000/flink-k8s-toolbox:1.1.4-beta
+    docker push registry:30000/flink-k8s-toolbox:1.1.5-beta
 
 Run Flink Operator using JAR file:
 
-    java -jar target/com.nextbreakpoint.flink-k8s-toolbox-1.1.4-beta.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
+    java -jar target/com.nextbreakpoint.flink-k8s-toolbox-1.1.5-beta.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
 
 Run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.4-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.5-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Run Flink Operator using Helm and local registry:
 

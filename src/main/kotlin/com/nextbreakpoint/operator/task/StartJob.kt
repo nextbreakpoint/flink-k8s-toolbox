@@ -8,6 +8,10 @@ import com.nextbreakpoint.operator.OperatorTimeouts
 
 class StartJob : TaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
+        if (context.flinkCluster.spec?.flinkJob == null) {
+            return Result(ResultStatus.FAILED, "Job not defined for cluster ${context.flinkCluster.metadata.name}")
+        }
+
         val elapsedTime = System.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {

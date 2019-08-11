@@ -25,7 +25,7 @@ interface ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet
+    ): V1StatefulSet?
 
     fun createTaskManagerStatefulSet(
         namespace: String,
