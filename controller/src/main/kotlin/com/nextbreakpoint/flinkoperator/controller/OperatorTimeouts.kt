@@ -1,0 +1,13 @@
+package com.nextbreakpoint.flinkoperator.controller
+
+// TODO parameterize?
+object OperatorTimeouts {
+    val DELETING_CLUSTER_TIMEOUT = 120000
+    val CREATING_CLUSTER_TIMEOUT = 300000
+    val UPLOADING_JAR_TIMEOUT = 600000
+    val CREATING_SAVEPOINT_TIMEOUT = 600000
+    val CANCELLING_JOBS_TIMEOUT = 600000
+    val STARTING_JOBS_TIMEOUT = 120000
+    val STOPPING_JOBS_TIMEOUT = 120000
+    val TERMINATING_PODS_TIMEOUT = 120000
+}
