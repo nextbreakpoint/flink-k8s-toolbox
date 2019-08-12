@@ -312,8 +312,7 @@ object KubernetesUtils {
         }
 
         return response.body().use {
-            CustomResourceUtils.parseV1FlinkClusterList(it.source().readUtf8Line())
-                .items
+            CustomResourceUtils.parseV1FlinkClusterList(it.source().readUtf8Line()).items
         }
     }
 
