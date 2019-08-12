@@ -56,8 +56,7 @@ object FlinkServerUtils {
             }
 
             response.body().use {
-                val flinkCluster =
-                    CustomResourceUtils.parseV1FlinkCluster(it.source().readUtf8Line())
+                val flinkCluster = CustomResourceUtils.parseV1FlinkCluster(it.source().readUtf8Line())
 
                 val clusterId = flinkCluster.metadata.uid
 

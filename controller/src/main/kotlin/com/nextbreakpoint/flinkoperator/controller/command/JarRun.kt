@@ -90,7 +90,7 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
                             )
                         }
 
-                        listJarsResponse.body().use {
+                        runJarResponse.body().use {
                             logger.debug("Job started: ${it.source().readUtf8Line()}")
                         }
 
