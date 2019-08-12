@@ -29,8 +29,7 @@ class OperatorWatch(val gson: Gson) {
                 logger.info("Refresh FlinkClusters resources...")
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/flinkcluster/deleteAll", "")
-                    val resources = KubernetesUtils.listFlinkClusterResources(
-                        KubernetesUtils.objectApi, namespace)
+                    val resources = KubernetesUtils.listFlinkClusterResources(KubernetesUtils.objectApi, namespace)
                     resources.forEach { resource ->
                         context.owner().eventBus().publish("/resource/flinkcluster/change", gson.toJson(resource))
                     }
@@ -55,8 +54,7 @@ class OperatorWatch(val gson: Gson) {
                 logger.info("Refresh Services resources...")
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/service/deleteAll", "")
-                    val resources = KubernetesUtils.listServiceResources(
-                        KubernetesUtils.coreApi, namespace)
+                    val resources = KubernetesUtils.listServiceResources(KubernetesUtils.coreApi, namespace)
                     resources.forEach { resource ->
                         context.owner().eventBus().publish("/resource/service/change", gson.toJson(resource))
                     }
@@ -81,8 +79,7 @@ class OperatorWatch(val gson: Gson) {
                 logger.info("Refresh Deployments resources...")
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/deployment/deleteAll", "")
-                    val resources = KubernetesUtils.listDeploymentResources(
-                        KubernetesUtils.appsApi, namespace)
+                    val resources = KubernetesUtils.listDeploymentResources(KubernetesUtils.appsApi, namespace)
                     resources.forEach { resource ->
                         context.owner().eventBus().publish("/resource/deployment/change", gson.toJson(resource))
                     }
@@ -107,8 +104,7 @@ class OperatorWatch(val gson: Gson) {
                 logger.info("Refresh Jobs resources...")
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/job/deleteAll", "")
-                    val resources = KubernetesUtils.listJobResources(
-                        KubernetesUtils.batchApi, namespace)
+                    val resources = KubernetesUtils.listJobResources(KubernetesUtils.batchApi, namespace)
                     resources.forEach { resource ->
                         context.owner().eventBus().publish("/resource/job/change", gson.toJson(resource))
                     }
@@ -133,8 +129,7 @@ class OperatorWatch(val gson: Gson) {
                 logger.info("Refresh StatefulSets resources...")
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/statefulset/deleteAll", "")
-                    val resources = KubernetesUtils.listStatefulSetResources(
-                        KubernetesUtils.appsApi, namespace)
+                    val resources = KubernetesUtils.listStatefulSetResources(KubernetesUtils.appsApi, namespace)
                     resources.forEach { resource ->
                         context.owner().eventBus().publish("/resource/statefulset/change", gson.toJson(resource))
                     }
@@ -160,8 +155,7 @@ class OperatorWatch(val gson: Gson) {
                 logger.info("Refresh PersistentVolumeClaims resources...")
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/persistentvolumeclaim/deleteAll", "")
-                    val resources = KubernetesUtils.listPermanentVolumeClaimResources(
-                        KubernetesUtils.coreApi, namespace)
+                    val resources = KubernetesUtils.listPermanentVolumeClaimResources(KubernetesUtils.coreApi, namespace)
                     resources.forEach { resource ->
                         context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", gson.toJson(resource))
                     }
@@ -180,13 +174,16 @@ class OperatorWatch(val gson: Gson) {
         while (true) {
             onReloadResources(namespace)
             try {
-                createResourceWatch(namespace).forEach { resource ->
-                    when (resource.type) {
-                        "ADDED", "MODIFIED" -> {
-                            onChangeResource(resource.`object`)
-                        }
-                        "DELETED" -> {
-                            onDeleteResource(resource.`object`)
+                val watch = createResourceWatch(namespace)
+                watch.use {
+                    it.forEach { resource ->
+                        when (resource.type) {
+                            "ADDED", "MODIFIED" -> {
+                                onChangeResource(resource.`object`)
+                            }
+                            "DELETED" -> {
+                                onDeleteResource(resource.`object`)
+                            }
                         }
                     }
                 }
