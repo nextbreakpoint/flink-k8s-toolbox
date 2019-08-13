@@ -15,8 +15,7 @@ import io.vertx.micrometer.VertxPrometheusOptions
 import org.apache.log4j.Logger
 import java.util.concurrent.TimeUnit
 
-class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks,
-    ServerCommand<OperatorConfig> {
+class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerCommand<OperatorConfig> {
     companion object {
         private val logger = Logger.getLogger(LaunchOperator::class.simpleName)
     }
@@ -76,11 +75,11 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks,
 
         vertxOptions?.workerPoolSize = 4
         vertxOptions?.eventLoopPoolSize = 1
-        vertxOptions?.maxWorkerExecuteTime = 20
+        vertxOptions?.maxWorkerExecuteTime = 5
         vertxOptions?.maxWorkerExecuteTimeUnit = TimeUnit.SECONDS
-        vertxOptions?.warningExceptionTime = 10
+        vertxOptions?.warningExceptionTime = 2
         vertxOptions?.warningExceptionTimeUnit = TimeUnit.SECONDS
-        vertxOptions?.maxEventLoopExecuteTime = 20
+        vertxOptions?.maxEventLoopExecuteTime = 2
         vertxOptions?.maxEventLoopExecuteTimeUnit = TimeUnit.SECONDS
     }
 

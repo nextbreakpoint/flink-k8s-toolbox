@@ -20,14 +20,14 @@ class InitialiseCluster : OperatorTaskHandler {
                     OperatorTask.CREATE_RESOURCES,
                     OperatorTask.UPLOAD_JAR,
                     OperatorTask.START_JOB,
-                    OperatorTask.RUN_CLUSTER
+                    OperatorTask.CLUSTER_RUNNING
                 )
             )
         } else {
             OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
                 listOf(
                     OperatorTask.CREATE_RESOURCES,
-                    OperatorTask.RUN_CLUSTER
+                    OperatorTask.CLUSTER_RUNNING
                 )
             )
         }
@@ -44,14 +44,14 @@ class InitialiseCluster : OperatorTaskHandler {
 
         return Result(
             ResultStatus.SUCCESS,
-            "Cluster status updated"
+            "Status of cluster ${context.clusterId.name} has been updated"
         )
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
         return Result(
             ResultStatus.SUCCESS,
-            "Cluster initialized"
+            "Cluster ${context.clusterId.name} initialized"
         )
     }
 

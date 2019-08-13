@@ -41,7 +41,7 @@ class CreateResources : OperatorTaskHandler {
         if (!haveClusterResourcesDiverged(clusterStatus) && response.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} have been created already"
+                "Resources of cluster ${context.flinkCluster.metadata.name} already created"
             )
         }
 
@@ -96,7 +96,7 @@ class CreateResources : OperatorTaskHandler {
         if (response.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} have been created in ${elapsedTime / 1000} seconds"
+                "Resources of cluster ${context.flinkCluster.metadata.name} created in ${elapsedTime / 1000} seconds"
             )
         }
 

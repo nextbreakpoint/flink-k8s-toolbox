@@ -11,9 +11,9 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResourceUtils
 import org.apache.log4j.Logger
 
-class RunCluster : OperatorTaskHandler {
+class ClusterRunning : OperatorTaskHandler {
     companion object {
-        private val logger: Logger = Logger.getLogger(RunCluster::class.simpleName)
+        private val logger: Logger = Logger.getLogger(ClusterRunning::class.simpleName)
     }
 
     override fun onExecuting(context: OperatorContext): Result<String> {
@@ -25,14 +25,14 @@ class RunCluster : OperatorTaskHandler {
 
         return Result(
             ResultStatus.SUCCESS,
-            "Cluster status updated"
+            "Status of cluster ${context.clusterId.name} has been updated"
         )
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
         return Result(
             ResultStatus.SUCCESS,
-            "Cluster running"
+            "Cluster ${context.clusterId.name} is running..."
         )
     }
 
@@ -96,7 +96,7 @@ class RunCluster : OperatorTaskHandler {
                                 OperatorTask.CREATE_RESOURCES,
                                 OperatorTask.UPLOAD_JAR,
                                 OperatorTask.START_JOB,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.CLUSTER_RUNNING
                             )
                         )
 
@@ -131,7 +131,7 @@ class RunCluster : OperatorTaskHandler {
                                 OperatorTask.DELETE_UPLOAD_JOB,
                                 OperatorTask.UPLOAD_JAR,
                                 OperatorTask.START_JOB,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.CLUSTER_RUNNING
                             )
                         )
 
@@ -182,7 +182,7 @@ class RunCluster : OperatorTaskHandler {
                         OperatorTask.STOPPING_CLUSTER,
                         OperatorTask.TERMINATE_PODS,
                         OperatorTask.SUSPEND_CLUSTER,
-                        OperatorTask.HALT_CLUSTER
+                        OperatorTask.CLUSTER_HALTED
                     )
                 )
 
@@ -205,7 +205,7 @@ class RunCluster : OperatorTaskHandler {
                     listOf(
                         OperatorTask.CHECKPOINTING_CLUSTER,
                         OperatorTask.CREATE_SAVEPOINT,
-                        OperatorTask.RUN_CLUSTER
+                        OperatorTask.CLUSTER_RUNNING
                     )
                 )
 

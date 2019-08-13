@@ -15,7 +15,7 @@ class CreateSavepoint : OperatorTaskHandler {
         if (context.flinkCluster.spec?.flinkJob == null) {
             return Result(
                 ResultStatus.FAILED,
-                "Job not defined for cluster ${context.flinkCluster.metadata.name}"
+                "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"
             )
         }
 
@@ -86,7 +86,7 @@ class CreateSavepoint : OperatorTaskHandler {
 
             return Result(
                 ResultStatus.SUCCESS,
-                "Savepoint of cluster ${context.flinkCluster.metadata.name} has been created"
+                "Savepoint of cluster ${context.flinkCluster.metadata.name} created in ${elapsedTime / 1000} seconds"
             )
         }
 

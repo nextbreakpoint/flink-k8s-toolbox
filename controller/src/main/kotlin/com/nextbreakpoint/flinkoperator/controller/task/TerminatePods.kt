@@ -47,7 +47,7 @@ class TerminatePods : OperatorTaskHandler {
         if (response.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} have been terminated in ${elapsedTime / 1000} seconds"
+                "Resources of cluster ${context.flinkCluster.metadata.name} terminated in ${elapsedTime / 1000} seconds"
             )
         }
 

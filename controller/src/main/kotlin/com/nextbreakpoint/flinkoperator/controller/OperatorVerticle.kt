@@ -45,6 +45,7 @@ import org.joda.time.DateTime
 import rx.Completable
 import rx.Observable
 import rx.Single
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
 import java.util.function.Consumer
@@ -100,7 +101,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         val gauges = registerMetrics(registry, namespace)
 
-        val worker = vertx.createSharedWorkerExecutor("execution-queue", 1)
+        val worker = vertx.createSharedWorkerExecutor("execution-queue", 1, 15, TimeUnit.SECONDS)
 
         mainRouter.route().handler(LoggerHandler.create(true, LoggerFormat.DEFAULT))
         mainRouter.route().handler(BodyHandler.create())

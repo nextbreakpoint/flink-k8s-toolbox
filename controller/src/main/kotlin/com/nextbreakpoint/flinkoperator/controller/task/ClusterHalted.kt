@@ -10,9 +10,9 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResourceUtils
 import org.apache.log4j.Logger
 
-class HaltCluster : OperatorTaskHandler {
+class ClusterHalted : OperatorTaskHandler {
     companion object {
-        private val logger: Logger = Logger.getLogger(HaltCluster::class.simpleName)
+        private val logger: Logger = Logger.getLogger(ClusterHalted::class.simpleName)
     }
 
     override fun onExecuting(context: OperatorContext): Result<String> {
@@ -20,14 +20,14 @@ class HaltCluster : OperatorTaskHandler {
 
         return Result(
             ResultStatus.SUCCESS,
-            "There is nothing to do"
+            "Nothing to do for cluster ${context.clusterId.name}"
         )
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
         return Result(
             ResultStatus.SUCCESS,
-            "Waiting for the next task..."
+            "Cluster ${context.clusterId.name} is idle..."
         )
     }
 
@@ -73,7 +73,7 @@ class HaltCluster : OperatorTaskHandler {
 
                 when (clusterStatus) {
                     ClusterStatus.SUSPENDED, ClusterStatus.FAILED -> {
-                        logger.info("Cluster restart required")
+                        logger.info("Cluster ${context.clusterId.name} requires a restart")
 
                         OperatorAnnotations.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
                         OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
@@ -90,7 +90,7 @@ class HaltCluster : OperatorTaskHandler {
                                 OperatorTask.CREATE_RESOURCES,
                                 OperatorTask.UPLOAD_JAR,
                                 OperatorTask.START_JOB,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.CLUSTER_RUNNING
                             )
                         )
 
@@ -100,7 +100,7 @@ class HaltCluster : OperatorTaskHandler {
                         )
                     }
                     else -> {
-                        logger.warn("Cluster restart required, but current status prevents from restarting the cluster")
+                        logger.warn("Cluster ${context.clusterId.name} requires a restart, but current status prevents from restarting the cluster")
                     }
                 }
             } else if (changes.contains("FLINK_JOB")) {
@@ -110,7 +110,7 @@ class HaltCluster : OperatorTaskHandler {
 
                 when (clusterStatus) {
                     ClusterStatus.SUSPENDED, ClusterStatus.FAILED -> {
-                        logger.info("Job restart required")
+                        logger.info("Cluster ${context.clusterId.name} requires to restart the job")
 
                         OperatorAnnotations.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
                         OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
@@ -123,7 +123,7 @@ class HaltCluster : OperatorTaskHandler {
                                 OperatorTask.DELETE_UPLOAD_JOB,
                                 OperatorTask.UPLOAD_JAR,
                                 OperatorTask.START_JOB,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.CLUSTER_RUNNING
                             )
                         )
 
@@ -133,7 +133,7 @@ class HaltCluster : OperatorTaskHandler {
                         )
                     }
                     else -> {
-                        logger.warn("Job restart required, but current status prevents from restarting the cluster")
+                        logger.warn("Cluster ${context.clusterId.name} requires to restart the job, but current status prevents from restarting the job")
                     }
                 }
             } else {
@@ -164,7 +164,7 @@ class HaltCluster : OperatorTaskHandler {
 
                         if (nextTask == null && errors >= 3) {
                             OperatorAnnotations.appendOperatorTasks(context.flinkCluster, listOf(
-                                OperatorTask.RUN_CLUSTER))
+                                OperatorTask.CLUSTER_RUNNING))
 
                             return Result(
                                 ResultStatus.AWAIT,

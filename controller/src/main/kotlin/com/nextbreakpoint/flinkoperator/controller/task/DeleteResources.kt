@@ -47,7 +47,7 @@ class DeleteResources : OperatorTaskHandler {
         if (resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} have been removed in ${elapsedTime / 1000} seconds"
+                "Resources of cluster ${context.flinkCluster.metadata.name} removed in ${elapsedTime / 1000} seconds"
             )
         }
 

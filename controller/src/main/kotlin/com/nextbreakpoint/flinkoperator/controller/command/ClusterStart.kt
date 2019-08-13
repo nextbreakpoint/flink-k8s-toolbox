@@ -33,13 +33,13 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                             listOf(
                                 OperatorTask.STARTING_CLUSTER,
                                 OperatorTask.CREATE_RESOURCES,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.CLUSTER_RUNNING
                             )
                         ClusterStatus.SUSPENDED ->
                             listOf(
                                 OperatorTask.STARTING_CLUSTER,
                                 OperatorTask.RESTART_PODS,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.CLUSTER_RUNNING
                             )
                         ClusterStatus.FAILED ->
                             listOf(
@@ -48,7 +48,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                 OperatorTask.DELETE_RESOURCES,
                                 OperatorTask.STARTING_CLUSTER,
                                 OperatorTask.CREATE_RESOURCES,
-                                OperatorTask.RUN_CLUSTER
+                                OperatorTask.CLUSTER_RUNNING
                             )
                         else -> listOf()
                     }
@@ -63,7 +63,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.ERASE_SAVEPOINT,
                                     OperatorTask.START_JOB,
-                                    OperatorTask.RUN_CLUSTER
+                                    OperatorTask.CLUSTER_RUNNING
                                 )
                             } else {
                                 listOf(
@@ -72,7 +72,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                     OperatorTask.DELETE_UPLOAD_JOB,
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.START_JOB,
-                                    OperatorTask.RUN_CLUSTER
+                                    OperatorTask.CLUSTER_RUNNING
                                 )
                             }
                         ClusterStatus.SUSPENDED ->
@@ -84,7 +84,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.ERASE_SAVEPOINT,
                                     OperatorTask.START_JOB,
-                                    OperatorTask.RUN_CLUSTER
+                                    OperatorTask.CLUSTER_RUNNING
                                 )
                             } else {
                                 listOf(
@@ -93,7 +93,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                     OperatorTask.DELETE_UPLOAD_JOB,
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.START_JOB,
-                                    OperatorTask.RUN_CLUSTER
+                                    OperatorTask.CLUSTER_RUNNING
                                 )
                             }
                         ClusterStatus.FAILED ->
@@ -108,7 +108,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.ERASE_SAVEPOINT,
                                     OperatorTask.START_JOB,
-                                    OperatorTask.RUN_CLUSTER
+                                    OperatorTask.CLUSTER_RUNNING
                                 )
                             } else {
                                 listOf(
@@ -120,7 +120,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                                     OperatorTask.RESTART_PODS,
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.START_JOB,
-                                    OperatorTask.RUN_CLUSTER
+                                    OperatorTask.CLUSTER_RUNNING
                                 )
                             }
                         else -> listOf()

@@ -47,7 +47,7 @@ class DeleteUploadJob : OperatorTaskHandler {
         if (resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Upload job of cluster ${context.flinkCluster.metadata.name} has been removed in ${elapsedTime / 1000} seconds"
+                "Upload job of cluster ${context.flinkCluster.metadata.name} removed in ${elapsedTime / 1000} seconds"
             )
         }
 
