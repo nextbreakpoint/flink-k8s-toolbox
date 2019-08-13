@@ -2,7 +2,6 @@
 {{- $name := include "flink-k8s-toolbox.name" . -}}
 {{- $chart := include "flink-k8s-toolbox.chart" . -}}
 {{- $root := . }}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
