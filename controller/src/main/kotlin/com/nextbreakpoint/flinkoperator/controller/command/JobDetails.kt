@@ -25,7 +25,7 @@ class JobDetails(flinkOptions: FlinkOptions) : OperatorCommand<Void?, String>(fl
             }.toList()
 
             if (runningJobs.size > 1) {
-                logger.warn("Multiple jobs running in cluster ${clusterId.name}")
+                logger.warn("There are multiple jobs running in cluster ${clusterId.name}")
             }
 
             if (runningJobs.isNotEmpty()) {
@@ -36,7 +36,7 @@ class JobDetails(flinkOptions: FlinkOptions) : OperatorCommand<Void?, String>(fl
                     Gson().toJson(details)
                 )
             } else {
-                logger.info("No running job found in cluster ${clusterId.name}")
+                logger.info("Can't find a running job in cluster ${clusterId.name}")
 
                 return Result(
                     ResultStatus.FAILED,

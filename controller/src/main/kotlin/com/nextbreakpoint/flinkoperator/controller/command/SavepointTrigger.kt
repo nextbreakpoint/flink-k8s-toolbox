@@ -28,10 +28,6 @@ class SavepointTrigger(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOp
                 it.id
             }.toList()
 
-            if (runningJobs.isEmpty()) {
-                logger.info("No running job found in cluster ${clusterId.name}")
-            }
-
             val inprogressCheckpoints = runningJobs.map { jobId ->
                 val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
 
@@ -72,7 +68,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOp
                         }.first()
                     )
                 } else {
-                    logger.warn("Expected one running job in cluster ${clusterId.name}")
+                    logger.warn("Can't find a running job in cluster ${clusterId.name}")
 
                     return Result(
                         ResultStatus.FAILED,

@@ -109,7 +109,7 @@ class JarRun(flinkOptions: FlinkOptions) : OperatorCommand<V1FlinkCluster, Void?
                 }
             }
         } catch (e : Exception) {
-            logger.warn("Can't get the list of JAR files of cluster ${clusterId.name}")
+            logger.warn("Can't get JAR files of cluster ${clusterId.name}")
 
             return Result(
                 ResultStatus.FAILED,

@@ -24,7 +24,7 @@ class JobHasStarted(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(
             }.toList()
 
             if (runningJobs.isEmpty()) {
-                logger.info("No running job found in cluster ${clusterId.name}")
+                logger.info("Can't find a running job in cluster ${clusterId.name}")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -37,7 +37,7 @@ class JobHasStarted(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(
                 )
             }
         } catch (e : Exception) {
-            logger.warn("Can't get job of cluster ${clusterId.name}")
+            logger.warn("Can't get status of job of cluster ${clusterId.name}")
 
             return Result(
                 ResultStatus.FAILED,

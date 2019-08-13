@@ -17,7 +17,7 @@ class PodsRestart(flinkOptions: FlinkOptions) : OperatorCommand<ClusterResources
 
     override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
-            logger.info("Restarting resources of cluster ${clusterId.name}...")
+            logger.info("Restarting pods of cluster ${clusterId.name}...")
 
             restartJobManagerStatefulSets(KubernetesUtils.appsApi, "flink-operator", clusterId, params)
 
@@ -28,7 +28,7 @@ class PodsRestart(flinkOptions: FlinkOptions) : OperatorCommand<ClusterResources
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't restart resources of cluster ${clusterId.name}", e)
+            logger.error("Can't restart pods of cluster ${clusterId.name}", e)
 
             return Result(
                 ResultStatus.FAILED,
@@ -74,7 +74,7 @@ class PodsRestart(flinkOptions: FlinkOptions) : OperatorCommand<ClusterResources
                 ).execute()
 
                 if (response.isSuccessful) {
-                    logger.info("Scaled StatefulSet ${statefulSet.metadata.name}")
+                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
                 } else {
                     logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
                 }
@@ -122,7 +122,7 @@ class PodsRestart(flinkOptions: FlinkOptions) : OperatorCommand<ClusterResources
                 ).execute()
 
                 if (response.isSuccessful) {
-                    logger.info("Scaled StatefulSet ${statefulSet.metadata.name}")
+                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
                 } else {
                     logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
                 }
