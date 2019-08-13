@@ -117,14 +117,14 @@ The possible tasks which are executed to transition from one status to another a
 
   Initialise primary resource and change cluster status to starting.    
   
-- **HALT_CLUSTER** 
+- **CLUSTER_RUNNING** 
 
-  Detect changes in the primary resource and restart cluster if needed. Detect running job and change cluster status to RUNNING.    
+  Detect changes in the primary resource and restart cluster if needed. Change cluster status to FAILED if job stops running. Periodically triggers a new savepoint.     
+
+- **CLUSTER_HALTED** 
+
+  Detect changes in the primary resource and restart cluster if needed. Change cluster status to RUNNING if there is a running job.    
   
-- **RUN_CLUSTER** 
-
-  Detect changes in the primary resource and restart cluster if needed. Detect failed job and change cluster status to FAILED. Periodically change cluster status to CHECKPOINTING to create a new savepoint.     
-
 - **STARTING_CLUSTER** 
 
   Set cluster status to STARTING.

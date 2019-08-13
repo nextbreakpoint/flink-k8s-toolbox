@@ -20,10 +20,10 @@ import com.nextbreakpoint.flinkoperator.controller.task.CreateSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
 import com.nextbreakpoint.flinkoperator.controller.task.DeleteUploadJob
 import com.nextbreakpoint.flinkoperator.controller.task.EraseSavepoint
-import com.nextbreakpoint.flinkoperator.controller.task.HaltCluster
+import com.nextbreakpoint.flinkoperator.controller.task.ClusterHalted
 import com.nextbreakpoint.flinkoperator.controller.task.InitialiseCluster
 import com.nextbreakpoint.flinkoperator.controller.task.RestartPods
-import com.nextbreakpoint.flinkoperator.controller.task.RunCluster
+import com.nextbreakpoint.flinkoperator.controller.task.ClusterRunning
 import com.nextbreakpoint.flinkoperator.controller.task.StartJob
 import com.nextbreakpoint.flinkoperator.controller.task.StartingCluster
 import com.nextbreakpoint.flinkoperator.controller.task.StopJob
@@ -42,8 +42,8 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
             OperatorTask.INITIALISE_CLUSTER to InitialiseCluster(),
             OperatorTask.TERMINATE_CLUSTER to TerminateCluster(),
             OperatorTask.SUSPEND_CLUSTER to SuspendCluster(),
-            OperatorTask.HALT_CLUSTER to HaltCluster(),
-            OperatorTask.RUN_CLUSTER to RunCluster(),
+            OperatorTask.CLUSTER_HALTED to ClusterHalted(),
+            OperatorTask.CLUSTER_RUNNING to ClusterRunning(),
             OperatorTask.STARTING_CLUSTER to StartingCluster(),
             OperatorTask.STOPPING_CLUSTER to StoppingCluster(),
             OperatorTask.CHECKPOINTING_CLUSTER to CheckpointingCluster(),
@@ -87,7 +87,7 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
             } else {
                 val operatorTask = OperatorAnnotations.getCurrentOperatorTask(params)
 
-                logger.info("Cluster ${clusterId.name} is ${operatorStatus} - ${operatorTask.name}")
+                logger.info("Cluster ${clusterId.name}, status ${operatorStatus}, task ${operatorTask.name}")
 
                 val taskHandler = getOperatorTaskOrThrow(operatorTask)
 
@@ -211,8 +211,7 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
             TaskStatus.FAILED -> {
                 taskHandler.onFailed(context)
                 OperatorAnnotations.setClusterStatus(flinkCluster, ClusterStatus.FAILED)
-                OperatorAnnotations.resetOperatorTasks(flinkCluster, listOf(
-                    OperatorTask.HALT_CLUSTER))
+                OperatorAnnotations.resetOperatorTasks(flinkCluster, listOf(OperatorTask.CLUSTER_HALTED))
                 OperatorAnnotations.setOperatorStatus(flinkCluster, TaskStatus.EXECUTING)
                 Result(
                     ResultStatus.FAILED,

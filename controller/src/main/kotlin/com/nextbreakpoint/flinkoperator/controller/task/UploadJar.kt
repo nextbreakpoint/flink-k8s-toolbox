@@ -28,7 +28,7 @@ class UploadJar : OperatorTaskHandler {
         if (context.flinkCluster.spec?.flinkJob == null) {
             return Result(
                 ResultStatus.FAILED,
-                "Job not defined for cluster ${context.flinkCluster.metadata.name}"
+                "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"
             )
         }
 
@@ -90,7 +90,7 @@ class UploadJar : OperatorTaskHandler {
 
             return Result(
                 ResultStatus.AWAIT,
-                "Resources of cluster ${context.flinkCluster.metadata.name} have not been created yet"
+                "Resources of cluster ${context.flinkCluster.metadata.name} are not ready..."
             )
         }
 
@@ -99,7 +99,7 @@ class UploadJar : OperatorTaskHandler {
         if (response.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
-                "JAR file has been uploaded to cluster ${context.flinkCluster.metadata.name} in ${elapsedTime / 1000} seconds"
+                "JAR file uploaded to cluster ${context.flinkCluster.metadata.name} in ${elapsedTime / 1000} seconds"
             )
         }
 

@@ -57,7 +57,7 @@ class RestartPods : OperatorTaskHandler {
         if (response.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} have been restarted in ${elapsedTime / 1000} seconds"
+                "Resources of cluster ${context.flinkCluster.metadata.name} restarted in ${elapsedTime / 1000} seconds"
             )
         }
 

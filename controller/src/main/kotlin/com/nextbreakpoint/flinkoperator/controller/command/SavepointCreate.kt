@@ -40,7 +40,7 @@ class SavepointCreate(flinkOptions: FlinkOptions, val cache: OperatorCache) : Op
                         listOf(
                             OperatorTask.CHECKPOINTING_CLUSTER,
                             OperatorTask.CREATE_SAVEPOINT,
-                            OperatorTask.RUN_CLUSTER
+                            OperatorTask.CLUSTER_RUNNING
                         )
                     else -> listOf()
                 }

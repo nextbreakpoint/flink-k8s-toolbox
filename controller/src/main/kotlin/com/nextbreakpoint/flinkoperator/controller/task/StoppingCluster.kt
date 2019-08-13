@@ -14,14 +14,14 @@ class StoppingCluster : OperatorTaskHandler {
 
         return Result(
             ResultStatus.SUCCESS,
-            "Cluster status updated"
+            "Status of cluster ${context.clusterId.name} has been updated"
         )
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
         return Result(
             ResultStatus.SUCCESS,
-            "Cluster stopping"
+            "Cluster ${context.clusterId.name} is stopping..."
         )
     }
 

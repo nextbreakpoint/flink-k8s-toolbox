@@ -19,7 +19,7 @@ class EraseSavepoint : OperatorTaskHandler {
     override fun onAwaiting(context: OperatorContext): Result<String> {
         return Result(
             ResultStatus.SUCCESS,
-            "Erased savepoint of cluster ${context.clusterId.name}"
+            "Savepoint of cluster ${context.clusterId.name} erased"
         )
     }
 

@@ -11,7 +11,7 @@ class StopJob : OperatorTaskHandler {
         if (context.flinkCluster.spec?.flinkJob == null) {
             return Result(
                 ResultStatus.FAILED,
-                "Job not defined for cluster ${context.flinkCluster.metadata.name}"
+                "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"
             )
         }
 
@@ -29,7 +29,7 @@ class StopJob : OperatorTaskHandler {
         if (response.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Job of cluster ${context.flinkCluster.metadata.name} has been stopped already"
+                "Job of cluster ${context.flinkCluster.metadata.name} already stopped"
             )
         }
 
@@ -63,7 +63,7 @@ class StopJob : OperatorTaskHandler {
         if (response.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Job of cluster ${context.flinkCluster.metadata.name} has been stopped in ${elapsedTime / 1000} seconds"
+                "Job of cluster ${context.flinkCluster.metadata.name} stopped in ${elapsedTime / 1000} seconds"
             )
         }
 

@@ -38,7 +38,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                                         OperatorTask.TERMINATE_PODS,
                                         OperatorTask.DELETE_RESOURCES,
                                         OperatorTask.TERMINATE_CLUSTER,
-                                        OperatorTask.HALT_CLUSTER
+                                        OperatorTask.CLUSTER_HALTED
                                     )
                                 } else {
                                     listOf(
@@ -47,7 +47,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                                         OperatorTask.TERMINATE_PODS,
                                         OperatorTask.DELETE_RESOURCES,
                                         OperatorTask.TERMINATE_CLUSTER,
-                                        OperatorTask.HALT_CLUSTER
+                                        OperatorTask.CLUSTER_HALTED
                                     )
                                 }
                             } else {
@@ -56,7 +56,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                                     OperatorTask.TERMINATE_PODS,
                                     OperatorTask.DELETE_RESOURCES,
                                     OperatorTask.TERMINATE_CLUSTER,
-                                    OperatorTask.HALT_CLUSTER
+                                    OperatorTask.CLUSTER_HALTED
                                 )
                             }
                         ClusterStatus.SUSPENDED ->
@@ -65,7 +65,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                                 OperatorTask.TERMINATE_PODS,
                                 OperatorTask.DELETE_RESOURCES,
                                 OperatorTask.TERMINATE_CLUSTER,
-                                OperatorTask.HALT_CLUSTER
+                                OperatorTask.CLUSTER_HALTED
                             )
                         ClusterStatus.FAILED ->
                             listOf(
@@ -73,7 +73,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                                 OperatorTask.TERMINATE_PODS,
                                 OperatorTask.DELETE_RESOURCES,
                                 OperatorTask.TERMINATE_CLUSTER,
-                                OperatorTask.HALT_CLUSTER
+                                OperatorTask.CLUSTER_HALTED
                             )
                         else -> listOf()
                     }
@@ -87,7 +87,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                                         OperatorTask.STOP_JOB,
                                         OperatorTask.TERMINATE_PODS,
                                         OperatorTask.SUSPEND_CLUSTER,
-                                        OperatorTask.HALT_CLUSTER
+                                        OperatorTask.CLUSTER_HALTED
                                     )
                                 } else {
                                     listOf(
@@ -95,7 +95,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                                         OperatorTask.CANCEL_JOB,
                                         OperatorTask.TERMINATE_PODS,
                                         OperatorTask.SUSPEND_CLUSTER,
-                                        OperatorTask.HALT_CLUSTER
+                                        OperatorTask.CLUSTER_HALTED
                                     )
                                 }
                             } else {
@@ -103,7 +103,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                                     OperatorTask.STOPPING_CLUSTER,
                                     OperatorTask.TERMINATE_PODS,
                                     OperatorTask.SUSPEND_CLUSTER,
-                                    OperatorTask.HALT_CLUSTER
+                                    OperatorTask.CLUSTER_HALTED
                                 )
                             }
                         else -> listOf()
