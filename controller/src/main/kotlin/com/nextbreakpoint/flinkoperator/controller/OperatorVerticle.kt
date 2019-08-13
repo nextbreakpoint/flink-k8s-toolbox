@@ -109,35 +109,20 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.options("/").handler { context -> context.response().setStatusCode(204).end() }
 
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/start", BiFunction { context, namespace -> gson.toJson(
-                OperatorMessage(
-                    resourcesCache.getClusterIdentity(
-                        namespace,
-                        context.pathParam("name")
-                    ), context.bodyAsString
-                )
+            handleRequest(routingContext, namespace, "/cluster/start", BiFunction { ctx, ns -> gson.toJson(
+                OperatorMessage(resourcesCache.getClusterIdentity(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
         mainRouter.put("/cluster/:name/stop").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/stop", BiFunction { context, namespace -> gson.toJson(
-                OperatorMessage(
-                    resourcesCache.getClusterIdentity(
-                        namespace,
-                        context.pathParam("name")
-                    ), context.bodyAsString
-                )
+            handleRequest(routingContext, namespace, "/cluster/stop", BiFunction { ctx, ns -> gson.toJson(
+                OperatorMessage(resourcesCache.getClusterIdentity(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
         mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/savepoint", BiFunction { context, namespace -> gson.toJson(
-                OperatorMessage(
-                    resourcesCache.getClusterIdentity(
-                        namespace,
-                        context.pathParam("name")
-                    ), context.bodyAsString
-                )
+            handleRequest(routingContext, namespace, "/cluster/savepoint", BiFunction { ctx, ns -> gson.toJson(
+                OperatorMessage(resourcesCache.getClusterIdentity(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
@@ -148,41 +133,51 @@ class OperatorVerticle : AbstractVerticle() {
 
         mainRouter.get("/cluster/:name/job/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobDetails(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)) })
+                JobDetails(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)
+            ) })
         }
 
         mainRouter.get("/cluster/:name/job/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)) })
+                JobMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)
+            ) })
         }
 
         mainRouter.get("/cluster/:name/jobmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobManagerMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)) })
+                JobManagerMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)
+            ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagersList(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)) })
+                TaskManagersList(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)
+            ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerDetails(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))) })
+                TaskManagerDetails(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
+            ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))) })
+                TaskManagerMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
+            ) })
         }
 
 
         mainRouter.delete("/cluster/:name").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/delete", BiFunction { context, namespace -> gson.toJson(resourcesCache.getClusterIdentity(namespace, context.pathParam("name"))) })
+            handleRequest(routingContext, namespace, "/cluster/delete", BiFunction { context, namespace -> gson.toJson(
+                resourcesCache.getClusterIdentity(namespace, context.pathParam("name"))
+            ) })
         }
 
         mainRouter.post("/cluster/:name").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/create", BiFunction { context, namespace -> gson.toJson(makeV1FlinkCluster(context, namespace)) })
+            handleRequest(routingContext, namespace, "/cluster/create", BiFunction { context, namespace -> gson.toJson(
+                makeV1FlinkCluster(context, namespace)
+            ) })
         }
 
 

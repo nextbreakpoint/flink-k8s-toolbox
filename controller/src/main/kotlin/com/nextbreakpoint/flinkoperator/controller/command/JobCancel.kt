@@ -28,15 +28,11 @@ class JobCancel(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, 
                 it.id
             }.toList()
 
-            if (runningJobs.isEmpty()) {
-                logger.info("No running job found in cluster ${clusterId.name}")
-            }
-
             val inprogressCheckpoints = runningJobs.map { jobId ->
                 val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
 
                 if (response.code() != 200) {
-                    logger.error("Can't get checkpointing statistics for job $jobId in cluster ${clusterId.name}")
+                    logger.error("Can't get checkpointing statistics for job $jobId of cluster ${clusterId.name}")
                 }
 
                 jobId to response
@@ -53,7 +49,7 @@ class JobCancel(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, 
             if (inprogressCheckpoints.isEmpty()) {
                 if (runningJobs.size == 1) {
                     val requests = runningJobs.map {
-                        logger.info("Cancelling job of cluster ${clusterId.name}...")
+                        logger.info("Cancelling job $it of cluster ${clusterId.name}...")
 
                         val requestBody = SavepointTriggerRequestBody().cancelJob(true).targetDirectory(params.targetPath)
 
@@ -61,7 +57,7 @@ class JobCancel(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, 
 
                         it to response.requestId
                     }.onEach {
-                        logger.info("Created savepoint request ${it.second} for job ${it.first} in cluster ${clusterId.name}")
+                        logger.info("Created savepoint request ${it.second} for job ${it.first} of cluster ${clusterId.name}")
                     }.toMap()
 
                     return Result(
@@ -74,7 +70,7 @@ class JobCancel(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, 
                         }.first()
                     )
                 } else {
-                    logger.warn("Expected one running job in cluster ${clusterId.name}")
+                    logger.warn("Can't find a running job in cluster ${clusterId.name}")
 
                     return Result(
                         ResultStatus.FAILED,
@@ -82,7 +78,7 @@ class JobCancel(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, 
                     )
                 }
             } else {
-                logger.warn("Savepoint in progress for cluster ${clusterId.name}")
+                logger.warn("Savepoint already in progress in cluster ${clusterId.name}")
 
                 return Result(
                     ResultStatus.FAILED,

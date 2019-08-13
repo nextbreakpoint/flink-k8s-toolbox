@@ -69,7 +69,7 @@ class UploadJobDeleteResource(flinkOptions: FlinkOptions) : OperatorCommand<Void
                     null
                 )
 
-                logger.info("Response status: ${status.reason}")
+                logger.debug("Response status: ${status.reason}")
 
                 status.details.causes.forEach { logger.info(it.message) }
             } catch (e: Exception) {
@@ -107,7 +107,7 @@ class UploadJobDeleteResource(flinkOptions: FlinkOptions) : OperatorCommand<Void
                     null
                 )
 
-                logger.info("Response status: ${status.reason}")
+                logger.debug("Response status: ${status.reason}")
 
                 status.details.causes.forEach { logger.info(it.message) }
             } catch (e: Exception) {

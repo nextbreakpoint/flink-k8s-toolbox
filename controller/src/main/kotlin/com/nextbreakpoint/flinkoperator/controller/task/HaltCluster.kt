@@ -27,7 +27,7 @@ class HaltCluster : OperatorTaskHandler {
     override fun onAwaiting(context: OperatorContext): Result<String> {
         return Result(
             ResultStatus.SUCCESS,
-            "I'll wait for the next task"
+            "Waiting for the next task..."
         )
     }
 

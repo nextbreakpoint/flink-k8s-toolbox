@@ -24,7 +24,7 @@ class ClusterGetStatus(flinkOptions: FlinkOptions, val cache: OperatorCache) : O
                 result
             )
         } catch (e : Exception) {
-            logger.error("Can't get current task of cluster ${clusterId.name}", e)
+            logger.error("Can't get annotations of cluster ${clusterId.name}", e)
 
             return Result(
                 ResultStatus.FAILED,

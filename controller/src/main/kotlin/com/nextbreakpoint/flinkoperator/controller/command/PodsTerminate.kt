@@ -16,7 +16,7 @@ class PodsTerminate(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {
-            logger.info("Terminating resources of cluster ${clusterId.name}...")
+            logger.info("Terminating pods of cluster ${clusterId.name}...")
 
             terminateStatefulSets(KubernetesUtils.appsApi, "flink-operator", clusterId)
 
@@ -25,7 +25,7 @@ class PodsTerminate(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't terminate resources of cluster ${clusterId.name}", e)
+            logger.error("Can't terminate pods of cluster ${clusterId.name}", e)
 
             return Result(
                 ResultStatus.FAILED,
@@ -71,7 +71,7 @@ class PodsTerminate(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(
                 ).execute()
 
                 if (response.isSuccessful) {
-                    logger.info("Scaled StatefulSet ${statefulSet.metadata.name}")
+                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
                 } else {
                     logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
                 }

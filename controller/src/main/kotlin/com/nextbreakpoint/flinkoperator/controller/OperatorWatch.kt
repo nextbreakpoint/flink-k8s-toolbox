@@ -16,7 +16,7 @@ class OperatorWatch(val gson: Gson) {
     fun watchFlinkClusters(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                KubernetesUtils.watchFlickClusterResources(KubernetesUtils.objectApi, it)
+                KubernetesUtils.watchFlickClusterResources(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/flinkcluster/change", gson.toJson(resource))
@@ -41,7 +41,7 @@ class OperatorWatch(val gson: Gson) {
     fun watchServices(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                KubernetesUtils.watchServiceResources(KubernetesUtils.coreApi, it)
+                KubernetesUtils.watchServiceResources(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/service/change", gson.toJson(resource))
@@ -66,7 +66,7 @@ class OperatorWatch(val gson: Gson) {
     fun watchDeployments(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                KubernetesUtils.watchDeploymentResources(KubernetesUtils.appsApi, it)
+                KubernetesUtils.watchDeploymentResources(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/deployment/change", gson.toJson(resource))
@@ -91,7 +91,7 @@ class OperatorWatch(val gson: Gson) {
     fun watchJobs(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                KubernetesUtils.watchJobResources(KubernetesUtils.batchApi, it)
+                KubernetesUtils.watchJobResources(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/job/change", gson.toJson(resource))
@@ -116,7 +116,7 @@ class OperatorWatch(val gson: Gson) {
     fun watchStatefulSets(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                KubernetesUtils.watchStatefulSetResources(KubernetesUtils.appsApi, it)
+                KubernetesUtils.watchStatefulSetResources(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/statefulset/change", gson.toJson(resource))
@@ -142,7 +142,8 @@ class OperatorWatch(val gson: Gson) {
         thread {
             watchResources(namespace, {
                 KubernetesUtils.watchPermanentVolumeClaimResources(
-                    KubernetesUtils.coreApi, it)
+                    it
+                )
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", gson.toJson(resource))

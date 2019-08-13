@@ -102,21 +102,21 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
                 }
 
                 if (taskResult.status == ResultStatus.SUCCESS) {
-                    logger.info("Cluster ${clusterId.name} task ${operatorTask.name} - ${taskResult.output}")
+                    logger.info("${operatorTask.name} - ${taskResult.output}")
 
                     return Result(
                         ResultStatus.SUCCESS,
                         null
                     )
                 } else if (taskResult.status == ResultStatus.AWAIT) {
-                    logger.info("Cluster ${clusterId.name} task ${operatorTask.name} - ${taskResult.output}")
+                    logger.info("${operatorTask.name} - ${taskResult.output}")
 
                     return Result(
                         ResultStatus.AWAIT,
                         null
                     )
                 } else {
-                    logger.warn("Cluster ${clusterId.name} task ${operatorTask.name} - ${taskResult.output}")
+                    logger.warn("${operatorTask.name} - ${taskResult.output}")
 
                     return Result(
                         ResultStatus.FAILED,

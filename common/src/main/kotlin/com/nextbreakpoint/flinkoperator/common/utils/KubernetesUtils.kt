@@ -35,16 +35,21 @@ object KubernetesUtils {
     val coreApi = CoreV1Api()
     val appsApi = AppsV1Api()
 
+    val objectApiWatch = CustomObjectsApi()
+    val batchApiWatch = BatchV1Api()
+    val coreApiWatch = CoreV1Api()
+    val appsApiWatch = AppsV1Api()
+
     fun configure(kubeConfig: String?) {
-        Configuration.setDefaultApiClient(
-            createKubernetesClient(
-                kubeConfig
-            )
-        )
+        Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig, 10000))
         objectApi.apiClient = Configuration.getDefaultApiClient()
         batchApi.apiClient = Configuration.getDefaultApiClient()
         coreApi.apiClient = Configuration.getDefaultApiClient()
         appsApi.apiClient = Configuration.getDefaultApiClient()
+        objectApiWatch.apiClient = createKubernetesClient(kubeConfig, 60000)
+        batchApiWatch.apiClient = createKubernetesClient(kubeConfig, 60000)
+        coreApiWatch.apiClient = createKubernetesClient(kubeConfig, 60000)
+        appsApiWatch.apiClient = createKubernetesClient(kubeConfig, 60000)
     }
 
     fun updateAnnotations(clusterId: ClusterId, annotations: Map<String, String>) {
@@ -70,10 +75,10 @@ object KubernetesUtils {
         }
     }
 
-    fun watchFlickClusterResources(objectApi: CustomObjectsApi, namespace: String): Watch<V1FlinkCluster> =
+    fun watchFlickClusterResources(namespace: String): Watch<V1FlinkCluster> =
         Watch.createWatch(
-            objectApi.apiClient,
-            objectApi.listNamespacedCustomObjectCall(
+            objectApiWatch.apiClient,
+            objectApiWatch.listNamespacedCustomObjectCall(
                 "nextbreakpoint.com",
                 "v1",
                 namespace,
@@ -89,10 +94,10 @@ object KubernetesUtils {
             object : TypeToken<Watch.Response<V1FlinkCluster>>() {}.type
         )
 
-    fun watchServiceResources(coreApi: CoreV1Api, namespace: String): Watch<V1Service> =
+    fun watchServiceResources(namespace: String): Watch<V1Service> =
         Watch.createWatch(
-            coreApi.apiClient,
-            coreApi.listNamespacedServiceCall(
+            coreApiWatch.apiClient,
+            coreApiWatch.listNamespacedServiceCall(
                 namespace,
                 null,
                 null,
@@ -109,10 +114,10 @@ object KubernetesUtils {
             object : TypeToken<Watch.Response<V1Service>>() {}.type
         )
 
-    fun watchDeploymentResources(appsApi: AppsV1Api, namespace: String): Watch<V1Deployment> =
+    fun watchDeploymentResources(namespace: String): Watch<V1Deployment> =
         Watch.createWatch(
-            appsApi.apiClient,
-            appsApi.listNamespacedDeploymentCall(
+            appsApiWatch.apiClient,
+            appsApiWatch.listNamespacedDeploymentCall(
                 namespace,
                 null,
                 null,
@@ -129,10 +134,10 @@ object KubernetesUtils {
             object : TypeToken<Watch.Response<V1Deployment>>() {}.type
         )
 
-    fun watchJobResources(batchApi: BatchV1Api, namespace: String): Watch<V1Job> =
+    fun watchJobResources(namespace: String): Watch<V1Job> =
         Watch.createWatch(
-            batchApi.apiClient,
-            batchApi.listNamespacedJobCall(
+            batchApiWatch.apiClient,
+            batchApiWatch.listNamespacedJobCall(
                 namespace,
                 null,
                 null,
@@ -149,10 +154,10 @@ object KubernetesUtils {
             object : TypeToken<Watch.Response<V1Job>>() {}.type
         )
 
-    fun watchStatefulSetResources(appsApi: AppsV1Api, namespace: String): Watch<V1StatefulSet> =
+    fun watchStatefulSetResources(namespace: String): Watch<V1StatefulSet> =
         Watch.createWatch(
-            appsApi.apiClient,
-            appsApi.listNamespacedStatefulSetCall(
+            appsApiWatch.apiClient,
+            appsApiWatch.listNamespacedStatefulSetCall(
                 namespace,
                 null,
                 null,
@@ -169,10 +174,10 @@ object KubernetesUtils {
             object : TypeToken<Watch.Response<V1StatefulSet>>() {}.type
         )
 
-    fun watchPermanentVolumeClaimResources(coreApi: CoreV1Api, namespace: String): Watch<V1PersistentVolumeClaim> =
+    fun watchPermanentVolumeClaimResources(namespace: String): Watch<V1PersistentVolumeClaim> =
         Watch.createWatch(
-            coreApi.apiClient,
-            coreApi.listNamespacedPersistentVolumeClaimCall(
+            coreApiWatch.apiClient,
+            coreApiWatch.listNamespacedPersistentVolumeClaimCall(
                 namespace,
                 null,
                 null,
@@ -283,11 +288,11 @@ object KubernetesUtils {
         }
     }
 
-    private fun createKubernetesClient(kubeConfig: String?): ApiClient? {
+    private fun createKubernetesClient(kubeConfig: String?, timeout: Long): ApiClient? {
         val client = if (kubeConfig?.isNotBlank() == true) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
-        client.httpClient.setConnectTimeout(30000, TimeUnit.MILLISECONDS)
-        client.httpClient.setWriteTimeout(60000, TimeUnit.MILLISECONDS)
-        client.httpClient.setReadTimeout(60000, TimeUnit.MILLISECONDS)
+        client.httpClient.setConnectTimeout(10000, TimeUnit.MILLISECONDS)
+        client.httpClient.setWriteTimeout(timeout, TimeUnit.MILLISECONDS)
+        client.httpClient.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
 //            client.isDebugging = true
         return client
     }

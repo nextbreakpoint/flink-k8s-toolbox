@@ -84,7 +84,7 @@ class SavepointGetStatus(flinkOptions: FlinkOptions) : OperatorCommand<Savepoint
                         Gson().toJson(savepoints.values.first())
                     )
                 } else {
-                    logger.error("Expected at least one savepoint in cluster ${clusterId.name}")
+                    logger.error("Can't find any savepoint in cluster ${clusterId.name}")
 
                     return Result(
                         ResultStatus.FAILED,

@@ -13,6 +13,7 @@ import io.vertx.core.json.JsonObject
 import io.vertx.micrometer.MicrometerMetricsOptions
 import io.vertx.micrometer.VertxPrometheusOptions
 import org.apache.log4j.Logger
+import java.util.concurrent.TimeUnit
 
 class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks,
     ServerCommand<OperatorConfig> {
@@ -72,6 +73,15 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks,
             )
             .setEnabled(true)
             .setRegistryName("flink-operator")
+
+        vertxOptions?.workerPoolSize = 1
+        vertxOptions?.eventLoopPoolSize = 1
+        vertxOptions?.maxWorkerExecuteTime = 20
+        vertxOptions?.maxWorkerExecuteTimeUnit = TimeUnit.SECONDS
+        vertxOptions?.warningExceptionTime = 10
+        vertxOptions?.warningExceptionTimeUnit = TimeUnit.SECONDS
+        vertxOptions?.maxEventLoopExecuteTime = 20
+        vertxOptions?.maxEventLoopExecuteTimeUnit = TimeUnit.SECONDS
     }
 
     override fun afterStoppingVertx() {

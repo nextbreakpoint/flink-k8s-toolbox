@@ -23,7 +23,7 @@ class JobStop(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Map<String, S
                 val response = flinkApi.terminateJobCall(it.id.toString(), "cancel", null, null).execute()
 
                 if (!response.isSuccessful) {
-                    logger.warn("Can't terminate job ${it.id} in cluster ${clusterId.name}")
+                    logger.warn("Can't stop job ${it.id} of cluster ${clusterId.name}")
                 }
             }
 
@@ -37,7 +37,7 @@ class JobStop(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Map<String, S
                     mapOf()
                 )
             } else {
-                logger.info("No running job found in cluster ${clusterId.name}")
+                logger.info("Can't find a running job in cluster ${clusterId.name}")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -45,7 +45,7 @@ class JobStop(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Map<String, S
                 )
             }
         } catch (e : Exception) {
-            logger.error("Can't stop jobs of cluster ${clusterId.name}", e)
+            logger.error("Can't stop job of cluster ${clusterId.name}", e)
 
             return Result(
                 ResultStatus.FAILED,
