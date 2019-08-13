@@ -54,9 +54,7 @@ class OperatorVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(OperatorVerticle::class.simpleName)
 
-        private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java,
-            DateTimeSerializer()
-        ).create()
+        private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
     }
 
     override fun rxStart(): Completable {
@@ -82,23 +80,9 @@ class OperatorVerticle : AbstractVerticle() {
 
         val jksTrustStoreSecret = config.getString("server_truststore_secret")
 
-        val serverOptions = HttpServerOptions()
+        val serverOptions = createServerOptions(jksKeyStorePath, jksTrustStorePath, jksKeyStoreSecret, jksTrustStoreSecret)
 
-        if (jksKeyStorePath != null && jksTrustStorePath != null) {
-            logger.info("Enabling HTTPS with required client auth")
-
-            serverOptions
-                .setSsl(true)
-                .setSni(false)
-                .setKeyStoreOptions(JksOptions().setPath(jksKeyStorePath).setPassword(jksKeyStoreSecret))
-                .setTrustStoreOptions(JksOptions().setPath(jksTrustStorePath).setPassword(jksTrustStoreSecret))
-                .setClientAuth(ClientAuth.REQUIRED)
-        } else {
-            logger.warn("HTTPS not enabled!")
-        }
-
-        val watch =
-            OperatorWatch(gson)
+        val watch = OperatorWatch(gson)
 
         val flinkOptions = FlinkOptions(
             hostname = flinkHostname,
@@ -184,16 +168,12 @@ class OperatorVerticle : AbstractVerticle() {
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerDetails(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")),
-                    TaskManagerId(context.pathParam("taskmanager"))
-            )) })
+                TaskManagerDetails(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")),
-                    TaskManagerId(context.pathParam("taskmanager"))
-            )) })
+                TaskManagerMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))) })
         }
 
 
@@ -226,13 +206,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         vertx.eventBus().consumer<String>("/cluster/create") { message ->
             handleCommand<V1FlinkCluster>(message, worker, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Function {
-                gson.toJson(controller.createFlinkCluster(
-                    ClusterId(
-                        it.metadata.namespace,
-                        it.metadata.name,
-                        ""
-                    ), it))
-            })
+                gson.toJson(controller.createFlinkCluster(ClusterId(it.metadata.namespace, it.metadata.name, ""), it)) })
         }
 
         vertx.eventBus().consumer<String>("/cluster/savepoint") { message ->
@@ -336,6 +310,30 @@ class OperatorVerticle : AbstractVerticle() {
         return vertx.createHttpServer(serverOptions).requestHandler(mainRouter).rxListen(port)
     }
 
+    private fun createServerOptions(
+        jksKeyStorePath: String?,
+        jksTrustStorePath: String?,
+        jksKeyStoreSecret: String?,
+        jksTrustStoreSecret: String?
+    ): HttpServerOptions {
+        val serverOptions = HttpServerOptions()
+
+        if (jksKeyStorePath != null && jksTrustStorePath != null) {
+            logger.info("Enabling HTTPS with required client auth")
+
+            serverOptions
+                .setSsl(true)
+                .setSni(false)
+                .setKeyStoreOptions(JksOptions().setPath(jksKeyStorePath).setPassword(jksKeyStoreSecret))
+                .setTrustStoreOptions(JksOptions().setPath(jksTrustStorePath).setPassword(jksTrustStoreSecret))
+                .setClientAuth(ClientAuth.REQUIRED)
+        } else {
+            logger.warn("HTTPS not enabled!")
+        }
+
+        return serverOptions
+    }
+
     private fun registerMetrics(registry: MeterRegistry, namespace: String): Map<ClusterStatus, AtomicInteger> {
         return ClusterStatus.values().map {
             it to registry.gauge(
@@ -410,11 +408,7 @@ class OperatorVerticle : AbstractVerticle() {
     }
 
     private fun makeClusterId(flinkCluster: V1FlinkCluster) =
-        ClusterId(
-            namespace = flinkCluster.metadata.namespace,
-            name = flinkCluster.metadata.name,
-            uuid = ""
-        )
+        ClusterId(namespace = flinkCluster.metadata.namespace, name = flinkCluster.metadata.name, uuid = "")
 
     private fun doUpdateClusters(
         controller: OperatorController,

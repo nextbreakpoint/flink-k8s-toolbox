@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.cli.command
 
 import com.google.gson.Gson
+import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkServerUtils
 import com.nextbreakpoint.flinkoperator.cli.UploadCommand
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -19,15 +20,21 @@ class UploadJAR : UploadCommand<UploadOptions> {
 
             val flinkApi = FlinkServerUtils.find(flinkOptions, namespace, clusterName)
 
-            val result = flinkApi.uploadJar(File(args.jarPath))
+            val response = flinkApi.uploadJarCall(File(args.jarPath), null, null).execute()
 
-            if (result.status.name.equals("SUCCESS")) {
-                logger.info("JAR file uploaded: ${Gson().toJson(result)}")
+            if (response.isSuccessful) {
+                response.body().use {
+                    val result = Gson().fromJson(it.source().readUtf8Line(), JarUploadResponseBody::class.java)
+                    if (result.status.name.equals("SUCCESS")) {
+                        logger.info("File ${args.jarPath} uploaded to ${result.filename}")
+                    } else {
+                        throw RuntimeException("Failed to upload file ${args.jarPath}")
+                    }
+                }
             } else {
-                throw RuntimeException("Failed to upload JAR file ${args.jarPath} to cluster $namespace/$clusterName")
+                throw RuntimeException("Failed to upload file ${args.jarPath}")
             }
         } catch (e: Exception) {
-            logger.error("An error occurred while uploading the file ${args.jarPath} to cluster $namespace/$clusterName", e)
             throw RuntimeException(e)
         }
     }
