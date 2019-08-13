@@ -74,7 +74,7 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks,
             .setEnabled(true)
             .setRegistryName("flink-operator")
 
-        vertxOptions?.workerPoolSize = 1
+        vertxOptions?.workerPoolSize = 4
         vertxOptions?.eventLoopPoolSize = 1
         vertxOptions?.maxWorkerExecuteTime = 20
         vertxOptions?.maxWorkerExecuteTimeUnit = TimeUnit.SECONDS
