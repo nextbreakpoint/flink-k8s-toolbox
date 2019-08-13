@@ -21,7 +21,7 @@ spec:
       release: {{ $root.Release.Name }}
   template:
     metadata:
-      {{- if and $root.Values.annotations }}
+      {{- if $root.Values.annotations }}
       annotations:
         {{ toYaml $root.Values.annotations | indent 8 | trim }}
       {{- end}}
@@ -32,10 +32,12 @@ spec:
     spec:
       serviceAccountName: flink-operator
       volumes:
-        {{- if and $root.Values.ssl.secretName}}
+        {{- if $root.Values.ssl}}
+        {{- if $root.Values.ssl.secretName}}
         - name: ssl-secret-vol
           secret:
             secretName: {{ $root.Values.ssl.secretName }}
+        {{- end}}
         {{- end}}
       containers:
         - name: {{ $root.Chart.Name }}-operator
@@ -53,7 +55,8 @@ spec:
             - run
             - --namespace
             - {{ $root.Release.Namespace }}
-            {{- if and $root.Values.ssl.secretName}}
+            {{- if $root.Values.ssl}}
+            {{- if $root.Values.ssl.secretName}}
             - --keystore-path
             - /etc/keystore.jks
             - --keystore-secret
@@ -62,6 +65,7 @@ spec:
             - /etc/truststore.jks
             - --truststore-secret
             - $(TRUSTSTORE_SECRET)
+            {{- end}}
             {{- end}}
           env:
             - name: POD_NAME
@@ -72,7 +76,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            {{- if and $root.Values.ssl.secretName}}
+            {{- if $root.Values.ssl}}
+            {{- if $root.Values.ssl.secretName}}
             - name: KEYSTORE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -84,8 +89,10 @@ spec:
                   name: {{ $root.Values.ssl.secretName }}
                   key: {{ $root.Values.ssl.truststore.secretKey }}
             {{- end}}
+            {{- end}}
           volumeMounts:
-            {{- if and $root.Values.ssl.secretName}}
+            {{- if $root.Values.ssl}}
+            {{- if $root.Values.ssl.secretName}}
             - name: ssl-secret-vol
               readOnly: true
               mountPath: /etc/keystore.jks
@@ -95,7 +102,8 @@ spec:
               mountPath: /etc/truststore.jks
               subPath: {{ $root.Values.ssl.truststore.pathKey }}
             {{- end}}
-          {{- if and $root.Values.resources }}
+            {{- end}}
+          {{- if $root.Values.resources }}
           resources:
             {{ $root.Values.resources | toYaml | indent 12 | trim }}
           {{- end}}
