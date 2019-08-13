@@ -1,7 +1,6 @@
 {{- $name := include "flink-k8s-toolbox.name" . -}}
 {{- $chart := include "flink-k8s-toolbox.chart" . -}}
 {{- $root := . }}
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
