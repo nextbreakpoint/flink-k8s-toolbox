@@ -142,7 +142,9 @@ object TestFactory {
                 ]
               },
               "flinkOperator": {
-                "targetPath": "file:///var/tmp/test"
+                "savepointMode": "AUTOMATIC",
+                "savepointInterval": "60",
+                "savepointTargetPath": "file:///var/tmp/test"
               }
             }
             """.trimIndent()

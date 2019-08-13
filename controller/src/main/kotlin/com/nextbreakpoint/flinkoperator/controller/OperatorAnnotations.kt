@@ -25,7 +25,8 @@ object OperatorAnnotations {
         flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS) != null
 
     fun getCurrentOperatorTask(flinkCluster: V1FlinkCluster) : OperatorTask =
-        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(" ")?.filter { it.isNotBlank() }?.map { OperatorTask.valueOf(it) }?.firstOrNull() ?: OperatorTask.HALT_CLUSTER
+        flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASKS)?.split(" ")
+            ?.filter { it.isNotBlank() }?.map { OperatorTask.valueOf(it) }?.firstOrNull() ?: OperatorTask.HALT_CLUSTER
 
     fun getCurrentOperatorStatus(flinkCluster: V1FlinkCluster) : TaskStatus {
         val status = flinkCluster.metadata?.annotations?.get(FLINK_OPERATOR_TASK_STATUS)

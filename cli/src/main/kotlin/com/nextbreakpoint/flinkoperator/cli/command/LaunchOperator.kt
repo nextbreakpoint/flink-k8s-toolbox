@@ -38,9 +38,8 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks,
 
             waitUntilInterrupted()
         } catch (e: InterruptedException) {
-            logger.error("Terminating...")
+            logger.error("Terminating operator...")
         } catch (e: Exception) {
-            logger.error("An error occurred while launching the operator", e)
             throw RuntimeException(e)
         }
     }

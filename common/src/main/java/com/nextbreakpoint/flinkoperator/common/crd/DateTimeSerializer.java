@@ -17,34 +17,23 @@ public class DateTimeSerializer implements JsonDeserializer<DateTime>, JsonSeria
    private static final DateTimeFormatter TIME_FORMAT = ISODateTimeFormat.dateTimeNoMillis();
 
    @Override
-   public DateTime deserialize(final JsonElement je, final Type type,
-                                final JsonDeserializationContext jdc) throws JsonParseException
-   {
+   public DateTime deserialize(final JsonElement je, final Type type, final JsonDeserializationContext jdc) throws JsonParseException {
       final String dateAsString = je.getAsString();
-      if (dateAsString.length() == 0)
-      {
+      if (dateAsString.length() == 0) {
          return null;
-      }
-      else
-      {
+      } else {
          return TIME_FORMAT.parseDateTime(dateAsString);
       }
    }
 
    @Override
-   public JsonElement serialize(final DateTime src, final Type typeOfSrc,
-                                final JsonSerializationContext context)
-   {
+   public JsonElement serialize(final DateTime src, final Type typeOfSrc, final JsonSerializationContext context) {
       String retVal;
-      if (src == null)
-      {
+      if (src == null) {
          retVal = "";
-      }
-      else
-      {
+      } else {
          retVal = TIME_FORMAT.print(src);
       }
       return new JsonPrimitive(retVal);
    }
-
-}  
+}

@@ -14,9 +14,7 @@ import java.security.MessageDigest
 import java.util.Base64
 
 object CustomResourceUtils {
-    private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java,
-        DateTimeSerializer()
-    ).create()
+    private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
 
     fun parseV1FlinkCluster(body: String): V1FlinkCluster = gson.fromJson(body, V1FlinkCluster::class.java)
 
