@@ -87,6 +87,8 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
             } else {
                 val operatorTask = OperatorAnnotations.getCurrentOperatorTask(params)
 
+                logger.info("Cluster ${clusterId.name} is ${operatorStatus} - ${operatorTask.name}")
+
                 val taskHandler = getOperatorTaskOrThrow(operatorTask)
 
                 val taskResult = updateTask(context, operatorStatus, params, taskHandler)
@@ -102,21 +104,21 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
                 }
 
                 if (taskResult.status == ResultStatus.SUCCESS) {
-                    logger.info("${operatorTask.name} - ${taskResult.output}")
+                    if (taskResult.output?.isNotBlank() == true) logger.info(taskResult.output)
 
                     return Result(
                         ResultStatus.SUCCESS,
                         null
                     )
                 } else if (taskResult.status == ResultStatus.AWAIT) {
-                    logger.info("${operatorTask.name} - ${taskResult.output}")
+                    if (taskResult.output?.isNotBlank() == true) logger.info(taskResult.output)
 
                     return Result(
                         ResultStatus.AWAIT,
                         null
                     )
                 } else {
-                    logger.warn("${operatorTask.name} - ${taskResult.output}")
+                    if (taskResult.output?.isNotBlank() == true) logger.warn(taskResult.output)
 
                     return Result(
                         ResultStatus.FAILED,
