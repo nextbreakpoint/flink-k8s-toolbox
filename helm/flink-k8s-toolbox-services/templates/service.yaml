@@ -15,9 +15,9 @@ spec:
   type: ClusterIP
   ports:
     - port: {{ $root.Values.service.ports.console }}
-      targetPort: console
+      targetPort: http
       protocol: TCP
-      name: console
+      name: http
     - port: {{ $root.Values.service.ports.metrics }}
       targetPort: metrics
       protocol: TCP
