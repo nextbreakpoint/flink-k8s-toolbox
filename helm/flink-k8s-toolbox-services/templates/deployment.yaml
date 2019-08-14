@@ -5,9 +5,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $fullname }}-operator
+  name: {{ $root.Values.name | default "flink-operator" | quote }}
+  {{- if $root.Values.namespace}}
+  namespace: {{ $root.Values.namespace | quote }}
+  {{- end}}
   labels:
-    app: {{ $fullname }}-operator
+    app: {{ $root.Values.name | default "flink-operator" | quote }}
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
     heritage: {{ $root.Release.Service }}
@@ -15,7 +18,7 @@ spec:
   replicas: {{ $root.Values.replicas }}
   selector:
     matchLabels:
-      app: flink-operator
+      app: {{ $root.Values.name | default "flink-operator" | quote }}
       chart: {{ $chart }}
       release: {{ $root.Release.Name }}
   template:
@@ -25,7 +28,7 @@ spec:
         {{ toYaml $root.Values.annotations | indent 8 | trim }}
       {{- end}}
       labels:
-        app: flink-operator
+        app: {{ $root.Values.name | default "flink-operator" | quote }}
         chart: {{ $chart }}
         release: {{ $root.Release.Name }}
     spec:
@@ -39,11 +42,11 @@ spec:
         {{- end}}
         {{- end}}
       containers:
-        - name: {{ $root.Chart.Name }}-operator
+        - name: {{ $root.Values.name | default "flink-operator" | quote }}
           image: "{{ $root.Values.image.repository }}:{{ $root.Values.image.tag }}"
           imagePullPolicy: {{ $root.Values.image.pullPolicy }}
           ports:
-            - name: console
+            - name: http
               containerPort: 4444
               protocol: TCP
             - name: metrics
