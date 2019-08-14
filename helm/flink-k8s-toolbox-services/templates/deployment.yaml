@@ -6,6 +6,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $root.Values.name | default "flink-operator" | quote }}
+  {{- if $root.Values.namespace}}
+  namespace: {{ $root.Values.namespace }}
+  {{- end}}
   labels:
     app: {{ $root.Values.name | default "flink-operator" | quote }}
     chart: {{ $chart }}
