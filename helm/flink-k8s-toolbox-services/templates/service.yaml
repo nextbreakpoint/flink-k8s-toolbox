@@ -7,7 +7,7 @@ kind: Service
 metadata:
   name: {{ $root.Values.name | default "flink-operator" | quote }}
   {{- if $root.Values.namespace}}
-  namespace: {{ $root.Values.namespace }}
+  namespace: {{ $root.Values.namespace | quote }}
   {{- end}}
   labels:
     app: {{ $root.Values.name | default "flink-operator" | quote }}
