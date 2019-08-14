@@ -35,10 +35,10 @@ object KubernetesUtils {
     val coreApi = CoreV1Api()
     val appsApi = AppsV1Api()
 
-    val objectApiWatch = CustomObjectsApi()
-    val batchApiWatch = BatchV1Api()
-    val coreApiWatch = CoreV1Api()
-    val appsApiWatch = AppsV1Api()
+    private val objectApiWatch = CustomObjectsApi()
+    private val batchApiWatch = BatchV1Api()
+    private val coreApiWatch = CoreV1Api()
+    private val appsApiWatch = AppsV1Api()
 
     fun configure(kubeConfig: String?) {
         Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig, 10000))
