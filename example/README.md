@@ -170,37 +170,15 @@ You can tag and push images to your local registry:
 
 ## Build Flink Operator from source code
 
-Install AdoptJDK 8 (OpenJDK 8 should work too).
-
-Configure toolchains in order to use correct version of JDK:
-
-    <?xml version="1.0" encoding="UTF8"?>
-    <toolchains>
-      <toolchain>
-        <type>jdk</type>
-        <provides>
-          <version>8</version>
-          <vendor>adoptjdk</vendor>
-        </provides>
-        <configuration>
-          <jdkHome>/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home</jdkHome>
-        </configuration>
-      </toolchain>
-    </toolchains>
-
 Compile Docker image of Flink Operator:
 
-    mvn -t toolchains.xml clean package -Dbuild-docker-image=true
+    docker build -t flink-k8s-toolbox:1.1.6-beta .
 
 Optionally tag and push Docker image to your local Docker registry:
 
     docker tag flink-k8s-toolbox:1.1.6-beta registry:30000/flink-k8s-toolbox:1.1.6-beta
     docker login registry:30000
     docker push registry:30000/flink-k8s-toolbox:1.1.6-beta
-
-Run Flink Operator using JAR file:
-
-    java -jar cli/target/com.nextbreakpoint.flinkoperator.cli-1.1.6-beta.jar operator run --kube-config=$HOME/.kube/config --namespace=flink
 
 Run Flink Operator using Docker image:
 
