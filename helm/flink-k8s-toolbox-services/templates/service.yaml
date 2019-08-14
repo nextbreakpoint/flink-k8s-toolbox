@@ -5,9 +5,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: flink-operator
+  name: {{ $root.Values.name | default "flink-operator" | quote }}
   labels:
-    app: {{ $name }}
+    app: {{ $root.Values.name | default "flink-operator" | quote }}
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
     heritage: {{ $root.Release.Service }}
@@ -23,6 +23,6 @@ spec:
       protocol: TCP
       name: metrics
   selector:
-    app: flink-operator
+    app: {{ $root.Values.name | default "flink-operator" | quote }}
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
