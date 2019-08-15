@@ -227,19 +227,30 @@ Create a secret which contain the keystore and the truststore files:
         --from-literal=keystore-secret=keystore-password \
         --from-literal=truststore-secret=truststore-password 
 
-Install the operator global resources with commands:
+Install the operator's global resources with commands:
 
     helm install --name flink-k8s-toolbox-global helm/flink-k8s-toolbox-global
 
-Install the operator namespaced resources with commands:
+Install the operator's namespace resources with command:
 
     helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set ssl.secretName=flink-operator-ssl  
 
+Run the operator with command:
+
+     kubectl scale deployment -n flink flink-operator --replicas=1
+
 ## Uninstall Flink Operator
 
-Remove the operator resources with commands:    
+Stop the operator with command:
+
+     kubectl scale deployment -n flink flink-operator --replicas=0
+
+Remove the operator's namespace resources with command:    
 
     helm delete --purge flink-k8s-toolbox-services
+
+Remove the operator's global resources with command:    
+
     helm delete --purge flink-k8s-toolbox-global
 
 Remove secret with command:    
