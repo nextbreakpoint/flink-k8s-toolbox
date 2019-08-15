@@ -7,8 +7,6 @@ image:
   tag: 1.1.6-beta
   pullPolicy: Always
 
-replicas: 0
-
 service:
   ports:
     console: 4444

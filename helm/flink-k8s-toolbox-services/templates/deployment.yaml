@@ -15,7 +15,7 @@ metadata:
     release: {{ $root.Release.Name }}
     heritage: {{ $root.Release.Service }}
 spec:
-  replicas: {{ $root.Values.replicas }}
+  replicas: {{ $root.Values.replicas | default 0 }}
   selector:
     matchLabels:
       app: {{ $root.Values.name | default "flink-operator" | quote }}
