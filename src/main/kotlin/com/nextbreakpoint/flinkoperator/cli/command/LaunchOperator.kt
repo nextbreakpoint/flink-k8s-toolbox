@@ -3,6 +3,7 @@ package com.nextbreakpoint.flinkoperator.cli.command
 import com.nextbreakpoint.flinkoperator.cli.ServerCommand
 import com.nextbreakpoint.flinkoperator.controller.OperatorVerticle
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
+import com.nextbreakpoint.flinkoperator.controller.MetricsVerticle
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
@@ -36,6 +37,8 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerComman
 
             dispatch(this, arrayOf("run", OperatorVerticle::class.java.canonicalName, "-conf", jsonObject.toString()))
 
+            dispatch(this, arrayOf("run", MetricsVerticle::class.java.canonicalName))
+
             waitUntilInterrupted()
         } catch (e: InterruptedException) {
             logger.error("Terminating operator...")
@@ -64,11 +67,11 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerComman
             MicrometerMetricsOptions().setPrometheusOptions(
                 VertxPrometheusOptions()
                     .setEnabled(true)
-                    .setStartEmbeddedServer(true)
-                    .setEmbeddedServerEndpoint("/metrics")
-                    .setEmbeddedServerOptions(
-                        HttpServerOptions().setSsl(false).setPort(8080)
-                    )
+//                    .setStartEmbeddedServer(true)
+//                    .setEmbeddedServerEndpoint("/metrics")
+//                    .setEmbeddedServerOptions(
+//                        HttpServerOptions().setSsl(false).setPort(8080)
+//                    )
             )
             .setEnabled(true)
             .setRegistryName("flink-operator")

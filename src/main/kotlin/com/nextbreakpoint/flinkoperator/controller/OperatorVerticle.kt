@@ -109,6 +109,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         mainRouter.options("/").handler { context -> context.response().setStatusCode(204).end() }
 
+
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/start", BiFunction { ctx, ns -> gson.toJson(
                 OperatorMessage(resourcesCache.getClusterIdentity(ns, ctx.pathParam("name")), ctx.bodyAsString)
