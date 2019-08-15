@@ -38,11 +38,15 @@ Install Flink Operator namespace resources:
 
 Run Flink Operator:
 
-     kubectl scale deployment -n flink flink-k8s-toolbox-services-operator --replicas=1
+     kubectl scale deployment -n flink flink-operator --replicas=1
 
 Check Flink Operator is running:
 
      kubectl get pod -n flink 
+
+Stop Flink Operator:
+
+     kubectl scale deployment -n flink flink-operator --replicas=0
 
 ### Prepare Flink image    
 
