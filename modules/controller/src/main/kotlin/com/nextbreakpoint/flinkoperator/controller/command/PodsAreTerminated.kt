@@ -6,6 +6,8 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import io.kubernetes.client.models.V1ContainerState
+import io.kubernetes.client.models.V1ContainerStateRunning
 import org.apache.log4j.Logger
 
 class PodsAreTerminated(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
@@ -47,8 +49,22 @@ class PodsAreTerminated(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Voi
                     null
                 )
             } else {
+                if (jobmanagerPods.items.filter { it.status.containerStatuses.filter { it.lastState.running != null }.isNotEmpty() }.isNotEmpty()) {
+                    return Result(
+                        ResultStatus.AWAIT,
+                        null
+                    )
+                }
+
+                if (taskmanagerPods.items.filter { it.status.containerStatuses.filter { it.lastState.running != null }.isNotEmpty() }.isNotEmpty()) {
+                    return Result(
+                        ResultStatus.AWAIT,
+                        null
+                    )
+                }
+
                 return Result(
-                    ResultStatus.AWAIT,
+                    ResultStatus.SUCCESS,
                     null
                 )
             }
