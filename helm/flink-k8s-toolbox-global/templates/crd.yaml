@@ -11,7 +11,6 @@ metadata:
     heritage: {{ $root.Release.Service }}
 spec:
   group: nextbreakpoint.com
-  version: "v1"
   scope: Namespaced
   names:
     plural: flinkclusters
@@ -19,3 +18,4 @@ spec:
     kind: FlinkCluster
     shortNames:
     - fc
+  version: "v1"

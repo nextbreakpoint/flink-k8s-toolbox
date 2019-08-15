@@ -1,1 +1,5 @@
-rootProject.name = 'com.nextbreakpoint.flink-k8s-toolbox'
+rootProject.name = 'flink-k8s-toolbox'
+
+include ':modules:common'
+include ':modules:controller'
+include ':modules:cli'

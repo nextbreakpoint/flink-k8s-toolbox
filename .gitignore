@@ -7,3 +7,6 @@ docker-registry.yaml
 pvm.yaml
 helm/charts
 secrets
+.gradle
+build
+.vertx

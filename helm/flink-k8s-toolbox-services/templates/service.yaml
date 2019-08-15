@@ -17,11 +17,11 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: {{ $root.Values.service.ports.console }}
+    - port: {{ $root.Values.service.ports.console | default "4444" }}
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ $root.Values.service.ports.metrics }}
+    - port: {{ $root.Values.service.ports.metrics | default "8080" }}
       targetPort: metrics
       protocol: TCP
       name: metrics
