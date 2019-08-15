@@ -28,19 +28,19 @@ Create namespace:
 
     kubectl create namespace flink
 
-Install Flink Operator global resources:
+Install operator's global resources:
 
     helm install --name flink-k8s-toolbox-global helm/flink-k8s-toolbox-global
 
-Install Flink Operator namespace resources:
+Install operator's namespace resources:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set replicas=0
+    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services
 
 Run Flink Operator:
 
      kubectl scale deployment -n flink flink-operator --replicas=1
 
-Check Flink Operator is running:
+Check that operator is running:
 
      kubectl get pod -n flink 
 
