@@ -43,7 +43,7 @@ spec:
         {{- end}}
       containers:
         - name: {{ $root.Values.name | default "flink-operator" | quote }}
-          image: "{{ $root.Values.image.repository }}:{{ $root.Values.image.tag }}"
+          image: "{{ $root.Values.image.registry }}{{ $root.Values.image.repository }}:{{ $root.Values.image.tag }}"
           imagePullPolicy: {{ $root.Values.image.pullPolicy }}
           ports:
             - name: http
