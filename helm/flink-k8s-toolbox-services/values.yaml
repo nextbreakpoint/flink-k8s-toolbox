@@ -1,13 +1,13 @@
-# Default values for flink.
+# Default values.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 image:
   repository: nextbreakpoint/flink-k8s-toolbox
-  tag: 1.1.5-beta
+  tag: 1.1.6-beta
   pullPolicy: Always
 
-replicas: 1
+replicas: 0
 
 service:
   ports:
