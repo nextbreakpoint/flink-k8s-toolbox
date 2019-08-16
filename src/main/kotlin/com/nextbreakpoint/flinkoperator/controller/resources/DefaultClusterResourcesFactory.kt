@@ -282,6 +282,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addToPorts(port6123)
             .addToPorts(port6124)
             .addToPorts(port6125)
+            .addAllToPorts(flinkCluster.spec.jobManager?.extraPorts ?: listOf())
             .addAllToVolumeMounts(flinkCluster.spec.jobManager?.volumeMounts ?: listOf())
             .withEnv(jobmanagerVariables)
             .withEnvFrom(flinkCluster.spec.jobManager?.environmentFrom)
@@ -312,13 +313,20 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
                 "flink-jobmanager-${flinkCluster.metadata.name}", jobmanagerLabels
             )
 
+        val jobmanagerPodMetadata =
+            createObjectMeta(
+                "flink-jobmanager-${flinkCluster.metadata.name}", jobmanagerLabels
+            )
+
+        jobmanagerPodMetadata.annotations = flinkCluster.spec.jobManager?.annotations
+
         return V1StatefulSetBuilder()
             .withMetadata(jobmanagerMetadata)
             .editOrNewSpec()
             .withReplicas(1)
             .editOrNewTemplate()
             .withSpec(jobmanagerPodSpec)
-            .withMetadata(jobmanagerMetadata)
+            .withMetadata(jobmanagerPodMetadata)
             .endTemplate()
             .withUpdateStrategy(updateStrategy)
             .withServiceName("jobmanager")
@@ -419,6 +427,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withArgs(listOf("taskmanager"))
             .addToPorts(port6121)
             .addToPorts(port6122)
+            .addAllToPorts(flinkCluster.spec.taskManager?.extraPorts ?: listOf())
             .addAllToVolumeMounts(flinkCluster.spec.taskManager?.volumeMounts ?: listOf())
             .withEnv(taskmanagerVariables)
             .withEnvFrom(flinkCluster.spec.taskManager?.environmentFrom)
@@ -454,13 +463,20 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
                 "flink-taskmanager-${flinkCluster.metadata.name}", taskmanagerLabels
             )
 
+        val taskmanagerPodMetadata =
+            createObjectMeta(
+                "flink-taskmanager-${flinkCluster.metadata.name}", taskmanagerLabels
+            )
+
+        taskmanagerPodMetadata.annotations = flinkCluster.spec.taskManager?.annotations
+
         return V1StatefulSetBuilder()
             .withMetadata(taskmanagerMetadata)
             .editOrNewSpec()
             .withReplicas(flinkCluster.spec.taskManager?.replicas ?: 1)
             .editOrNewTemplate()
             .withSpec(taskmanagerPodSpec)
-            .withMetadata(taskmanagerMetadata)
+            .withMetadata(taskmanagerPodMetadata)
             .endTemplate()
             .withUpdateStrategy(updateStrategy)
             .withServiceName("taskmanager")
