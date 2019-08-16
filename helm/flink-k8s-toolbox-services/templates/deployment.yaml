@@ -82,11 +82,11 @@ spec:
             {{- end}}
           volumeMounts:
             {{- if $root.Values.secretName}}
-            - name: ssl-secret-vol
+            - name: secret-vol
               readOnly: true
               mountPath: /etc/keystore.jks
               subPath: {{ $root.Values.keystore.pathKey }}
-            - name: ssl-secret-vol
+            - name: secret-vol
               readOnly: true
               mountPath: /etc/truststore.jks
               subPath: {{ $root.Values.truststore.pathKey }}
