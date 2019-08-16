@@ -49,14 +49,14 @@ class PodsAreTerminated(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Voi
                     null
                 )
             } else {
-                if (jobmanagerPods.items.filter { it.status.containerStatuses.filter { it.lastState.running != null }.isNotEmpty() }.isNotEmpty()) {
+                if (jobmanagerPods.items.filter { it.status?.containerStatuses?.filter { it.lastState.running != null }?.isNotEmpty() == true }.isNotEmpty()) {
                     return Result(
                         ResultStatus.AWAIT,
                         null
                     )
                 }
 
-                if (taskmanagerPods.items.filter { it.status.containerStatuses.filter { it.lastState.running != null }.isNotEmpty() }.isNotEmpty()) {
+                if (taskmanagerPods.items.filter { it.status?.containerStatuses?.filter { it.lastState.running != null }?.isNotEmpty() == true }.isNotEmpty()) {
                     return Result(
                         ResultStatus.AWAIT,
                         null
