@@ -4,7 +4,7 @@ WORKDIR /src
 RUN gradle --no-daemon clean shadowJar
 
 FROM openjdk:14-jdk-alpine
-COPY --from=build /src/build/libs/flink-k8s-toolbox-*-with-dependencies.jar /flink-k8s-toolbox.jar
+COPY --from=build /src/build/libs/flink-k8s-toolbox-*-with-dependencies.jar /usr/local/bin/flink-k8s-toolbox.jar
 RUN apk add curl
 WORKDIR /
 COPY entrypoint.sh .

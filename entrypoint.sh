@@ -9,5 +9,5 @@ java \
     -Dnetworkaddress.cache.ttl=1 \
     -Dnetworkaddress.cache.negative.ttl=1 \
     -jar \
-    /flink-k8s-toolbox.jar \
+    /usr/local/bin/flink-k8s-toolbox.jar \
     $@
