@@ -15,6 +15,8 @@ spec:
       - --BUCKET_BASE_PATH
       - file:///var/tmp
   jobManager:
+    annotations:
+      - managed: true
     serviceMode: NodePort
     environment:
     - name: FLINK_GRAPHITE_HOST
@@ -39,6 +41,10 @@ spec:
         configMap:
           name: flink-config
           defaultMode: 0777
+    extraPorts:
+      - name: prometheus
+        containerPort: 9999
+        protocol: TCP
     persistentVolumeClaimsTemplates:
       - metadata:
           name: jobmanager
@@ -50,6 +56,8 @@ spec:
             requests:
               storage: 1Gi
   taskManager:
+    annotations:
+      - managed: true
     environment:
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
@@ -70,6 +78,10 @@ spec:
         configMap:
           name: flink-config
           defaultMode: 0777
+    extraPorts:
+      - name: prometheus
+        containerPort: 9999
+        protocol: TCP
     persistentVolumeClaimsTemplates:
       - metadata:
           name: taskmanager

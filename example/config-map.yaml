@@ -59,12 +59,9 @@ data:
     elif [ "$1" = "jobmanager" ]; then
         echo "Starting Job Manager..."
 
-        echo "metrics.reporters: graphite" >> "$FLINK_HOME/conf/flink-conf.yaml"
-        echo "metrics.reporter.graphite.class: org.apache.flink.metrics.graphite.GraphiteReporter" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "metrics.reporter.graphite.host: $FLINK_GRAPHITE_HOST" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "metrics.reporter.graphite.port: $FLINK_GRAPHITE_PORT" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "metrics.reporter.graphite.prefix: $FLINK_GRAPHITE_PREFIX" >> "$FLINK_HOME/conf/flink-conf.yaml"
-        echo "metrics.reporter.graphite.protocol: TCP" >> "$FLINK_HOME/conf/flink-conf.yaml"
 
         if [ -n "$FLINK_SAVEPOINTS_LOCATION" ]; then
           echo "state.savepoints.dir: $FLINK_SAVEPOINTS_LOCATION" >> "$FLINK_PATH/conf/flink-conf.yaml"
@@ -97,12 +94,9 @@ data:
 
         echo "Starting Task Manager..."
 
-        echo "metrics.reporters: graphite" >> "$FLINK_HOME/conf/flink-conf.yaml"
-        echo "metrics.reporter.graphite.class: org.apache.flink.metrics.graphite.GraphiteReporter" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "metrics.reporter.graphite.host: $FLINK_GRAPHITE_HOST" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "metrics.reporter.graphite.port: $FLINK_GRAPHITE_PORT" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "metrics.reporter.graphite.prefix: $FLINK_GRAPHITE_PREFIX" >> "$FLINK_HOME/conf/flink-conf.yaml"
-        echo "metrics.reporter.graphite.protocol: TCP" >> "$FLINK_HOME/conf/flink-conf.yaml"
 
         if [ -n "$FLINK_SAVEPOINTS_LOCATION" ]; then
           echo "state.savepoints.dir: $FLINK_SAVEPOINTS_LOCATION" >> "$FLINK_PATH/conf/flink-conf.yaml"
@@ -381,6 +375,10 @@ data:
     jobmanager.tmp.dirs: /tmp
     taskmanager.tmp.dirs: /tmp
 
-    #akka.ask.timeout: 60 s
-    #akka.client.timeout: 60 s
-    #web.timeout: 60
+    #metrics.reporters: prometheus, graphite
+    metrics.reporters: prometheus
+
+    metrics.reporter.prometheus.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+    metrics.reporter.prometheus.port: 9999
+
+    metrics.reporter.graphite.class: org.apache.flink.metrics.graphite.GraphiteReporter

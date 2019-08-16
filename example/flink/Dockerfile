@@ -34,7 +34,8 @@ RUN wget --max-redirect=2 -O $FLINK_PATH/lib/httpcore-4.4.9.jar https://repo1.ma
 RUN wget --max-redirect=2 -O $FLINK_PATH/lib/httpclient-4.5.5.jar https://repo1.maven.org/maven2/org/apache/httpcomponents/httpclient/4.5.5/httpclient-4.5.5.jar
 RUN wget --max-redirect=2 -O $FLINK_PATH/lib/metrics-core-4.0.2.jar https://repo1.maven.org/maven2/io/dropwizard/metrics/metrics-core/4.0.2/metrics-core-4.0.2.jar
 
-RUN wget --max-redirect=2 -O $FLINK_PATH/lib/flink-metrics-graphite-$FLINK_VERSION.jar https://repo1.maven.org/maven2/org/apache/flink/flink-metrics-graphite/$FLINK_VERSION/flink-metrics-graphite-$FLINK_VERSION.jar
+RUN wget --max-redirect=2 -O $FLINK_PATH/lib/flink-metrics-graphite-${FLINK_VERSION}.jar https://repo1.maven.org/maven2/org/apache/flink/flink-metrics-graphite/${FLINK_VERSION}/flink-metrics-graphite-${FLINK_VERSION}.jar
+RUN wget --max-redirect=2 -O $FLINK_PATH/lib/flink-metrics-prometheus_${SCALA_VERSION}-${FLINK_VERSION}.jar https://repo1.maven.org/maven2/org/apache/flink/flink-metrics-prometheus_${SCALA_VERSION}/${FLINK_VERSION}/flink-metrics-prometheus_${SCALA_VERSION}-${FLINK_VERSION}.jar
 
 RUN chown -R flink.flink $FLINK_PATH/lib
 
