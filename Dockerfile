@@ -5,7 +5,10 @@ RUN gradle --no-daemon clean shadowJar
 
 FROM openjdk:14-jdk-alpine
 COPY --from=build /src/build/libs/flink-k8s-toolbox-*-with-dependencies.jar /flink-k8s-toolbox.jar
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod u+x /entrypoint.sh
+RUN apk add curl
+WORKDIR /
+COPY entrypoint.sh .
+RUN chmod u+x entrypoint.sh
+HEALTHCHECK --retries=12 --interval=10s CMD curl -s localhost:8080/version || exit 1
 EXPOSE 4444 8080
 ENTRYPOINT ["sh", "/entrypoint.sh"]
