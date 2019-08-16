@@ -6,9 +6,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $root.Values.name | default "flink-operator" | quote }}
-  {{- if $root.Values.namespace}}
-  namespace: {{ $root.Values.namespace | quote }}
-  {{- end}}
+  namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
   labels:
     app: {{ $root.Values.name | default "flink-operator" | quote }}
     chart: {{ $chart }}
@@ -19,8 +17,6 @@ spec:
   selector:
     matchLabels:
       app: {{ $root.Values.name | default "flink-operator" | quote }}
-      chart: {{ $chart }}
-      release: {{ $root.Release.Name }}
   template:
     metadata:
       {{- if $root.Values.annotations }}
@@ -29,36 +25,31 @@ spec:
       {{- end}}
       labels:
         app: {{ $root.Values.name | default "flink-operator" | quote }}
-        chart: {{ $chart }}
-        release: {{ $root.Release.Name }}
     spec:
       serviceAccountName: flink-operator
       volumes:
-        {{- if $root.Values.ssl}}
-        {{- if $root.Values.ssl.secretName}}
-        - name: ssl-secret-vol
+        {{- if $root.Values.secretName}}
+        - name: secret-vol
           secret:
-            secretName: {{ $root.Values.ssl.secretName }}
-        {{- end}}
+            secretName: {{ $root.Values.secretName | quote }}
         {{- end}}
       containers:
         - name: {{ $root.Values.name | default "flink-operator" | quote }}
           image: "{{ $root.Values.image.registry }}{{ $root.Values.image.repository }}:{{ $root.Values.image.tag }}"
           imagePullPolicy: {{ $root.Values.image.pullPolicy }}
           ports:
-            - name: http
+            - name: control
               containerPort: 4444
               protocol: TCP
-            - name: metrics
+            - name: monitor
               containerPort: 8080
               protocol: TCP
           args:
             - operator
             - run
             - --namespace
-            - {{ $root.Release.Namespace }}
-            {{- if $root.Values.ssl}}
-            {{- if $root.Values.ssl.secretName}}
+            - {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
+            {{- if $root.Values.secretName}}
             - --keystore-path
             - /etc/keystore.jks
             - --keystore-secret
@@ -67,7 +58,6 @@ spec:
             - /etc/truststore.jks
             - --truststore-secret
             - $(TRUSTSTORE_SECRET)
-            {{- end}}
             {{- end}}
           env:
             - name: POD_NAME
@@ -78,32 +68,28 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            {{- if $root.Values.ssl}}
-            {{- if $root.Values.ssl.secretName}}
+            {{- if $root.Values.secretName}}
             - name: KEYSTORE_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ $root.Values.ssl.secretName }}
-                  key: {{ $root.Values.ssl.keystore.secretKey }}
+                  name: {{ $root.Values.secretName }}
+                  key: {{ $root.Values.keystore.secretKey }}
             - name: TRUSTSTORE_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ $root.Values.ssl.secretName }}
-                  key: {{ $root.Values.ssl.truststore.secretKey }}
-            {{- end}}
+                  name: {{ $root.Values.secretName }}
+                  key: {{ $root.Values.truststore.secretKey }}
             {{- end}}
           volumeMounts:
-            {{- if $root.Values.ssl}}
-            {{- if $root.Values.ssl.secretName}}
+            {{- if $root.Values.secretName}}
             - name: ssl-secret-vol
               readOnly: true
               mountPath: /etc/keystore.jks
-              subPath: {{ $root.Values.ssl.keystore.pathKey }}
+              subPath: {{ $root.Values.keystore.pathKey }}
             - name: ssl-secret-vol
               readOnly: true
               mountPath: /etc/truststore.jks
-              subPath: {{ $root.Values.ssl.truststore.pathKey }}
-            {{- end}}
+              subPath: {{ $root.Values.truststore.pathKey }}
             {{- end}}
           {{- if $root.Values.resources }}
           resources:
