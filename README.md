@@ -233,7 +233,7 @@ Install the operator's global resources with commands:
 
 Install the operator's namespace resources with command:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set ssl.secretName=flink-operator-ssl  
+    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set secretName=flink-operator-ssl  
 
 Run the operator with command:
 
