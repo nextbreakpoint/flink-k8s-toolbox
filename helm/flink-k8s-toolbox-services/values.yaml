@@ -7,11 +7,6 @@ image:
   tag: 1.1.7-beta
   pullPolicy: Always
 
-service:
-  ports:
-    console: 4444
-    metrics: 8080
-
 annotations:
 
 resources:
@@ -22,11 +17,12 @@ resources:
     memory: "512Mi"
     cpu: "1000m"
 
-ssl:
-  secretName:
-  keystore:
-    pathKey: keystore.jks
-    secretKey: keystore-secret
-  truststore:
-    pathKey: truststore.jks
-    secretKey: truststore-secret
+secretName:
+
+keystore:
+  pathKey: keystore.jks
+  secretKey: keystore-secret
+
+truststore:
+  pathKey: truststore.jks
+  secretKey: truststore-secret

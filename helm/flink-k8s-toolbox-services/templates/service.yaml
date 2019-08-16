@@ -6,9 +6,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ $root.Values.name | default "flink-operator" | quote }}
-  {{- if $root.Values.namespace}}
-  namespace: {{ $root.Values.namespace | quote }}
-  {{- end}}
+  namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
   labels:
     app: {{ $root.Values.name | default "flink-operator" | quote }}
     chart: {{ $chart }}
@@ -17,15 +15,13 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: {{ $root.Values.service.ports.console | default 4444 }}
-      targetPort: http
+    - port: {{ $root.Values.controlPort | default 4444 }}
+      targetPort: control
       protocol: TCP
-      name: http
-    - port: {{ $root.Values.service.ports.metrics | default 8080 }}
-      targetPort: metrics
+      name: {{ $root.Values.controlPortName | default "control" }}
+    - port: {{ $root.Values.monitorPort | default 8080 }}
+      targetPort: monitor
       protocol: TCP
-      name: metrics
+      name: {{ $root.Values.monitorPortName | default "monitor" }}
   selector:
     app: {{ $root.Values.name | default "flink-operator" | quote }}
-    chart: {{ $chart }}
-    release: {{ $root.Release.Name }}
