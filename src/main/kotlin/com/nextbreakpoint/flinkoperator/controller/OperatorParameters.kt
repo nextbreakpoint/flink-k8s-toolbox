@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 
 object OperatorParameters {
-    fun getSavepointMode(flinkCluster: V1FlinkCluster) : String? =
+    fun getSavepointMode(flinkCluster: V1FlinkCluster) : String =
         flinkCluster.spec?.flinkOperator?.savepointMode ?: "MANUAL"
 
     fun getSavepointPath(flinkCluster: V1FlinkCluster) : String? =
@@ -14,4 +14,7 @@ object OperatorParameters {
 
     fun getSavepointTargetPath(flinkCluster: V1FlinkCluster) : String? =
         flinkCluster.spec?.flinkOperator?.savepointTargetPath?.trim()
+
+    fun getJobRestartPolicy(flinkCluster: V1FlinkCluster) : String =
+        flinkCluster.spec?.flinkOperator?.jobRestartPolicy ?: "NEVER"
 }
