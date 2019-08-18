@@ -13,6 +13,8 @@ public class V1FlinkOperatorSpec {
     private Long savepointInterval;
     @SerializedName("savepointTargetPath")
     private String savepointTargetPath;
+    @SerializedName("jobRestartPolicy")
+    private String jobRestartPolicy;
 
     public String getSavepointMode() {
         return savepointMode;
@@ -49,6 +51,14 @@ public class V1FlinkOperatorSpec {
         this.savepointTargetPath = savepointTargetPath;
     }
 
+    public String getJobRestartPolicy() {
+        return jobRestartPolicy;
+    }
+
+    public void setJobRestartPolicy(String jobRestartPolicy) {
+        this.jobRestartPolicy = jobRestartPolicy;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -57,12 +67,13 @@ public class V1FlinkOperatorSpec {
         return Objects.equals(getSavepointMode(), that.getSavepointMode()) &&
                 Objects.equals(getSavepointPath(), that.getSavepointPath()) &&
                 Objects.equals(getSavepointInterval(), that.getSavepointInterval()) &&
-                Objects.equals(getSavepointTargetPath(), that.getSavepointTargetPath());
+                Objects.equals(getSavepointTargetPath(), that.getSavepointTargetPath()) &&
+                Objects.equals(getJobRestartPolicy(), that.getJobRestartPolicy());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getSavepointPath(), getSavepointMode(), getSavepointInterval(), getSavepointTargetPath());
+        return Objects.hash(getSavepointPath(), getSavepointMode(), getSavepointInterval(), getSavepointTargetPath(), getJobRestartPolicy());
     }
 
     @Override
@@ -72,6 +83,7 @@ public class V1FlinkOperatorSpec {
                 ", savepointPath='" + savepointPath +
                 ", savepointInterval='" + savepointInterval +
                 ", savepointTargetPath=" + savepointTargetPath + '\'' +
+                ", jobRestartPolicy=" + jobRestartPolicy + '\'' +
                 '}';
     }
 }

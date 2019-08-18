@@ -16,7 +16,7 @@ spec:
       - file:///var/tmp
   jobManager:
     annotations:
-      - managed: true
+      managed: true
     serviceMode: NodePort
     environment:
     - name: FLINK_GRAPHITE_HOST
@@ -57,7 +57,7 @@ spec:
               storage: 1Gi
   taskManager:
     annotations:
-      - managed: true
+      managed: true
     environment:
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
@@ -93,6 +93,7 @@ spec:
             requests:
               storage: 5Gi
   flinkOperator:
-    savepointMode: AUTOMATIC
+    savepointMode: Automatic
     savepointInterval: 60
     savepointTargetPath: file:///var/tmp/test
+    jobRestartPolicy: OnFailure

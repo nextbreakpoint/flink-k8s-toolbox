@@ -154,42 +154,44 @@ class ClusterRunning : OperatorTaskHandler {
         val nextTask = OperatorAnnotations.getNextOperatorTask(context.flinkCluster)
 
         if (context.flinkCluster.spec?.flinkJob != null && elapsedTime > 10000) {
-            val result = context.controller.isClusterRunning(context.clusterId)
+            val attempts = OperatorAnnotations.getOperatorTaskAttempts(context.flinkCluster)
 
-            val errors = OperatorAnnotations.getOperatorTaskAttempts(context.flinkCluster)
+            val clusterRunning = context.controller.isClusterRunning(context.clusterId)
 
-            if (result.status != ResultStatus.SUCCESS) {
-                logger.warn("Cluster ${context.clusterId.name} doesn't have the expected status")
-                OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, errors + 1)
-            }
+            if (clusterRunning.status != ResultStatus.SUCCESS) {
+                logger.warn("Cluster ${context.clusterId.name} doesn't have a running job...")
+                OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, attempts + 1)
 
-            if (errors > 0 && result.status == ResultStatus.SUCCESS) {
-                OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
-            }
+                if (nextTask == null && attempts >= 3) {
+                    OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
 
-            if (nextTask == null && errors >= 3) {
-                OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
-
-                return Result(
-                    ResultStatus.FAILED,
-                    ""
-                )
-            }
-
-            if (result.status == ResultStatus.SUCCESS && result.output) {
-                OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
-                    listOf(
-                        OperatorTask.STOPPING_CLUSTER,
-                        OperatorTask.TERMINATE_PODS,
-                        OperatorTask.SUSPEND_CLUSTER,
-                        OperatorTask.CLUSTER_HALTED
+                    return Result(
+                        ResultStatus.FAILED,
+                        ""
                     )
-                )
+                }
+            } else {
+                if (attempts > 0) {
+                    OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
+                }
 
-                return Result(
-                    ResultStatus.AWAIT,
-                    ""
-                )
+                if (clusterRunning.output) {
+                    logger.info("Job finished. Suspending cluster ${context.clusterId.name}...")
+
+                    OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
+                        listOf(
+                            OperatorTask.STOPPING_CLUSTER,
+                            OperatorTask.TERMINATE_PODS,
+                            OperatorTask.SUSPEND_CLUSTER,
+                            OperatorTask.CLUSTER_HALTED
+                        )
+                    )
+
+                    return Result(
+                        ResultStatus.AWAIT,
+                        ""
+                    )
+                }
             }
         }
 
@@ -200,7 +202,7 @@ class ClusterRunning : OperatorTaskHandler {
 
             val savepointIntervalInSeconds = OperatorParameters.getSavepointInterval(context.flinkCluster)
 
-            if (savepointMode == "AUTOMATIC" && System.currentTimeMillis() - lastSavepointsTimestamp > savepointIntervalInSeconds * 1000L) {
+            if (savepointMode.toUpperCase() == "AUTOMATIC" && System.currentTimeMillis() - lastSavepointsTimestamp > savepointIntervalInSeconds * 1000L) {
                 OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
                     listOf(
                         OperatorTask.CHECKPOINTING_CLUSTER,
