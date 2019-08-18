@@ -395,6 +395,8 @@ Create a FlinkCluster file:
           - file:///var/tmp
       jobManager:
         serviceMode: NodePort
+        annotations:
+          managed: true
         environment:
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
@@ -418,6 +420,10 @@ Create a FlinkCluster file:
             configMap:
               name: flink-config
               defaultMode: 0777
+        extraPorts:
+          - name: prometheus
+            containerPort: 9999
+            protocol: TCP
         persistentVolumeClaimsTemplates:
           - metadata:
               name: jobmanager
@@ -429,6 +435,8 @@ Create a FlinkCluster file:
                 requests:
                   storage: 1Gi
       taskManager:
+        annotations:
+          managed: true
         environment:
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
@@ -449,6 +457,10 @@ Create a FlinkCluster file:
             configMap:
               name: flink-config
               defaultMode: 0777
+        extraPorts:
+          - name: prometheus
+            containerPort: 9999
+            protocol: TCP
         persistentVolumeClaimsTemplates:
           - metadata:
               name: taskmanager
@@ -460,9 +472,14 @@ Create a FlinkCluster file:
                 requests:
                   storage: 5Gi
       flinkOperator:
-        savepointMode: AUTOMATIC
+        # savepointMode can be Automatic or Manual. Default value is Manual
+        savepointMode: Automatic
+        # savepointInterval in seconds. Required when savepointMode is Automatic 
         savepointInterval: 60
+        # savepointTargetPath can be any valid Hadoop filesystem 
         savepointTargetPath: file:///var/tmp/test
+        # jobRestartPolicy can be OnFailure or Never. Default value is Never
+        jobRestartPolicy: OnFailure
     EOF
 
 Create a FlinkCluster resource with command:
@@ -684,9 +701,10 @@ Create a JSON file:
         ]
       },
       "flinkOperator": {
-        "savepointMode": "AUTOMATIC",
+        "savepointMode": "Automatic",
         "savepointInterval": 60,
-        "savepointTargetPath": "file:///var/tmp/test"
+        "savepointTargetPath": "file:///var/tmp/test",
+        "jobRestartPolicy": "OnFailure"
       }
     }
     EOF
