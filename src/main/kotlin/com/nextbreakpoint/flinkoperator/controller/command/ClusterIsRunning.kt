@@ -31,15 +31,10 @@ class ClusterIsRunning(flinkOptions : FlinkOptions) : OperatorCommand<Void?, Boo
             response.body().use {
                 val overview = Gson().fromJson(it.source().readUtf8Line(), ClusterOverviewWithVersion::class.java)
 
-                if (overview.slotsTotal > 0 && overview.taskmanagers > 0 && overview.jobsRunning >= 1) {
+                if (overview.slotsTotal > 0 && overview.taskmanagers > 0 && (overview.jobsRunning == 1 || (overview.jobsRunning == 0 && overview.jobsFinished >= 1))) {
                     return Result(
                         ResultStatus.SUCCESS,
-                        false
-                    )
-                } else if (overview.slotsTotal > 0 && overview.taskmanagers > 0 && overview.jobsFinished >= 1) {
-                    return Result(
-                        ResultStatus.SUCCESS,
-                        true
+                        overview.jobsRunning == 0 && overview.jobsFinished >= 1
                     )
                 } else {
                     return Result(

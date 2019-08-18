@@ -8,6 +8,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResourceUtils
+import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
 import org.apache.log4j.Logger
 
 class ClusterHalted : OperatorTaskHandler {
@@ -147,29 +148,54 @@ class ClusterHalted : OperatorTaskHandler {
 
                 when (clusterStatus) {
                     ClusterStatus.FAILED -> {
-                        val result = context.controller.isClusterRunning(context.clusterId)
-
-                        val errors = OperatorAnnotations.getOperatorTaskAttempts(context.flinkCluster)
-
                         val nextTask = OperatorAnnotations.getNextOperatorTask(context.flinkCluster)
 
-                        if (result.status == ResultStatus.SUCCESS) {
-                            logger.warn("Cluster ${context.clusterId.name} doesn't have the expected status")
-                            OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, errors + 1)
-                        }
+                        val attempts = OperatorAnnotations.getOperatorTaskAttempts(context.flinkCluster)
 
-                        if (errors > 0 && result.status != ResultStatus.SUCCESS) {
-                            OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
-                        }
+                        val clusterRunning = context.controller.isClusterRunning(context.clusterId)
 
-                        if (nextTask == null && errors >= 3) {
+                        if (clusterRunning.status == ResultStatus.SUCCESS) {
+                            logger.info("Cluster ${context.clusterId.name} seems to be running...")
+
                             OperatorAnnotations.appendOperatorTasks(context.flinkCluster, listOf(
-                                OperatorTask.CLUSTER_RUNNING))
+                                OperatorTask.CLUSTER_RUNNING
+                            ))
 
                             return Result(
                                 ResultStatus.AWAIT,
                                 ""
                             )
+                        } else {
+                            val restartPolicy = OperatorParameters.getJobRestartPolicy(context.flinkCluster)
+
+                            if (restartPolicy.toUpperCase() == "ONFAILURE") {
+                                val clusterReady = context.controller.isClusterReady(context.clusterId)
+
+                                if (clusterReady.status == ResultStatus.SUCCESS) {
+                                    logger.info("Cluster ${context.clusterId.name} seems to be ready...")
+                                    OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, attempts + 1)
+
+                                    if (nextTask == null && attempts >= 3) {
+                                        logger.info("Restarting job of cluster ${context.clusterId.name}...")
+
+                                        OperatorAnnotations.appendOperatorTasks(context.flinkCluster, listOf(
+                                            OperatorTask.DELETE_UPLOAD_JOB,
+                                            OperatorTask.UPLOAD_JAR,
+                                            OperatorTask.START_JOB,
+                                            OperatorTask.CLUSTER_RUNNING
+                                        ))
+
+                                        return Result(
+                                            ResultStatus.AWAIT,
+                                            ""
+                                        )
+                                    }
+                                } else {
+                                    if (attempts > 0) {
+                                        OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
+                                    }
+                                }
+                            }
                         }
                     }
                     else -> {}

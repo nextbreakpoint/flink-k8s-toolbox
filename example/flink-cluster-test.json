@@ -150,8 +150,9 @@
     ]
   },
   "flinkOperator": {
-    "savepointMode": "AUTOMATIC",
+    "savepointMode": "Automatic",
     "savepointInterval": 60,
-    "savepointTargetPath": "file:///var/tmp/test"
+    "savepointTargetPath": "file:///var/tmp/test",
+    "jobRestartPolicy": "OnFailure"
   }
 }
