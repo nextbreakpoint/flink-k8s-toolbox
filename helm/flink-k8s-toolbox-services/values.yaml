@@ -9,6 +9,9 @@ image:
 
 annotations:
 
+strategy:
+  type: Recreate
+
 resources:
   requests:
     memory: "128Mi"
