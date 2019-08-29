@@ -1,88 +1,62 @@
 package com.nextbreakpoint.flinkoperator.controller.command
 
-import com.google.gson.Gson
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkServerUtils
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkclient.model.CheckpointingStatistics
-import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import org.apache.log4j.Logger
 
-class SavepointTrigger(flinkOptions: FlinkOptions) : OperatorCommand<SavepointOptions, SavepointRequest?>(flinkOptions) {
+class SavepointTrigger(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<SavepointOptions, SavepointRequest?>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(SavepointTrigger::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: SavepointOptions): Result<SavepointRequest?> {
         try {
-            val flinkApi = FlinkServerUtils.find(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val runningJobs = flinkApi.jobs.jobs.filter {
-                jobIdWithStatus -> jobIdWithStatus.status.value.equals("RUNNING")
-            }.map {
-                it.id
-            }.toList()
+            val runningJobs = flinkContext.listRunningJobs(address)
 
-            val inprogressCheckpoints = runningJobs.map { jobId ->
-                val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
+            if (runningJobs.size > 1) {
+                logger.warn("There are multiple jobs running in cluster ${clusterId.name}")
+            }
 
-                if (response.code() != 200) {
-                    logger.error("Can't get checkpointing statistics for job $jobId in cluster ${clusterId.name}")
-                }
+            if (runningJobs.size != 1) {
+                logger.warn("Can't find a running job in cluster ${clusterId.name}")
 
-                jobId to response
-            }.filter {
-                it.second.code() == 200
-            }.map {
-                it.first to it.second.body().use {
-                    Gson().fromJson(it.source().readUtf8Line(), CheckpointingStatistics::class.java)
-                }
-            }.filter {
-                it.second.counts.inProgress > 0
-            }.toMap()
+                return Result(
+                    ResultStatus.FAILED,
+                    null
+                )
+            }
 
-            if (inprogressCheckpoints.isEmpty()) {
-                if (runningJobs.size == 1) {
-                    val requests = runningJobs.map {
-                        val requestBody = SavepointTriggerRequestBody().cancelJob(false).targetDirectory(params.targetPath)
+            val checkpointingStatistics = flinkContext.getCheckpointingStatistics(address, runningJobs)
 
-                        val response = flinkApi.createJobSavepoint(requestBody, it)
-
-                        it to response.requestId
-                    }.onEach {
-                        logger.info("Created savepoint request ${it.second} for job ${it.first} in cluster ${clusterId.name}")
-                    }.toMap()
-
-                    return Result(
-                        ResultStatus.SUCCESS,
-                        requests.map {
-                            SavepointRequest(
-                                jobId = it.key,
-                                triggerId = it.value
-                            )
-                        }.first()
-                    )
-                } else {
-                    logger.warn("Can't find a running job in cluster ${clusterId.name}")
-
-                    return Result(
-                        ResultStatus.FAILED,
-                        null
-                    )
-                }
-            } else {
-                logger.warn("Savepoint in progress for cluster ${clusterId.name}")
+            if (checkpointingStatistics.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
+                logger.warn("Savepoint in progress for job in cluster ${clusterId.name}")
 
                 return Result(
                     ResultStatus.AWAIT,
                     null
                 )
             }
+
+            val savepointRequests = flinkContext.triggerSavepoints(address, runningJobs, params.targetPath)
+
+            return Result(
+                ResultStatus.SUCCESS,
+                savepointRequests.map {
+                    SavepointRequest(
+                        jobId = it.key,
+                        triggerId = it.value
+                    )
+                }.first()
+            )
         } catch (e : Exception) {
             logger.error("Can't trigger savepoint for job of cluster ${clusterId.name}", e)
 

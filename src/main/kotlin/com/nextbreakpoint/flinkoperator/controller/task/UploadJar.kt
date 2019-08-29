@@ -1,13 +1,13 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
@@ -21,8 +21,7 @@ class UploadJar : OperatorTaskHandler {
         private val logger: Logger = Logger.getLogger(UploadJar::class.simpleName)
     }
 
-    private val statusEvaluator =
-        ClusterResourcesStatusEvaluator()
+    private val statusEvaluator = ClusterResourcesStatusEvaluator()
 
     override fun onExecuting(context: OperatorContext): Result<String> {
         if (context.flinkCluster.spec?.flinkJob == null) {
@@ -32,7 +31,7 @@ class UploadJar : OperatorTaskHandler {
             )
         }
 
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.UPLOADING_JAR_TIMEOUT) {
             return Result(
@@ -74,7 +73,7 @@ class UploadJar : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.UPLOADING_JAR_TIMEOUT) {
             return Result(
@@ -85,7 +84,7 @@ class UploadJar : OperatorTaskHandler {
 
         val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
 
-        if (haveUploadJobResourceDiverged(clusterStatus)) {
+        if (context.haveUploadJobResourceDiverged(clusterStatus)) {
             logger.info(clusterStatus.jarUploadJob.toString())
 
             return Result(
@@ -137,13 +136,5 @@ class UploadJar : OperatorTaskHandler {
         )
 
         return statusEvaluator.evaluate(clusterId, cluster, actualResources)
-    }
-
-    private fun haveUploadJobResourceDiverged(clusterResourcesStatus: ClusterResourcesStatus): Boolean {
-        if (clusterResourcesStatus.jarUploadJob.first != ResourceStatus.VALID) {
-            return true
-        }
-
-        return false
     }
 }

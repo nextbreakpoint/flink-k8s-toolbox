@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.nextbreakpoint'
-version = '1.1.10-beta'
+version = '1.1.11-beta'
 description = 'Tool for managing Flink clusters on Kubernetes'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -23,32 +23,32 @@ dependencies {
         implementation "org.jetbrains.kotlin:kotlin-stdlib:1.3.41"
         implementation "org.jetbrains.kotlin:kotlin-reflect:1.3.41"
         implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.2"
-        implementation "org.apache.logging.log4j:log4j-slf4j-impl:2.11.2"
-        implementation "org.apache.logging.log4j:log4j-1.2-api:2.11.2"
-        implementation "org.apache.logging.log4j:log4j-jcl:2.11.2"
-        implementation "org.apache.logging.log4j:log4j-jul:2.11.2"
-        implementation "io.kubernetes:client-java:5.0.0"
-        implementation "com.google.code.gson:gson:2.8.5"
-        implementation "io.vertx:vertx-core:3.8.0"
-        implementation "io.vertx:vertx-rx-java:3.8.0"
-        implementation "io.vertx:vertx-web:3.8.0"
-        implementation "io.vertx:vertx-web-common:3.8.0"
-        implementation "io.vertx:vertx-web-client:3.8.0"
-        implementation "io.vertx:vertx-micrometer-metrics:3.8.0"
-        implementation "com.github.ajalt:clikt:2.1.0"
+        implementation "org.apache.logging.log4j:log4j-slf4j-impl:2.12.1"
+        implementation "org.apache.logging.log4j:log4j-1.2-api:2.12.1"
+        implementation "org.apache.logging.log4j:log4j-jcl:2.12.1"
+        implementation "org.apache.logging.log4j:log4j-jul:2.12.1"
+        implementation "io.kubernetes:client-java:6.0.1"
+        implementation "com.google.code.gson:gson:2.8.6"
+        implementation "io.vertx:vertx-core:3.8.3"
+        implementation "io.vertx:vertx-rx-java:3.8.3"
+        implementation "io.vertx:vertx-web:3.8.3"
+        implementation "io.vertx:vertx-web-common:3.8.3"
+        implementation "io.vertx:vertx-web-client:3.8.3"
+        implementation "io.vertx:vertx-micrometer-metrics:3.8.3"
+        implementation "com.github.ajalt:clikt:2.2.0"
         implementation "javax.xml.bind:jaxb-api:2.2.11"
         implementation "javax.activation:activation:1.1.1"
-        implementation "com.fasterxml.jackson.core:jackson-annotations:2.9.9"
-        implementation "com.fasterxml.jackson.core:jackson-databind:2.9.9.3"
+        implementation "com.fasterxml.jackson.core:jackson-annotations:2.10.0"
+        implementation "com.fasterxml.jackson.core:jackson-databind:2.10.0"
         implementation "io.micrometer:micrometer-registry-prometheus:1.1.5"
         implementation "com.nextbreakpoint:com.nextbreakpoint.flinkclient:1.0.1"
         testImplementation "org.jetbrains.kotlin:kotlin-test-junit:1.3.41"
-        testImplementation "org.junit.jupiter:junit-jupiter-engine:5.5.1"
-        testImplementation "org.junit.platform:junit-platform-runner:1.5.1"
-        testImplementation "org.assertj:assertj-core:3.12.2"
-        testImplementation "org.mockito:mockito-core:3.0.0"
-        testImplementation "com.github.tomakehurst:wiremock:2.24.0"
-        testImplementation "org.awaitility:awaitility:3.1.6"
+        testImplementation "org.junit.jupiter:junit-jupiter-engine:5.5.2"
+        testImplementation "org.junit.platform:junit-platform-runner:1.5.2"
+        testImplementation "org.assertj:assertj-core:3.13.2"
+        testImplementation "org.mockito:mockito-core:3.1.0"
+        testImplementation "com.github.tomakehurst:wiremock:2.25.1"
+        testImplementation "org.awaitility:awaitility:4.0.1"
     }
 }
 
@@ -97,11 +97,15 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
+test {
+    useJUnitPlatform()
+}
+
 shadowJar {
     archiveBaseName = "flink-k8s-toolbox"
     archiveClassifier = "with-dependencies"
     manifest {
-        attributes 'Main-Class': 'com.nextbreakpoint.flinkoperator.cli.FlinkK8SToolboxMain', \
+        attributes 'Main-Class': 'com.nextbreakpoint.flinkoperator.cli.Main', \
                    'Implementation-Title': project.name, \
                    'Implementation-Version': project.version, \
                    'Built-By': System.getProperty('user.name'), \

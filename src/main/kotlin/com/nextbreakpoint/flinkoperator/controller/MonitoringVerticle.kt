@@ -19,9 +19,9 @@ import rx.Single
 import java.util.Properties
 import java.util.function.Function
 
-class MetricsVerticle : AbstractVerticle() {
+class MonitoringVerticle : AbstractVerticle() {
     companion object {
-        private val logger: Logger = Logger.getLogger(MetricsVerticle::class.simpleName)
+        private val logger: Logger = Logger.getLogger(MonitoringVerticle::class.simpleName)
 
         private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
     }

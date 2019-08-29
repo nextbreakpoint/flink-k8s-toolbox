@@ -2,15 +2,15 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
+import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 
 class RestartPods : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.TERMINATING_PODS_TIMEOUT) {
             return Result(
@@ -43,7 +43,7 @@ class RestartPods : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.TERMINATING_PODS_TIMEOUT) {
             return Result(

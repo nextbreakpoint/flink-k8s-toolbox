@@ -1,14 +1,9 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatusEvaluator
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
-import com.nextbreakpoint.flinkoperator.controller.testing.TestFactory
+import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1EnvVar
 import io.kubernetes.client.models.V1ObjectMeta
@@ -16,18 +11,14 @@ import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1ServiceSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 import java.util.UUID
 
-@RunWith(JUnitPlatform::class)
 class ClusterResourcesStatusEvaluatorTest {
-    private val statusEvaluator =
-        ClusterResourcesStatusEvaluator()
+    private val statusEvaluator = ClusterResourcesStatusEvaluator()
 
     private val clusterId = UUID.randomUUID().toString()
 
-    private val cluster = TestFactory.aCluster()
+    private val cluster = TestFactory.aCluster("test", "flink")
 
     private val identity = ClusterId(
         namespace = "test",
@@ -50,7 +41,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return missing resource when the jobmanager service is not present`() {
+    fun `should return missing resource when the job manager service is not present`() {
         val expectedResources = createTestClusterResources(cluster).withJobManagerService(null)
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
@@ -72,7 +63,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return missing resource when the jobmanager statefulset is not present`() {
+    fun `should return missing resource when the job manager statefulset is not present`() {
         val expectedResources = createTestClusterResources(cluster).withJobManagerStatefulSet(null)
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
@@ -83,7 +74,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return missing resource when the taskmanager statefulset is not present`() {
+    fun `should return missing resource when the task manager statefulset is not present`() {
         val expectedResources = createTestClusterResources(cluster).withTaskManagerStatefulSet(null)
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
@@ -94,7 +85,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager service does not have the expected labels`() {
+    fun `should return divergent resource when the job manager service does not have the expected labels`() {
         val jobmanagerService = V1Service()
 
         jobmanagerService.metadata = V1ObjectMeta()
@@ -116,7 +107,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager service does not have the expected service mode`() {
+    fun `should return divergent resource when the job manager service does not have the expected service mode`() {
         val jobmanagerService = V1Service()
 
         val labels = createLabels("flink-operator", "jobmanager", clusterId, cluster.metadata.name)
@@ -140,7 +131,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected labels`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected labels`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.metadata?.labels = mapOf()
@@ -154,7 +145,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected service account`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected service account`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.serviceAccountName = "xxx"
@@ -168,7 +159,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected pull secrets`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected pull secrets`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.imagePullSecrets = listOf()
@@ -182,7 +173,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected pull secrets name`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected pull secrets name`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.imagePullSecrets?.get(0)?.name = "xxx"
@@ -196,7 +187,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected volume claims`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected volume claims`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.volumeClaimTemplates = listOf()
@@ -210,7 +201,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have containers`() {
+    fun `should return divergent resource when the job manager statefulset does not have containers`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.containers = listOf()
@@ -224,7 +215,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected container image`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected container image`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.image = "xxx"
@@ -238,7 +229,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected container pull policy`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected container pull policy`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.imagePullPolicy = "xxx"
@@ -252,7 +243,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected container cpu limits`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected container cpu limits`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.resources?.limits?.set("cpu", Quantity("2.0"))
@@ -266,7 +257,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected container memory limits`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected container memory limits`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.resources?.requests?.set("memory", Quantity("100Mi"))
@@ -280,7 +271,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the expected container environment variables`() {
+    fun `should return divergent resource when the job manager statefulset does not have the expected container environment variables`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.env = listOf()
@@ -294,7 +285,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the jobmanager statefulset does not have the internal expected container environment variables`() {
+    fun `should return divergent resource when the job manager statefulset does not have the internal expected container environment variables`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.env = listOf(V1EnvVar().name("key").value("value"))
@@ -308,7 +299,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected labels`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected labels`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.metadata?.labels = mapOf()
@@ -322,7 +313,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected service account`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected service account`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.serviceAccountName = "xxx"
@@ -336,7 +327,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected pull secrets`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected pull secrets`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.imagePullSecrets = listOf()
@@ -350,7 +341,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected pull secrets name`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected pull secrets name`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.imagePullSecrets?.get(0)?.name = "xxx"
@@ -364,7 +355,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected volume claims`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected volume claims`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.volumeClaimTemplates = listOf()
@@ -378,7 +369,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have containers`() {
+    fun `should return divergent resource when the task manager statefulset does not have containers`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.containers = listOf()
@@ -392,7 +383,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected container image`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected container image`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.image = "xxx"
@@ -406,7 +397,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected container pull policy`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected container pull policy`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.imagePullPolicy = "xxx"
@@ -420,7 +411,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected container cpu limits`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected container cpu limits`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.resources?.limits?.set("cpu", Quantity("2.0"))
@@ -434,7 +425,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected container memory limits`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected container memory limits`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.resources?.requests?.set("memory", Quantity("100Mi"))
@@ -448,7 +439,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected container environment variables`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected container environment variables`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.env = listOf()
@@ -462,7 +453,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the internal expected container environment variables`() {
+    fun `should return divergent resource when the task manager statefulset does not have the internal expected container environment variables`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.containers?.get(0)?.env = listOf(V1EnvVar().name("key").value("value"))
@@ -476,7 +467,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the taskmanager statefulset does not have the expected number of replicas`() {
+    fun `should return divergent resource when the task manager statefulset does not have the expected number of replicas`() {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.replicas = 4

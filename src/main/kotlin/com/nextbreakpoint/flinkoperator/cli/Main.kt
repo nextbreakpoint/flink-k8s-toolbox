@@ -8,7 +8,6 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesUtils
 import com.nextbreakpoint.flinkoperator.common.model.ConnectionConfig
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
@@ -16,13 +15,14 @@ import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.model.UploadOptions
+import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import org.apache.log4j.Logger
 import java.io.File
 import java.nio.file.Files
 
-class FlinkK8SToolboxMain(private val factory: CommandFactory) {
+class Main(private val factory: CommandFactory) {
     companion object {
-        private val logger = Logger.getLogger(FlinkK8SToolboxMain::class.simpleName)
+        private val logger = Logger.getLogger(Main::class.simpleName)
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -31,7 +31,7 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
 
                 System.setProperty("crypto.policy", "unlimited")
 
-                FlinkK8SToolboxMain(DefaultCommandFactory).run(args)
+                Main(DefaultCommandFactory).run(args)
 
                 System.exit(0)
             } catch (e: Exception) {
@@ -419,7 +419,7 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
                 truststorePath = truststorePath,
                 truststoreSecret = truststoreSecret
             )
-            KubernetesUtils.configure(kubeConfig)
+            KubernetesContext.configure(kubeConfig)
             factory.createRunOperatorCommand().run(config)
         }
     }
@@ -436,7 +436,7 @@ class FlinkK8SToolboxMain(private val factory: CommandFactory) {
             val params = UploadOptions(
                 jarPath = jarPath
             )
-            KubernetesUtils.configure(kubeConfig)
+            KubernetesContext.configure(kubeConfig)
             val flinkOptions = FlinkOptions(
                 hostname = flinkHostname,
                 portForward = portForward,
