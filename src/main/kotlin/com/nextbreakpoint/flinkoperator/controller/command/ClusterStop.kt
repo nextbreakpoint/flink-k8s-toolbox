@@ -8,12 +8,14 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import org.apache.log4j.Logger
 
-class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : OperatorCommand<StopOptions, List<OperatorTask>>(flinkOptions) {
+class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, val cache: OperatorCache) : OperatorCommand<StopOptions, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterStop::class.simpleName)
     }
@@ -24,7 +26,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
 
             val clusterStatus = OperatorAnnotations.getClusterStatus(flinkCluster)
 
-            val operatorStatus = OperatorAnnotations.getCurrentOperatorStatus(flinkCluster)
+            val operatorStatus = OperatorAnnotations.getCurrentTaskStatus(flinkCluster)
 
             if (operatorStatus == TaskStatus.IDLE) {
                 val statusList = if (params.deleteResources) {
@@ -111,7 +113,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                 }
 
                 if (statusList.isNotEmpty()) {
-                    OperatorAnnotations.appendOperatorTasks(flinkCluster, statusList)
+                    OperatorAnnotations.appendTasks(flinkCluster, statusList)
                     return Result(
                         ResultStatus.SUCCESS,
                         statusList
@@ -122,7 +124,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                     return Result(
                         ResultStatus.AWAIT,
                         listOf(
-                            OperatorAnnotations.getCurrentOperatorTask(
+                            OperatorAnnotations.getCurrentTask(
                                 flinkCluster
                             )
                         )
@@ -134,7 +136,7 @@ class ClusterStop(flinkOptions: FlinkOptions, val cache: OperatorCache) : Operat
                 return Result(
                     ResultStatus.AWAIT,
                     listOf(
-                        OperatorAnnotations.getCurrentOperatorTask(
+                        OperatorAnnotations.getCurrentTask(
                             flinkCluster
                         )
                     )

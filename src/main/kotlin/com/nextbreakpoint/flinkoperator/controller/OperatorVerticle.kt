@@ -1,22 +1,44 @@
 package com.nextbreakpoint.flinkoperator.controller
 
 import com.google.gson.GsonBuilder
+import com.nextbreakpoint.flinkoperator.common.crd.DateTimeSerializer
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
+import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.crd.DateTimeSerializer
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
+import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.command.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.command.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.command.JobMetrics
 import com.nextbreakpoint.flinkoperator.controller.command.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.controller.command.TaskManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.command.TaskManagersList
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResourceUtils
+import com.nextbreakpoint.flinkoperator.controller.task.CancelJob
+import com.nextbreakpoint.flinkoperator.controller.task.CheckpointingCluster
+import com.nextbreakpoint.flinkoperator.controller.task.ClusterHalted
+import com.nextbreakpoint.flinkoperator.controller.task.ClusterRunning
+import com.nextbreakpoint.flinkoperator.controller.task.CreateResources
+import com.nextbreakpoint.flinkoperator.controller.task.CreateSavepoint
+import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
+import com.nextbreakpoint.flinkoperator.controller.task.DeleteUploadJob
+import com.nextbreakpoint.flinkoperator.controller.task.EraseSavepoint
+import com.nextbreakpoint.flinkoperator.controller.task.InitialiseCluster
+import com.nextbreakpoint.flinkoperator.controller.task.RestartPods
+import com.nextbreakpoint.flinkoperator.controller.task.StartJob
+import com.nextbreakpoint.flinkoperator.controller.task.StartingCluster
+import com.nextbreakpoint.flinkoperator.controller.task.StopJob
+import com.nextbreakpoint.flinkoperator.controller.task.StoppingCluster
+import com.nextbreakpoint.flinkoperator.controller.task.SuspendCluster
+import com.nextbreakpoint.flinkoperator.controller.task.TerminateCluster
+import com.nextbreakpoint.flinkoperator.controller.task.TerminatePods
+import com.nextbreakpoint.flinkoperator.controller.task.UploadJar
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PersistentVolumeClaim
@@ -56,6 +78,28 @@ class OperatorVerticle : AbstractVerticle() {
         private val logger: Logger = Logger.getLogger(OperatorVerticle::class.simpleName)
 
         private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
+
+        private val operatorTasks = mapOf(
+            OperatorTask.INITIALISE_CLUSTER to InitialiseCluster(),
+            OperatorTask.TERMINATE_CLUSTER to TerminateCluster(),
+            OperatorTask.SUSPEND_CLUSTER to SuspendCluster(),
+            OperatorTask.CLUSTER_HALTED to ClusterHalted(),
+            OperatorTask.CLUSTER_RUNNING to ClusterRunning(),
+            OperatorTask.STARTING_CLUSTER to StartingCluster(),
+            OperatorTask.STOPPING_CLUSTER to StoppingCluster(),
+            OperatorTask.CHECKPOINTING_CLUSTER to CheckpointingCluster(),
+            OperatorTask.CREATE_SAVEPOINT to CreateSavepoint(),
+            OperatorTask.ERASE_SAVEPOINT to EraseSavepoint(),
+            OperatorTask.CREATE_RESOURCES to CreateResources(),
+            OperatorTask.DELETE_RESOURCES to DeleteResources(),
+            OperatorTask.TERMINATE_PODS to TerminatePods(),
+            OperatorTask.RESTART_PODS to RestartPods(),
+            OperatorTask.DELETE_UPLOAD_JOB to DeleteUploadJob(),
+            OperatorTask.UPLOAD_JAR to UploadJar(),
+            OperatorTask.CANCEL_JOB to CancelJob(),
+            OperatorTask.START_JOB to StartJob(),
+            OperatorTask.STOP_JOB to StopJob()
+        )
     }
 
     override fun rxStart(): Completable {
@@ -83,15 +127,19 @@ class OperatorVerticle : AbstractVerticle() {
 
         val serverOptions = createServerOptions(jksKeyStorePath, jksTrustStorePath, jksKeyStoreSecret, jksTrustStoreSecret)
 
-        val watch = OperatorWatch(gson)
-
         val flinkOptions = FlinkOptions(
             hostname = flinkHostname,
             portForward = portForward,
             useNodePort = useNodePort
         )
 
-        val controller = OperatorController(flinkOptions)
+        val kubernetesContext = KubernetesContext
+
+        val flinkContext = FlinkContext
+
+        val watch = OperatorWatch(gson, kubernetesContext)
+
+        val controller = OperatorController(flinkOptions, flinkContext, kubernetesContext, operatorTasks)
 
         val resourcesCache = OperatorCache()
 
@@ -112,67 +160,67 @@ class OperatorVerticle : AbstractVerticle() {
 
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/start", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(resourcesCache.getClusterIdentity(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                OperatorMessage(resourcesCache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
         mainRouter.put("/cluster/:name/stop").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/stop", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(resourcesCache.getClusterIdentity(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                OperatorMessage(resourcesCache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
         mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/savepoint", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(resourcesCache.getClusterIdentity(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                OperatorMessage(resourcesCache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
 
         mainRouter.get("/cluster/:name/status").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(controller.getClusterStatus(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), resourcesCache)) })
+            handleRequest(routingContext, Function { context -> gson.toJson(controller.getClusterStatus(resourcesCache.getClusterId(namespace, context.pathParam("name")), resourcesCache)) })
         }
 
         mainRouter.get("/cluster/:name/job/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobDetails(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)
+                JobDetails(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/job/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)
+                JobMetrics(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/jobmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobManagerMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)
+                JobManagerMetrics(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagersList(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), null)
+                TaskManagersList(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerDetails(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
+                TaskManagerDetails(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerMetrics(flinkOptions).execute(resourcesCache.getClusterIdentity(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
+                TaskManagerMetrics(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
             ) })
         }
 
 
         mainRouter.delete("/cluster/:name").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/delete", BiFunction { context, namespace -> gson.toJson(
-                resourcesCache.getClusterIdentity(namespace, context.pathParam("name"))
+                resourcesCache.getClusterId(namespace, context.pathParam("name"))
             ) })
         }
 
@@ -359,7 +407,7 @@ class OperatorVerticle : AbstractVerticle() {
 
     private fun makeV1FlinkCluster(context: RoutingContext, namespace: String): V1FlinkCluster {
         val objectMeta = V1ObjectMeta().namespace(namespace).name(context.pathParam("name"))
-        val flinkClusterSpec = CustomResourceUtils.parseV1FlinkClusterSpec(context.bodyAsString)
+        val flinkClusterSpec = CustomResources.parseV1FlinkClusterSpec(context.bodyAsString)
         val flinkCluster = V1FlinkCluster()
         flinkCluster.metadata = objectMeta
         flinkCluster.spec = flinkClusterSpec
@@ -405,21 +453,22 @@ class OperatorVerticle : AbstractVerticle() {
     }
 
     private fun makeClusterId(flinkCluster: V1FlinkCluster) =
-        ClusterId(namespace = flinkCluster.metadata.namespace, name = flinkCluster.metadata.name, uuid = "")
+        ClusterId(namespace = flinkCluster.metadata.namespace, name = flinkCluster.metadata.name, uuid = flinkCluster.metadata.uid)
 
     private fun doUpdateClusters(
         controller: OperatorController,
         status: OperatorCache,
         worker: WorkerExecutor
     ) {
-        val observable = Observable.from(status.updateClusters()).map { pair ->
+        val observable = Observable.from(status.getClusters()).map { pair ->
             Runnable {
                 controller.updateClusterStatus(makeClusterId(pair.first), pair.first, pair.second)
             }
         }
 
         worker.rxExecuteBlocking<Void> { future ->
-            observable.doOnNext { it.run() }.subscribe({ future.complete() }, { e -> future.fail(e) })
+            observable.doOnCompleted { future.complete() }
+                .subscribe(Runnable::run) { e -> future.fail(e) }
         }.doOnError {
             logger.error("Can't update cluster resources", it)
         }.subscribe()
@@ -430,7 +479,7 @@ class OperatorVerticle : AbstractVerticle() {
         status: OperatorCache,
         worker: WorkerExecutor
     ) {
-        val observable = Observable.from(status.deleteOrphans()).map { clusterId ->
+        val observable = Observable.from(status.getOrphanedClusters()).map { clusterId ->
             Runnable {
                 controller.terminatePods(clusterId)
                 val result = controller.arePodsTerminated(clusterId)
@@ -441,7 +490,8 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         worker.rxExecuteBlocking<Void> { future ->
-            observable.doOnNext { it.run() }.subscribe({ _ -> future.complete() }, { e -> future.fail(e) })
+            observable.doOnCompleted { future.complete() }
+                .subscribe(Runnable::run) { e -> future.fail(e) }
         }.doOnError {
             logger.error("Can't delete orphaned resources", it)
         }.subscribe()

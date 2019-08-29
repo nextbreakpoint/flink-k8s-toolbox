@@ -4,10 +4,10 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResourceUtils
+import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class InitialiseCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
@@ -15,7 +15,7 @@ class InitialiseCluster : OperatorTaskHandler {
         OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
 
         if (context.flinkCluster.spec.flinkJob != null) {
-            OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
+            OperatorAnnotations.appendTasks(context.flinkCluster,
                 listOf(
                     OperatorTask.CREATE_RESOURCES,
                     OperatorTask.UPLOAD_JAR,
@@ -24,7 +24,7 @@ class InitialiseCluster : OperatorTaskHandler {
                 )
             )
         } else {
-            OperatorAnnotations.appendOperatorTasks(context.flinkCluster,
+            OperatorAnnotations.appendTasks(context.flinkCluster,
                 listOf(
                     OperatorTask.CREATE_RESOURCES,
                     OperatorTask.CLUSTER_RUNNING
@@ -32,10 +32,10 @@ class InitialiseCluster : OperatorTaskHandler {
             )
         }
 
-        val jobManagerDigest = CustomResourceUtils.computeDigest(context.flinkCluster.spec?.jobManager)
-        val taskManagerDigest = CustomResourceUtils.computeDigest(context.flinkCluster.spec?.taskManager)
-        val flinkImageDigest = CustomResourceUtils.computeDigest(context.flinkCluster.spec?.flinkImage)
-        val flinkJobDigest = CustomResourceUtils.computeDigest(context.flinkCluster.spec?.flinkJob)
+        val jobManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.jobManager)
+        val taskManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.taskManager)
+        val flinkImageDigest = CustomResources.computeDigest(context.flinkCluster.spec?.flinkImage)
+        val flinkJobDigest = CustomResources.computeDigest(context.flinkCluster.spec?.flinkJob)
 
         OperatorAnnotations.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
         OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)

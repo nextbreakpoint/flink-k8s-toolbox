@@ -1,48 +1,36 @@
 package com.nextbreakpoint.flinkoperator.controller.command
 
-import com.google.gson.Gson
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkServerUtils
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkclient.model.ClusterOverviewWithVersion
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import org.apache.log4j.Logger
 
-class ClusterIsReady(flinkOptions : FlinkOptions) : OperatorCommand<Void?, Void?>(flinkOptions) {
+class ClusterIsReady(flinkOptions : FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, Void?>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterIsReady::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {
-            val flinkApi = FlinkServerUtils.find(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val response = flinkApi.getOverviewCall(null, null).execute()
+            val overview = flinkContext.getOverview(address)
 
-            if (!response.isSuccessful) {
+            //TODO compute total number of slots from number of replicas and task slots per task manager
+            if (overview.slotsAvailable > 0 && overview.taskmanagers > 0) {
                 return Result(
-                    ResultStatus.FAILED,
+                    ResultStatus.SUCCESS,
                     null
                 )
-            }
-
-            response.body().use {
-                val overview = Gson().fromJson(it.source().readUtf8Line(), ClusterOverviewWithVersion::class.java)
-
-                //TODO compute total number of slots from number of replicas and task slots per task manager
-                if (overview.slotsAvailable > 0 && overview.taskmanagers > 0) {
-                    return Result(
-                        ResultStatus.SUCCESS,
-                        null
-                    )
-                } else {
-                    return Result(
-                        ResultStatus.AWAIT,
-                        null
-                    )
-                }
+            } else {
+                return Result(
+                    ResultStatus.AWAIT,
+                    null
+                )
             }
         } catch (e : Exception) {
             logger.warn("Can't get overview of cluster ${clusterId.name}")

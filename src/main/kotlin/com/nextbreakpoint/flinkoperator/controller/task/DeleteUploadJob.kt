@@ -3,14 +3,14 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 
 class DeleteUploadJob : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
             return Result(
@@ -35,7 +35,7 @@ class DeleteUploadJob : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
             return Result(

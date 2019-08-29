@@ -1,18 +1,14 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.resources
 
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
-import com.nextbreakpoint.flinkoperator.controller.testing.TestFactory
+import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 
-@RunWith(JUnitPlatform::class)
 class DefaultClusterResourcesFactoryTest {
-    private val cluster = TestFactory.aCluster()
+    private val cluster = TestFactory.aCluster("test", "flink")
 
     @Test
-    fun `should create jobmanager service`() {
+    fun `should create job manager service`() {
         val service = DefaultClusterResourcesFactory.createJobManagerService("test", "xxx", "myself", cluster)
 
         assertThat(service).isNotNull()
@@ -46,7 +42,7 @@ class DefaultClusterResourcesFactoryTest {
     }
 
     @Test
-    fun `should create jar upload job when submitting job`() {
+    fun `should create upload job when submitting job`() {
         val job = DefaultClusterResourcesFactory.createJarUploadJob("test", "xxx", "myself", cluster)
 
         assertThat(job).isNotNull()
@@ -91,7 +87,7 @@ class DefaultClusterResourcesFactoryTest {
     }
 
     @Test
-    fun `should create jobmanager statefulset`() {
+    fun `should create job manager statefulset`() {
         val statefulset = DefaultClusterResourcesFactory.createJobManagerStatefulSet("test", "xxx", "myself", cluster)
 
         assertThat(statefulset).isNotNull()
@@ -157,7 +153,7 @@ class DefaultClusterResourcesFactoryTest {
     }
 
     @Test
-    fun `should create taskmanager statefulset`() {
+    fun `should create task manager statefulset`() {
         val statefulset = DefaultClusterResourcesFactory.createTaskManagerStatefulSet("test", "xxx", "myself", cluster)
 
         assertThat(statefulset).isNotNull()

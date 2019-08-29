@@ -2,9 +2,9 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
+import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class EraseSavepoint : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
