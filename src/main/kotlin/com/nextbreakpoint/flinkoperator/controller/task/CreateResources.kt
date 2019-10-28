@@ -1,13 +1,13 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
@@ -21,11 +21,10 @@ class CreateResources : OperatorTaskHandler {
         private val logger: Logger = Logger.getLogger(CreateResources::class.simpleName)
     }
 
-    private val statusEvaluator =
-        ClusterResourcesStatusEvaluator()
+    private val statusEvaluator = ClusterResourcesStatusEvaluator()
 
     override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.CREATING_CLUSTER_TIMEOUT) {
             return Result(
@@ -38,7 +37,7 @@ class CreateResources : OperatorTaskHandler {
 
         val response = context.controller.isClusterReady(context.clusterId)
 
-        if (!haveClusterResourcesDiverged(clusterStatus) && response.status == ResultStatus.SUCCESS) {
+        if (!context.haveClusterResourcesDiverged(clusterStatus) && response.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
                 "Resources of cluster ${context.flinkCluster.metadata.name} already created"
@@ -69,7 +68,7 @@ class CreateResources : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.CREATING_CLUSTER_TIMEOUT) {
             return Result(
@@ -80,7 +79,7 @@ class CreateResources : OperatorTaskHandler {
 
         val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
 
-        if (haveClusterResourcesDiverged(clusterStatus)) {
+        if (context.haveClusterResourcesDiverged(clusterStatus)) {
             logger.info(clusterStatus.jobmanagerService.toString())
             logger.info(clusterStatus.jobmanagerStatefulSet.toString())
             logger.info(clusterStatus.taskmanagerStatefulSet.toString())
@@ -134,21 +133,5 @@ class CreateResources : OperatorTaskHandler {
         )
 
         return statusEvaluator.evaluate(clusterId, cluster, actualResources)
-    }
-
-    private fun haveClusterResourcesDiverged(clusterResourcesStatus: ClusterResourcesStatus): Boolean {
-        if (clusterResourcesStatus.jobmanagerService.first != ResourceStatus.VALID) {
-            return true
-        }
-
-        if (clusterResourcesStatus.jobmanagerStatefulSet.first != ResourceStatus.VALID) {
-            return true
-        }
-
-        if (clusterResourcesStatus.taskmanagerStatefulSet.first != ResourceStatus.VALID) {
-            return true
-        }
-
-        return false
     }
 }

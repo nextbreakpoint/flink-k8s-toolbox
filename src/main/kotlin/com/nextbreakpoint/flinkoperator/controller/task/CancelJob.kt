@@ -3,12 +3,11 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
+import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
-import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 
 class CancelJob : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
@@ -19,7 +18,7 @@ class CancelJob : OperatorTaskHandler {
             )
         }
 
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.CANCELLING_JOBS_TIMEOUT) {
             return Result(
@@ -44,7 +43,7 @@ class CancelJob : OperatorTaskHandler {
         val savepointRequest = context.controller.cancelJob(context.clusterId, options)
 
         if (savepointRequest.status == ResultStatus.SUCCESS && savepointRequest.output != null) {
-            OperatorAnnotations.setSavepointRequest(context.flinkCluster, savepointRequest.output as SavepointRequest)
+            OperatorAnnotations.setSavepointRequest(context.flinkCluster, savepointRequest.output)
 
             return Result(
                 ResultStatus.SUCCESS,
@@ -59,7 +58,7 @@ class CancelJob : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = System.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
 
         if (elapsedTime > OperatorTimeouts.CANCELLING_JOBS_TIMEOUT) {
             return Result(

@@ -3,15 +3,15 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
+import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class SuspendCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.SUSPENDED)
         OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
-        OperatorAnnotations.appendOperatorTasks(context.flinkCluster, listOf())
+        OperatorAnnotations.appendTasks(context.flinkCluster, listOf())
 
         return Result(
             ResultStatus.SUCCESS,

@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ConnectionConfig
 import io.vertx.rxjava.core.buffer.Buffer
 
 object HttpUtils {
-    fun postText(factory: WebClientFactory, connectionConfig: ConnectionConfig, path: String, body: String) {
+    fun postJson(factory: WebClientFactory, connectionConfig: ConnectionConfig, path: String, body: String) {
         try {
             val client = factory.create(connectionConfig)
             try {
