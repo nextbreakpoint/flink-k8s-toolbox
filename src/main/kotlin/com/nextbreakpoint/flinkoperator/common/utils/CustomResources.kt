@@ -13,7 +13,7 @@ import org.joda.time.DateTime
 import java.security.MessageDigest
 import java.util.Base64
 
-object CustomResourceUtils {
+object CustomResources {
     private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
 
     fun parseV1FlinkCluster(body: String): V1FlinkCluster = gson.fromJson(body, V1FlinkCluster::class.java)
@@ -49,4 +49,6 @@ object CustomResourceUtils {
                 MessageDigest.getInstance("MD5").digest(
                     gson.toJson(spec).toByteArray())))
     }
+
+    fun convertToMap(flinkCluster: V1FlinkCluster): Map<String, Any?> = gson.fromJson(gson.toJson(flinkCluster), Map::class.java) as Map<String, Any?>
 }

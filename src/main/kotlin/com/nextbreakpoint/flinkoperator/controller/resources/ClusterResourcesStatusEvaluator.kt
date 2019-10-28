@@ -1,8 +1,8 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import io.kubernetes.client.models.V1EnvVar
 
 class ClusterResourcesStatusEvaluator {

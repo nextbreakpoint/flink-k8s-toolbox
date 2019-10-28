@@ -40,9 +40,7 @@ object DefaultCommandFactory : CommandFactory {
 
     override fun createListTaskManagersCommand() = TaskManagersList()
 
-    override fun createGetTaskManagerDetailsCommand() =
-        TaskManagerDetails()
+    override fun createGetTaskManagerDetailsCommand() = TaskManagerDetails()
 
-    override fun createGetTaskManagerMetricsCommand() =
-        TaskManagerMetrics()
+    override fun createGetTaskManagerMetricsCommand() = TaskManagerMetrics()
 }

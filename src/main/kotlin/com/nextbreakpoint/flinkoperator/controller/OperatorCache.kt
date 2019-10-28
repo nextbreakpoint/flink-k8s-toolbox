@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
+import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PersistentVolumeClaim
@@ -9,21 +9,19 @@ import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
 class OperatorCache {
-    companion object {
-        private val flinkClusters = mutableMapOf<ClusterId, V1FlinkCluster>()
-        private val jarUploadJobs = mutableMapOf<ClusterId, V1Job>()
-        private val jobmanagerServices = mutableMapOf<ClusterId, V1Service>()
-        private val jobmanagerStatefulSets = mutableMapOf<ClusterId, V1StatefulSet>()
-        private val taskmanagerStatefulSets = mutableMapOf<ClusterId, V1StatefulSet>()
-        private val jobmanagerPersistentVolumeClaims = mutableMapOf<ClusterId, V1PersistentVolumeClaim>()
-        private val taskmanagerPersistentVolumeClaims = mutableMapOf<ClusterId, V1PersistentVolumeClaim>()
-    }
+    private val flinkClusters = mutableMapOf<ClusterId, V1FlinkCluster>()
+    private val jarUploadJobs = mutableMapOf<ClusterId, V1Job>()
+    private val jobmanagerServices = mutableMapOf<ClusterId, V1Service>()
+    private val jobmanagerStatefulSets = mutableMapOf<ClusterId, V1StatefulSet>()
+    private val taskmanagerStatefulSets = mutableMapOf<ClusterId, V1StatefulSet>()
+    private val jobmanagerPersistentVolumeClaims = mutableMapOf<ClusterId, V1PersistentVolumeClaim>()
+    private val taskmanagerPersistentVolumeClaims = mutableMapOf<ClusterId, V1PersistentVolumeClaim>()
 
     fun getFlinkClusters(): List<V1FlinkCluster> = flinkClusters.values.toList()
 
     fun getFlinkCluster(clusterId: ClusterId) = flinkClusters.get(clusterId) ?: throw RuntimeException("Cluster not found ${clusterId.name}")
 
-    fun getClusterIdentity(namespace: String, name: String) =
+    fun getClusterId(namespace: String, name: String) =
         flinkClusters.keys.firstOrNull { it.namespace == namespace && it.name == name } ?: throw RuntimeException("Cluster not found")
 
     fun onFlinkClusterChanged(resource: V1FlinkCluster) {
@@ -171,7 +169,7 @@ class OperatorCache {
         }
     }
 
-    fun updateClusters(): List<Pair<V1FlinkCluster, OperatorResources>> {
+    fun getClusters(): List<Pair<V1FlinkCluster, OperatorResources>> {
         val resources = OperatorResources(
             jarUploadJobs.toMap(),
             jobmanagerServices.toMap(),
@@ -183,7 +181,7 @@ class OperatorCache {
         return flinkClusters.values.map { flinkCluster -> flinkCluster to resources }.toList()
     }
 
-    fun deleteOrphans(): Set<ClusterId> {
+    fun getOrphanedClusters(): Set<ClusterId> {
         val deletedClusters = mutableSetOf<ClusterId>()
         deletedClusters.addAll(jarUploadJobs.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)
         deletedClusters.addAll(jobmanagerServices.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)

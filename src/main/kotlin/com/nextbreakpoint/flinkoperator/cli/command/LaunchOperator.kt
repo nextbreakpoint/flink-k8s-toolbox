@@ -1,13 +1,12 @@
 package com.nextbreakpoint.flinkoperator.cli.command
 
 import com.nextbreakpoint.flinkoperator.cli.ServerCommand
-import com.nextbreakpoint.flinkoperator.controller.OperatorVerticle
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
-import com.nextbreakpoint.flinkoperator.controller.MetricsVerticle
+import com.nextbreakpoint.flinkoperator.controller.MonitoringVerticle
+import com.nextbreakpoint.flinkoperator.controller.OperatorVerticle
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
-import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.impl.launcher.VertxCommandLauncher
 import io.vertx.core.impl.launcher.VertxLifecycleHooks
 import io.vertx.core.json.JsonObject
@@ -37,7 +36,7 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerComman
 
             dispatch(this, arrayOf("run", OperatorVerticle::class.java.canonicalName, "-conf", jsonObject.toString()))
 
-            dispatch(this, arrayOf("run", MetricsVerticle::class.java.canonicalName))
+            dispatch(this, arrayOf("run", MonitoringVerticle::class.java.canonicalName))
 
             waitUntilInterrupted()
         } catch (e: InterruptedException) {

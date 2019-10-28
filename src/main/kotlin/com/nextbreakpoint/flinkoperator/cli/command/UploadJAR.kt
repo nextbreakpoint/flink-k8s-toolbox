@@ -1,11 +1,11 @@
 package com.nextbreakpoint.flinkoperator.cli.command
 
-import com.google.gson.Gson
 import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkServerUtils
 import com.nextbreakpoint.flinkoperator.cli.UploadCommand
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.UploadOptions
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import org.apache.log4j.Logger
 import java.io.File
 
@@ -18,21 +18,14 @@ class UploadJAR : UploadCommand<UploadOptions> {
         try {
             logger.info("Uploading JAR file ${args.jarPath}...")
 
-            val flinkApi = FlinkServerUtils.find(flinkOptions, namespace, clusterName)
+            val address = KubernetesContext.findFlinkAddress(flinkOptions, namespace, clusterName)
 
-            val response = flinkApi.uploadJarCall(File(args.jarPath), null, null).execute()
+            val result = FlinkContext.uploadJarCall(address, File(args.jarPath))
 
-            if (response.isSuccessful) {
-                response.body().use {
-                    val result = Gson().fromJson(it.source().readUtf8Line(), JarUploadResponseBody::class.java)
-                    if (result.status.name.equals("SUCCESS")) {
-                        logger.info("File ${args.jarPath} uploaded to ${result.filename}")
-                    } else {
-                        throw RuntimeException("Failed to upload file ${args.jarPath}")
-                    }
-                }
+            if (result.status == JarUploadResponseBody.StatusEnum.SUCCESS) {
+                logger.info("File ${args.jarPath} uploaded to ${result.filename}")
             } else {
-                throw RuntimeException("Failed to upload file ${args.jarPath}")
+                throw Exception("Failed to upload file ${args.jarPath}")
             }
         } catch (e: Exception) {
             throw RuntimeException(e)

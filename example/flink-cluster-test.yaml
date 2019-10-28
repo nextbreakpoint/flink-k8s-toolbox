@@ -5,22 +5,30 @@ metadata:
 spec:
   flinkImage:
     pullPolicy: Never
-    flinkImage: flink:1.7.2
+    flinkImage: example/flink:1.9.0
   flinkJob:
-    image: flink-jobs:1
+    image: example/flink-jobs:1
     jarPath: /flink-jobs.jar
     className: com.nextbreakpoint.flink.jobs.TestJob
     parallelism: 1
     arguments:
-      - --BUCKET_BASE_PATH
-      - file:///var/tmp
+      - --DEVELOP_MODE
+      - disabled
   jobManager:
     annotations:
       managed: true
     serviceMode: NodePort
     environment:
+    - name: FLINK_ENVIRONMENT
+      value: test
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
+    - name: FLINK_SAVEPOINTS_LOCATION
+      value: file:///var/savepoints
+    - name: FLINK_CHECKPOINTS_LOCATION
+      value: file:///var/checkpoints
+    - name: FLINK_FS_CHECKPOINTS_LOCATION
+      value: file:///var/fs_checkpoints
     environmentFrom:
     - secretRef:
         name: flink-secrets
@@ -32,10 +40,10 @@ spec:
         mountPath: /docker-entrypoint.sh
         subPath: docker-entrypoint.sh
       - name: config-vol
-        mountPath: /opt/flink/conf/flink-conf.yaml
+        mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
       - name: jobmanager
-        mountPath: /var/tmp
+        mountPath: /var
     volumes:
       - name: config-vol
         configMap:
@@ -59,8 +67,16 @@ spec:
     annotations:
       managed: true
     environment:
+    - name: FLINK_ENVIRONMENT
+      value: test
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
+    - name: FLINK_SAVEPOINTS_LOCATION
+      value: file:///var/savepoints
+    - name: FLINK_CHECKPOINTS_LOCATION
+      value: file:///var/checkpoints
+    - name: FLINK_FS_CHECKPOINTS_LOCATION
+      value: file:///var/fs_checkpoints
     volumeMounts:
       - name: config-vol
         mountPath: /hadoop/etc/core-site.xml
@@ -69,10 +85,10 @@ spec:
         mountPath: /docker-entrypoint.sh
         subPath: docker-entrypoint.sh
       - name: config-vol
-        mountPath: /opt/flink/conf/flink-conf.yaml
+        mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
       - name: taskmanager
-        mountPath: /var/tmp
+        mountPath: /var
     volumes:
       - name: config-vol
         configMap:
@@ -93,7 +109,7 @@ spec:
             requests:
               storage: 5Gi
   flinkOperator:
-    savepointMode: Automatic
+    savepointMode: Manual
     savepointInterval: 60
-    savepointTargetPath: file:///var/tmp/test
+    savepointTargetPath: file:///var/savepoints
     jobRestartPolicy: OnFailure

@@ -8,12 +8,14 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import org.apache.log4j.Logger
 
-class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : OperatorCommand<StartOptions, List<OperatorTask>>(flinkOptions) {
+class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, val cache: OperatorCache) : OperatorCommand<StartOptions, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterStart::class.simpleName)
     }
@@ -24,7 +26,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
 
             val clusterStatus = OperatorAnnotations.getClusterStatus(flinkCluster)
 
-            val operatorStatus = OperatorAnnotations.getCurrentOperatorStatus(flinkCluster)
+            val operatorStatus = OperatorAnnotations.getCurrentTaskStatus(flinkCluster)
 
             if (operatorStatus == TaskStatus.IDLE) {
                 val statusList = if (flinkCluster.spec?.flinkJob == null) {
@@ -128,7 +130,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                 }
 
                 if (statusList.isNotEmpty()) {
-                    OperatorAnnotations.appendOperatorTasks(flinkCluster, statusList)
+                    OperatorAnnotations.appendTasks(flinkCluster, statusList)
                     return Result(
                         ResultStatus.SUCCESS,
                         statusList
@@ -139,7 +141,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                     return Result(
                         ResultStatus.AWAIT,
                         listOf(
-                            OperatorAnnotations.getCurrentOperatorTask(
+                            OperatorAnnotations.getCurrentTask(
                                 flinkCluster
                             )
                         )
@@ -151,7 +153,7 @@ class ClusterStart(flinkOptions: FlinkOptions, val cache: OperatorCache) : Opera
                 return Result(
                     ResultStatus.AWAIT,
                     listOf(
-                        OperatorAnnotations.getCurrentOperatorTask(
+                        OperatorAnnotations.getCurrentTask(
                             flinkCluster
                         )
                     )

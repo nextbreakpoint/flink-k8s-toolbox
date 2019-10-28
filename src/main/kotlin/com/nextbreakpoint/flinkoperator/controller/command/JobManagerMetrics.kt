@@ -1,32 +1,26 @@
 package com.nextbreakpoint.flinkoperator.controller.command
 
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkServerUtils
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.JobManagerStats
-import com.nextbreakpoint.flinkoperator.common.model.Metric
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkclient.api.FlinkApi
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
-import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
-import java.util.LinkedList
-import java.util.List
 
-class JobManagerMetrics(flinkOptions: FlinkOptions) : OperatorCommand<Void?, String>(flinkOptions) {
+class JobManagerMetrics(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, String>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(JobManagerMetrics::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
         try {
-            val flinkApi = FlinkServerUtils.find(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val metrics = getMetric(
-                flinkApi,
+            val metrics = flinkContext.getJobManagerMetrics(address,
                 "Status.JVM.CPU.Time,Status.JVM.CPU.Load,Status.JVM.Threads.Count,Status.JVM.Memory.Heap.Max,Status.JVM.Memory.Heap.Used,Status.JVM.Memory.Heap.Committed,Status.JVM.Memory.NonHeap.Max,Status.JVM.Memory.NonHeap.Used,Status.JVM.Memory.NonHeap.Committed,Status.JVM.Memory.Direct.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Direct.TotalCapacity,Status.JVM.Memory.Mapped.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Mapped.TotalCapacity,Status.JVM.GarbageCollector.Copy.Time,Status.JVM.GarbageCollector.Copy.Count,Status.JVM.GarbageCollector.MarkSweepCompact.Time,Status.JVM.GarbageCollector.MarkSweepCompact.Count,Status.JVM.ClassLoader.ClassesLoaded,Status.JVM.ClassLoader.ClassesUnloaded,taskSlotsTotal,taskSlotsAvailable,numRegisteredTaskManagers,numRunningJobs"
             )
 
@@ -50,10 +44,8 @@ class JobManagerMetrics(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Str
                 jvmMemoryMappedTotalCapacity = metricsMap.get("Status.JVM.Memory.Mapped.TotalCapacity")?.toLong() ?: 0,
                 jvmGarbageCollectorCopyTime = metricsMap.get("Status.JVM.GarbageCollector.Copy.Time")?.toLong() ?: 0L,
                 jvmGarbageCollectorCopyCount = metricsMap.get("Status.JVM.GarbageCollector.Copy.Count")?.toInt() ?: 0,
-                jvmGarbageCollectorMarkSweepCompactTime = metricsMap.get("Status.JVM.GarbageCollector.MarkSweepCompact.Time")?.toLong()
-                    ?: 0L,
-                jvmGarbageCollectorMarkSweepCompactCount = metricsMap.get("Status.JVM.GarbageCollector.MarkSweepCompact.Count")?.toInt()
-                    ?: 0,
+                jvmGarbageCollectorMarkSweepCompactTime = metricsMap.get("Status.JVM.GarbageCollector.MarkSweepCompact.Time")?.toLong() ?: 0L,
+                jvmGarbageCollectorMarkSweepCompactCount = metricsMap.get("Status.JVM.GarbageCollector.MarkSweepCompact.Count")?.toInt() ?: 0,
                 jvmClassLoaderClassesLoaded = metricsMap.get("Status.JVM.ClassLoader.ClassesLoaded")?.toInt() ?: 0,
                 jvmClassLoaderClassesUnloaded = metricsMap.get("Status.JVM.ClassLoader.ClassesUnloaded")?.toInt() ?: 0,
                 taskSlotsTotal = metricsMap.get("taskSlotsTotal")?.toInt() ?: 0,
@@ -73,18 +65,6 @@ class JobManagerMetrics(flinkOptions: FlinkOptions) : OperatorCommand<Void?, Str
                 ResultStatus.FAILED,
                 "{}"
             )
-        }
-    }
-
-    private fun getMetric(flinkApi: FlinkApi, metricKey: String): List<Metric> {
-        val response = flinkApi.getJobManagerMetricsCall(metricKey, null, null).execute()
-        return if (response.isSuccessful) {
-//            logger.info(response.body().string())
-            response.body().use {
-                JSON().deserialize(it.source().readUtf8Line(), object : TypeToken<List<Metric>>() {}.type) as List<Metric>
-            }
-        } else {
-            LinkedList<Metric>() as List<Metric>
         }
     }
 }
