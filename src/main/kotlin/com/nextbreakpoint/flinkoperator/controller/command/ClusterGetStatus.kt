@@ -19,7 +19,23 @@ class ClusterGetStatus(flinkOptions: FlinkOptions, flinkContext: FlinkContext, k
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            val result = flinkCluster.metadata.annotations?.filter { it.key.startsWith("nextbreakpoint.com/flink-operator-") }?.toMap() ?: mapOf()
+            val clusterState = flinkCluster.state
+
+            val result = mapOf(
+                "timestamp" to (clusterState.timestamp?.toString() ?: ""),
+                "clusterStatus" to (clusterState.clusterStatus ?: ""),
+                "taskStatus" to (clusterState.taskStatus ?: ""),
+                "tasks" to (clusterState.tasks?.joinToString(" ") ?: ""),
+                "taskAttempts" to (clusterState.taskAttempts?.toString() ?: ""),
+                "savepointPath" to (clusterState.savepointPath ?: ""),
+                "savepointTimestamp" to (clusterState.savepointTimestamp?.toString() ?: ""),
+                "savepointJobId" to (clusterState.savepointJobId ?: ""),
+                "savepointTriggerId" to (clusterState.savepointTriggerId ?: ""),
+                "digestOfFlinkJob" to (clusterState.digestOfFlinkJob ?: ""),
+                "digestOfFlinkImage" to (clusterState.digestOfFlinkImage ?: ""),
+                "digestOfJobManager" to (clusterState.digestOfJobManager ?: ""),
+                "digestOfTaskManager" to (clusterState.digestOfTaskManager ?: "")
+            )
 
             return Result(
                 ResultStatus.SUCCESS,

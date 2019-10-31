@@ -77,19 +77,20 @@ public class V1FlinkClusterList {
         this.metadata = metadata;
     }
 
+    @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        } else if (o != null && this.getClass() == o.getClass()) {
-            V1FlinkClusterList V1FlinkClusterList = (V1FlinkClusterList) o;
-            return Objects.equals(this.apiVersion, V1FlinkClusterList.apiVersion) && Objects.equals(this.items, V1FlinkClusterList.items) && Objects.equals(this.kind, V1FlinkClusterList.kind) && Objects.equals(this.metadata, V1FlinkClusterList.metadata);
-        } else {
-            return false;
-        }
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        V1FlinkClusterList that = (V1FlinkClusterList) o;
+        return Objects.equals(getApiVersion(), that.getApiVersion()) &&
+                Objects.equals(getItems(), that.getItems()) &&
+                Objects.equals(getKind(), that.getKind()) &&
+                Objects.equals(getMetadata(), that.getMetadata());
     }
 
+    @Override
     public int hashCode() {
-        return Objects.hash(this.apiVersion, this.items, this.kind, this.metadata);
+        return Objects.hash(getApiVersion(), getItems(), getKind(), getMetadata());
     }
 
     @Override

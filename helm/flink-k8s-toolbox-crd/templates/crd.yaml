@@ -11,6 +11,10 @@ metadata:
     heritage: {{ $root.Release.Service }}
 spec:
   group: nextbreakpoint.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
   scope: Namespaced
   names:
     plural: flinkclusters
@@ -18,4 +22,17 @@ spec:
     kind: FlinkCluster
     shortNames:
     - fc
-  version: "v1"
+validation:
+  openAPIV3Schema:
+    type: object
+    properties:
+      metadata:
+        type: object
+        nullable: true
+      state:
+        type: object
+        nullable: true
+      spec:
+        type: object
+    required:
+      - spec

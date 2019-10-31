@@ -30,11 +30,11 @@ Create namespace:
 
 Install operator's global resources:
 
-    helm install --name flink-k8s-toolbox-global helm/flink-k8s-toolbox-global
+    helm install --name flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
 
 Install operator's namespace resources:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
 
 Run Flink Operator:
 
@@ -155,11 +155,11 @@ Run Flink Operator using Docker image:
 
 Run Flink Operator using Helm and local registry:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
 
 Run Flink Operator using Helm and local image:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
 
 
 

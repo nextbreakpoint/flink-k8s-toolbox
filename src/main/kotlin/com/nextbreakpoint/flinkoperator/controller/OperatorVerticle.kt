@@ -392,8 +392,7 @@ class OperatorVerticle : AbstractVerticle() {
     private fun updateMetrics(resourcesCache: OperatorCache, gauges: Map<ClusterStatus, AtomicInteger>) {
         val counters = resourcesCache.getFlinkClusters()
             .foldRight(mutableMapOf<ClusterStatus, Int>()) { flinkCluster, counters ->
-                val status =
-                    OperatorAnnotations.getClusterStatus(flinkCluster)
+                val status = OperatorState.getClusterStatus(flinkCluster)
                 counters.compute(status) { _, value -> if (value != null) value + 1 else 1 }
                 counters
             }
