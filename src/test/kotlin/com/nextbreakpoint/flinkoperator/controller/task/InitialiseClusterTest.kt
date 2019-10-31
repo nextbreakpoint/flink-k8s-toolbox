@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
@@ -55,8 +55,8 @@ class InitialiseClusterTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorAnnotations.getClusterStatus(cluster)).isEqualTo(ClusterStatus.STARTING)
-        assertThat(OperatorAnnotations.getOperatorTaskAttempts(cluster)).isEqualTo(0)
+        assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.STARTING)
+        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
     }
 
     @Test
@@ -67,10 +67,10 @@ class InitialiseClusterTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorAnnotations.getFlinkJobDigest(cluster)).isNotNull()
-        assertThat(OperatorAnnotations.getFlinkImageDigest(cluster)).isNotNull()
-        assertThat(OperatorAnnotations.getJobManagerDigest(cluster)).isNotNull()
-        assertThat(OperatorAnnotations.getTaskManagerDigest(cluster)).isNotNull()
+        assertThat(OperatorState.getFlinkJobDigest(cluster)).isNotNull()
+        assertThat(OperatorState.getFlinkImageDigest(cluster)).isNotNull()
+        assertThat(OperatorState.getJobManagerDigest(cluster)).isNotNull()
+        assertThat(OperatorState.getTaskManagerDigest(cluster)).isNotNull()
     }
 
     @Test
@@ -81,13 +81,13 @@ class InitialiseClusterTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorAnnotations.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
-        OperatorAnnotations.selectNextTask(cluster)
-        assertThat(OperatorAnnotations.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
-        OperatorAnnotations.selectNextTask(cluster)
-        assertThat(OperatorAnnotations.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
-        OperatorAnnotations.selectNextTask(cluster)
-        assertThat(OperatorAnnotations.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
+        OperatorState.selectNextTask(cluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        OperatorState.selectNextTask(cluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        OperatorState.selectNextTask(cluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
     }
 
     @Test
@@ -99,9 +99,9 @@ class InitialiseClusterTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorAnnotations.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
-        OperatorAnnotations.selectNextTask(cluster)
-        assertThat(OperatorAnnotations.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
+        OperatorState.selectNextTask(cluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
     }
 
     @Test

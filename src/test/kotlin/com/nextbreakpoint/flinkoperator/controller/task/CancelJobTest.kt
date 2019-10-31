@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
@@ -41,7 +41,7 @@ class CancelJobTest {
 
     @Test
     fun `onExecuting should return expected result when job is not defined`() {
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         cluster.spec.flinkJob = null
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
@@ -49,12 +49,12 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CANCELLING_JOBS_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
@@ -66,12 +66,12 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onExecuting should return expected result when job has been stopped already`() {
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
@@ -85,12 +85,12 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onExecuting should return expected result when savepoint request can't be created`() {
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
@@ -106,12 +106,12 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onExecuting should return expected result when savepoint request has been created`() {
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, SavepointRequest(jobId = "1", triggerId = "100")))
         val result = task.onExecuting(context)
@@ -127,25 +127,25 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isNotEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onExecuting should set savepoint request when savepoint request has been created`() {
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, savepointRequest))
         val result = task.onExecuting(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorAnnotations.getSavepointRequest(cluster)).isEqualTo(savepointRequest)
-        assertThat(timestamp).isNotEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(OperatorState.getSavepointRequest(cluster)).isEqualTo(savepointRequest)
+        assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CANCELLING_JOBS_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
@@ -157,12 +157,12 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onAwaiting should return expected result when savepoint request is missing`() {
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).lastUpdated
@@ -173,14 +173,14 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onAwaiting should return expected result when savepoint has not been created yet`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-        OperatorAnnotations.setSavepointRequest(cluster, savepointRequest)
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        OperatorState.setSavepointRequest(cluster, savepointRequest)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.AWAIT, ""))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
@@ -194,14 +194,14 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onAwaiting should return expected result when savepoint has been created`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-        OperatorAnnotations.setSavepointRequest(cluster, savepointRequest)
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        OperatorState.setSavepointRequest(cluster, savepointRequest)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.SUCCESS, "/tmp/000"))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
@@ -217,28 +217,28 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isNotEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onAwaiting should set savepoint path when savepoint has been created`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-        OperatorAnnotations.setSavepointRequest(cluster, savepointRequest)
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        OperatorState.setSavepointRequest(cluster, savepointRequest)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.SUCCESS, "/tmp/000"))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
-        assertThat(OperatorAnnotations.getSavepointPath(cluster)).isEqualTo("/tmp/000")
-        assertThat(timestamp).isNotEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(OperatorState.getSavepointPath(cluster)).isEqualTo("/tmp/000")
+        assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test
     fun `onAwaiting should return expected result when savepoint can't be created`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-        OperatorAnnotations.setSavepointRequest(cluster, savepointRequest)
-        val timestamp = OperatorAnnotations.getOperatorTimestamp(cluster)
+        OperatorState.setSavepointRequest(cluster, savepointRequest)
+        val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.FAILED, ""))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onAwaiting(context)
@@ -254,7 +254,7 @@ class CancelJobTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(OperatorAnnotations.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
     @Test

@@ -229,11 +229,11 @@ Create a secret which contain the keystore and the truststore files:
 
 Install the operator's global resources with commands:
 
-    helm install --name flink-k8s-toolbox-global helm/flink-k8s-toolbox-global
+    helm install --name flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
 
 Install the operator's namespace resources with command:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set secretName=flink-operator-ssl  
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set secretName=flink-operator-ssl  
 
 Run the operator with command:
 
@@ -247,11 +247,11 @@ Stop the operator with command:
 
 Remove the operator's namespace resources with command:    
 
-    helm delete --purge flink-k8s-toolbox-services
+    helm delete --purge flink-k8s-toolbox-operator
 
 Remove the operator's global resources with command:    
 
-    helm delete --purge flink-k8s-toolbox-global
+    helm delete --purge flink-k8s-toolbox-crd
 
 Remove secret with command:    
 

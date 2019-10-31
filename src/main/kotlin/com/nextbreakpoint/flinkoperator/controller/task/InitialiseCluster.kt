@@ -5,17 +5,17 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class InitialiseCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
-        OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
+        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
 
         if (context.flinkCluster.spec.flinkJob != null) {
-            OperatorAnnotations.appendTasks(context.flinkCluster,
+            OperatorState.appendTasks(context.flinkCluster,
                 listOf(
                     OperatorTask.CREATE_RESOURCES,
                     OperatorTask.UPLOAD_JAR,
@@ -24,7 +24,7 @@ class InitialiseCluster : OperatorTaskHandler {
                 )
             )
         } else {
-            OperatorAnnotations.appendTasks(context.flinkCluster,
+            OperatorState.appendTasks(context.flinkCluster,
                 listOf(
                     OperatorTask.CREATE_RESOURCES,
                     OperatorTask.CLUSTER_RUNNING
@@ -37,10 +37,10 @@ class InitialiseCluster : OperatorTaskHandler {
         val flinkImageDigest = CustomResources.computeDigest(context.flinkCluster.spec?.flinkImage)
         val flinkJobDigest = CustomResources.computeDigest(context.flinkCluster.spec?.flinkJob)
 
-        OperatorAnnotations.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
-        OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
-        OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, flinkImageDigest)
-        OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, flinkJobDigest)
+        OperatorState.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
+        OperatorState.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
+        OperatorState.setFlinkImageDigest(context.flinkCluster, flinkImageDigest)
+        OperatorState.setFlinkJobDigest(context.flinkCluster, flinkJobDigest)
 
         return Result(
             ResultStatus.SUCCESS,

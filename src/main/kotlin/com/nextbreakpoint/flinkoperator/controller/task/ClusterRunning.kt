@@ -5,7 +5,7 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
@@ -17,11 +17,11 @@ class ClusterRunning : OperatorTaskHandler {
     }
 
     override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorAnnotations.setClusterStatus(context.flinkCluster, ClusterStatus.RUNNING)
-        OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
-        OperatorAnnotations.appendTasks(context.flinkCluster, listOf())
+        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.RUNNING)
+        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.appendTasks(context.flinkCluster, listOf())
 
-        OperatorAnnotations.updateSavepointTimestamp(context.flinkCluster)
+        OperatorState.updateSavepointTimestamp(context.flinkCluster)
 
         return Result(
             ResultStatus.SUCCESS,
@@ -37,10 +37,10 @@ class ClusterRunning : OperatorTaskHandler {
     }
 
     override fun onIdle(context: OperatorContext): Result<String> {
-        val jobManagerDigest = OperatorAnnotations.getJobManagerDigest(context.flinkCluster)
-        val taskManagerDigest = OperatorAnnotations.getTaskManagerDigest(context.flinkCluster)
-        val flinkImageDigest = OperatorAnnotations.getFlinkImageDigest(context.flinkCluster)
-        val flinkJobDigest = OperatorAnnotations.getFlinkJobDigest(context.flinkCluster)
+        val jobManagerDigest = OperatorState.getJobManagerDigest(context.flinkCluster)
+        val taskManagerDigest = OperatorState.getTaskManagerDigest(context.flinkCluster)
+        val flinkImageDigest = OperatorState.getFlinkImageDigest(context.flinkCluster)
+        val flinkJobDigest = OperatorState.getFlinkJobDigest(context.flinkCluster)
 
         if (jobManagerDigest == null || taskManagerDigest == null || flinkImageDigest == null || flinkJobDigest == null) {
             return Result(
@@ -74,18 +74,18 @@ class ClusterRunning : OperatorTaskHandler {
             if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("FLINK_IMAGE")) {
                 logger.info("Detected changes in: ${changes.joinToString(separator = ",")}")
 
-                val clusterStatus = OperatorAnnotations.getClusterStatus(context.flinkCluster)
+                val clusterStatus = OperatorState.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {
                     ClusterStatus.RUNNING -> {
                         logger.info("Cluster ${context.clusterId.name} requires a restart")
 
-                        OperatorAnnotations.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
-                        OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
-                        OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
-                        OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
+                        OperatorState.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
+                        OperatorState.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
+                        OperatorState.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
+                        OperatorState.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                        OperatorAnnotations.appendTasks(context.flinkCluster,
+                        OperatorState.appendTasks(context.flinkCluster,
                             listOf(
                                 OperatorTask.STOPPING_CLUSTER,
                                 OperatorTask.CANCEL_JOB,
@@ -112,18 +112,18 @@ class ClusterRunning : OperatorTaskHandler {
             } else if (changes.contains("FLINK_JOB")) {
                 logger.info("Detected changes in: ${changes.joinToString(separator = ",")}")
 
-                val clusterStatus = OperatorAnnotations.getClusterStatus(context.flinkCluster)
+                val clusterStatus = OperatorState.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {
                     ClusterStatus.RUNNING -> {
                         logger.info("Cluster ${context.clusterId.name} requires to restart the job")
 
-                        OperatorAnnotations.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
-                        OperatorAnnotations.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
-                        OperatorAnnotations.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
-                        OperatorAnnotations.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
+                        OperatorState.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
+                        OperatorState.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
+                        OperatorState.setFlinkImageDigest(context.flinkCluster, actualFlinkImageDigest)
+                        OperatorState.setFlinkJobDigest(context.flinkCluster, actualFlinkJobDigest)
 
-                        OperatorAnnotations.appendTasks(context.flinkCluster,
+                        OperatorState.appendTasks(context.flinkCluster,
                             listOf(
                                 OperatorTask.STOPPING_CLUSTER,
                                 OperatorTask.CANCEL_JOB,
@@ -153,19 +153,19 @@ class ClusterRunning : OperatorTaskHandler {
 
         val elapsedTime = now - context.lastUpdated
 
-        val nextTask = OperatorAnnotations.getNextOperatorTask(context.flinkCluster)
+        val nextTask = OperatorState.getNextOperatorTask(context.flinkCluster)
 
         if (context.flinkCluster.spec?.flinkJob != null && elapsedTime > 10000) {
-            val attempts = OperatorAnnotations.getOperatorTaskAttempts(context.flinkCluster)
+            val attempts = OperatorState.getOperatorTaskAttempts(context.flinkCluster)
 
             val clusterRunning = context.controller.isClusterRunning(context.clusterId)
 
             if (clusterRunning.status != ResultStatus.SUCCESS) {
                 logger.warn("Cluster ${context.clusterId.name} doesn't have a running job...")
-                OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, attempts + 1)
+                OperatorState.setOperatorTaskAttempts(context.flinkCluster, attempts + 1)
 
                 if (nextTask == null && attempts >= 3) {
-                    OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
+                    OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
 
                     return Result(
                         ResultStatus.FAILED,
@@ -174,13 +174,13 @@ class ClusterRunning : OperatorTaskHandler {
                 }
             } else {
                 if (attempts > 0) {
-                    OperatorAnnotations.setOperatorTaskAttempts(context.flinkCluster, 0)
+                    OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
                 }
 
                 if (clusterRunning.output) {
                     logger.info("Job finished. Suspending cluster ${context.clusterId.name}...")
 
-                    OperatorAnnotations.appendTasks(context.flinkCluster,
+                    OperatorState.appendTasks(context.flinkCluster,
                         listOf(
                             OperatorTask.STOPPING_CLUSTER,
                             OperatorTask.TERMINATE_PODS,
@@ -200,12 +200,12 @@ class ClusterRunning : OperatorTaskHandler {
         if (context.flinkCluster.spec.flinkJob != null && nextTask == null) {
             val savepointMode = OperatorParameters.getSavepointMode(context.flinkCluster)
 
-            val lastSavepointsTimestamp = OperatorAnnotations.getSavepointTimestamp(context.flinkCluster)
+            val lastSavepointsTimestamp = OperatorState.getSavepointTimestamp(context.flinkCluster)
 
             val savepointIntervalInSeconds = OperatorParameters.getSavepointInterval(context.flinkCluster)
 
             if (savepointMode.toUpperCase() == "AUTOMATIC" && now - lastSavepointsTimestamp > savepointIntervalInSeconds * 1000L) {
-                OperatorAnnotations.appendTasks(context.flinkCluster,
+                OperatorState.appendTasks(context.flinkCluster,
                     listOf(
                         OperatorTask.CHECKPOINTING_CLUSTER,
                         OperatorTask.CREATE_SAVEPOINT,

@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
@@ -54,8 +54,8 @@ class StartingClusterTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorAnnotations.getClusterStatus(cluster)).isEqualTo(ClusterStatus.STARTING)
-        assertThat(OperatorAnnotations.getOperatorTaskAttempts(cluster)).isEqualTo(0)
+        assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.STARTING)
+        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
     }
 
     @Test

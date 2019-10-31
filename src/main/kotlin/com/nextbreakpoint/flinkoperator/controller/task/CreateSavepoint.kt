@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
@@ -28,7 +28,7 @@ class CreateSavepoint : OperatorTaskHandler {
             )
         }
 
-        val prevSavepointRequest = OperatorAnnotations.getSavepointRequest(context.flinkCluster)
+        val prevSavepointRequest = OperatorState.getSavepointRequest(context.flinkCluster)
 
         if (prevSavepointRequest != null) {
             return Result(
@@ -44,7 +44,7 @@ class CreateSavepoint : OperatorTaskHandler {
         val savepointRequest = context.controller.triggerSavepoint(context.clusterId, options)
 
         if (savepointRequest.status == ResultStatus.SUCCESS && savepointRequest.output != null) {
-            OperatorAnnotations.setSavepointRequest(context.flinkCluster, savepointRequest.output as SavepointRequest)
+            OperatorState.setSavepointRequest(context.flinkCluster, savepointRequest.output as SavepointRequest)
 
             return Result(
                 ResultStatus.SUCCESS,
@@ -68,7 +68,7 @@ class CreateSavepoint : OperatorTaskHandler {
             )
         }
 
-        val savepointRequest = OperatorAnnotations.getSavepointRequest(context.flinkCluster)
+        val savepointRequest = OperatorState.getSavepointRequest(context.flinkCluster)
 
         if (savepointRequest == null) {
             return Result(
@@ -81,7 +81,7 @@ class CreateSavepoint : OperatorTaskHandler {
 
         if (completedSavepoint.status == ResultStatus.SUCCESS) {
             if (OperatorParameters.getSavepointPath(context.flinkCluster) != completedSavepoint.output) {
-                OperatorAnnotations.setSavepointPath(context.flinkCluster, completedSavepoint.output)
+                OperatorState.setSavepointPath(context.flinkCluster, completedSavepoint.output)
             }
 
             return Result(

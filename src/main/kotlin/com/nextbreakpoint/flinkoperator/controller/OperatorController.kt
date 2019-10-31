@@ -131,8 +131,12 @@ class OperatorController(
     fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
         ClusterUpdateSavepoint(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, savepointPath)
 
-    fun updateAnnotations(clusterId: ClusterId, annotations: Map<String, String>) {
-        kubernetesContext.updateAnnotations(clusterId, annotations)
+//    fun updateAnnotations(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
+//        kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata?.annotations ?: emptyMap())
+//    }
+
+    fun updateState(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
+        kubernetesContext.updateState(clusterId, flinkCluster.state)
     }
 
     fun currentTimeMillis() = System.currentTimeMillis()
