@@ -49,6 +49,19 @@ spec:
         configMap:
           name: flink-config
           defaultMode: 0777
+    initContainers:
+      - image: busybox
+        command:
+          - ls
+        imagePullPolicy: IfNotPresent
+        name: initializer
+    sideContainers:
+      - image: busybox
+        command:
+          - sleep
+          - '3600'
+        imagePullPolicy: IfNotPresent
+        name: sidecar
     extraPorts:
       - name: prometheus
         containerPort: 9999
@@ -94,6 +107,19 @@ spec:
         configMap:
           name: flink-config
           defaultMode: 0777
+    initContainers:
+      - image: busybox
+        command:
+          - ls
+        imagePullPolicy: IfNotPresent
+        name: initializer
+    sideContainers:
+      - image: busybox
+        command:
+          - sleep
+          - '3600'
+        imagePullPolicy: IfNotPresent
+        name: sidecar
     extraPorts:
       - name: prometheus
         containerPort: 9999
