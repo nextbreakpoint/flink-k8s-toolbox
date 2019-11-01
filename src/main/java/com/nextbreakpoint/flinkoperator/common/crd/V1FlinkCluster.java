@@ -12,8 +12,8 @@ public class V1FlinkCluster {
     private String kind = null;
     @SerializedName("metadata")
     private V1ObjectMeta metadata = null;
-    @SerializedName("state")
-    private V1FlinkClusterState state = null;
+    @SerializedName("status")
+    private V1FlinkClusterStatus status = null;
     @SerializedName("spec")
     private V1FlinkClusterSpec spec = null;
 
@@ -72,16 +72,16 @@ public class V1FlinkCluster {
         return this;
     }
 
-    public V1FlinkClusterState getState() {
-        return state;
+    public V1FlinkClusterStatus getStatus() {
+        return status;
     }
 
-    public void setState(V1FlinkClusterState state) {
-        this.state = state;
+    public void setStatus(V1FlinkClusterStatus status) {
+        this.status = status;
     }
 
-    public V1FlinkCluster state(V1FlinkClusterState state) {
-        this.state = state;
+    public V1FlinkCluster state(V1FlinkClusterStatus state) {
+        this.status = state;
         return this;
     }
 
@@ -93,13 +93,13 @@ public class V1FlinkCluster {
         return Objects.equals(getApiVersion(), that.getApiVersion()) &&
                 Objects.equals(getKind(), that.getKind()) &&
                 Objects.equals(getMetadata(), that.getMetadata()) &&
-                Objects.equals(getState(), that.getState()) &&
+                Objects.equals(getStatus(), that.getStatus()) &&
                 Objects.equals(getSpec(), that.getSpec());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getApiVersion(), getKind(), getMetadata(), getState(), getSpec());
+        return Objects.hash(getApiVersion(), getKind(), getMetadata(), getStatus(), getSpec());
     }
 
     @Override
@@ -108,7 +108,7 @@ public class V1FlinkCluster {
                 "apiVersion='" + apiVersion + '\'' +
                 ", kind='" + kind + '\'' +
                 ", metadata=" + metadata +
-                ", state=" + state +
+                ", status=" + status +
                 ", spec=" + spec +
                 '}';
     }

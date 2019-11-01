@@ -29,10 +29,23 @@ validation:
       metadata:
         type: object
         nullable: true
-      state:
+      status:
         type: object
         nullable: true
       spec:
         type: object
     required:
       - spec
+additionalPrinterColumns:
+  - name: ClusterStatus
+    type: string
+    JSONPath: .status.clusterStatus
+  - name: TaskStatus
+    type: string
+    JSONPath: .status.taskStatus
+  - name: Task
+    type: string
+    JSONPath: .status.tasks[0]
+  - name: SavepointPath
+    type: string
+    JSONPath: .status.savepointPath
