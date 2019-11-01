@@ -106,7 +106,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                                     OperatorTask.TERMINATE_PODS,
                                     OperatorTask.DELETE_RESOURCES,
                                     OperatorTask.STARTING_CLUSTER,
-                                    OperatorTask.RESTART_PODS,
+                                    OperatorTask.CREATE_RESOURCES,
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.ERASE_SAVEPOINT,
                                     OperatorTask.START_JOB,
@@ -119,7 +119,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                                     OperatorTask.TERMINATE_PODS,
                                     OperatorTask.DELETE_RESOURCES,
                                     OperatorTask.STARTING_CLUSTER,
-                                    OperatorTask.RESTART_PODS,
+                                    OperatorTask.CREATE_RESOURCES,
                                     OperatorTask.UPLOAD_JAR,
                                     OperatorTask.START_JOB,
                                     OperatorTask.CLUSTER_RUNNING
