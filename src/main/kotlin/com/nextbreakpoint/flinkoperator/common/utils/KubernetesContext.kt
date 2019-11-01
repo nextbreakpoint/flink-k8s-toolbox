@@ -4,7 +4,7 @@ import com.google.common.io.ByteStreams
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterState
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -211,9 +211,9 @@ object KubernetesContext {
         }
     }
 
-    fun updateState(clusterId: ClusterId, state: V1FlinkClusterState) {
+    fun updateStatus(clusterId: ClusterId, status: V1FlinkClusterStatus) {
         val patch = mapOf<String, Any?>(
-            "state" to state
+            "status" to status
         )
 
         val response = objectApi.patchNamespacedCustomObjectCall(

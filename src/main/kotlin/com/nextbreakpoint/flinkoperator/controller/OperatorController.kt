@@ -136,7 +136,7 @@ class OperatorController(
 //    }
 
     fun updateState(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
-        kubernetesContext.updateState(clusterId, flinkCluster.state)
+        kubernetesContext.updateStatus(clusterId, flinkCluster.status)
     }
 
     fun currentTimeMillis() = System.currentTimeMillis()

@@ -19,7 +19,7 @@ class ClusterGetStatus(flinkOptions: FlinkOptions, flinkContext: FlinkContext, k
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            val clusterState = flinkCluster.state
+            val clusterState = flinkCluster.status
 
             val result = mapOf(
                 "timestamp" to (clusterState.timestamp?.toString() ?: ""),

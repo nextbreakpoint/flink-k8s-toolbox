@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class V1FlinkClusterState {
+public class V1FlinkClusterStatus {
     @SerializedName("timestamp")
     private Long timestamp;
     @SerializedName("tasks")
@@ -141,7 +141,7 @@ public class V1FlinkClusterState {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        V1FlinkClusterState that = (V1FlinkClusterState) o;
+        V1FlinkClusterStatus that = (V1FlinkClusterStatus) o;
         return Objects.equals(getTimestamp(), that.getTimestamp()) &&
                 Arrays.equals(getTasks(), that.getTasks()) &&
                 Objects.equals(getTaskStatus(), that.getTaskStatus()) &&
