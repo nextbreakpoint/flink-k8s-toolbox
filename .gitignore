@@ -10,3 +10,5 @@ secrets
 .gradle
 build
 .vertx
+tmp
+config
