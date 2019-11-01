@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.common.crd;
 
 import com.google.gson.annotations.SerializedName;
+import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ContainerPort;
 import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
@@ -35,6 +36,10 @@ public class V1JobManagerSpec {
     private Map<String, String> annotations;
     @SerializedName("extraPorts")
     private List<V1ContainerPort> extraPorts;
+    @SerializedName("initContainers")
+    private List<V1Container> initContainers;
+    @SerializedName("sideContainers")
+    private List<V1Container> sideContainers;
 
     public Float getRequiredCPUs() {
         return requiredCPUs;
@@ -132,6 +137,22 @@ public class V1JobManagerSpec {
         this.extraPorts = extraPorts;
     }
 
+    public List<V1Container> getInitContainers() {
+        return initContainers;
+    }
+
+    public void setInitContainers(List<V1Container> initContainers) {
+        this.initContainers = initContainers;
+    }
+
+    public List<V1Container> getSideContainers() {
+        return sideContainers;
+    }
+
+    public void setSideContainers(List<V1Container> sideContainers) {
+        this.sideContainers = sideContainers;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -147,12 +168,14 @@ public class V1JobManagerSpec {
                 Objects.equals(getVolumeMounts(), that.getVolumeMounts()) &&
                 Objects.equals(getPersistentVolumeClaimsTemplates(), that.getPersistentVolumeClaimsTemplates()) &&
                 Objects.equals(getAnnotations(), that.getAnnotations()) &&
-                Objects.equals(getExtraPorts(), that.getExtraPorts());
+                Objects.equals(getExtraPorts(), that.getExtraPorts()) &&
+                Objects.equals(getInitContainers(), that.getInitContainers()) &&
+                Objects.equals(getSideContainers(), that.getSideContainers());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getEnvironment(), getEnvironmentFrom(), getServiceMode(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts());
+        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getEnvironment(), getEnvironmentFrom(), getServiceMode(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers());
     }
 
     @Override
@@ -164,11 +187,13 @@ public class V1JobManagerSpec {
                 ", environmentFrom=" + environmentFrom +
                 ", serviceMode='" + serviceMode + '\'' +
                 ", serviceAccount='" + serviceAccount + '\'' +
-                ", volumes='" + volumes + '\'' +
-                ", volumeMounts='" + volumeMounts + '\'' +
-                ", persistentVolumeClaimsTemplates='" + persistentVolumeClaimsTemplates + '\'' +
-                ", annotations='" + annotations + '\'' +
-                ", extraPorts='" + extraPorts + '\'' +
+                ", volumes=" + volumes +
+                ", volumeMounts=" + volumeMounts +
+                ", persistentVolumeClaimsTemplates=" + persistentVolumeClaimsTemplates +
+                ", annotations=" + annotations +
+                ", extraPorts=" + extraPorts +
+                ", initContainers=" + initContainers +
+                ", sideContainers=" + sideContainers +
                 '}';
     }
 }

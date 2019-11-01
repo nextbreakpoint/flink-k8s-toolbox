@@ -127,7 +127,9 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(podSpec?.affinity?.podAntiAffinity).isNotNull()
         assertThat(podSpec?.affinity?.podAntiAffinity?.preferredDuringSchedulingIgnoredDuringExecution).isNotNull()
         assertThat(podSpec?.affinity?.podAntiAffinity?.preferredDuringSchedulingIgnoredDuringExecution).hasSize(2)
-        assertThat(podSpec?.containers).hasSize(1)
+
+        assertThat(podSpec?.containers).hasSize(2)
+        assertThat(podSpec?.initContainers).hasSize(1)
 
         val container = podSpec?.containers?.get(0)
         assertThat(container?.image).isEqualTo(cluster.spec.flinkImage?.flinkImage)
@@ -193,7 +195,9 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(podSpec?.affinity?.podAntiAffinity).isNotNull()
         assertThat(podSpec?.affinity?.podAntiAffinity?.preferredDuringSchedulingIgnoredDuringExecution).isNotNull()
         assertThat(podSpec?.affinity?.podAntiAffinity?.preferredDuringSchedulingIgnoredDuringExecution).hasSize(2)
-        assertThat(podSpec?.containers).hasSize(1)
+
+        assertThat(podSpec?.containers).hasSize(2)
+        assertThat(podSpec?.initContainers).hasSize(1)
 
         val container = podSpec?.containers?.get(0)
         assertThat(container?.image).isEqualTo(cluster.spec.flinkImage?.flinkImage)
