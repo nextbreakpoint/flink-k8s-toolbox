@@ -22,30 +22,27 @@ spec:
     kind: FlinkCluster
     shortNames:
     - fc
-validation:
-  openAPIV3Schema:
-    type: object
-    properties:
-      metadata:
-        type: object
-        nullable: true
-      status:
-        type: object
-        nullable: true
-      spec:
-        type: object
-    required:
-      - spec
-additionalPrinterColumns:
-  - name: ClusterStatus
-    type: string
-    JSONPath: .status.clusterStatus
-  - name: TaskStatus
-    type: string
-    JSONPath: .status.taskStatus
-  - name: Task
-    type: string
-    JSONPath: .status.tasks[0]
-  - name: SavepointPath
-    type: string
-    JSONPath: .status.savepointPath
+  validation:
+    openAPIV3Schema:
+      type: object
+      properties:
+        status:
+          type: object
+          nullable: true
+        spec:
+          type: object
+      required:
+        - spec
+  additionalPrinterColumns:
+    - name: CLUSTER-STATUS
+      type: string
+      JSONPath: .status.clusterStatus
+    - name: TASK-STATUS
+      type: string
+      JSONPath: .status.taskStatus
+    - name: TASK
+      type: string
+      JSONPath: .status.tasks[0]
+    - name: SAVEPOINT-PATH
+      type: string
+      JSONPath: .status.savepointPath
