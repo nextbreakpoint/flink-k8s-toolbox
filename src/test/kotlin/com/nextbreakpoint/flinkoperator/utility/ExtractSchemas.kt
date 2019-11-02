@@ -33,75 +33,98 @@ class ExtractSchemas {
 //                printDefinition(it, typeDefinitions[it] ?: mapOf())
 //            }
 
-            val outputDefinitions = outputTypes.map { it to typeDefinitions[it] }.toMap()
+            val outputDefinitions = outputTypes.map { it to typeDefinitions[it].orEmpty() }.toMap()
 
             val expandedDefinitions = expandDefinitions(outputDefinitions)
 
             File("definitions").mkdirs()
 
             expandedDefinitions.forEach {
-                val json = GsonBuilder().setPrettyPrinting().create().toJson(it.value)
-                println(json)
-                val jsonNodeTree = ObjectMapper().readTree(json)
-                val jsonAsYaml = YAMLMapper().writeValueAsString(jsonNodeTree)
-                Files.write(File("definitions", it.key + ".yaml").toPath(), jsonAsYaml.toByteArray())
+                saveDefinition(it.key, it.value)
             }
         }
 
-        private fun expandDefinitions(definitions: Map<String, Map<String, Any>?>): Map<String, Map<String, Any>?> {
+        private fun saveDefinition(type: String, definition: Map<String, Any>) {
+            val json = GsonBuilder().setPrettyPrinting().create().toJson(definition)
+            println(json)
+            val jsonNodeTree = ObjectMapper().readTree(json)
+            val jsonAsYaml = YAMLMapper().writeValueAsString(jsonNodeTree)
+            Files.write(File("definitions", type + ".yaml").toPath(), jsonAsYaml.toByteArray())
+        }
+
+        private fun expandDefinitions(definitions: Map<String, Map<String, Any>>): Map<String, Map<String, Any>> {
             return definitions.mapValues {
-                expandDefinition(it.value.orEmpty() as Map<String, Map<String, Any>>) as Map<String, Any>
+                expandDefinition(it.value as Map<String, Map<String, Any>>) as Map<String, Any>
             }.toMap()
         }
 
-        private fun expandDefinition(definition: Map<String, Any>): Map<String, Map<String, Any>?> {
-            val localDefinition = definition.toMutableMap() as MutableMap<String, Map<String, Any>?>
+        private fun expandDefinition(definition: Map<String, Any>): Map<String, Map<String, Any>> {
+            val localDefinition = definition.toMutableMap() as MutableMap<String, Map<String, Any>>
             val properties = localDefinition["properties"] as Map<String, Map<String, Any>>?
             val expandedProperties = properties.orEmpty().mapValues {
-                if (it.value["type"] == "array") {
-                    val items = it.value["items"] as Map<String, Map<String, Any>>?
-                    val ref = items.orEmpty()["\$ref"] as String?
-                    if (ref != null) {
-                        val refType = ref.substring(ref.lastIndexOf('/') + 1)
-                        val refDefinition = typeDefinitions[refType].orEmpty()
-                        expandDefinition(refDefinition)
+                val props = it.value.toMutableMap()
+                if (props["type"] == "array") {
+                    val items = props["items"] as Map<String, Map<String, Any>>?
+                    if (items != null) {
+                        val ref = items["\$ref"] as String?
+                        if (ref != null) {
+                            val refType = ref.substring(ref.lastIndexOf('/') + 1)
+                            val refDefinition = typeDefinitions[refType].orEmpty()
+                            val updatedItems = items.toMutableMap()
+                            updatedItems.remove("\$ref")
+                            updatedItems.putAll(expandDefinition(refDefinition))
+                            val updatedProps = props.toMutableMap()
+                            updatedProps.put("items", updatedItems)
+                            updatedProps
+                        } else {
+                            props as Map<String, Map<String, Any>>
+                        }
                     } else {
-                        it.value as Map<String, Map<String, Any>>
+                        props as Map<String, Map<String, Any>>
                     }
-                } else if (it.value["type"] == "object") {
-                    val ref = it.value["\$ref"] as String?
+                } else if (props["type"] == "object") {
+                    val ref = props["\$ref"] as String?
                     if (ref != null) {
                         val refType = ref.substring(ref.lastIndexOf('/') + 1)
                         val refDefinition = typeDefinitions[refType].orEmpty()
-                        expandDefinition(refDefinition)
+                        val updatedProps = props.toMutableMap()
+                        updatedProps.remove("\$ref")
+                        updatedProps.putAll(expandDefinition(refDefinition))
+                        updatedProps
                     } else {
-                        expandDefinition(it.value)
+                        expandDefinition(props)
                     }
                 } else {
-                    val ref = it.value["\$ref"] as String?
+                    val ref = props["\$ref"] as String?
                     if (ref != null) {
                         val refType = ref.substring(ref.lastIndexOf('/') + 1)
                         val refDefinition = typeDefinitions[refType].orEmpty()
-                        expandDefinition(refDefinition)
+                        val updatedProps = props.toMutableMap()
+                        updatedProps.remove("\$ref")
+                        updatedProps.putAll(expandDefinition(refDefinition))
+                        updatedProps
                     } else {
-                        it.value as Map<String, Map<String, Any>>
+                        props as Map<String, Map<String, Any>>
                     }
                 }
             }.toMap()
             localDefinition["properties"] = expandedProperties
-            val additionalProperties = localDefinition["additionalProperties"] as Map<String, String>?
+            val additionalProperties = localDefinition["additionalProperties"] as Map<String, Any>?
             if (additionalProperties != null) {
-                val ref = additionalProperties["\$ref"]
+                val ref = additionalProperties["\$ref"] as String?
                 if (ref != null) {
                     val refType = ref.substring(ref.lastIndexOf('/') + 1)
                     val refDefinition = typeDefinitions[refType].orEmpty()
-                    localDefinition["additionalProperties"] = expandDefinition(refDefinition) as Map<String, Any>
+                    val updatedProps = additionalProperties.toMutableMap()
+                    updatedProps.remove("\$ref")
+                    updatedProps.putAll(expandDefinition(refDefinition) as Map<String, Any>)
+                    localDefinition["additionalProperties"] = updatedProps
                 }
             }
             return localDefinition.toMap()
         }
 
-        private fun createOutputTypes(selectedTypes: List<String>): MutableSet<String> {
+        private fun createOutputTypes(selectedTypes: List<String>): Set<String> {
             val outputTypes = mutableSetOf<String>()
             typeDefinitions.filter { it.key in selectedTypes || ("V1" + it.key.substringAfterLast(".v1.")) in selectedTypes }.forEach {
                 outputTypes.add(it.key)
