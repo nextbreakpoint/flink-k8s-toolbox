@@ -10,6 +10,7 @@ metadata:
     release: {{ $root.Release.Name }}
     heritage: {{ $root.Release.Service }}
 spec:
+  preserveUnknownField: false
   group: nextbreakpoint.com
   versions:
     - name: v1
@@ -27,10 +28,272 @@ spec:
       type: object
       properties:
         status:
+          description: A Flink cluster status.
           type: object
           nullable: true
+          properties:
+            timestamp:
+              anyOf:
+              - type: integer
+              - type: long
+              nullable: false
+            tasks:
+              type: array
+              nullable: false
+              items:
+                type: string
+            taskStatus:
+              type: string
+              nullable: false
+            taskAttempts:
+              type: integer
+              nullable: false
+            clusterStatus:
+              type: string
+              nullable: false
+            savepointPath:
+              type: string
+              nullable: true
+            savepointJobId:
+              type: string
+              nullable: true
+            savepointTriggerId:
+              type: string
+              nullable: true
+            savepointTimestamp:
+              anyOf:
+              - type: integer
+              - type: long
+              nullable: true
+            digestOfJobManager:
+              type: string
+              nullable: true
+            digestOfTaskManager:
+              type: string
+              nullable: true
+            digestOfFlinkImage:
+              type: string
+              nullable: true
+            digestOfFlinkJob:
+              type: string
+              nullable: true
+          required:
+            - timestamp
+            - tasks
+            - taskStatus
+            - taskAttempts
+            - clusterStatus
         spec:
+          description: A Flink cluster specification.
           type: object
+          nullable: false
+          properties:
+            jobManager:
+              description: A Flink Job Manager specification.
+              type: object
+              nullable: false
+              properties:
+                requiredCPUs:
+                  anyOf:
+                  - type: double
+                  - type: float
+                  - type: int
+                  nullable: true
+                requiredMemory:
+                  anyOf:
+                  - type: long
+                  - type: int
+                  nullable: true
+                serviceMode:
+                  type: string
+                  nullable: false
+                serviceAccount:
+                  type: string
+                  nullable: true
+                annotations:
+                  type: object
+                  nullable: true
+                environment:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                environmentFrom:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                volumes:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                volumeMounts:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                persistentVolumeClaimsTemplates:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                extraPorts:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                initContainers:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                sideContainers:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+              required:
+                - serviceMode
+            taskManager:
+              description: A Flink Task Manager specification.
+              type: object
+              nullable: false
+              properties:
+                requiredCPUs:
+                  anyOf:
+                  - type: double
+                  - type: float
+                  - type: int
+                  nullable: true
+                requiredMemory:
+                  anyOf:
+                  - type: long
+                  - type: int
+                  nullable: true
+                replicas:
+                  type: integer
+                  nullable: true
+                taskSlots:
+                  type: integer
+                  nullable: true
+                serviceAccount:
+                  type: string
+                  nullable: true
+                annotations:
+                  type: object
+                  nullable: true
+                environment:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                environmentFrom:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                volumes:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                volumeMounts:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                persistentVolumeClaimsTemplates:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                extraPorts:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                initContainers:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                sideContainers:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+              required:
+            flinkImage:
+              description: A Flink image specification.
+              type: object
+              nullable: false
+              properties:
+                pullSecrets:
+                  type: string
+                  nullable: false
+                pullPolicy:
+                  type: string
+                  nullable: false
+                flinkImage:
+                  type: string
+                  nullable: false
+              required:
+                - flinkImage
+            flinkJob:
+              description: A Flink job specification.
+              type: object
+              nullable: true
+              properties:
+                image:
+                  type: string
+                  nullable: false
+                className:
+                  type: string
+                  nullable: false
+                jarPath:
+                  type: string
+                  nullable: false
+                arguments:
+                  type: array
+                  nullable: true
+                  items:
+                    type: string
+                parallelism:
+                  type: integer
+                  nullable: true
+              required:
+                - image
+                - className
+                - jarPath
+            flinkOperator:
+              description: A Flink Operator specification.
+              type: object
+              nullable: false
+              properties:
+                savepointMode:
+                  type: string
+                  nullable: false
+                savepointPath:
+                  type: string
+                  nullable: true
+                savepointInterval:
+                  type: integer
+                  nullable: true
+                savepointTargetPath:
+                  type: string
+                  nullable: false
+                jobRestartPolicy:
+                  type: string
+                  nullable: true
+              required:
+                - savepointMode
+                - savepointTargetPath
+          required:
+            - jobManager
+            - taskManager
+            - flinkImage
+            - flinkOperator
       required:
         - spec
   additionalPrinterColumns:
@@ -46,6 +309,6 @@ spec:
     - name: SAVEPOINT-PATH
       type: string
       JSONPath: .status.savepointPath
-    - name: Age
+    - name: AGE
       type: date
       JSONPath: .metadata.creationTimestamp
