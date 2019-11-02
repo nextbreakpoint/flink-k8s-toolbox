@@ -46,3 +46,6 @@ spec:
     - name: SAVEPOINT-PATH
       type: string
       JSONPath: .status.savepointPath
+    - name: Age
+      type: date
+      JSONPath: .metadata.creationTimestamp
