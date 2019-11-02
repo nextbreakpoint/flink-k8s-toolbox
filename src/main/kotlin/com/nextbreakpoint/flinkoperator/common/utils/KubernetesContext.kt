@@ -3,6 +3,7 @@ package com.nextbreakpoint.flinkoperator.common.utils
 import com.google.common.io.ByteStreams
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
@@ -10,6 +11,7 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import io.kubernetes.client.ApiClient
+import io.kubernetes.client.ApiException
 import io.kubernetes.client.ApiResponse
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.PortForward
@@ -733,30 +735,40 @@ object KubernetesContext {
     }
 
     fun createFlinkCluster(flinkCluster: V1FlinkCluster): ApiResponse<Any> {
-        return objectApi.createNamespacedCustomObjectWithHttpInfo(
-            "nextbreakpoint.com",
-            "v1",
-            flinkCluster.metadata.namespace,
-            "flinkclusters",
-            CustomResources.convertToMap(flinkCluster) /* oh boy, it works with map but not with json or pojo !!! */,
-            null
-        )
+        try {
+            return objectApi.createNamespacedCustomObjectWithHttpInfo(
+                "nextbreakpoint.com",
+                "v1",
+                flinkCluster.metadata.namespace,
+                "flinkclusters",
+                CustomResources.convertToMap(flinkCluster) /* oh boy, it works with map but not with json or pojo !!! */,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
     }
 
     fun deleteFlinkCluster(clusterId: ClusterId): ApiResponse<Any> {
-        val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
+        try {
+            val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
 
-        return objectApi.deleteNamespacedCustomObjectWithHttpInfo(
-            "nextbreakpoint.com",
-            "v1",
-            clusterId.namespace,
-            "flinkclusters",
-            clusterId.name,
-            deleteOptions,
-            null,
-            null,
-            null
-        )
+            return objectApi.deleteNamespacedCustomObjectWithHttpInfo(
+                "nextbreakpoint.com",
+                "v1",
+                clusterId.namespace,
+                "flinkclusters",
+                clusterId.name,
+                deleteOptions,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
     }
 
     fun listUploadJobs(clusterId: ClusterId): V1JobList {
