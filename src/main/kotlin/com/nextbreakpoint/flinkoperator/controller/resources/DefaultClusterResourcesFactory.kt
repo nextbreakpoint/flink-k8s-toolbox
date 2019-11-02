@@ -300,8 +300,14 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             )
         } else null
 
+        val initContainers = flinkCluster.spec.jobManager?.initContainers ?: listOf()
+
+        val sideContainers = flinkCluster.spec.jobManager?.sideContainers ?: listOf()
+
         val jobmanagerPodSpec = V1PodSpecBuilder()
+            .addAllToInitContainers(initContainers)
             .addToContainers(jobmanagerContainer)
+            .addAllToContainers(sideContainers)
             .withServiceAccountName(flinkCluster.spec.jobManager?.serviceAccount ?: "default")
             .withImagePullSecrets(jobmanagerPullSecrets)
             .withAffinity(jobmanagerAffinity)
@@ -450,8 +456,14 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             )
         } else null
 
+        val initContainers = flinkCluster.spec.taskManager?.initContainers ?: listOf()
+
+        val sideContainers = flinkCluster.spec.taskManager?.sideContainers ?: listOf()
+
         val taskmanagerPodSpec = V1PodSpecBuilder()
+            .addAllToInitContainers(initContainers)
             .addToContainers(taskmanagerContainer)
+            .addAllToContainers(sideContainers)
             .withServiceAccountName(flinkCluster.spec.taskManager?.serviceAccount ?: "default")
             .withImagePullSecrets(taskmanagerPullSecrets)
             .withAffinity(taskmanagerAffinity)

@@ -79,6 +79,27 @@ object TestFactory {
                     }
                   }
                 ],
+                "initContainers": [
+                    {
+                        "image": "busybox",
+                        "command": [
+                            "ls"
+                        ],
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "busybox"
+                    }
+                ],
+                "sideContainers": [
+                    {
+                        "image": "busybox",
+                        "command": [
+                            "sleep",
+                            "3600"
+                        ],
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "busybox"
+                    }
+                ],
                 "persistentVolumeClaimsTemplates": [
                   {
                     "metadata": {
@@ -132,6 +153,27 @@ object TestFactory {
                       "defaultMode": "511"
                     }
                   }
+                ],
+                "initContainers": [
+                    {
+                        "image": "busybox",
+                        "command": [
+                            "ls"
+                        ],
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "busybox"
+                    }
+                ],
+                "sideContainers": [
+                    {
+                        "image": "busybox",
+                        "command": [
+                            "sleep",
+                            "3600"
+                        ],
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "busybox"
+                    }
                 ],
                 "persistentVolumeClaimsTemplates": [
                   {

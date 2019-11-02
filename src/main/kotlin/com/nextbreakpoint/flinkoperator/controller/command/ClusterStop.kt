@@ -10,7 +10,7 @@ import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import org.apache.log4j.Logger
@@ -24,9 +24,9 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubern
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            val clusterStatus = OperatorAnnotations.getClusterStatus(flinkCluster)
+            val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
 
-            val operatorStatus = OperatorAnnotations.getCurrentTaskStatus(flinkCluster)
+            val operatorStatus = OperatorState.getCurrentTaskStatus(flinkCluster)
 
             if (operatorStatus == TaskStatus.IDLE) {
                 val statusList = if (params.deleteResources) {
@@ -113,7 +113,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubern
                 }
 
                 if (statusList.isNotEmpty()) {
-                    OperatorAnnotations.appendTasks(flinkCluster, statusList)
+                    OperatorState.appendTasks(flinkCluster, statusList)
                     return Result(
                         ResultStatus.SUCCESS,
                         statusList
@@ -124,7 +124,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubern
                     return Result(
                         ResultStatus.AWAIT,
                         listOf(
-                            OperatorAnnotations.getCurrentTask(
+                            OperatorState.getCurrentTask(
                                 flinkCluster
                             )
                         )
@@ -136,7 +136,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubern
                 return Result(
                     ResultStatus.AWAIT,
                     listOf(
-                        OperatorAnnotations.getCurrentTask(
+                        OperatorState.getCurrentTask(
                             flinkCluster
                         )
                     )

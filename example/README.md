@@ -30,11 +30,11 @@ Create namespace:
 
 Install operator's global resources:
 
-    helm install --name flink-k8s-toolbox-global helm/flink-k8s-toolbox-global
+    helm install --name flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
 
 Install operator's namespace resources:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
 
 Run Flink Operator:
 
@@ -141,25 +141,25 @@ You can tag and push images to your local registry:
 
 Compile Docker image of Flink Operator:
 
-    docker build -t flink-k8s-toolbox:1.1.11-beta .
+    docker build -t flink-k8s-toolbox:1.1.12-beta .
 
 Optionally tag and push Docker image to your local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.1.11-beta registry:30000/flink-k8s-toolbox:1.1.11-beta
+    docker tag flink-k8s-toolbox:1.1.12-beta registry:30000/flink-k8s-toolbox:1.1.12-beta
     docker login registry:30000
-    docker push registry:30000/flink-k8s-toolbox:1.1.11-beta
+    docker push registry:30000/flink-k8s-toolbox:1.1.12-beta
 
 Run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.11-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.12-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Run Flink Operator using Helm and local registry:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
 
 Run Flink Operator using Helm and local image:
 
-    helm install --name flink-k8s-toolbox-services --namespace flink helm/flink-k8s-toolbox-services --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
 
 
 
