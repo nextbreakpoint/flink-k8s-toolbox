@@ -141,17 +141,17 @@ You can tag and push images to your local registry:
 
 Compile Docker image of Flink Operator:
 
-    docker build -t flink-k8s-toolbox:1.1.12-beta .
+    docker build -t flink-k8s-toolbox:1.1.13-beta .
 
 Optionally tag and push Docker image to your local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.1.12-beta registry:30000/flink-k8s-toolbox:1.1.12-beta
+    docker tag flink-k8s-toolbox:1.1.13-beta registry:30000/flink-k8s-toolbox:1.1.13-beta
     docker login registry:30000
-    docker push registry:30000/flink-k8s-toolbox:1.1.12-beta
+    docker push registry:30000/flink-k8s-toolbox:1.1.13-beta
 
 Run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.12-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.1.13-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Run Flink Operator using Helm and local registry:
 
