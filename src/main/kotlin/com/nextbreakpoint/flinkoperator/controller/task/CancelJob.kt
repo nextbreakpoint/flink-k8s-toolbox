@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
@@ -43,7 +43,7 @@ class CancelJob : OperatorTaskHandler {
         val savepointRequest = context.controller.cancelJob(context.clusterId, options)
 
         if (savepointRequest.status == ResultStatus.SUCCESS && savepointRequest.output != null) {
-            OperatorAnnotations.setSavepointRequest(context.flinkCluster, savepointRequest.output)
+            OperatorState.setSavepointRequest(context.flinkCluster, savepointRequest.output)
 
             return Result(
                 ResultStatus.SUCCESS,
@@ -67,7 +67,7 @@ class CancelJob : OperatorTaskHandler {
             )
         }
 
-        val savepointRequest = OperatorAnnotations.getSavepointRequest(context.flinkCluster)
+        val savepointRequest = OperatorState.getSavepointRequest(context.flinkCluster)
 
         if (savepointRequest == null) {
             return Result(
@@ -80,7 +80,7 @@ class CancelJob : OperatorTaskHandler {
 
         if (completedSavepoint.status == ResultStatus.SUCCESS) {
             if (OperatorParameters.getSavepointPath(context.flinkCluster) != completedSavepoint.output) {
-                OperatorAnnotations.setSavepointPath(context.flinkCluster, completedSavepoint.output)
+                OperatorState.setSavepointPath(context.flinkCluster, completedSavepoint.output)
             }
         }
 

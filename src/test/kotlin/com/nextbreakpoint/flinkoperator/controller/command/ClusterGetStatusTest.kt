@@ -7,7 +7,7 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -31,8 +31,8 @@ class ClusterGetStatusTest {
 
     @BeforeEach
     fun configure() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.RUNNING)
-        OperatorAnnotations.appendTasks(cluster, listOf(OperatorTask.CLUSTER_RUNNING))
+        OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
+        OperatorState.appendTasks(cluster, listOf(OperatorTask.CLUSTER_RUNNING))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 
@@ -50,7 +50,7 @@ class ClusterGetStatusTest {
     }
 
     @Test
-    fun `should return annotations when cluster exists`() {
+    fun `should return state when cluster exists`() {
         val result = command.execute(clusterId, null)
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)

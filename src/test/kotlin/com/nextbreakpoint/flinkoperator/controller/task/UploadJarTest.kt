@@ -158,7 +158,7 @@ class UploadJarTest {
     fun `onAwaiting should return expected result when resources diverged`() {
         given(context.haveUploadJobResourceDiverged(any())).thenReturn(true)
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
-        resources.jarUploadJobs?.get(clusterId)?.spec?.template?.spec?.serviceAccountName = "xxx"
+        resources.jarUploadJobs.get(clusterId)?.spec?.template?.spec?.serviceAccountName = "xxx"
         given(context.resources).thenReturn(resources)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId

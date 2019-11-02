@@ -9,7 +9,7 @@ import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -33,9 +33,9 @@ class ClusterStartTest {
 
     @BeforeEach
     fun configure() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.RUNNING)
-        OperatorAnnotations.setTaskStatus(cluster, TaskStatus.IDLE)
-        OperatorAnnotations.appendTasks(cluster, listOf(OperatorTask.CLUSTER_HALTED))
+        OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
+        OperatorState.setTaskStatus(cluster, TaskStatus.IDLE)
+        OperatorState.appendTasks(cluster, listOf(OperatorTask.CLUSTER_HALTED))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 
@@ -55,8 +55,8 @@ class ClusterStartTest {
     @Test
     fun `should return expected result when job is not defined and cluster is terminated but operator is not idle`() {
         cluster.spec.flinkJob = null
-        OperatorAnnotations.setTaskStatus(cluster, TaskStatus.AWAITING)
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.TERMINATED)
+        OperatorState.setTaskStatus(cluster, TaskStatus.AWAITING)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.TERMINATED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -72,7 +72,7 @@ class ClusterStartTest {
     @Test
     fun `should return expected result when job is not defined and cluster is terminated and savepoint is enabled`() {
         cluster.spec.flinkJob = null
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.TERMINATED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.TERMINATED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -90,7 +90,7 @@ class ClusterStartTest {
     @Test
     fun `should return expected result when job is not defined and cluster is suspended and savepoint is enabled`() {
         cluster.spec.flinkJob = null
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -108,7 +108,7 @@ class ClusterStartTest {
     @Test
     fun `should return expected result when job is not defined and cluster has failed and savepoint is enabled`() {
         cluster.spec.flinkJob = null
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -129,7 +129,7 @@ class ClusterStartTest {
     @Test
     fun `should return expected result when job is not defined and cluster is checkpointing and savepoint is enabled`() {
         cluster.spec.flinkJob = null
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.CHECKPOINTING)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.CHECKPOINTING)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -144,7 +144,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is defined and cluster is terminated and savepoint is enabled`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.TERMINATED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.TERMINATED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -165,7 +165,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is defined and cluster is suspended and savepoint is enabled`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -186,7 +186,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is defined and cluster has failed and savepoint is enabled`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -200,7 +200,7 @@ class ClusterStartTest {
             OperatorTask.TERMINATE_PODS,
             OperatorTask.DELETE_RESOURCES,
             OperatorTask.STARTING_CLUSTER,
-            OperatorTask.RESTART_PODS,
+            OperatorTask.CREATE_RESOURCES,
             OperatorTask.UPLOAD_JAR,
             OperatorTask.ERASE_SAVEPOINT,
             OperatorTask.START_JOB,
@@ -210,7 +210,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is defined and cluster is checkpointing and savepoint is enabled`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.CHECKPOINTING)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.CHECKPOINTING)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -225,7 +225,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is defined and cluster is terminated and savepoint is disabled`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.TERMINATED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.TERMINATED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = false))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -245,7 +245,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is defined and cluster is suspended and savepoint is disabled`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = false))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -265,7 +265,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is defined and cluster has failed and savepoint is disabled`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = false))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -279,7 +279,7 @@ class ClusterStartTest {
             OperatorTask.TERMINATE_PODS,
             OperatorTask.DELETE_RESOURCES,
             OperatorTask.STARTING_CLUSTER,
-            OperatorTask.RESTART_PODS,
+            OperatorTask.CREATE_RESOURCES,
             OperatorTask.UPLOAD_JAR,
             OperatorTask.START_JOB,
             OperatorTask.CLUSTER_RUNNING
@@ -288,7 +288,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is defined and cluster is checkpointing and savepoint is disabled`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.CHECKPOINTING)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.CHECKPOINTING)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = false))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)

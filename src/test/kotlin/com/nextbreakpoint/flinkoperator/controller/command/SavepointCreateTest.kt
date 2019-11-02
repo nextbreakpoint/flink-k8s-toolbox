@@ -8,7 +8,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -32,9 +32,9 @@ class SavepointCreateTest {
 
     @BeforeEach
     fun configure() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.RUNNING)
-        OperatorAnnotations.setTaskStatus(cluster, TaskStatus.IDLE)
-        OperatorAnnotations.appendTasks(cluster, listOf(OperatorTask.CLUSTER_RUNNING))
+        OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
+        OperatorState.setTaskStatus(cluster, TaskStatus.IDLE)
+        OperatorState.appendTasks(cluster, listOf(OperatorTask.CLUSTER_RUNNING))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 
@@ -66,7 +66,7 @@ class SavepointCreateTest {
 
     @Test
     fun `should return expected result when operator is not idle`() {
-        OperatorAnnotations.setTaskStatus(cluster, TaskStatus.AWAITING)
+        OperatorState.setTaskStatus(cluster, TaskStatus.AWAITING)
         val result = command.execute(clusterId, null)
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -81,7 +81,7 @@ class SavepointCreateTest {
 
     @Test
     fun `should return expected result when cluster is not running`() {
-        OperatorAnnotations.setClusterStatus(cluster, ClusterStatus.STARTING)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.STARTING)
         val result = command.execute(clusterId, null)
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)

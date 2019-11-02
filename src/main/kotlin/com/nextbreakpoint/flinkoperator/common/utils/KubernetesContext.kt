@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -207,6 +208,27 @@ object KubernetesContext {
 
         if (!response.isSuccessful) {
             throw RuntimeException("Can't update annotations of cluster ${clusterId.name}")
+        }
+    }
+
+    fun updateStatus(clusterId: ClusterId, status: V1FlinkClusterStatus) {
+        val patch = mapOf<String, Any?>(
+            "status" to status
+        )
+
+        val response = objectApi.patchNamespacedCustomObjectCall(
+            "nextbreakpoint.com",
+            "v1",
+            clusterId.namespace,
+            "flinkclusters",
+            clusterId.name,
+            patch,
+            null,
+            null
+        ).execute()
+
+        if (!response.isSuccessful) {
+            throw RuntimeException("Can't update state of cluster ${clusterId.name}")
         }
     }
 

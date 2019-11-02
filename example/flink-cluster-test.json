@@ -77,6 +77,27 @@
         }
       }
     ],
+    "initContainers": [
+      {
+        "image": "busybox",
+        "command": [
+          "ls"
+        ],
+        "imagePullPolicy": "IfNotPresent",
+        "name": "initializer"
+      }
+    ],
+    "sideContainers": [
+      {
+        "image": "busybox",
+        "command": [
+          "sleep",
+          "3600"
+        ],
+        "imagePullPolicy": "IfNotPresent",
+        "name": "sidecar"
+      }
+    ],
     "extraPorts": [
       {
         "name": "prometheus",
@@ -155,6 +176,27 @@
           "name": "flink-config",
           "defaultMode": "511"
         }
+      }
+    ],
+    "initContainers": [
+      {
+        "image": "busybox",
+        "command": [
+          "ls"
+        ],
+        "imagePullPolicy": "IfNotPresent",
+        "name": "initializer"
+      }
+    ],
+    "sideContainers": [
+      {
+        "image": "busybox",
+        "command": [
+          "sleep",
+          "3600"
+        ],
+        "imagePullPolicy": "IfNotPresent",
+        "name": "sidecar"
       }
     ],
     "extraPorts": [

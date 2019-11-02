@@ -12,6 +12,8 @@ public class V1FlinkCluster {
     private String kind = null;
     @SerializedName("metadata")
     private V1ObjectMeta metadata = null;
+    @SerializedName("status")
+    private V1FlinkClusterStatus status = null;
     @SerializedName("spec")
     private V1FlinkClusterSpec spec = null;
 
@@ -70,19 +72,34 @@ public class V1FlinkCluster {
         return this;
     }
 
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        } else if (o != null && this.getClass() == o.getClass()) {
-            V1FlinkCluster V1FlinkCluster = (V1FlinkCluster)o;
-            return Objects.equals(this.apiVersion, V1FlinkCluster.apiVersion) && Objects.equals(this.kind, V1FlinkCluster.kind) && Objects.equals(this.metadata, V1FlinkCluster.metadata) && Objects.equals(this.spec, V1FlinkCluster.spec);
-        } else {
-            return false;
-        }
+    public V1FlinkClusterStatus getStatus() {
+        return status;
     }
 
+    public void setStatus(V1FlinkClusterStatus status) {
+        this.status = status;
+    }
+
+    public V1FlinkCluster state(V1FlinkClusterStatus state) {
+        this.status = state;
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        V1FlinkCluster that = (V1FlinkCluster) o;
+        return Objects.equals(getApiVersion(), that.getApiVersion()) &&
+                Objects.equals(getKind(), that.getKind()) &&
+                Objects.equals(getMetadata(), that.getMetadata()) &&
+                Objects.equals(getStatus(), that.getStatus()) &&
+                Objects.equals(getSpec(), that.getSpec());
+    }
+
+    @Override
     public int hashCode() {
-        return Objects.hash(this.apiVersion, this.kind, this.metadata, this.spec);
+        return Objects.hash(getApiVersion(), getKind(), getMetadata(), getStatus(), getSpec());
     }
 
     @Override
@@ -91,6 +108,7 @@ public class V1FlinkCluster {
                 "apiVersion='" + apiVersion + '\'' +
                 ", kind='" + kind + '\'' +
                 ", metadata=" + metadata +
+                ", status=" + status +
                 ", spec=" + spec +
                 '}';
     }
