@@ -89,7 +89,9 @@ class ClusterUpdateStatusTest {
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.INITIALISE_CLUSTER)
-        assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.RUNNING)
+        assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.EXECUTING)
+        assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.UNKNOWN)
+        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
     }
 
     @Test
