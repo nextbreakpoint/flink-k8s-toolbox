@@ -15,7 +15,7 @@ import io.kubernetes.client.models.V1ServiceBuilder
 import io.kubernetes.client.models.V1StatefulSetBuilder
 
 object TestFactory {
-    fun aCluster(name: String, namespace: String): V1FlinkCluster {
+    fun aCluster(name: String, namespace: String, parallelism: Int = 1, taskSlots: Int = 1): V1FlinkCluster {
         val flinkClusterSpec = CustomResources.parseV1FlinkClusterSpec(
             """
             {
@@ -28,7 +28,7 @@ object TestFactory {
                 "image": "registry:30000/flink-jobs:1",
                 "jarPath": "/flink-jobs.jar",
                 "className": "com.nextbreakpoint.flink.jobs.TestJob",
-                "parallelism": 1,
+                "parallelism": $parallelism,
                 "arguments": [
                   "--BUCKET_BASE_PATH",
                   "file:///var/tmp"
@@ -118,6 +118,7 @@ object TestFactory {
                 ]
               },
               "taskManager": {
+                "taskSlots": $taskSlots,
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",

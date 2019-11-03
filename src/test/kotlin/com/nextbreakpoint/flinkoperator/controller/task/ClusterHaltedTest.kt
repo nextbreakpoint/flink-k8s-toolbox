@@ -24,7 +24,7 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 
 class ClusterHaltedTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(OperatorContext::class.java)
     private val controller = mock(OperatorController::class.java)
     private val resources = mock(OperatorResources::class.java)
@@ -76,7 +76,7 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should fail when job manager digest is missing`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         OperatorState.setFlinkJobDigest(cluster, "123")
         OperatorState.setFlinkImageDigest(cluster, "123")
         OperatorState.setTaskManagerDigest(cluster, "123")
@@ -92,7 +92,7 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should fail when task manager digest is missing`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         OperatorState.setFlinkJobDigest(cluster, "123")
         OperatorState.setFlinkImageDigest(cluster, "123")
         OperatorState.setJobManagerDigest(cluster, "123")
@@ -108,7 +108,7 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should fail when flink job digest is missing`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         OperatorState.setFlinkImageDigest(cluster, "123")
         OperatorState.setJobManagerDigest(cluster, "123")
         OperatorState.setTaskManagerDigest(cluster, "123")
@@ -124,7 +124,7 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should fail when flink image digest is missing`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         OperatorState.setFlinkJobDigest(cluster, "123")
         OperatorState.setJobManagerDigest(cluster, "123")
         OperatorState.setTaskManagerDigest(cluster, "123")

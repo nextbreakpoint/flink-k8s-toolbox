@@ -18,8 +18,6 @@ public class V1TaskManagerSpec {
     private Float requiredCPUs;
     @SerializedName("requiredMemory")
     private Integer requiredMemory;
-    @SerializedName("replicas")
-    private Integer replicas;
     @SerializedName("taskSlots")
     private Integer taskSlots;
     @SerializedName("environment")
@@ -58,15 +56,6 @@ public class V1TaskManagerSpec {
 
     public V1TaskManagerSpec setRequiredMemory(Integer requiredMemory) {
         this.requiredMemory = requiredMemory;
-        return this;
-    }
-
-    public Integer getReplicas() {
-        return replicas;
-    }
-
-    public V1TaskManagerSpec setReplicas(Integer replicas) {
-        this.replicas = replicas;
         return this;
     }
 
@@ -171,7 +160,6 @@ public class V1TaskManagerSpec {
         V1TaskManagerSpec that = (V1TaskManagerSpec) o;
         return Objects.equals(getRequiredCPUs(), that.getRequiredCPUs()) &&
                 Objects.equals(getRequiredMemory(), that.getRequiredMemory()) &&
-                Objects.equals(getReplicas(), that.getReplicas()) &&
                 Objects.equals(getTaskSlots(), that.getTaskSlots()) &&
                 Objects.equals(getEnvironment(), that.getEnvironment()) &&
                 Objects.equals(getEnvironmentFrom(), that.getEnvironmentFrom()) &&
@@ -187,7 +175,7 @@ public class V1TaskManagerSpec {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getReplicas(), getTaskSlots(), getEnvironment(), getEnvironmentFrom(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers());
+        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getTaskSlots(), getEnvironment(), getEnvironmentFrom(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers());
     }
 
     @Override
@@ -195,7 +183,6 @@ public class V1TaskManagerSpec {
         return "V1TaskManagerSpec{" +
                 "requiredCPUs=" + requiredCPUs +
                 ", requiredMemory=" + requiredMemory +
-                ", replicas=" + replicas +
                 ", taskSlots=" + taskSlots +
                 ", environment=" + environment +
                 ", environmentFrom=" + environmentFrom +

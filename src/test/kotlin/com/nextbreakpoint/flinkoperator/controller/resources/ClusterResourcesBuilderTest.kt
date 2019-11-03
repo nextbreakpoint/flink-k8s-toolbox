@@ -23,7 +23,7 @@ class ClusterResourcesBuilderTest {
     private val jobmanagerStatefulSet = mock(V1StatefulSet::class.java)
     private val taskmanagerStatefulSet = mock(V1StatefulSet::class.java)
 
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
     private val clusterId = UUID.randomUUID().toString()
 

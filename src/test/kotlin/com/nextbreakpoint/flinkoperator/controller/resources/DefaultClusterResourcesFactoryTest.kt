@@ -5,7 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class DefaultClusterResourcesFactoryTest {
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace ="flink", parallelism = 5, taskSlots = 2)
 
     @Test
     fun `should create job manager service`() {
@@ -170,7 +170,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(labels?.get("component")).isEqualTo("flink")
         assertThat(labels?.get("role")).isEqualTo("taskmanager")
 
-        assertThat(statefulset?.spec?.replicas).isEqualTo(cluster.spec.taskManager.replicas ?: 1)
+        assertThat(statefulset?.spec?.replicas).isEqualTo(3)
         assertThat(statefulset?.spec?.updateStrategy).isNotNull()
         assertThat(statefulset?.spec?.serviceName).isEqualTo("taskmanager")
         assertThat(statefulset?.spec?.selector).isNotNull()
