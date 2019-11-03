@@ -15,7 +15,7 @@ class StartJob : OperatorTaskHandler {
             )
         }
 
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {
             return Result(
@@ -49,7 +49,7 @@ class StartJob : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {
             return Result(

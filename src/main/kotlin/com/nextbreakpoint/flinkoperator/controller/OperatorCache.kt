@@ -181,6 +181,17 @@ class OperatorCache {
         return flinkClusters.values.map { flinkCluster -> flinkCluster to resources }.toList()
     }
 
+    fun getResources(): OperatorResources {
+        return OperatorResources(
+            jarUploadJobs.toMap(),
+            jobmanagerServices.toMap(),
+            jobmanagerStatefulSets.toMap(),
+            taskmanagerStatefulSets.toMap(),
+            jobmanagerPersistentVolumeClaims.toMap(),
+            taskmanagerPersistentVolumeClaims.toMap()
+        )
+    }
+
     fun getOrphanedClusters(): Set<ClusterId> {
         val deletedClusters = mutableSetOf<ClusterId>()
         deletedClusters.addAll(jarUploadJobs.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)

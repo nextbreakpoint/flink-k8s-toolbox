@@ -4,10 +4,10 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
@@ -33,7 +33,7 @@ class CreateSavepointTest {
 
     @BeforeEach
     fun configure() {
-        given(context.lastUpdated).thenReturn(time)
+        given(context.operatorTimestamp).thenReturn(time)
         given(context.controller).thenReturn(controller)
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
@@ -56,7 +56,7 @@ class CreateSavepointTest {
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CREATING_SAVEPOINT_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -71,7 +71,7 @@ class CreateSavepointTest {
         OperatorState.setSavepointRequest(cluster, SavepointRequest(jobId = "1", triggerId = "100"))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -87,7 +87,7 @@ class CreateSavepointTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -104,7 +104,7 @@ class CreateSavepointTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -122,7 +122,7 @@ class CreateSavepointTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -148,7 +148,7 @@ class CreateSavepointTest {
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CREATING_SAVEPOINT_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -162,7 +162,7 @@ class CreateSavepointTest {
     fun `onAwaiting should return expected result when savepoint request is missing`() {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -180,7 +180,7 @@ class CreateSavepointTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -199,7 +199,7 @@ class CreateSavepointTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -229,7 +229,7 @@ class CreateSavepointTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()

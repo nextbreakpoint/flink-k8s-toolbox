@@ -2,7 +2,6 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
@@ -31,7 +30,7 @@ class UploadJar : OperatorTaskHandler {
             )
         }
 
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.UPLOADING_JAR_TIMEOUT) {
             return Result(
@@ -73,7 +72,7 @@ class UploadJar : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.UPLOADING_JAR_TIMEOUT) {
             return Result(

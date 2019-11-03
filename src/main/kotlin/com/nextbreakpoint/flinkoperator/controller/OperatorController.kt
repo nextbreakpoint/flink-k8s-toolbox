@@ -35,6 +35,8 @@ import com.nextbreakpoint.flinkoperator.controller.command.JobStop
 import com.nextbreakpoint.flinkoperator.controller.command.PodsAreTerminated
 import com.nextbreakpoint.flinkoperator.controller.command.PodsRestart
 import com.nextbreakpoint.flinkoperator.controller.command.PodsTerminate
+import com.nextbreakpoint.flinkoperator.controller.command.RequestClusterStart
+import com.nextbreakpoint.flinkoperator.controller.command.RequestClusterStop
 import com.nextbreakpoint.flinkoperator.controller.command.SavepointCreate
 import com.nextbreakpoint.flinkoperator.controller.command.SavepointGetStatus
 import com.nextbreakpoint.flinkoperator.controller.command.SavepointTrigger
@@ -45,18 +47,25 @@ class OperatorController(
     val flinkOptions: FlinkOptions,
     val flinkContext: FlinkContext,
     val kubernetesContext: KubernetesContext,
-    val operatorTasks: Map<OperatorTask, OperatorTaskHandler>
+    val cache: OperatorCache,
+    val taskHandlers: Map<OperatorTask, OperatorTaskHandler>
 ) {
-    fun startCluster(clusterId: ClusterId, options: StartOptions, cache: OperatorCache) : Result<List<OperatorTask>> =
+    fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
+        RequestClusterStart(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
+
+    fun requestStopCluster(clusterId: ClusterId, options: StopOptions) : Result<Void?> =
+        RequestClusterStop(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
+
+    fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<OperatorTask>> =
         ClusterStart(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
 
-    fun stopCluster(clusterId: ClusterId, options: StopOptions, cache: OperatorCache) : Result<List<OperatorTask>> =
+    fun stopCluster(clusterId: ClusterId, options: StopOptions) : Result<List<OperatorTask>> =
         ClusterStop(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
 
-    fun createSavepoint(clusterId: ClusterId, cache: OperatorCache) : Result<List<OperatorTask>> =
+    fun createSavepoint(clusterId: ClusterId) : Result<List<OperatorTask>> =
         SavepointCreate(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, null)
 
-    fun getClusterStatus(clusterId: ClusterId, cache: OperatorCache) : Result<Map<String, String>> =
+    fun getClusterStatus(clusterId: ClusterId) : Result<Map<String, String>> =
         ClusterGetStatus(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, null)
 
     fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : Result<Void?> =
@@ -65,8 +74,8 @@ class OperatorController(
     fun deleteFlinkCluster(clusterId: ClusterId) : Result<Void?> =
         FlinkClusterDelete(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
-    fun updateClusterStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster, resources: OperatorResources) : Result<Void?> =
-        ClusterUpdateStatus(this, resources, operatorTasks).execute(clusterId, flinkCluster)
+    fun updateClusterStatus(clusterId: ClusterId) : Result<Void?> =
+        ClusterUpdateStatus(this).execute(clusterId, null)
 
     fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
         ClusterCreateResources(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, clusterResources)
@@ -131,12 +140,12 @@ class OperatorController(
     fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
         ClusterUpdateSavepoint(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, savepointPath)
 
-//    fun updateAnnotations(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
-//        kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata?.annotations ?: emptyMap())
-//    }
-
     fun updateState(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
         kubernetesContext.updateStatus(clusterId, flinkCluster.status)
+    }
+
+    fun updateAnnotations(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
+        kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata.annotations)
     }
 
     fun currentTimeMillis() = System.currentTimeMillis()

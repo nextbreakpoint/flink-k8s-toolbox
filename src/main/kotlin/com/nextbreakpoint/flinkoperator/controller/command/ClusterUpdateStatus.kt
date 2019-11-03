@@ -7,30 +7,42 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
-import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import org.apache.log4j.Logger
 
-class ClusterUpdateStatus(val controller: OperatorController, val resources: OperatorResources, val operatorTasks: Map<OperatorTask, OperatorTaskHandler>) : OperatorCommand<V1FlinkCluster, Void?>(controller.flinkOptions, controller.flinkContext, controller.kubernetesContext) {
+class ClusterUpdateStatus(
+    val controller: OperatorController
+) : OperatorCommand<Void?, Void?>(
+    controller.flinkOptions,
+    controller.flinkContext,
+    controller.kubernetesContext
+) {
     companion object {
         private val logger: Logger = Logger.getLogger(ClusterUpdateStatus::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: V1FlinkCluster): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {
-            logOperatorAnnotations(params)
+            val flinkCluster = controller.cache.getFlinkCluster(clusterId)
 
-            val lastUpdated = OperatorState.getOperatorTimestamp(params)
+            val resources = controller.cache.getResources()
+
+            logOperatorAnnotations(flinkCluster)
+
+            val operatorTimestamp = OperatorState.getOperatorTimestamp(flinkCluster)
+
+            val actionTimestamp = OperatorAnnotations.getActionTimestamp(flinkCluster)
 
             val context = OperatorContext(
-                lastUpdated, clusterId, params, controller, resources
+                operatorTimestamp, actionTimestamp, clusterId, flinkCluster, resources, controller
             )
 
-            if (OperatorState.hasCurrentTask(params)) {
+            if (OperatorState.hasCurrentTask(flinkCluster)) {
                 return update(clusterId, context)
             } else {
                 return initialise(clusterId, context)
@@ -78,10 +90,16 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
 
         val taskResult = updateTask(context, taskStatus, taskHandler)
 
-        val currentTimestamp = OperatorState.getOperatorTimestamp(context.flinkCluster)
+        val operatorTimestamp = OperatorState.getOperatorTimestamp(context.flinkCluster)
 
-        if (currentTimestamp != context.lastUpdated) {
+        if (operatorTimestamp != context.operatorTimestamp) {
             controller.updateState(clusterId, context.flinkCluster)
+        }
+
+        val actionTimestamp = OperatorAnnotations.getActionTimestamp(context.flinkCluster)
+
+        if (actionTimestamp != context.actionTimestamp) {
+            controller.updateAnnotations(clusterId, context.flinkCluster)
         }
 
         if (OperatorState.getSavepointPath(context.flinkCluster) != context.flinkCluster.spec.flinkOperator.savepointPath) {
@@ -191,6 +209,7 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
                 OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.FAILED)
                 OperatorState.resetTasks(context.flinkCluster, listOf(OperatorTask.CLUSTER_HALTED))
                 OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.EXECUTING)
+                OperatorAnnotations.setActionTimestamp(context.flinkCluster, 0L)
                 Result(
                     ResultStatus.FAILED,
                     "Task failed"
@@ -206,5 +225,5 @@ class ClusterUpdateStatus(val controller: OperatorController, val resources: Ope
     }
 
     private fun getOperatorTaskOrThrow(clusterTask: OperatorTask) =
-        operatorTasks.get(clusterTask) ?: throw RuntimeException("Unsupported task $clusterTask")
+        controller.taskHandlers.get(clusterTask) ?: throw RuntimeException("Unsupported task $clusterTask")
 }

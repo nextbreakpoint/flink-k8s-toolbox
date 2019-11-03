@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.JobManagerStats
 import com.nextbreakpoint.flinkoperator.common.model.JobStats
 import com.nextbreakpoint.flinkoperator.common.model.Metric
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
