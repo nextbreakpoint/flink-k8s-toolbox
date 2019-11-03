@@ -3,7 +3,6 @@ package com.nextbreakpoint.flinkoperator.common.utils
 import com.google.common.io.ByteStreams
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId

@@ -79,7 +79,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
 
-        private val operatorTasks = mapOf(
+        private val tasksHandlers = mapOf(
             OperatorTask.INITIALISE_CLUSTER to InitialiseCluster(),
             OperatorTask.TERMINATE_CLUSTER to TerminateCluster(),
             OperatorTask.SUSPEND_CLUSTER to SuspendCluster(),
@@ -139,9 +139,9 @@ class OperatorVerticle : AbstractVerticle() {
 
         val watch = OperatorWatch(gson, kubernetesContext)
 
-        val controller = OperatorController(flinkOptions, flinkContext, kubernetesContext, operatorTasks)
+        val cache = OperatorCache()
 
-        val resourcesCache = OperatorCache()
+        val controller = OperatorController(flinkOptions, flinkContext, kubernetesContext, cache, tasksHandlers)
 
         val mainRouter = Router.router(vertx)
 
@@ -160,67 +160,67 @@ class OperatorVerticle : AbstractVerticle() {
 
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/start", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(resourcesCache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
         mainRouter.put("/cluster/:name/stop").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/stop", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(resourcesCache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
         mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/savepoint", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(resourcesCache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
             ) })
         }
 
 
         mainRouter.get("/cluster/:name/status").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(controller.getClusterStatus(resourcesCache.getClusterId(namespace, context.pathParam("name")), resourcesCache)) })
+            handleRequest(routingContext, Function { context -> gson.toJson(controller.getClusterStatus(cache.getClusterId(namespace, context.pathParam("name")))) })
         }
 
         mainRouter.get("/cluster/:name/job/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobDetails(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), null)
+                JobDetails(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/job/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobMetrics(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), null)
+                JobMetrics(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/jobmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobManagerMetrics(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), null)
+                JobManagerMetrics(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagersList(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), null)
+                TaskManagersList(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerDetails(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
+                TaskManagerDetails(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerMetrics(flinkOptions, flinkContext, kubernetesContext).execute(resourcesCache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
+                TaskManagerMetrics(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
             ) })
         }
 
 
         mainRouter.delete("/cluster/:name").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/delete", BiFunction { context, namespace -> gson.toJson(
-                resourcesCache.getClusterId(namespace, context.pathParam("name"))
+                cache.getClusterId(namespace, context.pathParam("name"))
             ) })
         }
 
@@ -233,13 +233,13 @@ class OperatorVerticle : AbstractVerticle() {
 
         vertx.eventBus().consumer<String>("/cluster/start") { message ->
             handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
-                gson.toJson(controller.startCluster(it.clusterId, gson.fromJson(it.json, StartOptions::class.java), resourcesCache))
+                gson.toJson(controller.requestStartCluster(it.clusterId, gson.fromJson(it.json, StartOptions::class.java)))
             })
         }
 
         vertx.eventBus().consumer<String>("/cluster/stop") { message ->
             handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
-                gson.toJson(controller.stopCluster(it.clusterId, gson.fromJson(it.json, StopOptions::class.java), resourcesCache))
+                gson.toJson(controller.requestStopCluster(it.clusterId, gson.fromJson(it.json, StopOptions::class.java)))
             })
         }
 
@@ -256,69 +256,69 @@ class OperatorVerticle : AbstractVerticle() {
 
         vertx.eventBus().consumer<String>("/cluster/savepoint") { message ->
             handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
-                gson.toJson(controller.createSavepoint(it.clusterId, resourcesCache))
+                gson.toJson(controller.createSavepoint(it.clusterId))
             })
         }
 
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/change") { message ->
-            handleEvent<V1FlinkCluster>(message, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Consumer { resourcesCache.onFlinkClusterChanged(it) })
+            handleEvent<V1FlinkCluster>(message, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterChanged(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/delete") { message ->
-            handleEvent<V1FlinkCluster>(message, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Consumer { resourcesCache.onFlinkClusterDeleted(it) })
+            handleEvent<V1FlinkCluster>(message, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterDeleted(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/deleteAll") { _ ->
-            resourcesCache.onFlinkClusterDeleteAll()
+            cache.onFlinkClusterDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/service/change") { message ->
-            handleEvent<V1Service>(message, Function { gson.fromJson(it.body(), V1Service::class.java) }, Consumer { resourcesCache.onServiceChanged(it) })
+            handleEvent<V1Service>(message, Function { gson.fromJson(it.body(), V1Service::class.java) }, Consumer { cache.onServiceChanged(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/service/delete") { message ->
-            handleEvent<V1Service>(message, Function { gson.fromJson(it.body(), V1Service::class.java) }, Consumer { resourcesCache.onServiceDeleted(it) })
+            handleEvent<V1Service>(message, Function { gson.fromJson(it.body(), V1Service::class.java) }, Consumer { cache.onServiceDeleted(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/service/deleteAll") { _ ->
-            resourcesCache.onServiceDeleteAll()
+            cache.onServiceDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/job/change") { message ->
-            handleEvent<V1Job>(message, Function { gson.fromJson(it.body(), V1Job::class.java) }, Consumer { resourcesCache.onJobChanged(it) })
+            handleEvent<V1Job>(message, Function { gson.fromJson(it.body(), V1Job::class.java) }, Consumer { cache.onJobChanged(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/job/delete") { message ->
-            handleEvent<V1Job>(message, Function { gson.fromJson(it.body(), V1Job::class.java) }, Consumer { resourcesCache.onJobDeleted(it) })
+            handleEvent<V1Job>(message, Function { gson.fromJson(it.body(), V1Job::class.java) }, Consumer { cache.onJobDeleted(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/job/deleteAll") { _ ->
-            resourcesCache.onJobDeleteAll()
+            cache.onJobDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/statefulset/change") { message ->
-            handleEvent<V1StatefulSet>(message, Function { gson.fromJson(it.body(), V1StatefulSet::class.java) }, Consumer { resourcesCache.onStatefulSetChanged(it) })
+            handleEvent<V1StatefulSet>(message, Function { gson.fromJson(it.body(), V1StatefulSet::class.java) }, Consumer { cache.onStatefulSetChanged(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/statefulset/delete") { message ->
-            handleEvent<V1StatefulSet>(message, Function { gson.fromJson(it.body(), V1StatefulSet::class.java) }, Consumer { resourcesCache.onStatefulSetDeleted(it) })
+            handleEvent<V1StatefulSet>(message, Function { gson.fromJson(it.body(), V1StatefulSet::class.java) }, Consumer { cache.onStatefulSetDeleted(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/statefulset/deleteAll") { _ ->
-            resourcesCache.onStatefulSetDeleteAll()
+            cache.onStatefulSetDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/change") { message ->
-            handleEvent<V1PersistentVolumeClaim>(message, Function { gson.fromJson(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { resourcesCache.onPersistentVolumeClaimChanged(it) })
+            handleEvent<V1PersistentVolumeClaim>(message, Function { gson.fromJson(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { cache.onPersistentVolumeClaimChanged(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/delete") { message ->
-            handleEvent<V1PersistentVolumeClaim>(message, Function { gson.fromJson(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { resourcesCache.onPersistentVolumeClaimDeleted(it) })
+            handleEvent<V1PersistentVolumeClaim>(message, Function { gson.fromJson(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { cache.onPersistentVolumeClaimDeleted(it) })
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/deleteAll") { _ ->
-            resourcesCache.onPersistentVolumeClaimDeleteAll()
+            cache.onPersistentVolumeClaimDeleteAll()
         }
 
 
@@ -345,11 +345,11 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.setPeriodic(5000L) {
-            updateMetrics(resourcesCache, gauges)
+            updateMetrics(cache, gauges)
 
-            doUpdateClusters(controller, resourcesCache, worker)
+            doUpdateClusters(controller, cache, worker)
 
-            doDeleteOrphans(controller, resourcesCache, worker)
+            doDeleteOrphans(controller, cache, worker)
         }
 
         return vertx.createHttpServer(serverOptions).requestHandler(mainRouter).rxListen(port)
@@ -456,12 +456,12 @@ class OperatorVerticle : AbstractVerticle() {
 
     private fun doUpdateClusters(
         controller: OperatorController,
-        status: OperatorCache,
+        cache: OperatorCache,
         worker: WorkerExecutor
     ) {
-        val observable = Observable.from(status.getClusters()).map { pair ->
+        val observable = Observable.from(cache.getClusters()).map { pair ->
             Runnable {
-                controller.updateClusterStatus(makeClusterId(pair.first), pair.first, pair.second)
+                controller.updateClusterStatus(makeClusterId(pair.first))
             }
         }
 
@@ -475,10 +475,10 @@ class OperatorVerticle : AbstractVerticle() {
 
     private fun doDeleteOrphans(
         controller: OperatorController,
-        status: OperatorCache,
+        cache: OperatorCache,
         worker: WorkerExecutor
     ) {
-        val observable = Observable.from(status.getOrphanedClusters()).map { clusterId ->
+        val observable = Observable.from(cache.getOrphanedClusters()).map { clusterId ->
             Runnable {
                 controller.terminatePods(clusterId)
                 val result = controller.arePodsTerminated(clusterId)

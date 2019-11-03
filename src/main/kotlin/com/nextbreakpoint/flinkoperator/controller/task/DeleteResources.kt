@@ -10,7 +10,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 
 class DeleteResources : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
             return Result(
@@ -35,7 +35,7 @@ class DeleteResources : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
             return Result(

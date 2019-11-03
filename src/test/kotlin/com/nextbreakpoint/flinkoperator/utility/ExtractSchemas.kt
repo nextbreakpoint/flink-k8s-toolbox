@@ -1,11 +1,11 @@
 package com.nextbreakpoint.flinkoperator.utility
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.google.gson.GsonBuilder
 import java.io.File
 import java.net.URL
 import java.nio.file.Files
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 
 class ExtractSchemas {
     companion object {

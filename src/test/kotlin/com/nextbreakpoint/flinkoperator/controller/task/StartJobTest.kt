@@ -29,7 +29,7 @@ class StartJobTest {
 
     @BeforeEach
     fun configure() {
-        given(context.lastUpdated).thenReturn(time)
+        given(context.operatorTimestamp).thenReturn(time)
         given(context.controller).thenReturn(controller)
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
@@ -52,7 +52,7 @@ class StartJobTest {
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.STARTING_JOBS_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -66,7 +66,7 @@ class StartJobTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -81,7 +81,7 @@ class StartJobTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -96,7 +96,7 @@ class StartJobTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -111,7 +111,7 @@ class StartJobTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -124,7 +124,7 @@ class StartJobTest {
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.STARTING_JOBS_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -138,7 +138,7 @@ class StartJobTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -152,7 +152,7 @@ class StartJobTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -166,7 +166,7 @@ class StartJobTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()

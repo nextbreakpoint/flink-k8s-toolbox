@@ -6,9 +6,10 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import org.apache.log4j.Logger
 
@@ -152,7 +153,7 @@ class ClusterRunning : OperatorTaskHandler {
 
         val now = context.controller.currentTimeMillis()
 
-        val elapsedTime = now - context.lastUpdated
+        val elapsedTime = now - context.operatorTimestamp
 
         val nextTask = OperatorState.getNextOperatorTask(context.flinkCluster)
 
@@ -221,24 +222,17 @@ class ClusterRunning : OperatorTaskHandler {
             }
         }
 
-//        val annotations = context.flinkCluster.metadata?.annotations.orEmpty()
-//        if (annotations["flink-operator/action"]?.toUpperCase() == "SUSPEND") {
-//            if (annotations["flink-operator/without-savepoint"]?.toUpperCase() == "TRUE") {
-//                val options = StopOptions(withoutSavepoint = true, deleteResources = false)
-//                context.controller.stopCluster(context.clusterId, options, context.cache)
-//            } else {
-//                val options = StopOptions(withoutSavepoint = false, deleteResources = false)
-//                context.controller.stopCluster(context.clusterId, options, context.cache)
-//            }
-//        } else if (annotations["flink-operator/action"]?.toUpperCase() == "TERMINATED") {
-//            if (annotations["flink-operator/without-savepoint"]?.toUpperCase() == "TRUE") {
-//                val options = StopOptions(withoutSavepoint = true, deleteResources = true)
-//                context.controller.stopCluster(context.clusterId, options, context.cache)
-//            } else {
-//                val options = StopOptions(withoutSavepoint = false, deleteResources = true)
-//                context.controller.stopCluster(context.clusterId, options, context.cache)
-//            }
-//        }
+        val manualAction = OperatorAnnotations.getManualAction(context.flinkCluster)
+        if (context.actionTimestamp > 0L && (manualAction == "SUSPEND" || manualAction == "TERMINATE")) {
+            val withoutSavepoint = OperatorAnnotations.isWithSavepoint(context.flinkCluster)
+            val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = (manualAction == "TERMINATE"))
+            val result = context.controller.stopCluster(context.clusterId, options)
+            OperatorAnnotations.setActionTimestamp(context.flinkCluster, 0L)
+            return Result(
+                result.status,
+                result.output.joinToString(",")
+            )
+        }
 
         return Result(
             ResultStatus.AWAIT,

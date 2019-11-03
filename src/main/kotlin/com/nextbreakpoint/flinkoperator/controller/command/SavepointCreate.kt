@@ -9,12 +9,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import org.apache.log4j.Logger
 
-class SavepointCreate(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, val cache: OperatorCache) : OperatorCommand<Void?, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
+class SavepointCreate(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : OperatorCommand<Void?, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(SavepointCreate::class.simpleName)
     }

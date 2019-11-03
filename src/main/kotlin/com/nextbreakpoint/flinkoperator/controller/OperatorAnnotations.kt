@@ -8,6 +8,35 @@ import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 
 object OperatorAnnotations {
+    val MANUAL_ACTION                       = "flink-operator/manual-action"
+    val ACTION_TIMESTAMP                    = "flink-operator/action-timestamp"
+    val WITHOUT_SAVEPOINT                   = "flink-operator/without-savepoint"
+
+    fun getActionTimestamp(flinkCluster: V1FlinkCluster) : Long =
+        flinkCluster.metadata?.annotations?.get(ACTION_TIMESTAMP)?.toLong() ?: 0
+
+    fun setActionTimestamp(flinkCluster: V1FlinkCluster, timestamp: Long) {
+        val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
+        annotations[ACTION_TIMESTAMP] = timestamp.toString()
+        flinkCluster.metadata?.annotations = annotations
+    }
+
+    fun setManualActionAndWithoutSavepoint(flinkCluster: V1FlinkCluster, manualAction: String, withoutSavepoint: Boolean) {
+        val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
+        annotations[MANUAL_ACTION] = manualAction
+        annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
+        annotations[WITHOUT_SAVEPOINT] = withoutSavepoint.toString()
+        flinkCluster.metadata?.annotations = annotations
+    }
+
+    fun getManualAction(flinkCluster: V1FlinkCluster): String {
+        return flinkCluster.metadata?.annotations?.get(MANUAL_ACTION)?.toUpperCase() ?: "NONE"
+    }
+
+    fun isWithSavepoint(flinkCluster: V1FlinkCluster): Boolean {
+        return flinkCluster.metadata?.annotations?.get(WITHOUT_SAVEPOINT)?.toUpperCase() == "TRUE"
+    }
+
     val FLINK_OPERATOR_TIMESTAMP            = "nextbreakpoint.com/flink-operator-timestamp"
     val FLINK_OPERATOR_TASKS                = "nextbreakpoint.com/flink-operator-tasks"
     val FLINK_OPERATOR_TASK_STATUS          = "nextbreakpoint.com/flink-operator-task-status"

@@ -9,7 +9,7 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import org.apache.log4j.Logger
 
-class ClusterIsReady(flinkOptions : FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterIsReady(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, Void?>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterIsReady::class.simpleName)
     }

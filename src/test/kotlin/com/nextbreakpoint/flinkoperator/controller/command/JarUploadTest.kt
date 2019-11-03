@@ -9,7 +9,6 @@ import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
-import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1JobListBuilder
 import org.assertj.core.api.Assertions.assertThat

@@ -6,9 +6,10 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import org.apache.log4j.Logger
 
@@ -142,7 +143,7 @@ class ClusterHalted : OperatorTaskHandler {
                 // nothing changed
             }
 
-            val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+            val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
             if (context.flinkCluster.spec?.flinkJob != null && elapsedTime > 10000) {
                 val clusterStatus = OperatorState.getClusterStatus(context.flinkCluster)
@@ -204,16 +205,17 @@ class ClusterHalted : OperatorTaskHandler {
             }
         }
 
-//        val annotations = context.flinkCluster.metadata?.annotations.orEmpty()
-//        if (annotations["flink-operator/action"] == null) {
-//            if (annotations["flink-operator/without-savepoint"]?.toUpperCase() == "TRUE") {
-//                val options = StartOptions(withoutSavepoint = true)
-//                context.controller.startCluster(context.clusterId, options, context.cache)
-//            } else {
-//                val options = StartOptions(withoutSavepoint = false)
-//                context.controller.startCluster(context.clusterId, options, context.cache)
-//            }
-//        }
+        val manualAction = OperatorAnnotations.getManualAction(context.flinkCluster)
+        if (context.actionTimestamp > 0L && manualAction == "RESTART") {
+            val withoutSavepoint = OperatorAnnotations.isWithSavepoint(context.flinkCluster)
+            val options = StartOptions(withoutSavepoint = withoutSavepoint)
+            val result = context.controller.startCluster(context.clusterId, options)
+            OperatorAnnotations.setActionTimestamp(context.flinkCluster, 0L)
+            return Result(
+                result.status,
+                result.output.joinToString(",")
+            )
+        }
 
         return Result(
             ResultStatus.AWAIT,

@@ -6,10 +6,10 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
@@ -33,7 +33,8 @@ class ClusterHaltedTest {
 
     @BeforeEach
     fun configure() {
-        given(context.lastUpdated).thenReturn(time)
+        given(context.actionTimestamp).thenReturn(0L)
+        given(context.operatorTimestamp).thenReturn(time)
         given(context.controller).thenReturn(controller)
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
@@ -143,7 +144,8 @@ class ClusterHaltedTest {
         OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).actionTimestamp
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
@@ -160,7 +162,8 @@ class ClusterHaltedTest {
         OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).actionTimestamp
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
@@ -182,7 +185,8 @@ class ClusterHaltedTest {
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).actionTimestamp
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
@@ -202,7 +206,8 @@ class ClusterHaltedTest {
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).actionTimestamp
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
@@ -448,7 +453,8 @@ class ClusterHaltedTest {
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.currentTimeMillis()).thenReturn(time + 10000)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).actionTimestamp
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
@@ -467,7 +473,8 @@ class ClusterHaltedTest {
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).actionTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
@@ -488,7 +495,7 @@ class ClusterHaltedTest {
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, true))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
@@ -513,7 +520,8 @@ class ClusterHaltedTest {
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).actionTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
@@ -539,7 +547,8 @@ class ClusterHaltedTest {
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).actionTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
@@ -566,7 +575,7 @@ class ClusterHaltedTest {
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller

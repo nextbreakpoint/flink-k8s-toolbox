@@ -11,12 +11,12 @@ import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import org.apache.log4j.Logger
 
-class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, val cache: OperatorCache) : OperatorCommand<StartOptions, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : OperatorCommand<StartOptions, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterStart::class.simpleName)
     }
