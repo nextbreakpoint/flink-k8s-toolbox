@@ -168,7 +168,7 @@ class ClusterHalted : OperatorTaskHandler {
                         } else {
                             val restartPolicy = OperatorParameters.getJobRestartPolicy(context.flinkCluster)
 
-                            if (restartPolicy.toUpperCase() == "ONFAILURE") {
+                            if (restartPolicy.toUpperCase() == "ALWAYS") {
                                 val clusterReady = context.controller.isClusterReady(context.clusterId)
 
                                 if (clusterReady.status == ResultStatus.SUCCESS) {
