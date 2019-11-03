@@ -873,7 +873,6 @@ object KubernetesContext {
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
     }
@@ -926,7 +925,6 @@ object KubernetesContext {
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
     }
@@ -976,7 +974,6 @@ object KubernetesContext {
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
     }
