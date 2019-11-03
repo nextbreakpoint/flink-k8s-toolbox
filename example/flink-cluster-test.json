@@ -123,6 +123,7 @@
     ]
   },
   "taskManager": {
+    "taskSlots": 1,
     "annotations": {
       "managed": "true"
     },
@@ -227,6 +228,6 @@
     "savepointMode": "Manual",
     "savepointInterval": 60,
     "savepointTargetPath": "file:///var/savepoints",
-    "jobRestartPolicy": "OnFailure"
+    "jobRestartPolicy": "Always"
   }
 }

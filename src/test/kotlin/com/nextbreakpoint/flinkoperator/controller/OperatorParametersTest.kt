@@ -65,8 +65,8 @@ class OperatorParametersTest {
 
     @Test
     fun `should return job restart policy`() {
-        flinkCluster.spec.flinkOperator.jobRestartPolicy = "ONFAILURE"
-        assertThat(OperatorParameters.getJobRestartPolicy(flinkCluster)).isEqualTo("ONFAILURE")
+        flinkCluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
+        assertThat(OperatorParameters.getJobRestartPolicy(flinkCluster)).isEqualTo("ALWAYS")
     }
 
     @Test

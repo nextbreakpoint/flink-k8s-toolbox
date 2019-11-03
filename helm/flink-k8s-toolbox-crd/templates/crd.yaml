@@ -37,20 +37,56 @@ spec:
               - type: integer
               - type: long
               nullable: false
+              minimum: 0
             tasks:
               type: array
               nullable: false
               items:
                 type: string
+                enum:
+                  - INITIALISE_CLUSTER
+                  - TERMINATE_CLUSTER
+                  - SUSPEND_CLUSTER
+                  - CLUSTER_HALTED
+                  - CLUSTER_RUNNING
+                  - STARTING_CLUSTER
+                  - STOPPING_CLUSTER
+                  - CHECKPOINTING_CLUSTER
+                  - CREATE_SAVEPOINT
+                  - ERASE_SAVEPOINT
+                  - CREATE_RESOURCES
+                  - DELETE_RESOURCES
+                  - DELETE_UPLOAD_JOB
+                  - TERMINATE_PODS
+                  - RESTART_PODS
+                  - UPLOAD_JAR
+                  - CANCEL_JOB
+                  - START_JOB
+                  - STOP_JOB
             taskStatus:
               type: string
               nullable: false
+              enum:
+                - EXECUTING
+                - AWAITING
+                - IDLE
+                - FAILED
             taskAttempts:
               type: integer
               nullable: false
+              minimum: 0
             clusterStatus:
               type: string
               nullable: false
+              enum:
+                - UNKNOWN
+                - STARTING
+                - STOPPING
+                - RUNNING
+                - FAILED
+                - SUSPENDED
+                - TERMINATED
+                - CHECKPOINTING
             savepointPath:
               type: string
               nullable: true
@@ -65,6 +101,7 @@ spec:
               - type: integer
               - type: long
               nullable: true
+              minimum: 0
             digestOfJobManager:
               type: string
               nullable: true
@@ -88,32 +125,135 @@ spec:
           type: object
           nullable: false
           properties:
+            flinkImage:
+              description: A Flink image specification.
+              type: object
+              nullable: false
+              properties:
+                pullSecrets:
+                  description: Pull scretes to use for pulling from private registry.
+                  type: string
+                  nullable: false
+                pullPolicy:
+                  description: Policy to use for pulling images.
+                  type: string
+                  nullable: false
+                  enum:
+                    - Never
+                    - Always
+                    - IfNotPresent
+                flinkImage:
+                  description: Image to use for Job Manager and Task Managers.
+                  type: string
+                  nullable: false
+              required:
+                - flinkImage
+            flinkJob:
+              description: A Flink job specification.
+              type: object
+              nullable: true
+              properties:
+                image:
+                  description: Image to use for uploading Flink jar.
+                  type: string
+                  nullable: false
+                className:
+                  description: Main class to execute.
+                  type: string
+                  nullable: false
+                jarPath:
+                  description: Path of jar file.
+                  type: string
+                  nullable: false
+                arguments:
+                  description: Arguments for job.
+                  type: array
+                  nullable: true
+                  items:
+                    type: string
+                parallelism:
+                  description: Parallelism of job.
+                  type: integer
+                  nullable: false
+                  minimum: 1
+              required:
+                - image
+                - className
+                - jarPath
+                - parallelism
+            flinkOperator:
+              description: A Flink Operator specification.
+              type: object
+              nullable: false
+              properties:
+                savepointMode:
+                  description: Control periodic savepoints. Default value is NANUAL.
+                  type: string
+                  nullable: false
+                  enum:
+                    - Manual
+                    - Automatic
+                savepointPath:
+                  description: Path of latest savepoint.
+                  type: string
+                  nullable: true
+                savepointInterval:
+                  description: Interval between savepoints.
+                  type: integer
+                  nullable: false
+                  minimum: 1
+                savepointTargetPath:
+                  description: Location where to create savepoints.
+                  type: string
+                  nullable: false
+                jobRestartPolicy:
+                  description: Control job restart in case of cluster failure. Default value is NEVER.
+                  type: string
+                  nullable: false
+                  enum:
+                    - Never
+                    - Always
+              required:
+                - savepointMode
+                - savepointTargetPath
+                - jobRestartPolicy
             jobManager:
               description: A Flink Job Manager specification.
               type: object
               nullable: false
               properties:
                 requiredCPUs:
+                  description: Control CPU limits.
                   anyOf:
                   - type: double
                   - type: float
                   - type: int
                   nullable: true
+                  minimum: 0.1
                 requiredMemory:
+                  description: Control Memory limits.
                   anyOf:
                   - type: long
                   - type: int
                   nullable: true
+                  minimum: 256
                 serviceMode:
+                  description: Type of service. Default value is ClusterIP.
                   type: string
                   nullable: false
+                  enum:
+                    - ClusterIP
+                    - NodePort
                 serviceAccount:
+                  description: Service account to use for running Job Manager.
                   type: string
                   nullable: true
                 annotations:
+                  description: User annonations to add to Job Manager pod (like Prometheues annotations).
                   type: object
                   nullable: true
                 environment:
+                  description: List of environment variables.
                   type: array
                   nullable: true
                   items:
@@ -234,6 +374,7 @@ spec:
                       - "name"
                     type: "object"
                 environmentFrom:
+                  description: List of environment variables from ConfigMap.
                   type: array
                   nullable: true
                   items:
@@ -269,6 +410,7 @@ spec:
                         type: "object"
                     type: "object"
                 volumes:
+                  description: List of volumes.
                   type: array
                   nullable: true
                   items:
@@ -1451,6 +1593,7 @@ spec:
                       - "name"
                     type: "object"
                 volumeMounts:
+                  description: List of volume mounts.
                   type: array
                   nullable: true
                   items:
@@ -1487,6 +1630,7 @@ spec:
                       - "mountPath"
                     type: "object"
                 persistentVolumeClaimsTemplates:
+                  description: List of persistent volume claim templates.
                   type: array
                   nullable: true
                   items:
@@ -2002,6 +2146,7 @@ spec:
                         kind: "PersistentVolumeClaim"
                         version: "v1"
                 extraPorts:
+                  description: Additional container ports.
                   type: array
                   nullable: true
                   items:
@@ -2034,6 +2179,7 @@ spec:
                       - "containerPort"
                     type: "object"
                 initContainers:
+                  description: Optional init containers.
                   type: array
                   nullable: true
                   items:
@@ -3063,6 +3209,7 @@ spec:
                       - "name"
                     type: "object"
                 sideContainers:
+                  description: Optional side containers.
                   type: array
                   nullable: true
                   items:
@@ -4099,149 +4246,156 @@ spec:
               nullable: false
               properties:
                 requiredCPUs:
+                  description: Control CPU limits.
                   anyOf:
                   - type: double
                   - type: float
                   - type: int
                   nullable: true
+                  minimum: 0.1
                 requiredMemory:
+                  description: Control Memory limits.
                   anyOf:
                   - type: long
                   - type: int
                   nullable: true
-                replicas:
-                  type: integer
-                  nullable: true
+                  minimum: 256
                 taskSlots:
+                  description: Number of task slots per Task Manager.
                   type: integer
-                  nullable: true
+                  nullable: false
+                  minimum: 1
                 serviceAccount:
+                  description: Service account to use for running Task Manager.
                   type: string
                   nullable: true
                 annotations:
+                  description: User annonations to add to Task Manager pod (like Prometheues annotations).
                   type: object
                   nullable: true
-              environment:
-                type: array
-                nullable: true
-                items:
-                  description: "EnvVar represents an environment variable present in a Container."
-                  properties:
-                    name:
-                      description: "Name of the environment variable. Must be a C_IDENTIFIER."
-                      type: "string"
-                    value:
-                      description: "Variable references $(VAR_NAME) are expanded using the previous\
-                          \ defined environment variables in the container and any service environment\
-                          \ variables. If a variable cannot be resolved, the reference in the input string\
-                          \ will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$,\
-                          \ ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of\
-                          \ whether the variable exists or not. Defaults to \"\"."
-                      type: "string"
-                    valueFrom:
-                      description: "EnvVarSource represents a source for the value of an EnvVar."
-                      properties:
-                        configMapKeyRef:
-                          description: "Selects a key from a ConfigMap."
-                          properties:
-                            key:
-                              description: "The key to select."
-                              type: "string"
-                            name:
-                              description: "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names"
-                              type: "string"
-                            optional:
-                              description: "Specify whether the ConfigMap or its key must be defined"
-                              type: "boolean"
-                          required:
-                            - "key"
-                          type: "object"
-                        fieldRef:
-                          description: "ObjectFieldSelector selects an APIVersioned field of an object."
-                          properties:
-                            apiVersion:
-                              description: "Version of the schema the FieldPath is written in terms\
-                                  \ of, defaults to \"v1\"."
-                              type: "string"
-                            fieldPath:
-                              description: "Path of the field to select in the specified API version."
-                              type: "string"
-                          required:
-                            - "fieldPath"
-                          type: "object"
-                        resourceFieldRef:
-                          description: "ResourceFieldSelector represents container resources (cpu, memory)\
-                              \ and their output format"
-                          properties:
-                            containerName:
-                              description: "Container name: required for volumes, optional for env vars"
-                              type: "string"
-                            divisor:
-                              description: "Quantity is a fixed-point representation of a number. It\
-                                  \ provides convenient marshaling/unmarshaling in JSON and YAML, in addition\
-                                  \ to String() and AsInt64() accessors.\n\nThe serialization format is:\n\
-                                  \n<quantity>        ::= <signedNumber><suffix>\n  (Note that <suffix>\
-                                  \ may be empty, from the \"\" case in <decimalSI>.)\n<digit>       \
-                                  \    ::= 0 | 1 | ... | 9 <digits>          ::= <digit> | <digit><digits>\
-                                  \ <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits>\
-                                  \ <sign>            ::= \"+\" | \"-\" <signedNumber>    ::= <number>\
-                                  \ | <sign><number> <suffix>          ::= <binarySI> | <decimalExponent>\
-                                  \ | <decimalSI> <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei\n\
-                                  \  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\
-                                  <decimalSI>       ::= m | \"\" | k | M | G | T | P | E\n  (Note that\
-                                  \ 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n<decimalExponent>\
-                                  \ ::= \"e\" <signedNumber> | \"E\" <signedNumber>\n\nNo matter which\
-                                  \ of the three exponent forms is used, no quantity may represent a number\
-                                  \ greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\
-                                  \ places. Numbers larger or more precise will be capped or rounded up.\
-                                  \ (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future\
-                                  \ if we require larger or smaller quantities.\n\nWhen a Quantity is\
-                                  \ parsed from a string, it will remember the type of suffix it had,\
-                                  \ and will use the same type again when it is serialized.\n\nBefore\
-                                  \ serializing, Quantity will be put in \"canonical form\". This means\
-                                  \ that Exponent/suffix will be adjusted up or down (with a corresponding\
-                                  \ increase or decrease in Mantissa) such that:\n  a. No precision is\
-                                  \ lost\n  b. No fractional digits will be emitted\n  c. The exponent\
-                                  \ (or suffix) is as large as possible.\nThe sign will be omitted unless\
-                                  \ the number is negative.\n\nExamples:\n  1.5 will be serialized as\
-                                  \ \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the\
-                                  \ quantity will NEVER be internally represented by a floating point\
-                                  \ number. That is the whole point of this exercise.\n\nNon-canonical\
-                                  \ values will still parse as long as they are well formed, but will\
-                                  \ be re-emitted in their canonical form. (So always use canonical form,\
-                                  \ or don't diff.)\n\nThis format is intended to make it difficult to\
-                                  \ use these numbers without writing some sort of special handling code\
-                                  \ in the hopes that that will cause implementors to also use a fixed\
-                                  \ point implementation."
-                              type: "string"
-                              properties: {}
-                            resource:
-                              description: "Required: resource to select"
-                              type: "string"
-                          required:
-                            - "resource"
-                          type: "object"
-                        secretKeyRef:
-                          description: "SecretKeySelector selects a key of a Secret."
-                          properties:
-                            key:
-                              description: "The key of the secret to select from.  Must be a valid secret\
-                                  \ key."
-                              type: "string"
-                            name:
-                              description: "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names"
-                              type: "string"
-                            optional:
-                              description: "Specify whether the Secret or its key must be defined"
-                              type: "boolean"
-                          required:
-                            - "key"
-                          type: "object"
-                      type: "object"
-                  required:
-                    - "name"
-                  type: "object"
+                environment:
+                  description: List of environment variables.
+                  type: array
+                  nullable: true
+                  items:
+                    description: "EnvVar represents an environment variable present in a Container."
+                    properties:
+                      name:
+                        description: "Name of the environment variable. Must be a C_IDENTIFIER."
+                        type: "string"
+                      value:
+                        description: "Variable references $(VAR_NAME) are expanded using the previous\
+                            \ defined environment variables in the container and any service environment\
+                            \ variables. If a variable cannot be resolved, the reference in the input string\
+                            \ will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$,\
+                            \ ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of\
+                            \ whether the variable exists or not. Defaults to \"\"."
+                        type: "string"
+                      valueFrom:
+                        description: "EnvVarSource represents a source for the value of an EnvVar."
+                        properties:
+                          configMapKeyRef:
+                            description: "Selects a key from a ConfigMap."
+                            properties:
+                              key:
+                                description: "The key to select."
+                                type: "string"
+                              name:
+                                description: "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names"
+                                type: "string"
+                              optional:
+                                description: "Specify whether the ConfigMap or its key must be defined"
+                                type: "boolean"
+                            required:
+                              - "key"
+                            type: "object"
+                          fieldRef:
+                            description: "ObjectFieldSelector selects an APIVersioned field of an object."
+                            properties:
+                              apiVersion:
+                                description: "Version of the schema the FieldPath is written in terms\
+                                    \ of, defaults to \"v1\"."
+                                type: "string"
+                              fieldPath:
+                                description: "Path of the field to select in the specified API version."
+                                type: "string"
+                            required:
+                              - "fieldPath"
+                            type: "object"
+                          resourceFieldRef:
+                            description: "ResourceFieldSelector represents container resources (cpu, memory)\
+                                \ and their output format"
+                            properties:
+                              containerName:
+                                description: "Container name: required for volumes, optional for env vars"
+                                type: "string"
+                              divisor:
+                                description: "Quantity is a fixed-point representation of a number. It\
+                                    \ provides convenient marshaling/unmarshaling in JSON and YAML, in addition\
+                                    \ to String() and AsInt64() accessors.\n\nThe serialization format is:\n\
+                                    \n<quantity>        ::= <signedNumber><suffix>\n  (Note that <suffix>\
+                                    \ may be empty, from the \"\" case in <decimalSI>.)\n<digit>       \
+                                    \    ::= 0 | 1 | ... | 9 <digits>          ::= <digit> | <digit><digits>\
+                                    \ <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits>\
+                                    \ <sign>            ::= \"+\" | \"-\" <signedNumber>    ::= <number>\
+                                    \ | <sign><number> <suffix>          ::= <binarySI> | <decimalExponent>\
+                                    \ | <decimalSI> <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei\n\
+                                    \  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\
+                                    <decimalSI>       ::= m | \"\" | k | M | G | T | P | E\n  (Note that\
+                                    \ 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n<decimalExponent>\
+                                    \ ::= \"e\" <signedNumber> | \"E\" <signedNumber>\n\nNo matter which\
+                                    \ of the three exponent forms is used, no quantity may represent a number\
+                                    \ greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\
+                                    \ places. Numbers larger or more precise will be capped or rounded up.\
+                                    \ (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future\
+                                    \ if we require larger or smaller quantities.\n\nWhen a Quantity is\
+                                    \ parsed from a string, it will remember the type of suffix it had,\
+                                    \ and will use the same type again when it is serialized.\n\nBefore\
+                                    \ serializing, Quantity will be put in \"canonical form\". This means\
+                                    \ that Exponent/suffix will be adjusted up or down (with a corresponding\
+                                    \ increase or decrease in Mantissa) such that:\n  a. No precision is\
+                                    \ lost\n  b. No fractional digits will be emitted\n  c. The exponent\
+                                    \ (or suffix) is as large as possible.\nThe sign will be omitted unless\
+                                    \ the number is negative.\n\nExamples:\n  1.5 will be serialized as\
+                                    \ \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the\
+                                    \ quantity will NEVER be internally represented by a floating point\
+                                    \ number. That is the whole point of this exercise.\n\nNon-canonical\
+                                    \ values will still parse as long as they are well formed, but will\
+                                    \ be re-emitted in their canonical form. (So always use canonical form,\
+                                    \ or don't diff.)\n\nThis format is intended to make it difficult to\
+                                    \ use these numbers without writing some sort of special handling code\
+                                    \ in the hopes that that will cause implementors to also use a fixed\
+                                    \ point implementation."
+                                type: "string"
+                                properties: {}
+                              resource:
+                                description: "Required: resource to select"
+                                type: "string"
+                            required:
+                              - "resource"
+                            type: "object"
+                          secretKeyRef:
+                            description: "SecretKeySelector selects a key of a Secret."
+                            properties:
+                              key:
+                                description: "The key of the secret to select from.  Must be a valid secret\
+                                    \ key."
+                                type: "string"
+                              name:
+                                description: "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names"
+                                type: "string"
+                              optional:
+                                description: "Specify whether the Secret or its key must be defined"
+                                type: "boolean"
+                            required:
+                              - "key"
+                            type: "object"
+                        type: "object"
+                    required:
+                      - "name"
+                    type: "object"
                 environmentFrom:
+                  description: List of environment variables from ConfigMap.
                   type: array
                   nullable: true
                   items:
@@ -4277,6 +4431,7 @@ spec:
                         type: "object"
                     type: "object"
                 volumes:
+                  description: List of volumes.
                   type: array
                   nullable: true
                   items:
@@ -5459,6 +5614,7 @@ spec:
                       - "name"
                     type: "object"
                 volumeMounts:
+                  description: List of volume mounts.
                   type: array
                   nullable: true
                   items:
@@ -5495,6 +5651,7 @@ spec:
                       - "mountPath"
                     type: "object"
                 persistentVolumeClaimsTemplates:
+                  description: List of persistent volume claim templates.
                   type: array
                   nullable: true
                   items:
@@ -6010,6 +6167,7 @@ spec:
                         kind: "PersistentVolumeClaim"
                         version: "v1"
                 extraPorts:
+                  description: Additional container ports.
                   type: array
                   nullable: true
                   items:
@@ -6042,6 +6200,7 @@ spec:
                       - "containerPort"
                     type: "object"
                 initContainers:
+                  description: Optional init containers.
                   type: array
                   nullable: true
                   items:
@@ -7071,6 +7230,7 @@ spec:
                       - "name"
                     type: "object"
                 sideContainers:
+                  description: Optional side containers.
                   type: array
                   nullable: true
                   items:
@@ -8100,71 +8260,7 @@ spec:
                       - "name"
                     type: "object"
               required:
-            flinkImage:
-              description: A Flink image specification.
-              type: object
-              nullable: false
-              properties:
-                pullSecrets:
-                  type: string
-                  nullable: false
-                pullPolicy:
-                  type: string
-                  nullable: false
-                flinkImage:
-                  type: string
-                  nullable: false
-              required:
-                - flinkImage
-            flinkJob:
-              description: A Flink job specification.
-              type: object
-              nullable: true
-              properties:
-                image:
-                  type: string
-                  nullable: false
-                className:
-                  type: string
-                  nullable: false
-                jarPath:
-                  type: string
-                  nullable: false
-                arguments:
-                  type: array
-                  nullable: true
-                  items:
-                    type: string
-                parallelism:
-                  type: integer
-                  nullable: true
-              required:
-                - image
-                - className
-                - jarPath
-            flinkOperator:
-              description: A Flink Operator specification.
-              type: object
-              nullable: false
-              properties:
-                savepointMode:
-                  type: string
-                  nullable: false
-                savepointPath:
-                  type: string
-                  nullable: true
-                savepointInterval:
-                  type: integer
-                  nullable: true
-                savepointTargetPath:
-                  type: string
-                  nullable: false
-                jobRestartPolicy:
-                  type: string
-                  nullable: true
-              required:
-                - savepointMode
-                - savepointTargetPath
+                - taskSlots
           required:
             - jobManager
             - taskManager
@@ -8182,6 +8278,18 @@ spec:
     - name: TASK
       type: string
       JSONPath: .status.tasks[0]
+    - name: TASK-SLOTS
+      type: integer
+      JSONPath: .spec.taskManager.taskSlots
+    - name: PARALLELISM
+      type: integer
+      JSONPath: .spec.flinkJob.parallelism
+    - name: JOB-RESTART
+      type: string
+      JSONPath: .spec.flinkOperator.jobRestartPolicy
+    - name: SERVICE-MODE
+      type: string
+      JSONPath: .spec.jobManager.serviceMode
     - name: SAVEPOINT-PATH
       type: string
       JSONPath: .status.savepointPath
