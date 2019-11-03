@@ -36,7 +36,7 @@ class OperatorCacheTest {
 
     @Test
     fun `should update clusters when a cluster changed`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
         assertThat(cache.getClusters()).isNotEmpty()
@@ -44,7 +44,7 @@ class OperatorCacheTest {
 
     @Test
     fun `should find cluster when a cluster changed`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
         assertThat(cache.getFlinkCluster(ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = "123"))).isNotNull()
@@ -52,7 +52,7 @@ class OperatorCacheTest {
 
     @Test
     fun `should find cluster id when a cluster changed`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
         assertThat(cache.getClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name)).isNotNull()
@@ -60,10 +60,10 @@ class OperatorCacheTest {
 
     @Test
     fun `should return non empty list of clusters when a cluster changed`() {
-        val cluster1 = TestFactory.aCluster("test", "flink")
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster1.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster1)
-        val cluster2 = TestFactory.aCluster("test", "flink")
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
         assertThat(cache.getClusters()).hasSize(2)
@@ -73,10 +73,10 @@ class OperatorCacheTest {
 
     @Test
     fun `should update clusters when a cluster is deleted`() {
-        val cluster1 = TestFactory.aCluster("test", "flink")
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster1.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster1)
-        val cluster2 = TestFactory.aCluster("test", "flink")
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
         cache.onFlinkClusterDeleted(cluster1)
@@ -86,10 +86,10 @@ class OperatorCacheTest {
 
     @Test
     fun `should remove all clusters when all clusters are deleted`() {
-        val cluster1 = TestFactory.aCluster("test", "flink")
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster1.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster1)
-        val cluster2 = TestFactory.aCluster("test", "flink")
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
         assertThat(cache.getClusters()).hasSize(2)
@@ -99,7 +99,7 @@ class OperatorCacheTest {
 
     @Test
     fun `should throw IllegalStateException when cluster is missing name`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cluster.metadata.name = null
         assertThatThrownBy { cache.onFlinkClusterChanged(cluster) }.isInstanceOf(IllegalStateException::class.java)
@@ -107,14 +107,14 @@ class OperatorCacheTest {
 
     @Test
     fun `should throw IllegalStateException when cluster is missing uid`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = null
         assertThatThrownBy { cache.onFlinkClusterChanged(cluster) }.isInstanceOf(IllegalStateException::class.java)
     }
 
     @Test
     fun `should return a cluster with empty resources initially`() {
-        val cluster = TestFactory.aCluster("test", "flink")
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
         assertThat(cache.getClusters().get(0).second.jarUploadJobs).isEmpty()
@@ -127,7 +127,7 @@ class OperatorCacheTest {
 
     @Test
     fun `should update resources when resources are changed`() {
-        val cluster1 = TestFactory.aCluster("test", "flink")
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster1.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster1)
         val uploadJob1 = TestFactory.aUploadJob(cluster1)
@@ -136,7 +136,7 @@ class OperatorCacheTest {
         val taskManagerStatefulSet1 = TestFactory.aTaskManagerStatefulSet(cluster1)
         val jobManagerPersistenVolumeClaim1 = TestFactory.aJobManagerPersistenVolumeClaim(cluster1)
         val taskManagerPersistenVolumeClaim1 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster1)
-        val cluster2 = TestFactory.aCluster("test", "flink")
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         val uploadJob2 = TestFactory.aUploadJob(cluster2)
         val jobManagerService2 = TestFactory.aJobManagerService(cluster2)
@@ -166,7 +166,7 @@ class OperatorCacheTest {
 
     @Test
     fun `should update resources when resources are deleted`() {
-        val cluster1 = TestFactory.aCluster("test", "flink")
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster1.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster1)
         val uploadJob1 = TestFactory.aUploadJob(cluster1)
@@ -175,7 +175,7 @@ class OperatorCacheTest {
         val taskManagerStatefulSet1 = TestFactory.aTaskManagerStatefulSet(cluster1)
         val jobManagerPersistenVolumeClaim1 = TestFactory.aJobManagerPersistenVolumeClaim(cluster1)
         val taskManagerPersistenVolumeClaim1 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster1)
-        val cluster2 = TestFactory.aCluster("test", "flink")
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         val uploadJob2 = TestFactory.aUploadJob(cluster2)
         val jobManagerService2 = TestFactory.aJobManagerService(cluster2)
@@ -211,7 +211,7 @@ class OperatorCacheTest {
 
     @Test
     fun `should update resources when all resources are deleted`() {
-        val cluster1 = TestFactory.aCluster("test", "flink")
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster1.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster1)
         val uploadJob1 = TestFactory.aUploadJob(cluster1)
@@ -220,7 +220,7 @@ class OperatorCacheTest {
         val taskManagerStatefulSet1 = TestFactory.aTaskManagerStatefulSet(cluster1)
         val jobManagerPersistenVolumeClaim1 = TestFactory.aJobManagerPersistenVolumeClaim(cluster1)
         val taskManagerPersistenVolumeClaim1 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster1)
-        val cluster2 = TestFactory.aCluster("test", "flink")
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         val uploadJob2 = TestFactory.aUploadJob(cluster2)
         val jobManagerService2 = TestFactory.aJobManagerService(cluster2)

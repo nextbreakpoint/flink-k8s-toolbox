@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class OperatorParametersTest {
-    private val flinkCluster = TestFactory.aCluster("test", "flink")
+    private val flinkCluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
     @BeforeEach
     fun configure() {

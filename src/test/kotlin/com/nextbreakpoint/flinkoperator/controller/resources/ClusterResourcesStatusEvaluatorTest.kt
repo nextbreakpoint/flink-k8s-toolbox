@@ -18,7 +18,7 @@ class ClusterResourcesStatusEvaluatorTest {
 
     private val clusterId = UUID.randomUUID().toString()
 
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
     private val identity = ClusterId(
         namespace = "test",

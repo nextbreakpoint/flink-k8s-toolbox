@@ -22,7 +22,7 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 
 class CreateResourcesTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(OperatorContext::class.java)
     private val controller = mock(OperatorController::class.java)
     private val resources = mock(OperatorResources::class.java)

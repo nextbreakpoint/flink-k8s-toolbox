@@ -9,7 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class OperatorStateTest {
-    private val flinkCluster = TestFactory.aCluster("test", "flink")
+    private val flinkCluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
     @Test
     fun `initially a cluster doesn't have a current task`() {
