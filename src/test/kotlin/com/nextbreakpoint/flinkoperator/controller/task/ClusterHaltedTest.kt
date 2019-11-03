@@ -508,7 +508,7 @@ class ClusterHaltedTest {
         OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         OperatorState.setOperatorTaskAttempts(cluster, 3)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
-        cluster.spec.flinkOperator.jobRestartPolicy = "ONFAILURE"
+        cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -534,7 +534,7 @@ class ClusterHaltedTest {
         OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         OperatorState.setOperatorTaskAttempts(cluster, 2)
-        cluster.spec.flinkOperator.jobRestartPolicy = "ONFAILURE"
+        cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -561,7 +561,7 @@ class ClusterHaltedTest {
         OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         OperatorState.setOperatorTaskAttempts(cluster, 3)
-        cluster.spec.flinkOperator.jobRestartPolicy = "ONFAILURE"
+        cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)

@@ -4,6 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
@@ -202,6 +203,17 @@ class ClusterHalted : OperatorTaskHandler {
                 }
             }
         }
+
+//        val annotations = context.flinkCluster.metadata?.annotations.orEmpty()
+//        if (annotations["flink-operator/action"] == null) {
+//            if (annotations["flink-operator/without-savepoint"]?.toUpperCase() == "TRUE") {
+//                val options = StartOptions(withoutSavepoint = true)
+//                context.controller.startCluster(context.clusterId, options, context.cache)
+//            } else {
+//                val options = StartOptions(withoutSavepoint = false)
+//                context.controller.startCluster(context.clusterId, options, context.cache)
+//            }
+//        }
 
         return Result(
             ResultStatus.AWAIT,

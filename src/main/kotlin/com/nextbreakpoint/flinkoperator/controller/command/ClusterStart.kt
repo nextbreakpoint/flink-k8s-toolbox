@@ -1,5 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.command
 
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -24,130 +25,9 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
-
             val operatorStatus = OperatorState.getCurrentTaskStatus(flinkCluster)
 
-            if (operatorStatus == TaskStatus.IDLE) {
-                val statusList = if (flinkCluster.spec?.flinkJob == null) {
-                    when (clusterStatus) {
-                        ClusterStatus.TERMINATED ->
-                            listOf(
-                                OperatorTask.STARTING_CLUSTER,
-                                OperatorTask.CREATE_RESOURCES,
-                                OperatorTask.CLUSTER_RUNNING
-                            )
-                        ClusterStatus.SUSPENDED ->
-                            listOf(
-                                OperatorTask.STARTING_CLUSTER,
-                                OperatorTask.RESTART_PODS,
-                                OperatorTask.CLUSTER_RUNNING
-                            )
-                        ClusterStatus.FAILED ->
-                            listOf(
-                                OperatorTask.STOPPING_CLUSTER,
-                                OperatorTask.TERMINATE_PODS,
-                                OperatorTask.DELETE_RESOURCES,
-                                OperatorTask.STARTING_CLUSTER,
-                                OperatorTask.CREATE_RESOURCES,
-                                OperatorTask.CLUSTER_RUNNING
-                            )
-                        else -> listOf()
-                    }
-                } else {
-                    when (clusterStatus) {
-                        ClusterStatus.TERMINATED ->
-                            if (params.withoutSavepoint) {
-                                listOf(
-                                    OperatorTask.STARTING_CLUSTER,
-                                    OperatorTask.CREATE_RESOURCES,
-                                    OperatorTask.DELETE_UPLOAD_JOB,
-                                    OperatorTask.UPLOAD_JAR,
-                                    OperatorTask.ERASE_SAVEPOINT,
-                                    OperatorTask.START_JOB,
-                                    OperatorTask.CLUSTER_RUNNING
-                                )
-                            } else {
-                                listOf(
-                                    OperatorTask.STARTING_CLUSTER,
-                                    OperatorTask.CREATE_RESOURCES,
-                                    OperatorTask.DELETE_UPLOAD_JOB,
-                                    OperatorTask.UPLOAD_JAR,
-                                    OperatorTask.START_JOB,
-                                    OperatorTask.CLUSTER_RUNNING
-                                )
-                            }
-                        ClusterStatus.SUSPENDED ->
-                            if (params.withoutSavepoint) {
-                                listOf(
-                                    OperatorTask.STARTING_CLUSTER,
-                                    OperatorTask.RESTART_PODS,
-                                    OperatorTask.DELETE_UPLOAD_JOB,
-                                    OperatorTask.UPLOAD_JAR,
-                                    OperatorTask.ERASE_SAVEPOINT,
-                                    OperatorTask.START_JOB,
-                                    OperatorTask.CLUSTER_RUNNING
-                                )
-                            } else {
-                                listOf(
-                                    OperatorTask.STARTING_CLUSTER,
-                                    OperatorTask.RESTART_PODS,
-                                    OperatorTask.DELETE_UPLOAD_JOB,
-                                    OperatorTask.UPLOAD_JAR,
-                                    OperatorTask.START_JOB,
-                                    OperatorTask.CLUSTER_RUNNING
-                                )
-                            }
-                        ClusterStatus.FAILED ->
-                            if (params.withoutSavepoint) {
-                                listOf(
-                                    OperatorTask.STOPPING_CLUSTER,
-                                    OperatorTask.DELETE_UPLOAD_JOB,
-                                    OperatorTask.TERMINATE_PODS,
-                                    OperatorTask.DELETE_RESOURCES,
-                                    OperatorTask.STARTING_CLUSTER,
-                                    OperatorTask.CREATE_RESOURCES,
-                                    OperatorTask.UPLOAD_JAR,
-                                    OperatorTask.ERASE_SAVEPOINT,
-                                    OperatorTask.START_JOB,
-                                    OperatorTask.CLUSTER_RUNNING
-                                )
-                            } else {
-                                listOf(
-                                    OperatorTask.STOPPING_CLUSTER,
-                                    OperatorTask.DELETE_UPLOAD_JOB,
-                                    OperatorTask.TERMINATE_PODS,
-                                    OperatorTask.DELETE_RESOURCES,
-                                    OperatorTask.STARTING_CLUSTER,
-                                    OperatorTask.CREATE_RESOURCES,
-                                    OperatorTask.UPLOAD_JAR,
-                                    OperatorTask.START_JOB,
-                                    OperatorTask.CLUSTER_RUNNING
-                                )
-                            }
-                        else -> listOf()
-                    }
-                }
-
-                if (statusList.isNotEmpty()) {
-                    OperatorState.appendTasks(flinkCluster, statusList)
-                    return Result(
-                        ResultStatus.SUCCESS,
-                        statusList
-                    )
-                } else {
-                    logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
-
-                    return Result(
-                        ResultStatus.AWAIT,
-                        listOf(
-                            OperatorState.getCurrentTask(
-                                flinkCluster
-                            )
-                        )
-                    )
-                }
-            } else {
+            if (operatorStatus != TaskStatus.IDLE) {
                 logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
 
                 return Result(
@@ -159,6 +39,28 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                     )
                 )
             }
+
+            val statusList = tryStartingCluster(flinkCluster, params)
+
+            if (statusList.isEmpty()) {
+                logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
+
+                return Result(
+                    ResultStatus.AWAIT,
+                    listOf(
+                        OperatorState.getCurrentTask(
+                            flinkCluster
+                        )
+                    )
+                )
+            }
+
+            OperatorState.appendTasks(flinkCluster, statusList)
+
+            return Result(
+                ResultStatus.SUCCESS,
+                statusList
+            )
         } catch (e : Exception) {
             logger.error("Can't change tasks sequence of cluster ${clusterId.name}", e)
 
@@ -166,6 +68,112 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                 ResultStatus.FAILED,
                 listOf()
             )
+        }
+    }
+
+    private fun tryStartingCluster(flinkCluster: V1FlinkCluster, params: StartOptions): List<OperatorTask> {
+        val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
+
+        val jobSpec = flinkCluster.spec?.flinkJob
+
+        return if (jobSpec == null) {
+            when (clusterStatus) {
+                ClusterStatus.TERMINATED ->
+                    listOf(
+                        OperatorTask.STARTING_CLUSTER,
+                        OperatorTask.CREATE_RESOURCES,
+                        OperatorTask.CLUSTER_RUNNING
+                    )
+                ClusterStatus.SUSPENDED ->
+                    listOf(
+                        OperatorTask.STARTING_CLUSTER,
+                        OperatorTask.RESTART_PODS,
+                        OperatorTask.CLUSTER_RUNNING
+                    )
+                ClusterStatus.FAILED ->
+                    listOf(
+                        OperatorTask.STOPPING_CLUSTER,
+                        OperatorTask.TERMINATE_PODS,
+                        OperatorTask.DELETE_RESOURCES,
+                        OperatorTask.STARTING_CLUSTER,
+                        OperatorTask.CREATE_RESOURCES,
+                        OperatorTask.CLUSTER_RUNNING
+                    )
+                else -> listOf()
+            }
+        } else {
+            when (clusterStatus) {
+                ClusterStatus.TERMINATED ->
+                    if (params.withoutSavepoint) {
+                        listOf(
+                            OperatorTask.STARTING_CLUSTER,
+                            OperatorTask.CREATE_RESOURCES,
+                            OperatorTask.DELETE_UPLOAD_JOB,
+                            OperatorTask.UPLOAD_JAR,
+                            OperatorTask.ERASE_SAVEPOINT,
+                            OperatorTask.START_JOB,
+                            OperatorTask.CLUSTER_RUNNING
+                        )
+                    } else {
+                        listOf(
+                            OperatorTask.STARTING_CLUSTER,
+                            OperatorTask.CREATE_RESOURCES,
+                            OperatorTask.DELETE_UPLOAD_JOB,
+                            OperatorTask.UPLOAD_JAR,
+                            OperatorTask.START_JOB,
+                            OperatorTask.CLUSTER_RUNNING
+                        )
+                    }
+                ClusterStatus.SUSPENDED ->
+                    if (params.withoutSavepoint) {
+                        listOf(
+                            OperatorTask.STARTING_CLUSTER,
+                            OperatorTask.RESTART_PODS,
+                            OperatorTask.DELETE_UPLOAD_JOB,
+                            OperatorTask.UPLOAD_JAR,
+                            OperatorTask.ERASE_SAVEPOINT,
+                            OperatorTask.START_JOB,
+                            OperatorTask.CLUSTER_RUNNING
+                        )
+                    } else {
+                        listOf(
+                            OperatorTask.STARTING_CLUSTER,
+                            OperatorTask.RESTART_PODS,
+                            OperatorTask.DELETE_UPLOAD_JOB,
+                            OperatorTask.UPLOAD_JAR,
+                            OperatorTask.START_JOB,
+                            OperatorTask.CLUSTER_RUNNING
+                        )
+                    }
+                ClusterStatus.FAILED ->
+                    if (params.withoutSavepoint) {
+                        listOf(
+                            OperatorTask.STOPPING_CLUSTER,
+                            OperatorTask.DELETE_UPLOAD_JOB,
+                            OperatorTask.TERMINATE_PODS,
+                            OperatorTask.DELETE_RESOURCES,
+                            OperatorTask.STARTING_CLUSTER,
+                            OperatorTask.CREATE_RESOURCES,
+                            OperatorTask.UPLOAD_JAR,
+                            OperatorTask.ERASE_SAVEPOINT,
+                            OperatorTask.START_JOB,
+                            OperatorTask.CLUSTER_RUNNING
+                        )
+                    } else {
+                        listOf(
+                            OperatorTask.STOPPING_CLUSTER,
+                            OperatorTask.DELETE_UPLOAD_JOB,
+                            OperatorTask.TERMINATE_PODS,
+                            OperatorTask.DELETE_RESOURCES,
+                            OperatorTask.STARTING_CLUSTER,
+                            OperatorTask.CREATE_RESOURCES,
+                            OperatorTask.UPLOAD_JAR,
+                            OperatorTask.START_JOB,
+                            OperatorTask.CLUSTER_RUNNING
+                        )
+                    }
+                else -> listOf()
+            }
         }
     }
 }
