@@ -4,6 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
@@ -219,6 +220,25 @@ class ClusterRunning : OperatorTaskHandler {
                 )
             }
         }
+
+//        val annotations = context.flinkCluster.metadata?.annotations.orEmpty()
+//        if (annotations["flink-operator/action"]?.toUpperCase() == "SUSPEND") {
+//            if (annotations["flink-operator/without-savepoint"]?.toUpperCase() == "TRUE") {
+//                val options = StopOptions(withoutSavepoint = true, deleteResources = false)
+//                context.controller.stopCluster(context.clusterId, options, context.cache)
+//            } else {
+//                val options = StopOptions(withoutSavepoint = false, deleteResources = false)
+//                context.controller.stopCluster(context.clusterId, options, context.cache)
+//            }
+//        } else if (annotations["flink-operator/action"]?.toUpperCase() == "TERMINATED") {
+//            if (annotations["flink-operator/without-savepoint"]?.toUpperCase() == "TRUE") {
+//                val options = StopOptions(withoutSavepoint = true, deleteResources = true)
+//                context.controller.stopCluster(context.clusterId, options, context.cache)
+//            } else {
+//                val options = StopOptions(withoutSavepoint = false, deleteResources = true)
+//                context.controller.stopCluster(context.clusterId, options, context.cache)
+//            }
+//        }
 
         return Result(
             ResultStatus.AWAIT,
