@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
+import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1Affinity
@@ -483,9 +484,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         taskmanagerPodMetadata.annotations = flinkCluster.spec.taskManager?.annotations
 
-        val parallelism = flinkCluster.spec.flinkJob?.parallelism ?: 1
-        val taskSlots = flinkCluster.spec.taskManager?.taskSlots ?: 1
-        val replicas = ((parallelism + 0.5) / taskSlots).roundToInt()
+        val replicas = CustomResources.computeReplicas(flinkCluster.spec)
 
         return V1StatefulSetBuilder()
             .withMetadata(taskmanagerMetadata)

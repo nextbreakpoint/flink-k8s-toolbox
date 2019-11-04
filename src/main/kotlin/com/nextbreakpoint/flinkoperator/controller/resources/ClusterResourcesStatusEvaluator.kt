@@ -1,10 +1,11 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
+import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import io.kubernetes.client.models.V1EnvVar
-import kotlin.math.roundToInt
 
 class ClusterResourcesStatusEvaluator {
     fun evaluate(
@@ -311,9 +312,7 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("unexpected number of volume claim templates")
         }
 
-        val parallelism = flinkCluster.spec.flinkJob?.parallelism ?: 1
-        val taskSlots = flinkCluster.spec.taskManager?.taskSlots ?: 1
-        val replicas = ((parallelism + 0.5) / taskSlots).roundToInt()
+        val replicas = CustomResources.computeReplicas(flinkCluster.spec)
 
         if (taskmanagerStatefulSet.spec.replicas != replicas) {
             statusReport.add("number of replicas doesn't match")

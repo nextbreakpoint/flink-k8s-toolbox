@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
@@ -223,15 +224,18 @@ class ClusterRunning : OperatorTaskHandler {
         }
 
         val manualAction = OperatorAnnotations.getManualAction(context.flinkCluster)
-        if (context.actionTimestamp > 0L && (manualAction == "SUSPEND" || manualAction == "TERMINATE")) {
+        if (manualAction == ManualAction.STOP) {
             val withoutSavepoint = OperatorAnnotations.isWithSavepoint(context.flinkCluster)
-            val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = (manualAction == "TERMINATE"))
+            val deleteResources = OperatorAnnotations.isDeleteResources(context.flinkCluster)
+            val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = deleteResources)
             val result = context.controller.stopCluster(context.clusterId, options)
-            OperatorAnnotations.setActionTimestamp(context.flinkCluster, 0L)
+            OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
             return Result(
-                result.status,
+                ResultStatus.AWAIT,
                 result.output.joinToString(",")
             )
+        } else {
+            OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
         }
 
         return Result(
