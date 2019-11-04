@@ -2,6 +2,7 @@ package com.nextbreakpoint.flinkoperator.controller.command
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
+import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
@@ -21,7 +22,8 @@ class RequestClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            OperatorAnnotations.setManualActionAndWithoutSavepoint(flinkCluster,"RESTART", params.withoutSavepoint)
+            OperatorAnnotations.setWithoutSavepoint(flinkCluster, params.withoutSavepoint)
+            OperatorAnnotations.setManualAction(flinkCluster, ManualAction.START)
 
             kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata?.annotations.orEmpty())
 

@@ -2,6 +2,7 @@ package com.nextbreakpoint.flinkoperator.controller.command
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
+import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
@@ -21,11 +22,9 @@ class RequestClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext,
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            if (params.deleteResources) {
-                OperatorAnnotations.setManualActionAndWithoutSavepoint(flinkCluster, "TERMINATE", params.withoutSavepoint)
-            } else {
-                OperatorAnnotations.setManualActionAndWithoutSavepoint(flinkCluster, "SUSPEND", params.withoutSavepoint)
-            }
+            OperatorAnnotations.setWithoutSavepoint(flinkCluster, params.withoutSavepoint)
+            OperatorAnnotations.setDeleteResources(flinkCluster, params.deleteResources)
+            OperatorAnnotations.setManualAction(flinkCluster, ManualAction.STOP)
 
             kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata?.annotations.orEmpty())
 
