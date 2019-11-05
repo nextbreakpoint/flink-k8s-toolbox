@@ -125,6 +125,22 @@ class ClusterStopTest {
     }
 
     @Test
+    fun `should return expected result when cluster is not running and job is not defined`() {
+        cluster.spec.flinkJob = null
+        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = false))
+        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
+        verifyNoMoreInteractions(kubernetesContext)
+        verifyNoMoreInteractions(flinkContext)
+        verifyNoMoreInteractions(operatorCache)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.output).containsExactlyElementsOf(listOf(
+            OperatorTask.CLUSTER_RUNNING
+        ))
+    }
+
+    @Test
     fun `should return expected result when cluster is running, savepoint is disabled and resources must be deleted`() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = true))

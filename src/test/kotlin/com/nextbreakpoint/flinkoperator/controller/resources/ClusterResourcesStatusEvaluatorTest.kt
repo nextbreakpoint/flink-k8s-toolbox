@@ -215,6 +215,20 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
+    fun `should return divergent resource when the job manager statefulset does not have the expected number of init containers`() {
+        val expectedResources = createTestClusterResources(cluster)
+
+        expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.initContainers = listOf()
+
+        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
+
+        printStatus(actualStatus)
+
+        assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.jobmanagerStatefulSet.second).hasSize(1)
+    }
+
+    @Test
     fun `should return divergent resource when the job manager statefulset does not have the expected container image`() {
         val expectedResources = createTestClusterResources(cluster)
 
@@ -373,6 +387,20 @@ class ClusterResourcesStatusEvaluatorTest {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.containers = listOf()
+
+        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
+
+        printStatus(actualStatus)
+
+        assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(1)
+    }
+
+    @Test
+    fun `should return divergent resource when the task manager statefulset does not have the expected number of init containers`() {
+        val expectedResources = createTestClusterResources(cluster)
+
+        expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.initContainers = listOf()
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
