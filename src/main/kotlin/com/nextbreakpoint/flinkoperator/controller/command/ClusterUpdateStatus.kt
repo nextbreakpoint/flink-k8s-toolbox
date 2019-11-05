@@ -17,7 +17,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import org.apache.log4j.Logger
 
 class ClusterUpdateStatus(
-    val controller: OperatorController
+    private val controller: OperatorController
 ) : OperatorCommand<Void?, Void?>(
     controller.flinkOptions,
     controller.flinkContext,
