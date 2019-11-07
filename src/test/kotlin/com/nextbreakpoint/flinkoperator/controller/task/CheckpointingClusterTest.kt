@@ -55,7 +55,7 @@ class CheckpointingClusterTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.CHECKPOINTING)
-        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
+        assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
     }
 
     @Test

@@ -5,7 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class DefaultClusterResourcesFactoryTest {
-    private val cluster = TestFactory.aCluster(name = "test", namespace ="flink", parallelism = 5, taskSlots = 2)
+    private val cluster = TestFactory.aCluster(name = "test", namespace ="flink", taskManagers = 3, taskSlots = 2)
 
     @Test
     fun `should create job manager service`() {

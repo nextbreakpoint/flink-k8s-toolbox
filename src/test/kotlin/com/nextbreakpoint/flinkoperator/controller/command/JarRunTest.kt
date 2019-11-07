@@ -16,6 +16,7 @@ import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -118,7 +119,7 @@ class JarRunTest {
         verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkContext, times(1)).getOverview(eq(flinkAddress))
         verify(flinkContext, times(1)).listJars(eq(flinkAddress))
-        verify(flinkContext, times(1)).runJar(eq(flinkAddress), eq(file2), any(), eq(null))
+        verify(flinkContext, times(1)).runJar(eq(flinkAddress), eq(file2), any(), Mockito.eq(1), eq(null))
         verifyNoMoreInteractions(kubernetesContext)
         verifyNoMoreInteractions(flinkContext)
         assertThat(result).isNotNull()
@@ -144,7 +145,7 @@ class JarRunTest {
         verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkContext, times(1)).getOverview(eq(flinkAddress))
         verify(flinkContext, times(1)).listJars(eq(flinkAddress))
-        verify(flinkContext, times(1)).runJar(eq(flinkAddress), eq(file2), any(), eq("/tmp/000"))
+        verify(flinkContext, times(1)).runJar(eq(flinkAddress), eq(file2), any(), Mockito.eq(1), eq("/tmp/000"))
         verifyNoMoreInteractions(kubernetesContext)
         verifyNoMoreInteractions(flinkContext)
         assertThat(result).isNotNull()

@@ -15,6 +15,8 @@ public class V1FlinkClusterSpec {
     private V1FlinkJobSpec flinkJob;
     @SerializedName("flinkOperator")
     private V1FlinkOperatorSpec flinkOperator;
+    @SerializedName("taskManagers")
+    private Integer taskManagers;
 
     public V1JobManagerSpec getJobManager() {
         return jobManager;
@@ -60,6 +62,14 @@ public class V1FlinkClusterSpec {
         this.flinkOperator = flinkOperator;
     }
 
+    public Integer getTaskManagers() {
+        return taskManagers;
+    }
+
+    public void setTaskManagers(Integer taskManagers) {
+        this.taskManagers = taskManagers;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -69,12 +79,13 @@ public class V1FlinkClusterSpec {
                 Objects.equals(getTaskManager(), that.getTaskManager()) &&
                 Objects.equals(getFlinkImage(), that.getFlinkImage()) &&
                 Objects.equals(getFlinkJob(), that.getFlinkJob()) &&
-                Objects.equals(getFlinkOperator(), that.getFlinkOperator());
+                Objects.equals(getFlinkOperator(), that.getFlinkOperator()) &&
+                Objects.equals(getTaskManagers(), that.getTaskManagers());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getJobManager(), getTaskManager(), getFlinkImage(), getFlinkJob(), getFlinkOperator());
+        return Objects.hash(getJobManager(), getTaskManager(), getFlinkImage(), getFlinkJob(), getFlinkOperator(), getTaskManagers());
     }
 
     @Override
@@ -85,6 +96,7 @@ public class V1FlinkClusterSpec {
                 ", flinkImage=" + flinkImage +
                 ", flinkJob=" + flinkJob +
                 ", flinkOperator=" + flinkOperator +
+                ", taskManagers=" + taskManagers +
                 '}';
     }
 }

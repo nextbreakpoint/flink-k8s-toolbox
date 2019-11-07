@@ -187,8 +187,8 @@ class OperatorStateTest {
     fun `should store task attempts and update timestamp`() {
         val timestamp = System.currentTimeMillis()
         assertThat(OperatorState.getOperatorTimestamp(flinkCluster)).isEqualTo(0)
-        OperatorState.setOperatorTaskAttempts(flinkCluster, 2)
-        assertThat(OperatorState.getOperatorTaskAttempts(flinkCluster)).isEqualTo(2)
+        OperatorState.setTaskAttempts(flinkCluster, 2)
+        assertThat(OperatorState.getTaskAttempts(flinkCluster)).isEqualTo(2)
         assertThat(OperatorState.getOperatorTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
     }
 }

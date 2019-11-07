@@ -44,7 +44,11 @@ class JarRun(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesC
 
             val savepointPath = OperatorParameters.getSavepointPath(params)
 
-            flinkContext.runJar(address, jarFile, params.spec.flinkJob, savepointPath)
+            val taskManagers = params.spec?.taskManagers ?: 1
+            val taskSlots = params.spec.taskManager?.taskSlots ?: 1
+            val parallelism = taskManagers * taskSlots
+
+            flinkContext.runJar(address, jarFile, params.spec.flinkJob, parallelism, savepointPath)
 
             return Result(
                 ResultStatus.SUCCESS,

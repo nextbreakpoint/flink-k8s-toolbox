@@ -28,7 +28,6 @@ import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.models.V1StatefulSetBuilder
 import io.kubernetes.client.models.V1StatefulSetUpdateStrategy
 import io.kubernetes.client.models.V1WeightedPodAffinityTerm
-import kotlin.math.roundToInt
 
 object DefaultClusterResourcesFactory : ClusterResourcesFactory {
     override fun createJobManagerService(
@@ -484,7 +483,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         taskmanagerPodMetadata.annotations = flinkCluster.spec.taskManager?.annotations
 
-        val replicas = CustomResources.computeReplicas(flinkCluster.spec)
+        val replicas = flinkCluster.spec?.taskManagers ?: 1
 
         return V1StatefulSetBuilder()
             .withMetadata(taskmanagerMetadata)

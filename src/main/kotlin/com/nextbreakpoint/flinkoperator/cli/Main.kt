@@ -11,6 +11,7 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.nextbreakpoint.flinkoperator.common.model.ConnectionConfig
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
@@ -52,7 +53,8 @@ class Main(private val factory: CommandFactory) {
                 DeleteClusterCommand(factory),
                 GetClusterStatusCommand(factory),
                 StartClusterCommand(factory),
-                StopClusterCommand(factory)
+                StopClusterCommand(factory),
+                ScaleClusterCommand(factory)
             ),
             Savepoint().subcommands(
                 TriggerSavepointCommand(factory)
@@ -223,6 +225,32 @@ class Main(private val factory: CommandFactory) {
                 deleteResources = deleteResources
             )
             factory.createStopClusterCommand().run(
+                ConnectionConfig(
+                    host,
+                    port,
+                    keystorePath,
+                    keystoreSecret,
+                    truststorePath,
+                    truststoreSecret
+                ), clusterName, params)
+        }
+    }
+
+    class ScaleClusterCommand(private val factory: CommandFactory): CliktCommand(name = "scale", help="Scale a cluster") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val taskManagers: Int by option(help="Number of Task Managers").int().required()
+
+        override fun run() {
+            val params = ScaleOptions(
+                taskManagers = taskManagers
+            )
+            factory.createScaleClusterCommand().run(
                 ConnectionConfig(
                     host,
                     port,

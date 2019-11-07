@@ -67,7 +67,7 @@ class ClusterRunningTest {
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         assertThat(OperatorState.getNextOperatorTask(cluster)).isNull()
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.RUNNING)
-        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
+        assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
     }
 
     @Test
@@ -341,7 +341,7 @@ class ClusterRunningTest {
     fun `onIdle should do nothing for at least 10 seconds`() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
         OperatorState.updateSavepointTimestamp(cluster)
-        OperatorState.setOperatorTaskAttempts(cluster, 3)
+        OperatorState.setTaskAttempts(cluster, 3)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.currentTimeMillis()).thenReturn(time + 10000)
@@ -362,7 +362,7 @@ class ClusterRunningTest {
     fun `onIdle should update attempts if cluster is running`() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
         OperatorState.updateSavepointTimestamp(cluster)
-        OperatorState.setOperatorTaskAttempts(cluster, 2)
+        OperatorState.setTaskAttempts(cluster, 2)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -379,14 +379,14 @@ class ClusterRunningTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
+        assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
     }
 
     @Test
     fun `onIdle should increment attempts after 10 seconds when cluster is not running`() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
         OperatorState.updateSavepointTimestamp(cluster)
-        OperatorState.setOperatorTaskAttempts(cluster, 2)
+        OperatorState.setTaskAttempts(cluster, 2)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -403,14 +403,14 @@ class ClusterRunningTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(3)
+        assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(3)
     }
 
     @Test
     fun `onIdle should change status when cluster is not running after 3 attempts`() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
         OperatorState.updateSavepointTimestamp(cluster)
-        OperatorState.setOperatorTaskAttempts(cluster, 3)
+        OperatorState.setTaskAttempts(cluster, 3)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -450,9 +450,9 @@ class ClusterRunningTest {
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CHECKPOINTING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATING_SAVEPOINT)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_SAVEPOINT)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STORE_SAVEPOINT)
         OperatorState.selectNextTask(cluster)
         assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
     }

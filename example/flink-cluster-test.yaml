@@ -3,6 +3,7 @@ kind: FlinkCluster
 metadata:
   name: test
 spec:
+  taskManagers: 1
   flinkImage:
     pullPolicy: Never
     flinkImage: example/flink:1.9.0
@@ -10,7 +11,6 @@ spec:
     image: example/flink-jobs:1
     jarPath: /flink-jobs.jar
     className: com.nextbreakpoint.flink.jobs.TestJob
-    parallelism: 1
     arguments:
       - --DEVELOP_MODE
       - disabled

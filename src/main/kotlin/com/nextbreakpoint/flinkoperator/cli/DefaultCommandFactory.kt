@@ -2,6 +2,7 @@ package com.nextbreakpoint.flinkoperator.cli
 
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterCreate
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterDelete
+import com.nextbreakpoint.flinkoperator.cli.command.ClusterScale
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterStart
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterStatus
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterStop
@@ -27,6 +28,8 @@ object DefaultCommandFactory : CommandFactory {
     override fun createStartClusterCommand() = ClusterStart()
 
     override fun createStopClusterCommand() = ClusterStop()
+
+    override fun createScaleClusterCommand() = ClusterScale()
 
     override fun createGetClusterStatusCommand() = ClusterStatus()
 

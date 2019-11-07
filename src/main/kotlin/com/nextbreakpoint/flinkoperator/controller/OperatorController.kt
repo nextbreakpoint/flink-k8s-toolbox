@@ -7,6 +7,7 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
@@ -35,6 +36,7 @@ import com.nextbreakpoint.flinkoperator.controller.command.JobStop
 import com.nextbreakpoint.flinkoperator.controller.command.PodsAreTerminated
 import com.nextbreakpoint.flinkoperator.controller.command.PodsRestart
 import com.nextbreakpoint.flinkoperator.controller.command.PodsTerminate
+import com.nextbreakpoint.flinkoperator.controller.command.RequestClusterScale
 import com.nextbreakpoint.flinkoperator.controller.command.RequestClusterStart
 import com.nextbreakpoint.flinkoperator.controller.command.RequestClusterStop
 import com.nextbreakpoint.flinkoperator.controller.command.SavepointCreate
@@ -55,6 +57,9 @@ class OperatorController(
 
     fun requestStopCluster(clusterId: ClusterId, options: StopOptions) : Result<Void?> =
         RequestClusterStop(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
+
+    fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
+        RequestClusterScale(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
 
     fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<OperatorTask>> =
         ClusterStart(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)

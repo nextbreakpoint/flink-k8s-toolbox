@@ -219,7 +219,7 @@ object KubernetesContext {
             "status" to status
         )
 
-        val response = objectApi.patchNamespacedCustomObjectCall(
+        val response = objectApi.patchNamespacedCustomObjectStatusCall(
             "nextbreakpoint.com",
             "v1",
             clusterId.namespace,
@@ -232,7 +232,7 @@ object KubernetesContext {
 
         if (!response.isSuccessful) {
             response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-            throw RuntimeException("Can't update state of cluster ${clusterId.name}")
+            throw RuntimeException("Can't update status of cluster ${clusterId.name}")
         }
     }
 
@@ -1056,6 +1056,10 @@ object KubernetesContext {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
+    }
+
+    fun rescaleCluster(clusterId: ClusterId, taskManagers: Int) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     @ExperimentalCoroutinesApi

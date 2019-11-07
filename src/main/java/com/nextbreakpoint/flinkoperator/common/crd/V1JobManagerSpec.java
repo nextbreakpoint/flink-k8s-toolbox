@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public class V1JobManagerSpec {
+    @SerializedName("serviceMode")
+    private String serviceMode;
     @SerializedName("requiredCPUs")
     private Float requiredCPUs;
     @SerializedName("requiredMemory")
@@ -22,8 +24,6 @@ public class V1JobManagerSpec {
     private List<V1EnvVar> environment;
     @SerializedName("environmentFrom")
     private List<V1EnvFromSource> environmentFrom;
-    @SerializedName("serviceMode")
-    private String serviceMode;
     @SerializedName("serviceAccount")
     private String serviceAccount;
     @SerializedName("volumes")
@@ -40,6 +40,15 @@ public class V1JobManagerSpec {
     private List<V1Container> initContainers;
     @SerializedName("sideContainers")
     private List<V1Container> sideContainers;
+
+    public String getServiceMode() {
+        return serviceMode;
+    }
+
+    public V1JobManagerSpec setServiceMode(String serviceMode) {
+        this.serviceMode = serviceMode;
+        return this;
+    }
 
     public Float getRequiredCPUs() {
         return requiredCPUs;
@@ -74,15 +83,6 @@ public class V1JobManagerSpec {
 
     public void setEnvironmentFrom(List<V1EnvFromSource> environmentFrom) {
         this.environmentFrom = environmentFrom;
-    }
-
-    public String getServiceMode() {
-        return serviceMode;
-    }
-
-    public V1JobManagerSpec setServiceMode(String serviceMode) {
-        this.serviceMode = serviceMode;
-        return this;
     }
 
     public String getServiceAccount() {
@@ -181,11 +181,11 @@ public class V1JobManagerSpec {
     @Override
     public String toString() {
         return "V1JobManagerSpec{" +
-                "requiredCPUs=" + requiredCPUs +
+                "serviceMode='" + serviceMode + '\'' +
+                ", requiredCPUs=" + requiredCPUs +
                 ", requiredMemory=" + requiredMemory +
                 ", environment=" + environment +
                 ", environmentFrom=" + environmentFrom +
-                ", serviceMode='" + serviceMode + '\'' +
                 ", serviceAccount='" + serviceAccount + '\'' +
                 ", volumes=" + volumes +
                 ", volumeMounts=" + volumeMounts +

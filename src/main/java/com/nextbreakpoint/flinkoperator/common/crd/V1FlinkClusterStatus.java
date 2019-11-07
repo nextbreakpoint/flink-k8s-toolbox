@@ -6,6 +6,12 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class V1FlinkClusterStatus {
+    @SerializedName("labelSelector")
+    private String[] labelSelector;
+    @SerializedName("taskManagers")
+    private Integer taskManagers;
+    @SerializedName("jobParallelism")
+    private Integer jobParallelism;
     @SerializedName("timestamp")
     private Long timestamp;
     @SerializedName("tasks")
@@ -32,6 +38,22 @@ public class V1FlinkClusterStatus {
     private String digestOfFlinkImage;
     @SerializedName("digestOfFlinkJob")
     private String digestOfFlinkJob;
+
+    public Integer getTaskManagers() {
+        return taskManagers;
+    }
+
+    public void setTaskManagers(Integer taskManagers) {
+        this.taskManagers = taskManagers;
+    }
+
+    public String[] getLabelSelector() {
+        return labelSelector;
+    }
+
+    public void setLabelSelector(String[] labelSelector) {
+        this.labelSelector = labelSelector;
+    }
 
     public Long getTimestamp() {
         return timestamp;
@@ -137,12 +159,23 @@ public class V1FlinkClusterStatus {
         this.digestOfFlinkJob = digestOfFlinkJob;
     }
 
+    public Integer getJobParallelism() {
+        return jobParallelism;
+    }
+
+    public void setJobParallelism(Integer jobParallelism) {
+        this.jobParallelism = jobParallelism;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         V1FlinkClusterStatus that = (V1FlinkClusterStatus) o;
-        return Objects.equals(getTimestamp(), that.getTimestamp()) &&
+        return Arrays.equals(getLabelSelector(), that.getLabelSelector()) &&
+                Objects.equals(getTaskManagers(), that.getTaskManagers()) &&
+                Objects.equals(getJobParallelism(), that.getJobParallelism()) &&
+                Objects.equals(getTimestamp(), that.getTimestamp()) &&
                 Arrays.equals(getTasks(), that.getTasks()) &&
                 Objects.equals(getTaskStatus(), that.getTaskStatus()) &&
                 Objects.equals(getTaskAttempts(), that.getTaskAttempts()) &&
@@ -159,15 +192,19 @@ public class V1FlinkClusterStatus {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigestOfJobManager(), getDigestOfTaskManager(), getDigestOfFlinkImage(), getDigestOfFlinkJob());
+        int result = Objects.hash(getTaskManagers(), getJobParallelism(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigestOfJobManager(), getDigestOfTaskManager(), getDigestOfFlinkImage(), getDigestOfFlinkJob());
+        result = 31 * result + Arrays.hashCode(getLabelSelector());
         result = 31 * result + Arrays.hashCode(getTasks());
         return result;
     }
 
     @Override
     public String toString() {
-        return "V1FlinkClusterState{" +
-                "timestamp='" + timestamp + '\'' +
+        return "V1FlinkClusterStatus{" +
+                "labelSelector=" + Arrays.toString(labelSelector) +
+                ", taskManagers=" + taskManagers +
+                ", jobParallelism=" + jobParallelism +
+                ", timestamp=" + timestamp +
                 ", tasks=" + Arrays.toString(tasks) +
                 ", taskStatus='" + taskStatus + '\'' +
                 ", taskAttempts=" + taskAttempts +
@@ -175,7 +212,7 @@ public class V1FlinkClusterStatus {
                 ", savepointPath='" + savepointPath + '\'' +
                 ", savepointJobId='" + savepointJobId + '\'' +
                 ", savepointTriggerId='" + savepointTriggerId + '\'' +
-                ", savepointTimestamp='" + savepointTimestamp + '\'' +
+                ", savepointTimestamp=" + savepointTimestamp +
                 ", digestOfJobManager='" + digestOfJobManager + '\'' +
                 ", digestOfTaskManager='" + digestOfTaskManager + '\'' +
                 ", digestOfFlinkImage='" + digestOfFlinkImage + '\'' +

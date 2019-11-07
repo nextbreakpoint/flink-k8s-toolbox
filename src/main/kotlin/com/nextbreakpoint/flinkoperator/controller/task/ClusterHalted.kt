@@ -20,7 +20,7 @@ class ClusterHalted : OperatorTaskHandler {
     }
 
     override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.setTaskAttempts(context.flinkCluster, 0)
 
         return Result(
             ResultStatus.SUCCESS,
@@ -153,7 +153,7 @@ class ClusterHalted : OperatorTaskHandler {
                     ClusterStatus.FAILED -> {
                         val nextTask = OperatorState.getNextOperatorTask(context.flinkCluster)
 
-                        val attempts = OperatorState.getOperatorTaskAttempts(context.flinkCluster)
+                        val attempts = OperatorState.getTaskAttempts(context.flinkCluster)
 
                         val clusterRunning = context.controller.isClusterRunning(context.clusterId)
 
@@ -176,7 +176,7 @@ class ClusterHalted : OperatorTaskHandler {
 
                                 if (clusterReady.status == ResultStatus.SUCCESS) {
                                     logger.info("Cluster ${context.clusterId.name} seems to be ready...")
-                                    OperatorState.setOperatorTaskAttempts(context.flinkCluster, attempts + 1)
+                                    OperatorState.setTaskAttempts(context.flinkCluster, attempts + 1)
 
                                     if (nextTask == null && attempts >= 3) {
                                         logger.info("Restarting job of cluster ${context.clusterId.name}...")
@@ -195,7 +195,7 @@ class ClusterHalted : OperatorTaskHandler {
                                     }
                                 } else {
                                     if (attempts > 0) {
-                                        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+                                        OperatorState.setTaskAttempts(context.flinkCluster, 0)
                                     }
                                 }
                             }

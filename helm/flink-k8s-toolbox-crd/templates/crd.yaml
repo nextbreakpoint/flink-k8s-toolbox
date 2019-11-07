@@ -27,104 +27,22 @@ spec:
     openAPIV3Schema:
       type: object
       properties:
-        status:
-          description: A Flink cluster status.
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
           type: object
-          nullable: true
-          properties:
-            timestamp:
-              anyOf:
-              - type: integer
-              - type: long
-              nullable: false
-              minimum: 0
-            tasks:
-              type: array
-              nullable: false
-              items:
-                type: string
-                enum:
-                  - INITIALISE_CLUSTER
-                  - TERMINATE_CLUSTER
-                  - SUSPEND_CLUSTER
-                  - CLUSTER_HALTED
-                  - CLUSTER_RUNNING
-                  - STARTING_CLUSTER
-                  - STOPPING_CLUSTER
-                  - CHECKPOINTING_CLUSTER
-                  - CREATE_SAVEPOINT
-                  - ERASE_SAVEPOINT
-                  - CREATE_RESOURCES
-                  - DELETE_RESOURCES
-                  - DELETE_UPLOAD_JOB
-                  - TERMINATE_PODS
-                  - RESTART_PODS
-                  - UPLOAD_JAR
-                  - CANCEL_JOB
-                  - START_JOB
-                  - STOP_JOB
-            taskStatus:
-              type: string
-              nullable: false
-              enum:
-                - EXECUTING
-                - AWAITING
-                - IDLE
-                - FAILED
-            taskAttempts:
-              type: integer
-              nullable: false
-              minimum: 0
-            clusterStatus:
-              type: string
-              nullable: false
-              enum:
-                - UNKNOWN
-                - STARTING
-                - STOPPING
-                - RUNNING
-                - FAILED
-                - SUSPENDED
-                - TERMINATED
-                - CHECKPOINTING
-            savepointPath:
-              type: string
-              nullable: true
-            savepointJobId:
-              type: string
-              nullable: true
-            savepointTriggerId:
-              type: string
-              nullable: true
-            savepointTimestamp:
-              anyOf:
-              - type: integer
-              - type: long
-              nullable: true
-              minimum: 0
-            digestOfJobManager:
-              type: string
-              nullable: true
-            digestOfTaskManager:
-              type: string
-              nullable: true
-            digestOfFlinkImage:
-              type: string
-              nullable: true
-            digestOfFlinkJob:
-              type: string
-              nullable: true
-          required:
-            - timestamp
-            - tasks
-            - taskStatus
-            - taskAttempts
-            - clusterStatus
         spec:
           description: A Flink cluster specification.
           type: object
           nullable: false
           properties:
+            taskManagers:
+              description: Number of Task Managers.
+              type: integer
+              nullable: false
+              minimum: 0
             flinkImage:
               description: A Flink image specification.
               type: object
@@ -171,16 +89,10 @@ spec:
                   nullable: true
                   items:
                     type: string
-                parallelism:
-                  description: Parallelism of job.
-                  type: integer
-                  nullable: false
-                  minimum: 1
               required:
                 - image
                 - className
                 - jarPath
-                - parallelism
             flinkOperator:
               description: A Flink Operator specification.
               type: object
@@ -201,7 +113,7 @@ spec:
                   description: Interval between savepoints.
                   type: integer
                   nullable: false
-                  minimum: 1
+                  minimum: 0
                 savepointTargetPath:
                   description: Location where to create savepoints.
                   type: string
@@ -222,21 +134,6 @@ spec:
               type: object
               nullable: false
               properties:
-                requiredCPUs:
-                  description: Control CPU limits.
-                  anyOf:
-                  - type: double
-                  - type: float
-                  - type: int
-                  nullable: true
-                  minimum: 0.1
-                requiredMemory:
-                  description: Control Memory limits.
-                  anyOf:
-                  - type: long
-                  - type: int
-                  nullable: true
-                  minimum: 256
                 serviceMode:
                   description: Type of service. Default value is ClusterIP.
                   type: string
@@ -244,6 +141,16 @@ spec:
                   enum:
                     - ClusterIP
                     - NodePort
+                requiredCPUs:
+                  description: Control CPU limits.
+                  type: float
+                  nullable: true
+                  minimum: 0.1
+                requiredMemory:
+                  description: Control Memory limits.
+                  type: integer
+                  nullable: true
+                  minimum: 256
                 serviceAccount:
                   description: Service account to use for running Job Manager.
                   type: string
@@ -4245,26 +4152,21 @@ spec:
               type: object
               nullable: false
               properties:
-                requiredCPUs:
-                  description: Control CPU limits.
-                  anyOf:
-                  - type: double
-                  - type: float
-                  - type: int
-                  nullable: true
-                  minimum: 0.1
-                requiredMemory:
-                  description: Control Memory limits.
-                  anyOf:
-                  - type: long
-                  - type: int
-                  nullable: true
-                  minimum: 256
                 taskSlots:
                   description: Number of task slots per Task Manager.
                   type: integer
                   nullable: false
                   minimum: 1
+                requiredCPUs:
+                  description: Control CPU limits.
+                  type: float
+                  nullable: true
+                  minimum: 0.1
+                requiredMemory:
+                  description: Control Memory limits.
+                  type: integer
+                  nullable: true
+                  minimum: 256
                 serviceAccount:
                   description: Service account to use for running Task Manager.
                   type: string
@@ -8266,8 +8168,95 @@ spec:
             - taskManager
             - flinkImage
             - flinkOperator
+        status:
+          type: object
+          properties:
+            labelSelector:
+              type: string
+            taskManagers:
+              type: integer
+            timestamp:
+              type: integer
+              nullable: false
+            tasks:
+              type: array
+              nullable: false
+              items:
+                type: string
+                enum:
+                  - INITIALISE_CLUSTER
+                  - TERMINATE_CLUSTER
+                  - SUSPEND_CLUSTER
+                  - CLUSTER_HALTED
+                  - CLUSTER_RUNNING
+                  - STARTING_CLUSTER
+                  - STOPPING_CLUSTER
+                  - CHECKPOINTING_CLUSTER
+                  - CREATE_SAVEPOINT
+                  - ERASE_SAVEPOINT
+                  - CREATE_RESOURCES
+                  - DELETE_RESOURCES
+                  - DELETE_UPLOAD_JOB
+                  - TERMINATE_PODS
+                  - RESTART_PODS
+                  - UPLOAD_JAR
+                  - CANCEL_JOB
+                  - START_JOB
+                  - STOP_JOB
+            taskStatus:
+              type: string
+              nullable: false
+              enum:
+                - EXECUTING
+                - AWAITING
+                - IDLE
+                - FAILED
+            taskAttempts:
+              type: integer
+              nullable: false
+              minimum: 0
+            clusterStatus:
+              type: string
+              nullable: false
+              enum:
+                - UNKNOWN
+                - STARTING
+                - STOPPING
+                - RUNNING
+                - FAILED
+                - SUSPENDED
+                - TERMINATED
+                - CHECKPOINTING
+            savepointPath:
+              type: string
+            savepointJobId:
+              type: string
+            savepointTriggerId:
+              type: string
+            savepointTimestamp:
+              type: integer
+            digestOfJobManager:
+              type: string
+            digestOfTaskManager:
+              type: string
+            digestOfFlinkImage:
+              type: string
+            digestOfFlinkJob:
+              type: string
+          required:
+            - timestamp
+            - tasks
+            - taskStatus
+            - taskAttempts
+            - clusterStatus
       required:
         - spec
+  subresources:
+    status: {}
+    scale:
+      specReplicasPath: .spec.flinkOperator.taskManagers
+      statusReplicasPath: .status.taskManagers
+      labelSelectorPath: .status.labelSelector
   additionalPrinterColumns:
     - name: CLUSTER-STATUS
       type: string
@@ -8281,9 +8270,12 @@ spec:
     - name: TASK-SLOTS
       type: integer
       JSONPath: .spec.taskManager.taskSlots
-    - name: PARALLELISM
+    - name: TASK-MANAGERS
       type: integer
-      JSONPath: .spec.flinkJob.parallelism
+      JSONPath: .status.taskManagers
+    - name: JOB-PARALLELISM
+      type: integer
+      JSONPath: .status.jobParallelism
     - name: JOB-RESTART
       type: string
       JSONPath: .spec.flinkOperator.jobRestartPolicy

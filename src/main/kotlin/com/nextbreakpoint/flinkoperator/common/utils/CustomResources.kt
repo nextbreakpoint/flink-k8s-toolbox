@@ -51,10 +51,4 @@ object CustomResources {
     }
 
     fun convertToMap(flinkCluster: V1FlinkCluster): Map<String, Any?> = gson.fromJson(gson.toJson(flinkCluster), Map::class.java) as Map<String, Any?>
-
-    fun computeReplicas(clusterSpec: V1FlinkClusterSpec): Int {
-        val parallelism = clusterSpec.flinkJob?.parallelism ?: 1
-        val taskSlots = clusterSpec.taskManager?.taskSlots ?: 1
-        return ((parallelism + (taskSlots / 2.0)) / taskSlots).toInt()
-    }
 }
