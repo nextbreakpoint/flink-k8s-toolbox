@@ -62,7 +62,7 @@ class ClusterUpdateStatusTest {
         OperatorState.setFlinkImageDigest(cluster, actualFlinkImageDigest)
         OperatorState.setJobManagerDigest(cluster, actualJobManagerDigest)
         OperatorState.setTaskManagerDigest(cluster, actualTaskManagerDigest)
-        OperatorState.setOperatorTaskAttempts(cluster, 1)
+        OperatorState.setTaskAttempts(cluster, 1)
         OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
         verify(controller, times(1)).flinkOptions
         verify(controller, times(1)).flinkContext
@@ -90,7 +90,7 @@ class ClusterUpdateStatusTest {
         assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.INITIALISE_CLUSTER)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.EXECUTING)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.UNKNOWN)
-        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
+        assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
     }
 
     @Test

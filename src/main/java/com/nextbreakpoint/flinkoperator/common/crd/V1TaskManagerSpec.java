@@ -14,12 +14,12 @@ import java.util.Map;
 import java.util.Objects;
 
 public class V1TaskManagerSpec {
+    @SerializedName("taskSlots")
+    private Integer taskSlots;
     @SerializedName("requiredCPUs")
     private Float requiredCPUs;
     @SerializedName("requiredMemory")
     private Integer requiredMemory;
-    @SerializedName("taskSlots")
-    private Integer taskSlots;
     @SerializedName("environment")
     private List<V1EnvVar> environment;
     @SerializedName("environmentFrom")
@@ -41,6 +41,15 @@ public class V1TaskManagerSpec {
     @SerializedName("sideContainers")
     private List<V1Container> sideContainers;
 
+    public Integer getTaskSlots() {
+        return taskSlots;
+    }
+
+    public V1TaskManagerSpec setTaskSlots(Integer taskSlots) {
+        this.taskSlots = taskSlots;
+        return this;
+    }
+
     public Float getRequiredCPUs() {
         return requiredCPUs;
     }
@@ -56,15 +65,6 @@ public class V1TaskManagerSpec {
 
     public V1TaskManagerSpec setRequiredMemory(Integer requiredMemory) {
         this.requiredMemory = requiredMemory;
-        return this;
-    }
-
-    public Integer getTaskSlots() {
-        return taskSlots;
-    }
-
-    public V1TaskManagerSpec setTaskSlots(Integer taskSlots) {
-        this.taskSlots = taskSlots;
         return this;
     }
 
@@ -181,9 +181,9 @@ public class V1TaskManagerSpec {
     @Override
     public String toString() {
         return "V1TaskManagerSpec{" +
-                "requiredCPUs=" + requiredCPUs +
+                "taskSlots=" + taskSlots +
+                ", requiredCPUs=" + requiredCPUs +
                 ", requiredMemory=" + requiredMemory +
-                ", taskSlots=" + taskSlots +
                 ", environment=" + environment +
                 ", environmentFrom=" + environmentFrom +
                 ", serviceAccount='" + serviceAccount + '\'' +

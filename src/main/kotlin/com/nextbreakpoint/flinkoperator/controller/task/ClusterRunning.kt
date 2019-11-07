@@ -21,7 +21,7 @@ class ClusterRunning : OperatorTaskHandler {
 
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.RUNNING)
-        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.setTaskAttempts(context.flinkCluster, 0)
         OperatorState.appendTasks(context.flinkCluster, listOf())
 
         OperatorState.updateSavepointTimestamp(context.flinkCluster)
@@ -159,16 +159,16 @@ class ClusterRunning : OperatorTaskHandler {
         val nextTask = OperatorState.getNextOperatorTask(context.flinkCluster)
 
         if (context.flinkCluster.spec?.flinkJob != null && elapsedTime > 10000) {
-            val attempts = OperatorState.getOperatorTaskAttempts(context.flinkCluster)
+            val attempts = OperatorState.getTaskAttempts(context.flinkCluster)
 
             val clusterRunning = context.controller.isClusterRunning(context.clusterId)
 
             if (clusterRunning.status != ResultStatus.SUCCESS) {
                 logger.warn("Cluster ${context.clusterId.name} doesn't have a running job...")
-                OperatorState.setOperatorTaskAttempts(context.flinkCluster, attempts + 1)
+                OperatorState.setTaskAttempts(context.flinkCluster, attempts + 1)
 
                 if (nextTask == null && attempts >= 3) {
-                    OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+                    OperatorState.setTaskAttempts(context.flinkCluster, 0)
 
                     return Result(
                         ResultStatus.FAILED,
@@ -177,7 +177,7 @@ class ClusterRunning : OperatorTaskHandler {
                 }
             } else {
                 if (attempts > 0) {
-                    OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+                    OperatorState.setTaskAttempts(context.flinkCluster, 0)
                 }
 
                 if (clusterRunning.output) {
@@ -210,8 +210,8 @@ class ClusterRunning : OperatorTaskHandler {
             if (savepointMode.toUpperCase() == "AUTOMATIC" && now - lastSavepointsTimestamp > savepointIntervalInSeconds * 1000L) {
                 OperatorState.appendTasks(context.flinkCluster,
                     listOf(
-                        OperatorTask.CHECKPOINTING_CLUSTER,
-                        OperatorTask.CREATE_SAVEPOINT,
+                        OperatorTask.CREATING_SAVEPOINT,
+                        OperatorTask.STORE_SAVEPOINT,
                         OperatorTask.CLUSTER_RUNNING
                     )
                 )
@@ -237,6 +237,14 @@ class ClusterRunning : OperatorTaskHandler {
         } else {
             OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
         }
+
+//        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 1
+//        val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
+//
+//        if (OperatorState.getTaskManagers(context.flinkCluster) != taskManagers) {
+//            OperatorState.setTaskManagers(context.flinkCluster, taskManagers)
+//            OperatorState.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
+//        }
 
         return Result(
             ResultStatus.AWAIT,

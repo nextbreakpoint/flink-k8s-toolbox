@@ -14,8 +14,6 @@ public class V1FlinkJobSpec {
     private String jarPath;
     @SerializedName("arguments")
     private List<String> arguments;
-    @SerializedName("parallelism")
-    private Integer parallelism;
 
     public String getImage() {
         return image;
@@ -53,15 +51,6 @@ public class V1FlinkJobSpec {
         return this;
     }
 
-    public Integer getParallelism() {
-        return parallelism;
-    }
-
-    public V1FlinkJobSpec setParallelism(Integer parallelism) {
-        this.parallelism = parallelism;
-        return this;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -70,13 +59,12 @@ public class V1FlinkJobSpec {
         return Objects.equals(getImage(), that.getImage()) &&
                 Objects.equals(getClassName(), that.getClassName()) &&
                 Objects.equals(getJarPath(), that.getJarPath()) &&
-                Objects.equals(getArguments(), that.getArguments()) &&
-                Objects.equals(getParallelism(), that.getParallelism());
+                Objects.equals(getArguments(), that.getArguments());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getImage(), getClassName(), getJarPath(), getArguments(), getParallelism());
+        return Objects.hash(getImage(), getClassName(), getJarPath(), getArguments());
     }
 
     @Override
@@ -86,7 +74,6 @@ public class V1FlinkJobSpec {
                 ", className='" + className + '\'' +
                 ", jarPath='" + jarPath + '\'' +
                 ", arguments=" + arguments +
-                ", parallelism=" + parallelism +
                 '}';
     }
 }

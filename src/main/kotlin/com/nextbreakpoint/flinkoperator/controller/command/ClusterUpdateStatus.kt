@@ -64,7 +64,7 @@ class ClusterUpdateStatus(
     ): Result<Void?> {
         OperatorState.appendTasks(context.flinkCluster, listOf(OperatorTask.INITIALISE_CLUSTER))
         OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.UNKNOWN)
-        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.setTaskAttempts(context.flinkCluster, 0)
         OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.EXECUTING)
 
         controller.updateState(clusterId, context.flinkCluster)

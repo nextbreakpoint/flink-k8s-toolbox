@@ -8,6 +8,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
@@ -87,8 +88,8 @@ class OperatorVerticle : AbstractVerticle() {
             OperatorTask.CLUSTER_RUNNING to ClusterRunning(),
             OperatorTask.STARTING_CLUSTER to StartingCluster(),
             OperatorTask.STOPPING_CLUSTER to StoppingCluster(),
-            OperatorTask.CHECKPOINTING_CLUSTER to CheckpointingCluster(),
-            OperatorTask.CREATE_SAVEPOINT to CreateSavepoint(),
+            OperatorTask.CREATING_SAVEPOINT to CheckpointingCluster(),
+            OperatorTask.STORE_SAVEPOINT to CreateSavepoint(),
             OperatorTask.ERASE_SAVEPOINT to EraseSavepoint(),
             OperatorTask.CREATE_RESOURCES to CreateResources(),
             OperatorTask.DELETE_RESOURCES to DeleteResources(),
@@ -170,6 +171,12 @@ class OperatorVerticle : AbstractVerticle() {
             ) })
         }
 
+        mainRouter.put("/cluster/:name/scale").handler { routingContext ->
+            handleRequest(routingContext, namespace, "/cluster/scale", BiFunction { ctx, ns -> gson.toJson(
+                OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
+            ) })
+        }
+
         mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/savepoint", BiFunction { ctx, ns -> gson.toJson(
                 OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
@@ -240,6 +247,12 @@ class OperatorVerticle : AbstractVerticle() {
         vertx.eventBus().consumer<String>("/cluster/stop") { message ->
             handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
                 gson.toJson(controller.requestStopCluster(it.clusterId, gson.fromJson(it.json, StopOptions::class.java)))
+            })
+        }
+
+        vertx.eventBus().consumer<String>("/cluster/scale") { message ->
+            handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
+                gson.toJson(controller.requestScaleCluster(it.clusterId, gson.fromJson(it.json, ScaleOptions::class.java)))
             })
         }
 

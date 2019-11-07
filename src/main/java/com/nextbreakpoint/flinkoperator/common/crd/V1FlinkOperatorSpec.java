@@ -73,17 +73,17 @@ public class V1FlinkOperatorSpec {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getSavepointPath(), getSavepointMode(), getSavepointInterval(), getSavepointTargetPath(), getJobRestartPolicy());
+        return Objects.hash(getSavepointMode(), getSavepointPath(), getSavepointInterval(), getSavepointTargetPath(), getJobRestartPolicy());
     }
 
     @Override
     public String toString() {
         return "V1FlinkOperatorSpec{" +
-                ", savepointMode='" + savepointMode +
-                ", savepointPath='" + savepointPath +
-                ", savepointInterval='" + savepointInterval +
-                ", savepointTargetPath=" + savepointTargetPath + '\'' +
-                ", jobRestartPolicy=" + jobRestartPolicy + '\'' +
+                "savepointMode='" + savepointMode + '\'' +
+                ", savepointPath='" + savepointPath + '\'' +
+                ", savepointInterval=" + savepointInterval +
+                ", savepointTargetPath='" + savepointTargetPath + '\'' +
+                ", jobRestartPolicy='" + jobRestartPolicy + '\'' +
                 '}';
     }
 }

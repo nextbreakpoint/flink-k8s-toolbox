@@ -174,7 +174,7 @@ object OperatorState {
     fun getFlinkJobDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.digestOfFlinkJob
 
-    fun setOperatorTaskAttempts(flinkCluster: V1FlinkCluster, attempts: Int) {
+    fun setTaskAttempts(flinkCluster: V1FlinkCluster, attempts: Int) {
         ensureState(flinkCluster)
 
         flinkCluster.status?.taskAttempts = attempts
@@ -182,8 +182,30 @@ object OperatorState {
         flinkCluster.status?.timestamp = currentTimeMillis()
     }
 
-    fun getOperatorTaskAttempts(flinkCluster: V1FlinkCluster): Int =
+    fun getTaskAttempts(flinkCluster: V1FlinkCluster): Int =
         flinkCluster.status?.taskAttempts ?: 0
+
+    fun setTaskManagers(flinkCluster: V1FlinkCluster, taskManagers: Int) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.taskManagers = taskManagers
+
+        flinkCluster.status?.timestamp = currentTimeMillis()
+    }
+
+    fun getTaskManagers(flinkCluster: V1FlinkCluster): Int =
+        flinkCluster.status?.taskManagers ?: 0
+
+    fun setJobParallelism(flinkCluster: V1FlinkCluster, jobParallelism: Int) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.jobParallelism = jobParallelism
+
+        flinkCluster.status?.timestamp = currentTimeMillis()
+    }
+
+    fun getJobParallelism(flinkCluster: V1FlinkCluster): Int =
+        flinkCluster.status?.jobParallelism ?: 0
 
     private fun currentTimeMillis(): Long {
         try {
@@ -207,7 +229,7 @@ object OperatorState {
                     setTaskStatus(flinkCluster, TaskStatus.valueOf(it))
                 }
                 annotations.get(OperatorAnnotations.FLINK_OPERATOR_TASK_ATTEMPTS)?.let {
-                    setOperatorTaskAttempts(flinkCluster, it.toInt())
+                    setTaskAttempts(flinkCluster, it.toInt())
                 }
                 annotations.get(OperatorAnnotations.FLINK_OPERATOR_CLUSTER_STATUS)?.let {
                     setClusterStatus(flinkCluster, ClusterStatus.valueOf(it))

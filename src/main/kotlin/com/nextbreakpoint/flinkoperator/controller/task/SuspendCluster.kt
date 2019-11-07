@@ -10,7 +10,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 class SuspendCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.SUSPENDED)
-        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.setTaskAttempts(context.flinkCluster, 0)
         OperatorState.appendTasks(context.flinkCluster, listOf())
 
         return Result(

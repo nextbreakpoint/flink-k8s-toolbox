@@ -7,7 +7,6 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
-import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
@@ -53,7 +52,7 @@ class ClusterHaltedTest {
         OperatorState.setJobManagerDigest(cluster, actualJobManagerDigest)
         OperatorState.setTaskManagerDigest(cluster, actualTaskManagerDigest)
         OperatorState.appendTasks(cluster, listOf(OperatorTask.CLUSTER_HALTED))
-        OperatorState.setOperatorTaskAttempts(cluster, 1)
+        OperatorState.setTaskAttempts(cluster, 1)
     }
 
     @Test
@@ -67,7 +66,7 @@ class ClusterHaltedTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
+        assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
     }
 
     @Test
@@ -512,7 +511,7 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should not restart job when cluster status is failed and cluster is not ready`() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
-        OperatorState.setOperatorTaskAttempts(cluster, 3)
+        OperatorState.setTaskAttempts(cluster, 3)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
@@ -531,7 +530,7 @@ class ClusterHaltedTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
-        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(0)
+        assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
     }
 
@@ -539,7 +538,7 @@ class ClusterHaltedTest {
     fun `onIdle should increment attempts after 10 seconds when cluster status is failed but cluster is ready`() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
-        OperatorState.setOperatorTaskAttempts(cluster, 2)
+        OperatorState.setTaskAttempts(cluster, 2)
         cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
@@ -558,7 +557,7 @@ class ClusterHaltedTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getOperatorTaskAttempts(cluster)).isEqualTo(3)
+        assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(3)
         assertThat(OperatorState.getNextOperatorTask(cluster)).isNull()
     }
 
@@ -566,7 +565,7 @@ class ClusterHaltedTest {
     fun `onIdle should restart job when cluster status is failed but cluster is ready after 3 attempts`() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
-        OperatorState.setOperatorTaskAttempts(cluster, 3)
+        OperatorState.setTaskAttempts(cluster, 3)
         cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))

@@ -134,7 +134,7 @@ object FlinkContext {
         }
     }
 
-    fun runJar(address: FlinkAddress, jarFile: JarFileInfo, flinkJob: V1FlinkJobSpec, savepointPath: String?) {
+    fun runJar(address: FlinkAddress, jarFile: JarFileInfo, flinkJob: V1FlinkJobSpec, parallelism: Int, savepointPath: String?) {
         try {
             val flinkApi = createFlinkClient(address)
 
@@ -145,7 +145,7 @@ object FlinkContext {
                 flinkJob.arguments.joinToString(separator = " "),
                 null,
                 flinkJob.className,
-                flinkJob.parallelism,
+                parallelism,
                 null,
                 null
             ).execute()

@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
@@ -312,7 +311,7 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("unexpected number of volume claim templates")
         }
 
-        val replicas = CustomResources.computeReplicas(flinkCluster.spec)
+        val replicas = flinkCluster.spec?.taskManagers ?: 1
 
         if (taskmanagerStatefulSet.spec.replicas != replicas) {
             statusReport.add("number of replicas doesn't match")

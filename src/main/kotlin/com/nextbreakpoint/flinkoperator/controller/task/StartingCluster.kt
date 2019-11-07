@@ -10,7 +10,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 class StartingCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
-        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.setTaskAttempts(context.flinkCluster, 0)
 
         return Result(
             ResultStatus.SUCCESS,
