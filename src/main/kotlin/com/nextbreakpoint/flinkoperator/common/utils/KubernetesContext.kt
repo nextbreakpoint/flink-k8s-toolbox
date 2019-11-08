@@ -107,80 +107,82 @@ object KubernetesContext {
 
             val response = call.execute()
 
-            if (!response.isSuccessful) {
-                response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-                throw RuntimeException("Can't fetch custom object $clusterName")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    body.source().use { source -> logger.error(source.readUtf8Line()) }
+                    throw RuntimeException("Can't fetch custom object $clusterName")
+                }
 
-            response.body().use { it.source().use { source ->
-                val flinkCluster = CustomResources.parseV1FlinkCluster(source.readUtf8Line())
+                body.source().use { source ->
+                    val flinkCluster = CustomResources.parseV1FlinkCluster(source.readUtf8Line())
 
-                val clusterId = flinkCluster.metadata.uid
+                    val clusterId = flinkCluster.metadata.uid
 
-                val services = coreApi.listNamespacedService(
-                    namespace,
-                    null,
-                    null,
-                    null,
-                    "name=$clusterName,uid=$clusterId,role=jobmanager",
-                    1,
-                    null,
-                    30,
-                    null
-                )
+                    val services = coreApi.listNamespacedService(
+                        namespace,
+                        null,
+                        null,
+                        null,
+                        "name=$clusterName,uid=$clusterId,role=jobmanager",
+                        1,
+                        null,
+                        30,
+                        null
+                    )
 
-                if (!services.items.isEmpty()) {
-                    val service = services.items.get(0)
+                    if (!services.items.isEmpty()) {
+                        val service = services.items.get(0)
 
-                    logger.debug("Found JobManager service ${service.metadata.name}")
+                        logger.debug("Found JobManager service ${service.metadata.name}")
 
-                    if (flinkOptions.useNodePort) {
-                        service.spec.ports.filter {
-                            it.name.equals("ui")
-                        }.filter {
-                            it.nodePort != null
-                        }.map {
-                            it.nodePort
-                        }.firstOrNull()?.let {
-                            jobmanagerPort = it
+                        if (flinkOptions.useNodePort) {
+                            service.spec.ports.filter {
+                                it.name.equals("ui")
+                            }.filter {
+                                it.nodePort != null
+                            }.map {
+                                it.nodePort
+                            }.firstOrNull()?.let {
+                                jobmanagerPort = it
+                            }
+                        } else {
+                            service.spec.ports.filter {
+                                it.name.equals("ui")
+                            }.filter {
+                                it.port != null
+                            }.map {
+                                it.port
+                            }.firstOrNull()?.let {
+                                jobmanagerPort = it
+                            }
+                            jobmanagerHost = service.spec.clusterIP
                         }
                     } else {
-                        service.spec.ports.filter {
-                            it.name.equals("ui")
-                        }.filter {
-                            it.port != null
-                        }.map {
-                            it.port
-                        }.firstOrNull()?.let {
-                            jobmanagerPort = it
-                        }
-                        jobmanagerHost = service.spec.clusterIP
+                        throw RuntimeException("JobManager service not found (name=$clusterName, id=$clusterId)")
                     }
-                } else {
-                    throw RuntimeException("JobManager service not found (name=$clusterName, id=$clusterId)")
-                }
 
-                val pods = coreApi.listNamespacedPod(
-                    namespace,
-                    null,
-                    null,
-                    null,
-                    "name=$clusterName,uid=$clusterId,role=jobmanager",
-                    1,
-                    null,
-                    30,
-                    null
-                )
+                    val pods = coreApi.listNamespacedPod(
+                        namespace,
+                        null,
+                        null,
+                        null,
+                        "name=$clusterName,uid=$clusterId,role=jobmanager",
+                        1,
+                        null,
+                        30,
+                        null
+                    )
 
-                if (!pods.items.isEmpty()) {
-                    val pod = pods.items.get(0)
+                    if (!pods.items.isEmpty()) {
+                        val pod = pods.items.get(0)
 
-                    logger.debug("Found JobManager pod ${pod.metadata.name}")
-                } else {
-                    throw RuntimeException("JobManager pod not found (name=$clusterName, id=$clusterId)")
+                        logger.debug("Found JobManager pod ${pod.metadata.name}")
+                    } else {
+                        throw RuntimeException("JobManager pod not found (name=$clusterName, id=$clusterId)")
+                    }
                 }
             }
-        } }
+        }
 
         logger.debug("Flink client created for host $jobmanagerHost and port $jobmanagerPort")
 
@@ -208,9 +210,11 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-            throw RuntimeException("Can't update annotations of cluster ${clusterId.name}")
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't update annotations of cluster ${clusterId.name}")
+            }
         }
     }
 
@@ -230,9 +234,11 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-            throw RuntimeException("Can't update status of cluster ${clusterId.name}")
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't update status of cluster ${clusterId.name}")
+            }
         }
     }
 
@@ -367,14 +373,16 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-            throw RuntimeException("Can't fetch custom objects")
-        }
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't fetch custom objects")
+            }
 
-        return response.body().use { it.source().use { source ->
-            CustomResources.parseV1FlinkClusterList(source.readUtf8Line()).items
-        } }
+            return body.source().use { source ->
+                CustomResources.parseV1FlinkClusterList(source.readUtf8Line()).items
+            }
+        }
     }
 
     fun getFlinkCluster(namespace: String, name: String): V1FlinkCluster {
@@ -388,14 +396,16 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-            throw RuntimeException("Can't fetch custom object $name")
-        }
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't fetch custom object $name")
+            }
 
-        return response.body().use { it.source().use { source ->
-            CustomResources.parseV1FlinkCluster(source.readUtf8Line())
-        } }
+            return body.source().use { source ->
+                CustomResources.parseV1FlinkCluster(source.readUtf8Line())
+            }
+        }
     }
 
     fun listJobResources(namespace: String): List<V1Job> {
@@ -725,11 +735,13 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (response.isSuccessful) {
-            logger.info("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
-        } else {
-            response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-            logger.error("Can't update savepoint of cluster ${clusterId.name}")
+        response.body().use { body ->
+            if (response.isSuccessful) {
+                logger.info("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
+            } else {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                logger.error("Can't update savepoint of cluster ${clusterId.name}")
+            }
         }
     }
 
@@ -864,11 +876,13 @@ object KubernetesContext {
                     null
                 ).execute()
 
-                if (response.isSuccessful) {
-                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
-                } else {
-                    response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-                    logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                response.body().use { body ->
+                    if (response.isSuccessful) {
+                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                    } else {
+                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
@@ -916,11 +930,13 @@ object KubernetesContext {
                     null
                 ).execute()
 
-                if (response.isSuccessful) {
-                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
-                } else {
-                    response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-                    logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                response.body().use { body ->
+                    if (response.isSuccessful) {
+                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                    } else {
+                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
@@ -965,11 +981,13 @@ object KubernetesContext {
                     null
                 ).execute()
 
-                if (response.isSuccessful) {
-                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
-                } else {
-                    response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-                    logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                response.body().use { body ->
+                    if (response.isSuccessful) {
+                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                    } else {
+                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
@@ -1076,9 +1094,11 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-            throw RuntimeException("Can't modify scale of cluster ${clusterId.name}")
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't modify scale of cluster ${clusterId.name}")
+            }
         }
     }
 
@@ -1123,11 +1143,13 @@ object KubernetesContext {
                     null
                 ).execute()
 
-                if (response.isSuccessful) {
-                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
-                } else {
-                    response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
-                    logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                response.body().use { body ->
+                    if (response.isSuccessful) {
+                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                    } else {
+                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
@@ -1251,7 +1273,7 @@ object KubernetesContext {
 
     private fun createKubernetesClient(kubeConfig: String?, timeout: Long): ApiClient? {
         val client = if (kubeConfig?.isNotBlank() == true) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
-        client.httpClient.setConnectTimeout(10000, TimeUnit.MILLISECONDS)
+        client.httpClient.setConnectTimeout(timeout, TimeUnit.MILLISECONDS)
         client.httpClient.setWriteTimeout(timeout, TimeUnit.MILLISECONDS)
         client.httpClient.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
         client.isDebugging = System.getProperty("kubernetes.client.debugging", "false")!!.toBoolean()

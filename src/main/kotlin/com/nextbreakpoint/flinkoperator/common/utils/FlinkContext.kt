@@ -38,9 +38,11 @@ object FlinkContext {
                 throw CallException("Can't get cluster overview - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), ClusterOverviewWithVersion::class.java)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), ClusterOverviewWithVersion::class.java)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -58,9 +60,11 @@ object FlinkContext {
                 throw CallException("Can't list JARs - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), JarListInfo::class.java).files
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), JarListInfo::class.java).files
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -96,15 +100,17 @@ object FlinkContext {
                 throw CallException("Can't get jobs - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                val jobsOverview = Gson().fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
+            response.body().use { body ->
+                body.source().use { source ->
+                    val jobsOverview = Gson().fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
 
-                return jobsOverview.jobs.filter {
-                    jobIdWithStatus -> jobIdWithStatus.status == JobIdWithStatus.StatusEnum.RUNNING
-                }.map {
-                    it.id
-                }.toList()
-            } }
+                    return jobsOverview.jobs.filter {
+                        jobIdWithStatus -> jobIdWithStatus.status == JobIdWithStatus.StatusEnum.RUNNING
+                    }.map {
+                        it.id
+                    }.toList()
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -122,11 +128,13 @@ object FlinkContext {
                 throw CallException("Can't get jobs - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                val jobsOverview = Gson().fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
+            response.body().use { body ->
+                body.source().use { source ->
+                    val jobsOverview = Gson().fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
 
-                return jobsOverview.jobs
-            } }
+                    return jobsOverview.jobs
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -154,9 +162,11 @@ object FlinkContext {
                 throw CallException("Can't run JAR - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                logger.debug("Job started: ${source.readUtf8Line()}")
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    logger.debug("Job started: ${source.readUtf8Line()}")
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -179,9 +189,11 @@ object FlinkContext {
             }.filter {
                 it.second.code() == 200
             }.map {
-                it.first to it.second.body().use { body -> body.source().use { source ->
-                    Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
-                } }
+                it.second.body().use { body ->
+                    it.first to body.source().use { source ->
+                        Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
+                    }
+                }
             }.toMap()
         } catch (e : CallException) {
             throw e
@@ -202,9 +214,11 @@ object FlinkContext {
                 throw CallException("Can't request savepoint - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), TriggerResponse::class.java)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), TriggerResponse::class.java)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -222,9 +236,11 @@ object FlinkContext {
                 throw CallException("Can't fetch job details - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), JobDetailsInfo::class.java)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), JobDetailsInfo::class.java)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -242,9 +258,11 @@ object FlinkContext {
                 throw CallException("Can't fetch job metrics - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -262,9 +280,11 @@ object FlinkContext {
                 throw CallException("Can't fetch job manager metrics - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -282,9 +302,11 @@ object FlinkContext {
                 throw CallException("Can't fetch task manager metrics - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -302,9 +324,11 @@ object FlinkContext {
                 throw CallException("Can't fetch task manager details - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), object : TypeToken<TaskManagerDetailsInfo>() {}.type)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<TaskManagerDetailsInfo>() {}.type)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -340,9 +364,11 @@ object FlinkContext {
                 throw CallException("Can't fetch task managers overview - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), object : TypeToken<TaskManagersInfo>() {}.type)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<TaskManagersInfo>() {}.type)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
@@ -365,15 +391,17 @@ object FlinkContext {
             }.filter {
                 it.second.isSuccessful
             }.map {
-                val asynchronousOperationResult = it.second.body().use { body -> body.source().use { source ->
-                    Gson().fromJson(source.readUtf8Line(), AsynchronousOperationResult::class.java)
-                } }
+                it.second.body().use { body ->
+                    val asynchronousOperationResult = body.source().use { source ->
+                        Gson().fromJson(source.readUtf8Line(), AsynchronousOperationResult::class.java)
+                    }
 
-                if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
-                    logger.info("Savepoint still in progress for job ${it.first} - $address")
+                    if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
+                        logger.info("Savepoint still in progress for job ${it.first} - $address")
+                    }
+
+                    it.first to asynchronousOperationResult.status.id
                 }
-
-                it.first to asynchronousOperationResult.status.id
             }.filter {
                 it.second == QueueStatus.IdEnum.IN_PROGRESS
             }.map {
@@ -399,19 +427,21 @@ object FlinkContext {
             }.filter {
                 it.second.isSuccessful
             }.map {
-                val checkpointingStatistics = it.second.body().use { body -> body.source().use { source ->
-                    Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
-                } }
+                it.second.body().use { body ->
+                    val checkpointingStatistics = body.source().use { source ->
+                        Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
+                    }
 
-                val savepoint = checkpointingStatistics.latest?.savepoint
+                    val savepoint = checkpointingStatistics.latest?.savepoint
 
-                if (savepoint == null) {
-                    logger.error("Savepoint not found for job ${it.first} - $address")
+                    if (savepoint == null) {
+                        logger.error("Savepoint not found for job ${it.first} - $address")
+                    }
+
+                    val externalPathOrEmpty = savepoint?.externalPath ?: ""
+
+                    it.first to externalPathOrEmpty.trim('\"')
                 }
-
-                val externalPathOrEmpty = savepoint?.externalPath ?: ""
-
-                it.first to externalPathOrEmpty.trim('\"')
             }.filter {
                 it.second.isNotBlank()
             }.toMap()
@@ -437,9 +467,11 @@ object FlinkContext {
             }.filter {
                 it.second.isSuccessful
             }.map {
-                it.first to it.second.body().use { body -> body.source().use { source ->
-                    Gson().fromJson(source.readUtf8Line(), TriggerResponse::class.java)
-                } }
+                it.second.body().use { body ->
+                    it.first to body.source().use { source ->
+                        Gson().fromJson(source.readUtf8Line(), TriggerResponse::class.java)
+                    }
+                }
             }.map {
                 it.first to it.second.requestId
             }.onEach {
@@ -460,14 +492,20 @@ object FlinkContext {
                 throw CallException("Can't upload JAR - $address")
             }
 
-            response.body().use { it.source().use { source ->
-                return Gson().fromJson(source.readUtf8Line(), object : TypeToken<JarUploadResponseBody>() {}.type)
-            } }
+            response.body().use { body ->
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<JarUploadResponseBody>() {}.type)
+                }
+            }
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
             throw RuntimeException(e)
         }
+    }
+
+    fun triggerJobRescaling(address: FlinkAddress, parallelism: Int) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     private fun createFlinkClient(address: FlinkAddress): FlinkApi {
