@@ -14,6 +14,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import io.kubernetes.client.models.V1StatefulSet
 import org.apache.log4j.Logger
 
 class ClusterUpdateStatus(
@@ -91,6 +92,10 @@ class ClusterUpdateStatus(
 
         val taskResult = updateTask(context, taskStatus, taskHandler)
 
+        val statefulSet = context.resources.taskmanagerStatefulSets[context.clusterId]
+
+        updateStatusTaskManagers(context.flinkCluster, statefulSet)
+
         val operatorTimestamp = OperatorState.getOperatorTimestamp(context.flinkCluster)
 
         if (operatorTimestamp != context.operatorTimestamp) {
@@ -132,6 +137,16 @@ class ClusterUpdateStatus(
                     null
                 )
             }
+        }
+    }
+
+    private fun updateStatusTaskManagers(v1FlinkCluster: V1FlinkCluster, statefulSet: V1StatefulSet?) {
+        val taskManagers = statefulSet?.status?.readyReplicas ?: 0
+        if (OperatorState.getTaskManagers(v1FlinkCluster) != taskManagers) {
+            val taskSlots = v1FlinkCluster.spec?.taskManager?.taskSlots ?: 1
+            val jobParallelism = taskManagers * taskSlots
+            OperatorState.setTaskManagers(v1FlinkCluster, taskManagers)
+            OperatorState.setJobParallelism(v1FlinkCluster, jobParallelism)
         }
     }
 

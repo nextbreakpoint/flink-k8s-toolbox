@@ -8191,6 +8191,7 @@ spec:
                   - CLUSTER_RUNNING
                   - STARTING_CLUSTER
                   - STOPPING_CLUSTER
+                  - RESCALE_CLUSTER
                   - CHECKPOINTING_CLUSTER
                   - CREATE_SAVEPOINT
                   - ERASE_SAVEPOINT
@@ -8254,7 +8255,7 @@ spec:
   subresources:
     status: {}
     scale:
-      specReplicasPath: .spec.flinkOperator.taskManagers
+      specReplicasPath: .spec.taskManagers
       statusReplicasPath: .status.taskManagers
       labelSelectorPath: .status.labelSelector
   additionalPrinterColumns:
@@ -8271,6 +8272,9 @@ spec:
       type: integer
       JSONPath: .spec.taskManager.taskSlots
     - name: TASK-MANAGERS
+      type: integer
+      JSONPath: .spec.taskManagers
+    - name: TASK-MANAGERS-READY
       type: integer
       JSONPath: .status.taskManagers
     - name: JOB-PARALLELISM
