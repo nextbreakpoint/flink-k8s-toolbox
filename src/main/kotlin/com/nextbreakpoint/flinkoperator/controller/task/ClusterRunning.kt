@@ -229,7 +229,7 @@ class ClusterRunning : OperatorTaskHandler {
                 OperatorState.appendTasks(context.flinkCluster,
                     listOf(
                         OperatorTask.CREATING_SAVEPOINT,
-                        OperatorTask.STORE_SAVEPOINT,
+                        OperatorTask.CREATE_SAVEPOINT,
                         OperatorTask.CLUSTER_RUNNING
                     )
                 )

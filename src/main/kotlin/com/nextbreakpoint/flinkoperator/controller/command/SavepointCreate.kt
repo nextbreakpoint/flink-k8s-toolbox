@@ -64,7 +64,7 @@ class SavepointCreate(flinkOptions: FlinkOptions, flinkContext: FlinkContext, ku
 
             val statusList = listOf(
                 OperatorTask.CREATING_SAVEPOINT,
-                OperatorTask.STORE_SAVEPOINT,
+                OperatorTask.CREATE_SAVEPOINT,
                 OperatorTask.CLUSTER_RUNNING
             )
 
