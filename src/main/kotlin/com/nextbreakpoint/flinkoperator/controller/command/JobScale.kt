@@ -9,21 +9,28 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import org.apache.log4j.Logger
 
-class JobScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, String>(flinkOptions, flinkContext, kubernetesContext) {
+class JobScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Int, Void?>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(JobScale::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
-//        val flinkApi = FlinkServerUtils.find(flinkOptions, clusterId.namespace, clusterId.name)
+    override fun execute(clusterId: ClusterId, params: Int): Result<Void?> {
+        try {
+            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-//        val operation = flinkApi.triggerJobRescaling(scaleParams.jobId, scaleParams.parallelism)
-//
-//        return "{\"status\":\"SUCCESS\",\"requestId\":\"${operation.requestId}\"}"
+            flinkContext.triggerJobRescaling(address, params)
 
-        return Result(
-            ResultStatus.FAILED,
-            "{}"
-        )
+            return Result(
+                ResultStatus.SUCCESS,
+                null
+            )
+        } catch (e : Exception) {
+            logger.error("Can't rescale job of cluster ${clusterId.name}", e)
+
+            return Result(
+                ResultStatus.FAILED,
+                null
+            )
+        }
     }
 }
