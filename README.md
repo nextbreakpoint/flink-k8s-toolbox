@@ -11,7 +11,7 @@ The operator detect changes to the resource and modifies the Flink cluster and j
 The operator takes care of creating savepoints periodically and restarting the job from the latest savepoint if needed.
 
 The Flink Operator CLI provides an interface for controlling Flink clusters and jobs from a terminal. 
-It supports commands for creating or deleting clusters, starting or stopping clusters and jobs, 
+It supports commands for creating or deleting clusters, starting or stopping clusters and jobs, rescaling clusters, 
 getting metrics and other information about clusters and jobs. 
 
 ## License
@@ -131,7 +131,11 @@ The possible tasks which are executed to transition from one status to another a
 
   Set cluster status to STOPPING.
   
-- **CHECKPOINTING_CLUSTER** 
+- **RESCALE_CLUSTER** 
+
+  Change number of Task Managers.
+  
+- **CREATING_SAVEPOINT** 
 
   Set cluster status to CHECKPOINTING.
   
@@ -153,7 +157,7 @@ The possible tasks which are executed to transition from one status to another a
   
 - **RESTART_PODS** 
 
-  Restart pods scaling up resources (set replicas to expected value). 
+  Restart pods scaling up resources (set replicas to expected number of Task Managers). 
   
 - **UPLOAD_JAR** 
 
@@ -177,7 +181,7 @@ The possible tasks which are executed to transition from one status to another a
   
 - **ERASE_SAVEPOINT** 
 
-  Remove savepoint from primary resource. 
+  Delete savepoint from resource status. 
 
 ## Flink Operator REST API
 
@@ -309,7 +313,6 @@ Flink Operator requires a Custom Resource Definition:
       name: flinkclusters.nextbreakpoint.com
     spec:
       group: nextbreakpoint.com
-      version: "v1"
       scope: Namespaced
       names:
         plural: flinkclusters
@@ -317,6 +320,7 @@ Flink Operator requires a Custom Resource Definition:
         kind: FlinkCluster
         shortNames:
         - fc
+    [...]
 
 FlinkCluster resources can be created or deleted as any other resource in Kubernetes using kubectl command.
 
@@ -382,6 +386,7 @@ Create a FlinkCluster file:
     metadata:
       name: test
     spec:
+      taskManagers: 1
       flinkImage:
         pullPolicy: Never
         flinkImage: flink:1.7.2
@@ -389,7 +394,6 @@ Create a FlinkCluster file:
         image: flink-jobs:1
         jarPath: /flink-jobs.jar
         className: com.nextbreakpoint.flink.jobs.TestJob
-        parallelism: 1
         arguments:
           - --BUCKET_BASE_PATH
           - file:///var/tmp
@@ -570,6 +574,7 @@ Create a JSON file:
 
     cat <<EOF >flink-cluster-test.json
     {
+      "taskManagers": 1,
       "flinkImage": {
         "pullPolicy": "Never",
         "flinkImage": "flink:1.7.2"
@@ -578,7 +583,6 @@ Create a JSON file:
         "image": "flink-jobs:1",
         "jarPath": "/flink-jobs.jar",
         "className": "com.nextbreakpoint.flink.jobs.TestJob",
-        "parallelism": 1,
         "arguments": [
           "--BUCKET_BASE_PATH",
           "file:///var/tmp"
