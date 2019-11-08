@@ -209,7 +209,7 @@ class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
                         }
                     }
                 }
-                Thread.sleep(2000L)
+                Thread.sleep(1000L)
             } catch (e: InterruptedException) {
                 break
             } catch (e: RuntimeException) {
