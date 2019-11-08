@@ -105,7 +105,7 @@ class SavepointCreateTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             OperatorTask.CREATING_SAVEPOINT,
-            OperatorTask.STORE_SAVEPOINT,
+            OperatorTask.CREATE_SAVEPOINT,
             OperatorTask.CLUSTER_RUNNING
         ))
     }

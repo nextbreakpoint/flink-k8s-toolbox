@@ -17,7 +17,6 @@ import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
-import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.models.V1StatefulSetBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -473,7 +472,7 @@ class ClusterRunningTest {
         OperatorState.selectNextTask(cluster)
         assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATING_SAVEPOINT)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STORE_SAVEPOINT)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_SAVEPOINT)
         OperatorState.selectNextTask(cluster)
         assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
     }

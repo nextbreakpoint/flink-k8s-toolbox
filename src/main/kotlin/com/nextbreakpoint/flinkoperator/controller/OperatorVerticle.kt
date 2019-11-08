@@ -91,7 +91,7 @@ class OperatorVerticle : AbstractVerticle() {
             OperatorTask.STOPPING_CLUSTER to StoppingCluster(),
             OperatorTask.RESCALE_CLUSTER to RescaleCluster(),
             OperatorTask.CREATING_SAVEPOINT to CheckpointingCluster(),
-            OperatorTask.STORE_SAVEPOINT to CreateSavepoint(),
+            OperatorTask.CREATE_SAVEPOINT to CreateSavepoint(),
             OperatorTask.ERASE_SAVEPOINT to EraseSavepoint(),
             OperatorTask.CREATE_RESOURCES to CreateResources(),
             OperatorTask.DELETE_RESOURCES to DeleteResources(),

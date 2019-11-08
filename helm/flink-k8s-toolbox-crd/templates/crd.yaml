@@ -8192,7 +8192,7 @@ spec:
                   - STARTING_CLUSTER
                   - STOPPING_CLUSTER
                   - RESCALE_CLUSTER
-                  - CHECKPOINTING_CLUSTER
+                  - CREATING_SAVEPOINT
                   - CREATE_SAVEPOINT
                   - ERASE_SAVEPOINT
                   - CREATE_RESOURCES
