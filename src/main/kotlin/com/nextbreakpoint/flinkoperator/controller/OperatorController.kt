@@ -21,6 +21,7 @@ import com.nextbreakpoint.flinkoperator.controller.command.ClusterIsSuspended
 import com.nextbreakpoint.flinkoperator.controller.command.ClusterIsTerminated
 import com.nextbreakpoint.flinkoperator.controller.command.ClusterStart
 import com.nextbreakpoint.flinkoperator.controller.command.ClusterStop
+import com.nextbreakpoint.flinkoperator.controller.command.ClusterScale
 import com.nextbreakpoint.flinkoperator.controller.command.ClusterUpdateSavepoint
 import com.nextbreakpoint.flinkoperator.controller.command.ClusterUpdateStatus
 import com.nextbreakpoint.flinkoperator.controller.command.FlinkClusterCreate
@@ -42,6 +43,8 @@ import com.nextbreakpoint.flinkoperator.controller.command.RequestClusterStop
 import com.nextbreakpoint.flinkoperator.controller.command.SavepointCreate
 import com.nextbreakpoint.flinkoperator.controller.command.SavepointGetStatus
 import com.nextbreakpoint.flinkoperator.controller.command.SavepointTrigger
+import com.nextbreakpoint.flinkoperator.controller.command.TaskManagersGetReplicas
+import com.nextbreakpoint.flinkoperator.controller.command.TaskManagersSetReplicas
 import com.nextbreakpoint.flinkoperator.controller.command.UploadJobDeleteResource
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 
@@ -66,6 +69,9 @@ class OperatorController(
 
     fun stopCluster(clusterId: ClusterId, options: StopOptions) : Result<List<OperatorTask>> =
         ClusterStop(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
+
+    fun scaleCluster(clusterId: ClusterId, options: ScaleOptions) : Result<List<OperatorTask>> =
+        ClusterScale(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
 
     fun createSavepoint(clusterId: ClusterId) : Result<List<OperatorTask>> =
         SavepointCreate(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, null)
@@ -144,6 +150,12 @@ class OperatorController(
 
     fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
         ClusterUpdateSavepoint(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, savepointPath)
+
+    fun setTaskManagersReplicas(clusterId: ClusterId, taskManagers: Int) : Result<Void?> =
+        TaskManagersSetReplicas(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, taskManagers)
+
+    fun getTaskManagersReplicas(clusterId: ClusterId) : Result<Int> =
+        TaskManagersGetReplicas(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
     fun updateState(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
         kubernetesContext.updateStatus(clusterId, flinkCluster.status)

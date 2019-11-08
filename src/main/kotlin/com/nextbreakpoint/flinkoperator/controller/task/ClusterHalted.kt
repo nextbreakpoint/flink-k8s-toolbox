@@ -41,6 +41,22 @@ class ClusterHalted : OperatorTaskHandler {
         val flinkImageDigest = OperatorState.getFlinkImageDigest(context.flinkCluster)
         val flinkJobDigest = OperatorState.getFlinkJobDigest(context.flinkCluster)
 
+        val manualAction = OperatorAnnotations.getManualAction(context.flinkCluster)
+        if (manualAction == ManualAction.START) {
+            val withoutSavepoint = OperatorAnnotations.isWithSavepoint(context.flinkCluster)
+            val options = StartOptions(withoutSavepoint = withoutSavepoint)
+            val result = context.controller.startCluster(context.clusterId, options)
+            if (result.status == ResultStatus.SUCCESS) {
+                OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
+                return Result(
+                    ResultStatus.AWAIT,
+                    ""
+                )
+            }
+        } else {
+            OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
+        }
+
         if (jobManagerDigest == null || taskManagerDigest == null || flinkImageDigest == null || flinkJobDigest == null) {
             return Result(
                 ResultStatus.FAILED,
@@ -204,20 +220,6 @@ class ClusterHalted : OperatorTaskHandler {
                     else -> {}
                 }
             }
-        }
-
-        val manualAction = OperatorAnnotations.getManualAction(context.flinkCluster)
-        if (manualAction == ManualAction.START) {
-            val withoutSavepoint = OperatorAnnotations.isWithSavepoint(context.flinkCluster)
-            val options = StartOptions(withoutSavepoint = withoutSavepoint)
-            val result = context.controller.startCluster(context.clusterId, options)
-            OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-            return Result(
-                ResultStatus.AWAIT,
-                result.output.joinToString(",")
-            )
-        } else {
-            OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
         }
 
         return Result(

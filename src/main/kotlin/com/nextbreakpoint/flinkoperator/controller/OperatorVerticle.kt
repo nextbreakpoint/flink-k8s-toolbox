@@ -31,6 +31,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
 import com.nextbreakpoint.flinkoperator.controller.task.DeleteUploadJob
 import com.nextbreakpoint.flinkoperator.controller.task.EraseSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.InitialiseCluster
+import com.nextbreakpoint.flinkoperator.controller.task.RescaleCluster
 import com.nextbreakpoint.flinkoperator.controller.task.RestartPods
 import com.nextbreakpoint.flinkoperator.controller.task.StartJob
 import com.nextbreakpoint.flinkoperator.controller.task.StartingCluster
@@ -88,6 +89,7 @@ class OperatorVerticle : AbstractVerticle() {
             OperatorTask.CLUSTER_RUNNING to ClusterRunning(),
             OperatorTask.STARTING_CLUSTER to StartingCluster(),
             OperatorTask.STOPPING_CLUSTER to StoppingCluster(),
+            OperatorTask.RESCALE_CLUSTER to RescaleCluster(),
             OperatorTask.CREATING_SAVEPOINT to CheckpointingCluster(),
             OperatorTask.STORE_SAVEPOINT to CreateSavepoint(),
             OperatorTask.ERASE_SAVEPOINT to EraseSavepoint(),

@@ -1059,7 +1059,100 @@ object KubernetesContext {
     }
 
     fun rescaleCluster(clusterId: ClusterId, taskManagers: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val patch = mapOf<String, Any?>(
+            "spec" to mapOf<String, Any?>(
+                "replicas" to taskManagers
+            )
+        )
+
+        val response = objectApi.patchNamespacedCustomObjectScaleCall(
+            "nextbreakpoint.com",
+            "v1",
+            clusterId.namespace,
+            "flinkclusters",
+            clusterId.name,
+            patch,
+            null,
+            null
+        ).execute()
+
+        if (!response.isSuccessful) {
+            response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
+            throw RuntimeException("Can't modify scale of cluster ${clusterId.name}")
+        }
+    }
+
+    fun setTaskManagerStatefulSetReplicas(clusterId: ClusterId, taskManagers: Int) {
+        val statefulSets = appsApi.listNamespacedStatefulSet(
+            clusterId.namespace,
+            null,
+            null,
+            null,
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+            null,
+            null,
+            5,
+            null
+        )
+
+        if (statefulSets.items.size == 0) {
+            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
+        }
+
+        statefulSets.items.forEach { statefulSet ->
+            try {
+                logger.info("Scaling StatefulSet ${statefulSet.metadata.name}...")
+
+                val patch = listOf(
+                    mapOf<String, Any?>(
+                        "op" to "replace",
+                        "path" to "/spec/replicas",
+                        "value" to taskManagers
+                    )
+                )
+
+                val response = appsApi.patchNamespacedStatefulSetScaleCall(
+                    statefulSet.metadata.name,
+                    clusterId.namespace,
+                    V1Patch(Gson().toJson(patch)),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ).execute()
+
+                if (response.isSuccessful) {
+                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                } else {
+                    response.body().use { it.source().use { source -> logger.error(source.readUtf8Line()) } }
+                    logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                }
+            } catch (e: Exception) {
+                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
+            }
+        }
+    }
+
+    fun getTaskManagerStatefulSetReplicas(clusterId: ClusterId): Int {
+        val statefulSets = appsApi.listNamespacedStatefulSet(
+            clusterId.namespace,
+            null,
+            null,
+            null,
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+            null,
+            null,
+            5,
+            null
+        )
+
+        if (statefulSets.items.size == 0) {
+            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
+        }
+
+        return statefulSets.items.firstOrNull()?.status?.currentReplicas ?: 0
     }
 
     @ExperimentalCoroutinesApi

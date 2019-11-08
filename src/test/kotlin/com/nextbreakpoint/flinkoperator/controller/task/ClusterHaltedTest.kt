@@ -602,18 +602,16 @@ class ClusterHaltedTest {
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val actionTimestamp = OperatorAnnotations.getActionTimestamp(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).clusterId
         verifyNoMoreInteractions(context)
         val options = StartOptions(withoutSavepoint = false)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).startCluster(eq(clusterId), eq(options))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEqualTo(tasks.joinToString(","))
+        assertThat(result.output).isEqualTo("")
         assertThat(actionTimestamp).isNotEqualTo(OperatorAnnotations.getActionTimestamp(cluster))
         assertThat(OperatorAnnotations.getManualAction(cluster)).isEqualTo(ManualAction.NONE)
     }

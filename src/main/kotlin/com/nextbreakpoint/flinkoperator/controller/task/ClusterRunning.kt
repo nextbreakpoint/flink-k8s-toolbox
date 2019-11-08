@@ -5,6 +5,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
@@ -44,6 +45,23 @@ class ClusterRunning : OperatorTaskHandler {
         val taskManagerDigest = OperatorState.getTaskManagerDigest(context.flinkCluster)
         val flinkImageDigest = OperatorState.getFlinkImageDigest(context.flinkCluster)
         val flinkJobDigest = OperatorState.getFlinkJobDigest(context.flinkCluster)
+
+        val manualAction = OperatorAnnotations.getManualAction(context.flinkCluster)
+        if (manualAction == ManualAction.STOP) {
+            val withoutSavepoint = OperatorAnnotations.isWithSavepoint(context.flinkCluster)
+            val deleteResources = OperatorAnnotations.isDeleteResources(context.flinkCluster)
+            val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = deleteResources)
+            val result = context.controller.stopCluster(context.clusterId, options)
+            if (result.status == ResultStatus.SUCCESS) {
+                OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
+                return Result(
+                    ResultStatus.AWAIT,
+                    ""
+                )
+            }
+        } else {
+            OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
+        }
 
         if (jobManagerDigest == null || taskManagerDigest == null || flinkImageDigest == null || flinkJobDigest == null) {
             return Result(
@@ -223,28 +241,20 @@ class ClusterRunning : OperatorTaskHandler {
             }
         }
 
-        val manualAction = OperatorAnnotations.getManualAction(context.flinkCluster)
-        if (manualAction == ManualAction.STOP) {
-            val withoutSavepoint = OperatorAnnotations.isWithSavepoint(context.flinkCluster)
-            val deleteResources = OperatorAnnotations.isDeleteResources(context.flinkCluster)
-            val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = deleteResources)
-            val result = context.controller.stopCluster(context.clusterId, options)
-            OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-            return Result(
-                ResultStatus.AWAIT,
-                result.output.joinToString(",")
-            )
-        } else {
-            OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-        }
+        val desiredTaskManagers = context.flinkCluster.spec?.taskManagers ?: 1
+        val taskmanagerStatefulset = context.resources.taskmanagerStatefulSets[context.clusterId]
+        val actualTaskManagers = taskmanagerStatefulset?.status?.replicas ?: 0
 
-//        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 1
-//        val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
-//
-//        if (OperatorState.getTaskManagers(context.flinkCluster) != taskManagers) {
-//            OperatorState.setTaskManagers(context.flinkCluster, taskManagers)
-//            OperatorState.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
-//        }
+        if (actualTaskManagers != desiredTaskManagers) {
+            val options = ScaleOptions(taskManagers = desiredTaskManagers)
+            val result = context.controller.scaleCluster(context.clusterId, options)
+            if (result.status == ResultStatus.SUCCESS) {
+                return Result(
+                    ResultStatus.AWAIT,
+                    ""
+                )
+            }
+        }
 
         return Result(
             ResultStatus.AWAIT,
