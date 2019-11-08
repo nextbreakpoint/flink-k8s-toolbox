@@ -179,7 +179,7 @@ object FlinkContext {
             }.filter {
                 it.second.code() == 200
             }.map {
-                it.first to it.second.body().use { it.source().use { source ->
+                it.first to it.second.body().use { body -> body.source().use { source ->
                     Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
                 } }
             }.toMap()
@@ -399,7 +399,7 @@ object FlinkContext {
             }.filter {
                 it.second.isSuccessful
             }.map {
-                val checkpointingStatistics = it.second.body().use { it.source().use { source ->
+                val checkpointingStatistics = it.second.body().use { body -> body.source().use { source ->
                     Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
                 } }
 
