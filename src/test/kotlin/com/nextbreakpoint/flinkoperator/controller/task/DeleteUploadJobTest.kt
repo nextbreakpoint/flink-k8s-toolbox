@@ -54,7 +54,7 @@ class DeleteUploadJobTest {
 
     @Test
     fun `onExecuting should return expected result when job can't be deleted`() {
-        given(controller.deleteUploadJobResource(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(controller.deleteUploadJob(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -62,7 +62,7 @@ class DeleteUploadJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).deleteUploadJobResource(eq(clusterId))
+        verify(controller, times(1)).deleteUploadJob(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -71,7 +71,7 @@ class DeleteUploadJobTest {
 
     @Test
     fun `onExecuting should return expected result when job has been deleted`() {
-        given(controller.deleteUploadJobResource(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(controller.deleteUploadJob(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -79,7 +79,7 @@ class DeleteUploadJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).deleteUploadJobResource(eq(clusterId))
+        verify(controller, times(1)).deleteUploadJob(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)

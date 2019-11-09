@@ -138,7 +138,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val pullSecrets =
             createObjectReferenceListOrNull(
-                flinkCluster.spec.flinkImage?.pullSecrets
+                flinkCluster.spec.flinkJob?.pullSecrets
             )
 
         val jobPodSpec = V1PodSpecBuilder()
@@ -146,7 +146,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .editFirstContainer()
             .withName("flink-upload")
             .withImage(flinkCluster.spec.flinkJob.image)
-            .withImagePullPolicy(flinkCluster.spec.flinkImage?.pullPolicy ?: "Always")
+            .withImagePullPolicy(flinkCluster.spec.flinkJob?.pullPolicy ?: "Always")
             .withArgs(arguments)
             .addToEnv(podNameEnvVar)
             .addToEnv(podNamespaceEnvVar)

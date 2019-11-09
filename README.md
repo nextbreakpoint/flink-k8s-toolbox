@@ -269,24 +269,24 @@ Remove namespace with command:
 
 The Docker image can be downloaded from Docker Hub:
 
-    docker fetch nextbreakpoint/flink-k8s-toolbox:1.1.13-beta
+    docker fetch nextbreakpoint/flink-k8s-toolbox:1.2.0-beta
 
 Tag and push the image into your registry if needed:
 
-    docker tag nextbreakpoint/flink-k8s-toolbox:1.1.13-beta some-registry/flink-k8s-toolbox:1.1.13-beta
+    docker tag nextbreakpoint/flink-k8s-toolbox:1.2.0-beta some-registry/flink-k8s-toolbox:1.2.0-beta
     docker login some-registry
-    docker push some-registry/flink-k8s-toolbox:1.1.13-beta
+    docker push some-registry/flink-k8s-toolbox:1.2.0-beta
 
 ## Run Flink Operator manually
 
 Run the operator using the image on Docker Hub:
 
-    kubectl run flink-operator --restart=Never -n flink --image=nextbreakpoint/flink-k8s-toolbox:1.1.13-beta \
+    kubectl run flink-operator --restart=Never -n flink --image=nextbreakpoint/flink-k8s-toolbox:1.2.0-beta \
         --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Or run the operator using your own registry and pull secrets:
 
-    kubectl run flink-operator --restart=Never -n flink --image=some-registry/flink-k8s-toolbox:1.1.13-beta \
+    kubectl run flink-operator --restart=Never -n flink --image=some-registry/flink-k8s-toolbox:1.2.0-beta \
         --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=flink
 
 Please note that you **MUST** run only one operator for each namespace to avoid conflicts.
@@ -332,7 +332,7 @@ Make sure the CRD has been installed (see above).
 
 Create a Docker file like:
 
-    FROM nextbreakpoint/flink-k8s-toolbox:1.1.13-beta
+    FROM nextbreakpoint/flink-k8s-toolbox:1.2.0-beta
     COPY flink-jobs.jar /flink-jobs.jar
 
 where flink-jobs.jar contains the code of your Flink jobs.
@@ -346,37 +346,6 @@ Tag and push the image into your registry if needed:
     docker tag flink-jobs:1 some-registry/flink-jobs:1
     docker login some-registry
     docker push some-registry/flink-jobs:1
-
-Create a ConfigMap file:
-
-    cat <<EOF >config-map.yaml
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: flink-config
-    data:
-      core-site.xml: |
-        <?xml version="1.0" encoding="UTF-8"?>
-        <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-        <configuration>
-        <property>
-        <name>fs.s3.impl</name>
-        <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
-        </property>
-        <property>
-        <name>fs.s3a.buffer.dir</name>
-        <value>/tmp</value>
-        </property>
-        <property>
-        <name>fs.s3a.aws.credentials.provider</name>
-        <value>com.amazonaws.auth.EnvironmentVariableCredentialsProvider</value>
-        </property>
-        </configuration>
-    EOF
-
-Create a ConfigMap resource with command:
-
-    kubectl create -n flink -f config-map.yaml
 
 Create a FlinkCluster file:
 
@@ -408,15 +377,6 @@ Create a FlinkCluster file:
         - secretRef:
             name: flink-secrets
         volumeMounts:
-          - name: config-vol
-            mountPath: /hadoop/etc/core-site.xml
-            subPath: core-site.xml
-          - name: config-vol
-            mountPath: /docker-entrypoint.sh
-            subPath: docker-entrypoint.sh
-          - name: config-vol
-            mountPath: /opt/flink/conf/flink-conf.yaml
-            subPath: flink-conf.yaml
           - name: jobmanager
             mountPath: /var/tmp
         volumes:
@@ -445,15 +405,6 @@ Create a FlinkCluster file:
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
         volumeMounts:
-          - name: config-vol
-            mountPath: /hadoop/etc/core-site.xml
-            subPath: core-site.xml
-          - name: config-vol
-            mountPath: /docker-entrypoint.sh
-            subPath: docker-entrypoint.sh
-          - name: config-vol
-            mountPath: /opt/flink/conf/flink-conf.yaml
-            subPath: flink-conf.yaml
           - name: taskmanager
             mountPath: /var/tmp
         volumes:
@@ -475,7 +426,7 @@ Create a FlinkCluster file:
               resources:
                 requests:
                   storage: 5Gi
-      flinkOperator:
+      operator:
         # savepointMode can be Automatic or Manual. Default value is Manual
         savepointMode: Automatic
         # savepointInterval in seconds. Required when savepointMode is Automatic 
@@ -512,27 +463,27 @@ Build an uber JAR file with command:
 
 and test the JAR printing the CLI usage:
 
-    java -jar build/libs/flink-k8s-toolbox-1.1.13-beta-with-dependencies.jar --help
+    java -jar build/libs/flink-k8s-toolbox-1.2.0-beta-with-dependencies.jar --help
  
 Build a Docker image with command:
 
-    docker build -t flink-k8s-toolbox:1.1.13-beta .
+    docker build -t flink-k8s-toolbox:1.2.0-beta .
 
 and test the image printing the CLI usage:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta --help
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta --help
 
 Tag and push the image to your Docker registry if needed:
 
-    docker tag flink-k8s-toolbox:1.1.13-beta some-registry/flink-k8s-toolbox:1.1.13-beta
+    docker tag flink-k8s-toolbox:1.2.0-beta some-registry/flink-k8s-toolbox:1.2.0-beta
     docker login some-registry
-    docker push some-registry/flink-k8s-toolbox:1.1.13-beta
+    docker push some-registry/flink-k8s-toolbox:1.2.0-beta
 
 ## How to use the CLI tool
 
 Print the CLI usage:
 
-    docker run --rm -it nextbreakpoint/flink-k8s-toolbox:1.1.13-beta --help
+    docker run --rm -it nextbreakpoint/flink-k8s-toolbox:1.2.0-beta --help
 
 The output should look like:
 
@@ -555,7 +506,7 @@ The output should look like:
 
 Create a Docker file like:
 
-    FROM nextbreakpoint/flink-k8s-toolbox:1.1.13-beta
+    FROM nextbreakpoint/flink-k8s-toolbox:1.2.0-beta
     COPY flink-jobs.jar /flink-jobs.jar
 
 where flink-jobs.jar contains the code of your Flink jobs.
@@ -605,21 +556,6 @@ Create a JSON file:
         ],
         "volumeMounts": [
           {
-            "name": "config-vol",
-            "mountPath": "/hadoop/etc/core-site.xml",
-            "subPath": "core-site.xml"
-          },
-          {
-            "name": "config-vol",
-            "mountPath": "/docker-entrypoint.sh",
-            "subPath": "docker-entrypoint.sh"
-          },
-          {
-            "name": "config-vol",
-            "mountPath": "/opt/flink/conf/flink-conf.yaml",
-            "subPath": "flink-conf.yaml"
-          },
-          {
             "name": "jobmanager",
             "mountPath": "/var/tmp"
           }
@@ -659,21 +595,6 @@ Create a JSON file:
         ],
         "volumeMounts": [
           {
-            "name": "config-vol",
-            "mountPath": "/hadoop/etc/core-site.xml",
-            "subPath": "core-site.xml"
-          },
-          {
-            "name": "config-vol",
-            "mountPath": "/docker-entrypoint.sh",
-            "subPath": "docker-entrypoint.sh"
-          },
-          {
-            "name": "config-vol",
-            "mountPath": "/opt/flink/conf/flink-conf.yaml",
-            "subPath": "flink-conf.yaml"
-          },
-          {
             "name": "taskmanager",
             "mountPath": "/var/tmp"
           }
@@ -704,7 +625,7 @@ Create a JSON file:
           }
         ]
       },
-      "flinkOperator": {
+      "operator": {
         "savepointMode": "Automatic",
         "savepointInterval": 60,
         "savepointTargetPath": "file:///var/tmp/test",
@@ -715,7 +636,7 @@ Create a JSON file:
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta \
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta \
         cluster \
         create \
         --cluster-name=test \
@@ -725,13 +646,13 @@ Execute the command:
 
 Show more options with the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta cluster create --help
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta cluster create --help
 
 ### How to get the status of a cluster
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta \
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta \
         cluster \
         status \
         --cluster-name=test \
@@ -740,13 +661,13 @@ Execute the command:
 
 Show more options with the command:
 
-     docker run --rm -it flink-k8s-toolbox:1.1.13-beta cluster status --help
+     docker run --rm -it flink-k8s-toolbox:1.2.0-beta cluster status --help
 
 ### How to delete a cluster
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta \
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta \
         cluster \
         delete \
         --cluster-name=test \
@@ -755,13 +676,13 @@ Execute the command:
 
 Show more options with the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta cluster delete --help
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta cluster delete --help
 
 ### How to stop a running cluster
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta \
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta \
         cluster \
         stop \
         --cluster-name=test \
@@ -770,13 +691,13 @@ Execute the command:
 
 Show more options with the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta cluster stop --help
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta cluster stop --help
 
 ### How to start a stopped cluster
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta \
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta \
         cluster \
         start \
         --cluster-name=test \
@@ -785,13 +706,13 @@ Execute the command:
 
 Show more options with the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta cluster start --help
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta cluster start --help
 
 ### How to start a cluster and run the job without savepoint
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta \
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta \
         cluster \
         start \
         --cluster-name=test \
@@ -803,7 +724,7 @@ Execute the command:
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta \
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta \
         cluster \
         stop \
         --cluster-name=test \
@@ -815,7 +736,7 @@ Execute the command:
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.1.13-beta \
+    docker run --rm -it flink-k8s-toolbox:1.2.0-beta \
         cluster \
         status \
         --cluster-name=test \
@@ -828,11 +749,11 @@ Flink jobs must be packaged in a regular JAR file and uploaded to the JobManager
 
 Upload a JAR file using the command:
 
-    java -jar flink-k8s-toolbox-1.1.13-beta.jar upload jar --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar flink-k8s-toolbox-1.2.0-beta.jar upload jar --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 When running outside Kubernetes use the command:
 
-    java -jar flink-k8s-toolbox-1.1.13-beta.jar upload jar --kube-config=/your-kube-config.conf --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar flink-k8s-toolbox-1.2.0-beta.jar upload jar --kube-config=/your-kube-config.conf --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 ### How to run the Operator for testing
 
@@ -840,8 +761,8 @@ The Flink operator can be executed as Docker image or JAR file, pointing to a lo
 
 Run the operator with a given namespace and Kubernetes config using the JAR file:
 
-    java -jar flink-k8s-toolbox:1.1.13-beta.jar operator run --namespace=test --kube-config=/path/admin.conf
+    java -jar flink-k8s-toolbox:1.2.0-beta.jar operator run --namespace=test --kube-config=/path/admin.conf
 
 Run the operator with a given namespace and Kubernetes config using the Docker image:
 
-    docker run --rm -it -v /path/admin.conf:/admin.conf flink-k8s-toolbox:1.1.13-beta operator run --namespace=test --kube-config=/admin.conf
+    docker run --rm -it -v /path/admin.conf:/admin.conf flink-k8s-toolbox:1.2.0-beta operator run --namespace=test --kube-config=/admin.conf

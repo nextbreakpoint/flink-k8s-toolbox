@@ -51,7 +51,7 @@ class ClusterHaltedTest {
         OperatorState.setFlinkImageDigest(cluster, actualFlinkImageDigest)
         OperatorState.setJobManagerDigest(cluster, actualJobManagerDigest)
         OperatorState.setTaskManagerDigest(cluster, actualTaskManagerDigest)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.CLUSTER_HALTED))
+        OperatorState.appendTasks(cluster, listOf(OperatorTask.ClusterHalted))
         OperatorState.setTaskAttempts(cluster, 1)
     }
 
@@ -145,7 +145,7 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should do nothing when cluster status is suspended and digests didn't changed`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Suspended)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).operatorTimestamp
@@ -162,7 +162,7 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should do nothing when cluster status is failed and digests didn't changed`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).operatorTimestamp
@@ -180,7 +180,7 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should do nothing when flink image digest changed but status prevents restart`() {
         OperatorState.setFlinkImageDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -200,7 +200,7 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should do nothing when flink job digest changed but status prevents restart`() {
         OperatorState.setFlinkJobDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.RUNNING)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -220,7 +220,7 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should restart cluster when cluster status is suspended and flink image digest changed`() {
         OperatorState.setFlinkImageDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Suspended)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -232,29 +232,29 @@ class ClusterHaltedTest {
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STOPPING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StoppingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TERMINATE_PODS)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TerminatePods)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STARTING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_UPLOAD_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should restart cluster when cluster status is suspended and job manager digest changed`() {
         OperatorState.setJobManagerDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Suspended)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -266,29 +266,29 @@ class ClusterHaltedTest {
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STOPPING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StoppingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TERMINATE_PODS)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TerminatePods)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STARTING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_UPLOAD_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should restart cluster when cluster status is suspended and task manager digest changed`() {
         OperatorState.setTaskManagerDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Suspended)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -300,29 +300,29 @@ class ClusterHaltedTest {
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STOPPING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StoppingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TERMINATE_PODS)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TerminatePods)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STARTING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_UPLOAD_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should restart cluster when cluster status is suspended and flink job digest changed`() {
         OperatorState.setFlinkJobDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.SUSPENDED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Suspended)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -334,21 +334,21 @@ class ClusterHaltedTest {
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STARTING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_UPLOAD_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should restart job when cluster status is failed and flink image digest changed`() {
         OperatorState.setFlinkImageDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -360,29 +360,29 @@ class ClusterHaltedTest {
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STOPPING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StoppingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TERMINATE_PODS)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TerminatePods)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STARTING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_UPLOAD_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should restart job when cluster status is failed and job manager digest changed`() {
         OperatorState.setJobManagerDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -394,29 +394,29 @@ class ClusterHaltedTest {
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STOPPING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StoppingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TERMINATE_PODS)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TerminatePods)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STARTING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_UPLOAD_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should restart job when cluster status is failed and task manager digest changed`() {
         OperatorState.setTaskManagerDigest(cluster, "123")
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
@@ -428,28 +428,28 @@ class ClusterHaltedTest {
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STOPPING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StoppingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TERMINATE_PODS)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.TerminatePods)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.STARTING_CLUSTER)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartingCluster)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DELETE_UPLOAD_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.DeleteUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CREATE_RESOURCES)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should do nothing for at least 10 seconds when cluster status is failed`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.currentTimeMillis()).thenReturn(time + 10000)
         val result = task.onIdle(context)
@@ -467,7 +467,7 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should check if cluster is running after 10 seconds when cluster status is failed`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -488,7 +488,7 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should change status after 10 seconds when cluster status is failed but cluster is running`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, true))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -505,15 +505,15 @@ class ClusterHaltedTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should not restart job when cluster status is failed and cluster is not ready`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         OperatorState.setTaskAttempts(cluster, 3)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
-        cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
+        cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -536,10 +536,10 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should increment attempts after 10 seconds when cluster status is failed but cluster is ready`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         OperatorState.setTaskAttempts(cluster, 2)
-        cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
+        cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -563,10 +563,10 @@ class ClusterHaltedTest {
 
     @Test
     fun `onIdle should restart job when cluster status is failed but cluster is ready after 3 attempts`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         OperatorState.setTaskAttempts(cluster, 3)
-        cluster.spec.flinkOperator.jobRestartPolicy = "ALWAYS"
+        cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
@@ -584,20 +584,20 @@ class ClusterHaltedTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.DELETE_UPLOAD_JOB)
+        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.DeleteUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.UPLOAD_JAR)
+        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.START_JOB)
+        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.CLUSTER_RUNNING)
+        assertThat(OperatorState.getNextOperatorTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
     }
 
     @Test
     fun `onIdle should stop cluster when there is a manual action`() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.FAILED)
+        OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         OperatorAnnotations.setManualAction(cluster, ManualAction.START)
-        val tasks = listOf(OperatorTask.START_JOB, OperatorTask.CLUSTER_RUNNING)
+        val tasks = listOf(OperatorTask.StartJob, OperatorTask.ClusterRunning)
         given(controller.startCluster(eq(clusterId), KotlinMockito.any())).thenReturn(Result(ResultStatus.SUCCESS, tasks))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val actionTimestamp = OperatorAnnotations.getActionTimestamp(cluster)

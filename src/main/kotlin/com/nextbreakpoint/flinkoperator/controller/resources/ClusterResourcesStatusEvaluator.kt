@@ -56,11 +56,11 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("service account does not match")
         }
 
-        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+        if (flinkCluster.spec.flinkJob?.pullSecrets != null) {
             if (jarUploadJob.spec.template.spec.imagePullSecrets.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (jarUploadJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                if (jarUploadJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkJob?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }

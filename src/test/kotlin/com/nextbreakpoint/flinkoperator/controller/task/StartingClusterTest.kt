@@ -54,7 +54,7 @@ class StartingClusterTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.STARTING)
+        assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Starting)
         assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
     }
 

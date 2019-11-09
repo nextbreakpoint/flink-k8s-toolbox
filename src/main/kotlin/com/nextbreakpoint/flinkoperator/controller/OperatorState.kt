@@ -12,16 +12,16 @@ object OperatorState {
     fun hasCurrentTask(flinkCluster: V1FlinkCluster) : Boolean = flinkCluster.status?.tasks?.isNotEmpty() ?: false
 
     fun getCurrentTask(flinkCluster: V1FlinkCluster) : OperatorTask =
-        flinkCluster.status?.tasks?.filter { it.isNotBlank() }?.map { OperatorTask.valueOf(it) }?.firstOrNull() ?: OperatorTask.CLUSTER_HALTED
+        flinkCluster.status?.tasks?.filter { it.isNotBlank() }?.map { OperatorTask.valueOf(it) }?.firstOrNull() ?: OperatorTask.ClusterHalted
 
     fun getCurrentTaskStatus(flinkCluster: V1FlinkCluster) : TaskStatus {
         val status = flinkCluster.status?.taskStatus
-        return if (status.isNullOrBlank()) TaskStatus.EXECUTING else TaskStatus.valueOf(status)
+        return if (status.isNullOrBlank()) TaskStatus.Executing else TaskStatus.valueOf(status)
     }
 
     fun getClusterStatus(flinkCluster: V1FlinkCluster) : ClusterStatus {
         val status = flinkCluster.status?.clusterStatus
-        return if (status.isNullOrBlank()) ClusterStatus.UNKNOWN else ClusterStatus.valueOf(status)
+        return if (status.isNullOrBlank()) ClusterStatus.Unknown else ClusterStatus.valueOf(status)
     }
 
     fun getOperatorTimestamp(flinkCluster: V1FlinkCluster) : Long =
@@ -51,7 +51,7 @@ object OperatorState {
     fun selectNextTask(flinkCluster: V1FlinkCluster) {
         ensureState(flinkCluster)
 
-        val task = flinkCluster.status?.tasks?.firstOrNull() ?: OperatorTask.CLUSTER_HALTED.toString()
+        val task = flinkCluster.status?.tasks?.firstOrNull() ?: OperatorTask.ClusterHalted.toString()
 
         val tasks = flinkCluster.status?.tasks?.drop(1).orEmpty()
 
@@ -218,46 +218,6 @@ object OperatorState {
     private fun ensureState(flinkCluster: V1FlinkCluster) {
         if (flinkCluster.status == null) {
             flinkCluster.status = V1FlinkClusterStatus()
-            flinkCluster.metadata?.annotations?.let { annotations ->
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_TIMESTAMP)?.let {
-                    flinkCluster.status?.timestamp = it.toLong()
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_TASKS)?.let {
-                    flinkCluster.status?.tasks = it.split(" ").toTypedArray()
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_TASK_STATUS)?.let {
-                    setTaskStatus(flinkCluster, TaskStatus.valueOf(it))
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_TASK_ATTEMPTS)?.let {
-                    setTaskAttempts(flinkCluster, it.toInt())
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_CLUSTER_STATUS)?.let {
-                    setClusterStatus(flinkCluster, ClusterStatus.valueOf(it))
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_IMAGE_DIGEST)?.let {
-                    flinkCluster.status?.digestOfFlinkImage = it
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_JOB_DIGEST)?.let {
-                    flinkCluster.status?.digestOfFlinkJob = it
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_JOBMANAGER_DIGEST)?.let {
-                    flinkCluster.status?.digestOfJobManager = it
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_TASKMANAGER_DIGEST)?.let {
-                    flinkCluster.status?.digestOfTaskManager = it
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_SAVEPOINT_PATH)?.let {
-                    flinkCluster.status?.savepointPath = it
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_SAVEPOINT_REQUEST)?.let {
-                    val request = Gson().fromJson(it, SavepointRequest::class.java)
-                    flinkCluster.status?.savepointJobId = request.jobId
-                    flinkCluster.status?.savepointTriggerId = request.triggerId
-                }
-                annotations.get(OperatorAnnotations.FLINK_OPERATOR_SAVEPOINT_TIMESTAMP)?.let {
-                    flinkCluster.status?.savepointTimestamp = it.toLong()
-                }
-            }
         }
     }
 }

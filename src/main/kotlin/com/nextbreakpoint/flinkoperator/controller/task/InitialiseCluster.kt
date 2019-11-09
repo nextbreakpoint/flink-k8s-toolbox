@@ -11,23 +11,23 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class InitialiseCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
+        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
         OperatorState.setTaskAttempts(context.flinkCluster, 0)
 
         if (context.flinkCluster.spec.flinkJob != null) {
             OperatorState.appendTasks(context.flinkCluster,
                 listOf(
-                    OperatorTask.CREATE_RESOURCES,
-                    OperatorTask.UPLOAD_JAR,
-                    OperatorTask.START_JOB,
-                    OperatorTask.CLUSTER_RUNNING
+                    OperatorTask.CreateResources,
+                    OperatorTask.CreateUploadJob,
+                    OperatorTask.StartJob,
+                    OperatorTask.ClusterRunning
                 )
             )
         } else {
             OperatorState.appendTasks(context.flinkCluster,
                 listOf(
-                    OperatorTask.CREATE_RESOURCES,
-                    OperatorTask.CLUSTER_RUNNING
+                    OperatorTask.CreateResources,
+                    OperatorTask.ClusterRunning
                 )
             )
         }
@@ -42,10 +42,10 @@ class InitialiseCluster : OperatorTaskHandler {
         OperatorState.setFlinkImageDigest(context.flinkCluster, flinkImageDigest)
         OperatorState.setFlinkJobDigest(context.flinkCluster, flinkJobDigest)
 
+        OperatorState.setTaskManagers(context.flinkCluster, 0)
+
         val taskManagers = context.flinkCluster.spec?.taskManagers ?: 1
         val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
-
-        OperatorState.setTaskManagers(context.flinkCluster, taskManagers)
         OperatorState.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
 
         return Result(

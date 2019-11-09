@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Objects;
 
 public class V1FlinkJobSpec {
+    @SerializedName("pullSecrets")
+    private String pullSecrets;
+    @SerializedName("pullPolicy")
+    private String pullPolicy;
     @SerializedName("image")
     private String image;
     @SerializedName("className")
@@ -14,6 +18,24 @@ public class V1FlinkJobSpec {
     private String jarPath;
     @SerializedName("arguments")
     private List<String> arguments;
+
+    public String getPullPolicy() {
+        return pullPolicy;
+    }
+
+    public V1FlinkJobSpec setPullPolicy(String pullPolicy) {
+        this.pullPolicy = pullPolicy;
+        return this;
+    }
+
+    public String getPullSecrets() {
+        return pullSecrets;
+    }
+
+    public V1FlinkJobSpec setPullSecrets(String pullSecrets) {
+        this.pullSecrets = pullSecrets;
+        return this;
+    }
 
     public String getImage() {
         return image;
@@ -56,7 +78,9 @@ public class V1FlinkJobSpec {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         V1FlinkJobSpec that = (V1FlinkJobSpec) o;
-        return Objects.equals(getImage(), that.getImage()) &&
+        return Objects.equals(getPullSecrets(), that.getPullSecrets()) &&
+                Objects.equals(getPullPolicy(), that.getPullPolicy()) &&
+                Objects.equals(getImage(), that.getImage()) &&
                 Objects.equals(getClassName(), that.getClassName()) &&
                 Objects.equals(getJarPath(), that.getJarPath()) &&
                 Objects.equals(getArguments(), that.getArguments());
@@ -64,13 +88,15 @@ public class V1FlinkJobSpec {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getImage(), getClassName(), getJarPath(), getArguments());
+        return Objects.hash(getPullSecrets(), getPullPolicy(), getImage(), getClassName(), getJarPath(), getArguments());
     }
 
     @Override
     public String toString() {
         return "V1FlinkJobSpec{" +
-                "image='" + image + '\'' +
+                "pullSecrets='" + pullSecrets + '\'' +
+                ", pullPolicy='" + pullPolicy + '\'' +
+                ", image='" + image + '\'' +
                 ", className='" + className + '\'' +
                 ", jarPath='" + jarPath + '\'' +
                 ", arguments=" + arguments +

@@ -77,7 +77,7 @@ class StartJobTest {
     @Test
     fun `onExecuting should return expected result when job has not been started yet`() {
         given(controller.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.runJar(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(controller.startJob(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -92,7 +92,7 @@ class StartJobTest {
     @Test
     fun `onExecuting should return expected result when job has failed`() {
         given(controller.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.runJar(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(controller.startJob(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -107,7 +107,7 @@ class StartJobTest {
     @Test
     fun `onExecuting should return expected result when job has been started`() {
         given(controller.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.runJar(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(controller.startJob(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster

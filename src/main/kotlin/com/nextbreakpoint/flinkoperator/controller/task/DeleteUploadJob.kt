@@ -19,7 +19,7 @@ class DeleteUploadJob : OperatorTaskHandler {
             )
         }
 
-        val response = context.controller.deleteUploadJobResource(context.clusterId)
+        val response = context.controller.deleteUploadJob(context.clusterId)
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(

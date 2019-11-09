@@ -60,7 +60,7 @@ spec:
                     - Never
                     - Always
                     - IfNotPresent
-                flinkImage:
+                image:
                   description: Image to use for Job Manager and Task Managers.
                   type: string
                   nullable: false
@@ -71,6 +71,18 @@ spec:
               type: object
               nullable: true
               properties:
+                pullSecrets:
+                  description: Pull scretes to use for pulling from private registry.
+                  type: string
+                  nullable: false
+                pullPolicy:
+                  description: Policy to use for pulling images.
+                  type: string
+                  nullable: false
+                  enum:
+                    - Never
+                    - Always
+                    - IfNotPresent
                 image:
                   description: Image to use for uploading Flink jar.
                   type: string
@@ -93,42 +105,6 @@ spec:
                 - image
                 - className
                 - jarPath
-            flinkOperator:
-              description: A Flink Operator specification.
-              type: object
-              nullable: false
-              properties:
-                savepointMode:
-                  description: Control periodic savepoints. Default value is NANUAL.
-                  type: string
-                  nullable: false
-                  enum:
-                    - Manual
-                    - Automatic
-                savepointPath:
-                  description: Path of latest savepoint.
-                  type: string
-                  nullable: true
-                savepointInterval:
-                  description: Interval between savepoints.
-                  type: integer
-                  nullable: false
-                  minimum: 0
-                savepointTargetPath:
-                  description: Location where to create savepoints.
-                  type: string
-                  nullable: false
-                jobRestartPolicy:
-                  description: Control job restart in case of cluster failure. Default value is NEVER.
-                  type: string
-                  nullable: false
-                  enum:
-                    - Never
-                    - Always
-              required:
-                - savepointMode
-                - savepointTargetPath
-                - jobRestartPolicy
             jobManager:
               description: A Flink Job Manager specification.
               type: object
@@ -8163,11 +8139,47 @@ spec:
                     type: "object"
               required:
                 - taskSlots
+            operator:
+              description: A Flink Operator specification.
+              type: object
+              nullable: false
+              properties:
+                savepointMode:
+                  description: Control periodic savepoints. Default value is NANUAL.
+                  type: string
+                  nullable: false
+                  enum:
+                    - Manual
+                    - Automatic
+                savepointPath:
+                  description: Path of latest savepoint.
+                  type: string
+                  nullable: true
+                savepointInterval:
+                  description: Interval between savepoints.
+                  type: integer
+                  nullable: false
+                  minimum: 0
+                savepointTargetPath:
+                  description: Location where to create savepoints.
+                  type: string
+                  nullable: false
+                jobRestartPolicy:
+                  description: Control job restart in case of cluster failure. Default value is NEVER.
+                  type: string
+                  nullable: false
+                  enum:
+                    - Never
+                    - Always
+              required:
+                - savepointMode
+                - savepointTargetPath
+                - jobRestartPolicy
           required:
             - jobManager
             - taskManager
             - flinkImage
-            - flinkOperator
+            - operator
         status:
           type: object
           properties:
@@ -8184,34 +8196,34 @@ spec:
               items:
                 type: string
                 enum:
-                  - INITIALISE_CLUSTER
-                  - TERMINATE_CLUSTER
-                  - SUSPEND_CLUSTER
-                  - CLUSTER_HALTED
-                  - CLUSTER_RUNNING
-                  - STARTING_CLUSTER
-                  - STOPPING_CLUSTER
-                  - RESCALE_CLUSTER
-                  - CREATING_SAVEPOINT
-                  - CREATE_SAVEPOINT
-                  - ERASE_SAVEPOINT
-                  - CREATE_RESOURCES
-                  - DELETE_RESOURCES
-                  - DELETE_UPLOAD_JOB
-                  - TERMINATE_PODS
-                  - RESTART_PODS
-                  - UPLOAD_JAR
-                  - CANCEL_JOB
-                  - START_JOB
-                  - STOP_JOB
+                  - InitialiseCluster
+                  - TerminatedCluster
+                  - SuspendCluster
+                  - ClusterHalted
+                  - ClusterRunning
+                  - StartingCluster
+                  - StoppingCluster
+                  - RescaleCluster
+                  - CreatingSavepoint
+                  - TriggerSavepoint
+                  - EraseSavepoint
+                  - CreateResources
+                  - DeleteResources
+                  - CreateUploadJob
+                  - DeleteUploadJob
+                  - TerminatePods
+                  - RestartPods
+                  - CancelJob
+                  - StartJob
+                  - StopJo
             taskStatus:
               type: string
               nullable: false
               enum:
-                - EXECUTING
-                - AWAITING
-                - IDLE
-                - FAILED
+                - Executing
+                - Awaiting
+                - Idle
+                - Faile
             taskAttempts:
               type: integer
               nullable: false
@@ -8220,14 +8232,14 @@ spec:
               type: string
               nullable: false
               enum:
-                - UNKNOWN
-                - STARTING
-                - STOPPING
-                - RUNNING
-                - FAILED
-                - SUSPENDED
-                - TERMINATED
-                - CHECKPOINTING
+                - Unknown
+                - Starting
+                - Stopping
+                - Running
+                - Failed
+                - Suspended
+                - Terminated
+                - Checkpointing
             savepointPath:
               type: string
             savepointJobId:
@@ -8282,7 +8294,7 @@ spec:
       JSONPath: .status.jobParallelism
     - name: JOB-RESTART
       type: string
-      JSONPath: .spec.flinkOperator.jobRestartPolicy
+      JSONPath: .spec.operator.jobRestartPolicy
     - name: SERVICE-MODE
       type: string
       JSONPath: .spec.jobManager.serviceMode
