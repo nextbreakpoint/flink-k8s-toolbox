@@ -15,18 +15,18 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.command.JobDetails
-import com.nextbreakpoint.flinkoperator.controller.command.JobManagerMetrics
-import com.nextbreakpoint.flinkoperator.controller.command.JobMetrics
-import com.nextbreakpoint.flinkoperator.controller.command.TaskManagerDetails
-import com.nextbreakpoint.flinkoperator.controller.command.TaskManagerMetrics
-import com.nextbreakpoint.flinkoperator.controller.command.TaskManagersList
+import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
+import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
+import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
+import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerDetails
+import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerMetrics
+import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersList
 import com.nextbreakpoint.flinkoperator.controller.task.CancelJob
-import com.nextbreakpoint.flinkoperator.controller.task.CheckpointingCluster
+import com.nextbreakpoint.flinkoperator.controller.task.CreatingSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.ClusterHalted
 import com.nextbreakpoint.flinkoperator.controller.task.ClusterRunning
 import com.nextbreakpoint.flinkoperator.controller.task.CreateResources
-import com.nextbreakpoint.flinkoperator.controller.task.CreateSavepoint
+import com.nextbreakpoint.flinkoperator.controller.task.TriggerSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
 import com.nextbreakpoint.flinkoperator.controller.task.DeleteUploadJob
 import com.nextbreakpoint.flinkoperator.controller.task.EraseSavepoint
@@ -40,7 +40,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.StoppingCluster
 import com.nextbreakpoint.flinkoperator.controller.task.SuspendCluster
 import com.nextbreakpoint.flinkoperator.controller.task.TerminateCluster
 import com.nextbreakpoint.flinkoperator.controller.task.TerminatePods
-import com.nextbreakpoint.flinkoperator.controller.task.UploadJar
+import com.nextbreakpoint.flinkoperator.controller.task.CreateUploadJob
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PersistentVolumeClaim
@@ -82,26 +82,26 @@ class OperatorVerticle : AbstractVerticle() {
         private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
 
         private val tasksHandlers = mapOf(
-            OperatorTask.INITIALISE_CLUSTER to InitialiseCluster(),
-            OperatorTask.TERMINATE_CLUSTER to TerminateCluster(),
-            OperatorTask.SUSPEND_CLUSTER to SuspendCluster(),
-            OperatorTask.CLUSTER_HALTED to ClusterHalted(),
-            OperatorTask.CLUSTER_RUNNING to ClusterRunning(),
-            OperatorTask.STARTING_CLUSTER to StartingCluster(),
-            OperatorTask.STOPPING_CLUSTER to StoppingCluster(),
-            OperatorTask.RESCALE_CLUSTER to RescaleCluster(),
-            OperatorTask.CREATING_SAVEPOINT to CheckpointingCluster(),
-            OperatorTask.CREATE_SAVEPOINT to CreateSavepoint(),
-            OperatorTask.ERASE_SAVEPOINT to EraseSavepoint(),
-            OperatorTask.CREATE_RESOURCES to CreateResources(),
-            OperatorTask.DELETE_RESOURCES to DeleteResources(),
-            OperatorTask.TERMINATE_PODS to TerminatePods(),
-            OperatorTask.RESTART_PODS to RestartPods(),
-            OperatorTask.DELETE_UPLOAD_JOB to DeleteUploadJob(),
-            OperatorTask.UPLOAD_JAR to UploadJar(),
-            OperatorTask.CANCEL_JOB to CancelJob(),
-            OperatorTask.START_JOB to StartJob(),
-            OperatorTask.STOP_JOB to StopJob()
+            OperatorTask.InitialiseCluster to InitialiseCluster(),
+            OperatorTask.TerminatedCluster to TerminateCluster(),
+            OperatorTask.SuspendCluster to SuspendCluster(),
+            OperatorTask.ClusterHalted to ClusterHalted(),
+            OperatorTask.ClusterRunning to ClusterRunning(),
+            OperatorTask.StartingCluster to StartingCluster(),
+            OperatorTask.StoppingCluster to StoppingCluster(),
+            OperatorTask.RescaleCluster to RescaleCluster(),
+            OperatorTask.CreatingSavepoint to CreatingSavepoint(),
+            OperatorTask.TriggerSavepoint to TriggerSavepoint(),
+            OperatorTask.EraseSavepoint to EraseSavepoint(),
+            OperatorTask.CreateResources to CreateResources(),
+            OperatorTask.DeleteResources to DeleteResources(),
+            OperatorTask.TerminatePods to TerminatePods(),
+            OperatorTask.RestartPods to RestartPods(),
+            OperatorTask.DeleteUploadJob to DeleteUploadJob(),
+            OperatorTask.CreateUploadJob to CreateUploadJob(),
+            OperatorTask.CancelJob to CancelJob(),
+            OperatorTask.StartJob to StartJob(),
+            OperatorTask.StopJob to StopJob()
         )
     }
 

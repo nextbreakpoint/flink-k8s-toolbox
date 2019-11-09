@@ -92,7 +92,7 @@ class ClusterHalted : OperatorTaskHandler {
                 val clusterStatus = OperatorState.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {
-                    ClusterStatus.SUSPENDED, ClusterStatus.FAILED -> {
+                    ClusterStatus.Suspended, ClusterStatus.Failed -> {
                         logger.info("Cluster ${context.clusterId.name} requires a restart")
 
                         OperatorState.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
@@ -102,15 +102,15 @@ class ClusterHalted : OperatorTaskHandler {
 
                         OperatorState.appendTasks(context.flinkCluster,
                             listOf(
-                                OperatorTask.STOPPING_CLUSTER,
-                                OperatorTask.TERMINATE_PODS,
-                                OperatorTask.DELETE_RESOURCES,
-                                OperatorTask.STARTING_CLUSTER,
-                                OperatorTask.DELETE_UPLOAD_JOB,
-                                OperatorTask.CREATE_RESOURCES,
-                                OperatorTask.UPLOAD_JAR,
-                                OperatorTask.START_JOB,
-                                OperatorTask.CLUSTER_RUNNING
+                                OperatorTask.StoppingCluster,
+                                OperatorTask.TerminatePods,
+                                OperatorTask.DeleteResources,
+                                OperatorTask.StartingCluster,
+                                OperatorTask.DeleteUploadJob,
+                                OperatorTask.CreateResources,
+                                OperatorTask.CreateUploadJob,
+                                OperatorTask.StartJob,
+                                OperatorTask.ClusterRunning
                             )
                         )
 
@@ -129,7 +129,7 @@ class ClusterHalted : OperatorTaskHandler {
                 val clusterStatus = OperatorState.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {
-                    ClusterStatus.SUSPENDED, ClusterStatus.FAILED -> {
+                    ClusterStatus.Suspended, ClusterStatus.Failed -> {
                         logger.info("Cluster ${context.clusterId.name} requires to restart the job")
 
                         OperatorState.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
@@ -139,11 +139,11 @@ class ClusterHalted : OperatorTaskHandler {
 
                         OperatorState.appendTasks(context.flinkCluster,
                             listOf(
-                                OperatorTask.STARTING_CLUSTER,
-                                OperatorTask.DELETE_UPLOAD_JOB,
-                                OperatorTask.UPLOAD_JAR,
-                                OperatorTask.START_JOB,
-                                OperatorTask.CLUSTER_RUNNING
+                                OperatorTask.StartingCluster,
+                                OperatorTask.DeleteUploadJob,
+                                OperatorTask.CreateUploadJob,
+                                OperatorTask.StartJob,
+                                OperatorTask.ClusterRunning
                             )
                         )
 
@@ -166,7 +166,7 @@ class ClusterHalted : OperatorTaskHandler {
                 val clusterStatus = OperatorState.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {
-                    ClusterStatus.FAILED -> {
+                    ClusterStatus.Failed -> {
                         val nextTask = OperatorState.getNextOperatorTask(context.flinkCluster)
 
                         val attempts = OperatorState.getTaskAttempts(context.flinkCluster)
@@ -177,7 +177,7 @@ class ClusterHalted : OperatorTaskHandler {
                             logger.info("Cluster ${context.clusterId.name} seems to be running...")
 
                             OperatorState.appendTasks(context.flinkCluster, listOf(
-                                OperatorTask.CLUSTER_RUNNING
+                                OperatorTask.ClusterRunning
                             ))
 
                             return Result(
@@ -198,10 +198,10 @@ class ClusterHalted : OperatorTaskHandler {
                                         logger.info("Restarting job of cluster ${context.clusterId.name}...")
 
                                         OperatorState.appendTasks(context.flinkCluster, listOf(
-                                            OperatorTask.DELETE_UPLOAD_JOB,
-                                            OperatorTask.UPLOAD_JAR,
-                                            OperatorTask.START_JOB,
-                                            OperatorTask.CLUSTER_RUNNING
+                                            OperatorTask.DeleteUploadJob,
+                                            OperatorTask.CreateUploadJob,
+                                            OperatorTask.StartJob,
+                                            OperatorTask.ClusterRunning
                                         ))
 
                                         return Result(

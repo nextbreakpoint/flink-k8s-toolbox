@@ -752,7 +752,7 @@ object KubernetesContext {
                 "v1",
                 flinkCluster.metadata.namespace,
                 "flinkclusters",
-                CustomResources.convertToMap(flinkCluster) /* oh boy, it works with map but not with json or pojo !!! */,
+                flinkCluster,
                 null
             )
         } catch (e : ApiException) {

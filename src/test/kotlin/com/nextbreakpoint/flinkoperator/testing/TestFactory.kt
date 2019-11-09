@@ -26,6 +26,8 @@ object TestFactory {
                 "flinkImage": "registry:30000/flink:1.7.2"
               },
               "flinkJob": {
+                "pullSecrets": "regcred",
+                "pullPolicy": "IfNotPresent",
                 "image": "registry:30000/flink-jobs:1",
                 "jarPath": "/flink-jobs.jar",
                 "className": "com.nextbreakpoint.flink.jobs.TestJob",
@@ -193,7 +195,7 @@ object TestFactory {
                   }
                 ]
               },
-              "flinkOperator": {
+              "operator": {
                 "savepointMode": "AUTOMATIC",
                 "savepointInterval": "60",
                 "savepointTargetPath": "file:///var/tmp/test"

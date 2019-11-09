@@ -9,7 +9,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class TerminateCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.TERMINATED)
+        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Terminated)
         OperatorState.setTaskAttempts(context.flinkCluster, 0)
         OperatorState.appendTasks(context.flinkCluster, listOf())
 

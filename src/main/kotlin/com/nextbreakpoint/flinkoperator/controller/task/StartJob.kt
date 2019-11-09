@@ -33,7 +33,7 @@ class StartJob : OperatorTaskHandler {
             )
         }
 
-        val runJarResponse = context.controller.runJar(context.clusterId, context.flinkCluster)
+        val runJarResponse = context.controller.startJob(context.clusterId, context.flinkCluster)
 
         if (runJarResponse.status == ResultStatus.SUCCESS) {
             return Result(

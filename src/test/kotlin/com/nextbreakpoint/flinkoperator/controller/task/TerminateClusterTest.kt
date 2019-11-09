@@ -54,7 +54,7 @@ class TerminateClusterTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.TERMINATED)
+        assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Terminated)
         assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
     }
 

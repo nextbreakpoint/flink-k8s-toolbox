@@ -13,10 +13,10 @@ public class V1FlinkClusterSpec {
     private V1FlinkImageSpec flinkImage;
     @SerializedName("flinkJob")
     private V1FlinkJobSpec flinkJob;
-    @SerializedName("flinkOperator")
-    private V1FlinkOperatorSpec flinkOperator;
     @SerializedName("taskManagers")
     private Integer taskManagers;
+    @SerializedName("operator")
+    private V1OperatorSpec operator;
 
     public V1JobManagerSpec getJobManager() {
         return jobManager;
@@ -54,12 +54,12 @@ public class V1FlinkClusterSpec {
         return this;
     }
 
-    public V1FlinkOperatorSpec getFlinkOperator() {
-        return flinkOperator;
+    public V1OperatorSpec getOperator() {
+        return operator;
     }
 
-    public void setFlinkOperator(V1FlinkOperatorSpec flinkOperator) {
-        this.flinkOperator = flinkOperator;
+    public void setOperator(V1OperatorSpec operator) {
+        this.operator = operator;
     }
 
     public Integer getTaskManagers() {
@@ -79,13 +79,13 @@ public class V1FlinkClusterSpec {
                 Objects.equals(getTaskManager(), that.getTaskManager()) &&
                 Objects.equals(getFlinkImage(), that.getFlinkImage()) &&
                 Objects.equals(getFlinkJob(), that.getFlinkJob()) &&
-                Objects.equals(getFlinkOperator(), that.getFlinkOperator()) &&
+                Objects.equals(getOperator(), that.getOperator()) &&
                 Objects.equals(getTaskManagers(), that.getTaskManagers());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getJobManager(), getTaskManager(), getFlinkImage(), getFlinkJob(), getFlinkOperator(), getTaskManagers());
+        return Objects.hash(getJobManager(), getTaskManager(), getFlinkImage(), getFlinkJob(), getOperator(), getTaskManagers());
     }
 
     @Override
@@ -95,7 +95,7 @@ public class V1FlinkClusterSpec {
                 ", taskManager=" + taskManager +
                 ", flinkImage=" + flinkImage +
                 ", flinkJob=" + flinkJob +
-                ", flinkOperator=" + flinkOperator +
+                ", flinkOperator=" + operator +
                 ", taskManagers=" + taskManagers +
                 '}';
     }
