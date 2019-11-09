@@ -140,10 +140,12 @@ class UpdateStatus(
         }
     }
 
-    private fun updateStatusTaskManagers(v1FlinkCluster: V1FlinkCluster, statefulSet: V1StatefulSet?) {
+    private fun updateStatusTaskManagers(flinkCluster: V1FlinkCluster, statefulSet: V1StatefulSet?) {
         val taskManagers = statefulSet?.status?.readyReplicas ?: 0
-        if (OperatorState.getTaskManagers(v1FlinkCluster) != taskManagers) {
-            OperatorState.setTaskManagers(v1FlinkCluster, taskManagers)
+        if (OperatorState.getTaskManagers(flinkCluster) != taskManagers) {
+            val taskSlots = flinkCluster.spec?.taskManager?.taskSlots ?: 1
+            OperatorState.setTaskManagers(flinkCluster, taskManagers)
+            OperatorState.setTotalTaskSlots(flinkCluster,taskManagers * taskSlots)
         }
     }
 

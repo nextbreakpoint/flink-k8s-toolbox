@@ -250,8 +250,7 @@ class ClusterRunning : OperatorTaskHandler {
             val result = context.controller.scaleCluster(context.clusterId, options)
             if (result.status == ResultStatus.SUCCESS) {
                 val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
-                val jobParallelism = desiredTaskManagers * taskSlots
-                OperatorState.setJobParallelism(context.flinkCluster, jobParallelism)
+                OperatorState.setJobParallelism(context.flinkCluster, desiredTaskManagers * taskSlots)
                 return Result(
                     ResultStatus.AWAIT,
                     ""
