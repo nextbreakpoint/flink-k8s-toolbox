@@ -216,12 +216,8 @@ class ClusterResourcesStatusEvaluator {
                 statusReport.add("container image pull policy does not match")
             }
 
-            if (container.resources.limits.get("cpu")?.number?.toFloat()?.equals(flinkCluster.spec.jobManager.requiredCPUs ?: 1.0f) != true) {
-                statusReport.add("container cpu limit doesn't match")
-            }
-
-            if (container.resources.requests.get("memory")?.number?.toInt()?.equals((flinkCluster.spec.jobManager.requiredMemory ?: 256) * 1024 * 1024) != true) {
-                statusReport.add("container memory limit doesn't match")
+            if (container.resources != flinkCluster.spec.jobManager?.resources) {
+                statusReport.add("container resources don't match")
             }
 
             val jobmanagerRpcAddressEnvVar = container.env.filter { it.name == "JOB_MANAGER_RPC_ADDRESS" }.firstOrNull()
@@ -232,7 +228,7 @@ class ClusterResourcesStatusEvaluator {
 
             val jobmanagerMemoryEnvVar = container.env.filter { it.name == "FLINK_JM_HEAP" }.firstOrNull()
 
-            if (jobmanagerMemoryEnvVar?.value == null || jobmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.jobManager.requiredMemory ?: 256) {
+            if (jobmanagerMemoryEnvVar?.value == null || jobmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.jobManager.maxHeapMemory ?: 256) {
                 statusReport.add("missing or invalid environment variable FLINK_JM_HEAP")
             }
 
@@ -339,12 +335,8 @@ class ClusterResourcesStatusEvaluator {
                 statusReport.add("container image pull policy does not match")
             }
 
-            if (container.resources.limits.get("cpu")?.number?.toFloat()?.equals(flinkCluster.spec.taskManager.requiredCPUs ?: 1.0f) != true) {
-                statusReport.add("container cpu limit doesn't match")
-            }
-
-            if (container.resources.requests.get("memory")?.number?.toInt()?.equals((flinkCluster.spec.taskManager.requiredMemory ?: 1024) * 1024 * 1024) != true) {
-                statusReport.add("container memory limit doesn't match")
+            if (container.resources != flinkCluster.spec.taskManager?.resources) {
+                statusReport.add("container resources don't match")
             }
 
             val taskmanagerRpcAddressEnvVar = container.env.filter { it.name == "JOB_MANAGER_RPC_ADDRESS" }.firstOrNull()
@@ -355,7 +347,7 @@ class ClusterResourcesStatusEvaluator {
 
             val taskmanagerMemoryEnvVar = container.env.filter { it.name == "FLINK_TM_HEAP" }.firstOrNull()
 
-            if (taskmanagerMemoryEnvVar?.value == null || taskmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.taskManager.requiredMemory ?: 1024) {
+            if (taskmanagerMemoryEnvVar?.value == null || taskmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.taskManager.maxHeapMemory ?: 1024) {
                 statusReport.add("missing or invalid environment variable FLINK_TM_HEAP")
             }
 

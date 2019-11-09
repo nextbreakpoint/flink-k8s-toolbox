@@ -6,6 +6,7 @@ import io.kubernetes.client.models.V1ContainerPort;
 import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
+import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
 
@@ -16,10 +17,6 @@ import java.util.Objects;
 public class V1JobManagerSpec {
     @SerializedName("serviceMode")
     private String serviceMode;
-    @SerializedName("requiredCPUs")
-    private Float requiredCPUs;
-    @SerializedName("requiredMemory")
-    private Integer requiredMemory;
     @SerializedName("environment")
     private List<V1EnvVar> environment;
     @SerializedName("environmentFrom")
@@ -40,6 +37,10 @@ public class V1JobManagerSpec {
     private List<V1Container> initContainers;
     @SerializedName("sideContainers")
     private List<V1Container> sideContainers;
+    @SerializedName("resources")
+    private V1ResourceRequirements resources;
+    @SerializedName("maxHeapMemory")
+    private Integer maxHeapMemory;
 
     public String getServiceMode() {
         return serviceMode;
@@ -47,24 +48,6 @@ public class V1JobManagerSpec {
 
     public V1JobManagerSpec setServiceMode(String serviceMode) {
         this.serviceMode = serviceMode;
-        return this;
-    }
-
-    public Float getRequiredCPUs() {
-        return requiredCPUs;
-    }
-
-    public V1JobManagerSpec setRequiredCPUs(Float requiredCPUs) {
-        this.requiredCPUs = requiredCPUs;
-        return this;
-    }
-
-    public Integer getRequiredMemory() {
-        return requiredMemory;
-    }
-
-    public V1JobManagerSpec setRequiredMemory(Integer requiredMemory) {
-        this.requiredMemory = requiredMemory;
         return this;
     }
 
@@ -153,16 +136,30 @@ public class V1JobManagerSpec {
         this.sideContainers = sideContainers;
     }
 
+    public V1ResourceRequirements getResources() {
+        return resources;
+    }
+
+    public void setResources(V1ResourceRequirements resources) {
+        this.resources = resources;
+    }
+
+    public Integer getMaxHeapMemory() {
+        return maxHeapMemory;
+    }
+
+    public void setMaxHeapMemory(Integer maxHeapMemory) {
+        this.maxHeapMemory = maxHeapMemory;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         V1JobManagerSpec that = (V1JobManagerSpec) o;
-        return Objects.equals(getRequiredCPUs(), that.getRequiredCPUs()) &&
-                Objects.equals(getRequiredMemory(), that.getRequiredMemory()) &&
+        return Objects.equals(getServiceMode(), that.getServiceMode()) &&
                 Objects.equals(getEnvironment(), that.getEnvironment()) &&
                 Objects.equals(getEnvironmentFrom(), that.getEnvironmentFrom()) &&
-                Objects.equals(getServiceMode(), that.getServiceMode()) &&
                 Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
                 Objects.equals(getVolumes(), that.getVolumes()) &&
                 Objects.equals(getVolumeMounts(), that.getVolumeMounts()) &&
@@ -170,20 +167,20 @@ public class V1JobManagerSpec {
                 Objects.equals(getAnnotations(), that.getAnnotations()) &&
                 Objects.equals(getExtraPorts(), that.getExtraPorts()) &&
                 Objects.equals(getInitContainers(), that.getInitContainers()) &&
-                Objects.equals(getSideContainers(), that.getSideContainers());
+                Objects.equals(getSideContainers(), that.getSideContainers()) &&
+                Objects.equals(getResources(), that.getResources()) &&
+                Objects.equals(getMaxHeapMemory(), that.getMaxHeapMemory());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getEnvironment(), getEnvironmentFrom(), getServiceMode(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers());
+        return Objects.hash(getServiceMode(), getEnvironment(), getEnvironmentFrom(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers(), getResources(), getMaxHeapMemory());
     }
 
     @Override
     public String toString() {
         return "V1JobManagerSpec{" +
                 "serviceMode='" + serviceMode + '\'' +
-                ", requiredCPUs=" + requiredCPUs +
-                ", requiredMemory=" + requiredMemory +
                 ", environment=" + environment +
                 ", environmentFrom=" + environmentFrom +
                 ", serviceAccount='" + serviceAccount + '\'' +
@@ -194,6 +191,8 @@ public class V1JobManagerSpec {
                 ", extraPorts=" + extraPorts +
                 ", initContainers=" + initContainers +
                 ", sideContainers=" + sideContainers +
+                ", resources=" + resources +
+                ", maxHeapMemory=" + maxHeapMemory +
                 '}';
     }
 }

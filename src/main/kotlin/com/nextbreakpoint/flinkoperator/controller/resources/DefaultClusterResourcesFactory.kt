@@ -246,7 +246,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val jobManagerHeapEnvVar =
             createEnvVar(
-                "FLINK_JM_HEAP", flinkCluster.spec.jobManager?.requiredMemory?.toString() ?: "256"
+                "FLINK_JM_HEAP", flinkCluster.spec.jobManager?.maxHeapMemory?.toString() ?: "256"
             )
 
         val rpcAddressEnvVar =
@@ -287,12 +287,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addAllToVolumeMounts(flinkCluster.spec.jobManager?.volumeMounts ?: listOf())
             .withEnv(jobmanagerVariables)
             .withEnvFrom(flinkCluster.spec.jobManager?.environmentFrom)
-            .withResources(
-                createResourceRequirements(
-                    flinkCluster.spec.jobManager?.requiredCPUs ?: 1.0f,
-                    flinkCluster.spec.jobManager?.requiredMemory ?: 256
-                )
-            )
+            .withResources(flinkCluster.spec.jobManager?.resources)
             .build()
 
         val jobmanagerPullSecrets = if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
@@ -398,7 +393,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val taskManagerHeapEnvVar =
             createEnvVar(
-                "FLINK_TM_HEAP", flinkCluster.spec.taskManager?.requiredMemory?.toString() ?: "1024"
+                "FLINK_TM_HEAP", flinkCluster.spec.taskManager?.maxHeapMemory?.toString() ?: "1024"
             )
 
         val rpcAddressEnvVar =
@@ -438,12 +433,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addAllToVolumeMounts(flinkCluster.spec.taskManager?.volumeMounts ?: listOf())
             .withEnv(taskmanagerVariables)
             .withEnvFrom(flinkCluster.spec.taskManager?.environmentFrom)
-            .withResources(
-                createResourceRequirements(
-                    flinkCluster.spec.taskManager?.requiredCPUs ?: 1.0f,
-                    flinkCluster.spec.taskManager?.requiredMemory ?: 1024
-                )
-            )
+            .withResources(flinkCluster.spec.taskManager?.resources)
             .build()
 
         val taskmanagerAffinity =
@@ -559,31 +549,31 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
     private fun createEnvVar(name: String, value: String) = V1EnvVar().name(name).value(value)
 
-    private fun createResourceRequirements(cpus: Float, memory: Int) = V1ResourceRequirements()
-        .limits(
-            mapOf(
-                "cpu" to Quantity(cpus.toString()),
-                "memory" to Quantity(memory.times(1.5).toString() + "Mi")
-            )
-        )
-        .requests(
-            mapOf(
-                "cpu" to Quantity(cpus.div(4).toString()),
-                "memory" to Quantity(memory.toString() + "Mi")
-            )
-        )
+//    private fun createResourceRequirements(cpus: Float, memory: Int) = V1ResourceRequirements()
+//        .limits(
+//            mapOf(
+//                "cpu" to Quantity(cpus.toString()),
+//                "memory" to Quantity(memory.times(1.5).toString() + "Mi")
+//            )
+//        )
+//        .requests(
+//            mapOf(
+//                "cpu" to Quantity(cpus.div(4).toString()),
+//                "memory" to Quantity(memory.toString() + "Mi")
+//            )
+//        )
 
     private fun createUploadJobResourceRequirements() = V1ResourceRequirements()
         .limits(
             mapOf(
-                "cpu" to Quantity("0.2"),
-                "memory" to Quantity("200Mi")
+                "cpu" to Quantity("1"),
+                "memory" to Quantity("512Mi")
             )
         )
         .requests(
             mapOf(
                 "cpu" to Quantity("0.2"),
-                "memory" to Quantity("200Mi")
+                "memory" to Quantity("256Mi")
             )
         )
 
