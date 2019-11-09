@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flinkoperator.controller
 
-import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
@@ -206,6 +205,17 @@ object OperatorState {
 
     fun getJobParallelism(flinkCluster: V1FlinkCluster): Int =
         flinkCluster.status?.jobParallelism ?: 0
+
+    fun setTotalTaskSlots(flinkCluster: V1FlinkCluster, totalTaskSlots: Int) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.totalTaskSlots = totalTaskSlots
+
+        flinkCluster.status?.timestamp = currentTimeMillis()
+    }
+
+    fun getTotalTaskSlots(flinkCluster: V1FlinkCluster): Int =
+        flinkCluster.status?.totalTaskSlots ?: 0
 
     private fun currentTimeMillis(): Long {
         try {

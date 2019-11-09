@@ -10,6 +10,8 @@ public class V1FlinkClusterStatus {
     private String[] labelSelector;
     @SerializedName("taskManagers")
     private Integer taskManagers;
+    @SerializedName("totalTaskSlots")
+    private Integer totalTaskSlots;
     @SerializedName("jobParallelism")
     private Integer jobParallelism;
     @SerializedName("timestamp")
@@ -159,6 +161,14 @@ public class V1FlinkClusterStatus {
         this.digestOfFlinkJob = digestOfFlinkJob;
     }
 
+    public Integer getTotalTaskSlots() {
+        return totalTaskSlots;
+    }
+
+    public void setTotalTaskSlots(Integer taskSlots) {
+        this.totalTaskSlots = taskSlots;
+    }
+
     public Integer getJobParallelism() {
         return jobParallelism;
     }
@@ -174,6 +184,7 @@ public class V1FlinkClusterStatus {
         V1FlinkClusterStatus that = (V1FlinkClusterStatus) o;
         return Arrays.equals(getLabelSelector(), that.getLabelSelector()) &&
                 Objects.equals(getTaskManagers(), that.getTaskManagers()) &&
+                Objects.equals(getTotalTaskSlots(), that.getTotalTaskSlots()) &&
                 Objects.equals(getJobParallelism(), that.getJobParallelism()) &&
                 Objects.equals(getTimestamp(), that.getTimestamp()) &&
                 Arrays.equals(getTasks(), that.getTasks()) &&
@@ -192,7 +203,7 @@ public class V1FlinkClusterStatus {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getTaskManagers(), getJobParallelism(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigestOfJobManager(), getDigestOfTaskManager(), getDigestOfFlinkImage(), getDigestOfFlinkJob());
+        int result = Objects.hash(getTaskManagers(), getTotalTaskSlots(), getJobParallelism(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigestOfJobManager(), getDigestOfTaskManager(), getDigestOfFlinkImage(), getDigestOfFlinkJob());
         result = 31 * result + Arrays.hashCode(getLabelSelector());
         result = 31 * result + Arrays.hashCode(getTasks());
         return result;
@@ -203,6 +214,7 @@ public class V1FlinkClusterStatus {
         return "V1FlinkClusterStatus{" +
                 "labelSelector=" + Arrays.toString(labelSelector) +
                 ", taskManagers=" + taskManagers +
+                ", totalTaskSlots=" + totalTaskSlots +
                 ", jobParallelism=" + jobParallelism +
                 ", timestamp=" + timestamp +
                 ", tasks=" + Arrays.toString(tasks) +
