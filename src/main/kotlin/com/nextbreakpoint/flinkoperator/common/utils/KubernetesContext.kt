@@ -718,7 +718,7 @@ object KubernetesContext {
     fun updateSavepointPath(clusterId: ClusterId, savepointPath: String) {
         val patch = mapOf<String, Any?>(
             "spec" to mapOf<String, Any?>(
-                "flinkOperator" to mapOf<String, Any?>(
+                "operator" to mapOf<String, Any?>(
                     "savepointPath" to savepointPath
                 )
             )
