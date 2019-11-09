@@ -38,6 +38,7 @@ object TestFactory {
               },
               "jobManager": {
                 "serviceMode": "ClusterIP",
+                "maxHeapMemory": 256,
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",
@@ -117,10 +118,21 @@ object TestFactory {
                       }
                     }
                   }
-                ]
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "1",
+                        "memory": "512Mi"
+                    },
+                    "requests": {
+                        "cpu": "0.1",
+                        "memory": "256Mi"
+                    }
+                }
               },
               "taskManager": {
                 "taskSlots": $taskSlots,
+                "maxHeapMemory": 1024,
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",
@@ -193,7 +205,17 @@ object TestFactory {
                       }
                     }
                   }
-                ]
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "1",
+                        "memory": "2048Mi"
+                    },
+                    "requests": {
+                        "cpu": "0.2",
+                        "memory": "1024Mi"
+                    }
+                }
               },
               "operator": {
                 "savepointMode": "AUTOMATIC",

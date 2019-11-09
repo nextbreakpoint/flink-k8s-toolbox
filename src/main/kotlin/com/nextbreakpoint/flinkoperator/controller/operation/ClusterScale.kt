@@ -103,7 +103,6 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                             OperatorTask.CancelJob,
                             OperatorTask.RescaleCluster,
                             OperatorTask.StartingCluster,
-                            OperatorTask.RestartPods,
                             OperatorTask.DeleteUploadJob,
                             OperatorTask.CreateUploadJob,
                             OperatorTask.StartJob,

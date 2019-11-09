@@ -150,8 +150,9 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.env?.get(4)?.value).isEqualTo("graphite.default.svc.cluster.local")
         assertThat(container?.volumeMounts).hasSize(4)
         assertThat(container?.volumeMounts?.get(3)?.name).isEqualTo("jobmanager")
-        assertThat(container?.resources?.limits?.get("cpu")?.number?.toFloat()).isEqualTo(cluster.spec.jobManager.requiredCPUs ?: 1.0f)
-        assertThat(container?.resources?.requests?.get("memory")?.number?.toInt()).isEqualTo((cluster.spec.jobManager.requiredMemory ?: 256) * 1024 * 1024)
+        assertThat(container?.resources).isEqualTo(cluster.spec.jobManager.resources)
+
+        assertThat(container?.env?.get(2)?.value).isEqualTo(cluster.spec.jobManager?.maxHeapMemory?.toString() ?: "256")
     }
 
     @Test
@@ -218,7 +219,8 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.env?.get(5)?.value).isEqualTo("graphite.default.svc.cluster.local")
         assertThat(container?.volumeMounts).hasSize(4)
         assertThat(container?.volumeMounts?.get(3)?.name).isEqualTo("taskmanager")
-        assertThat(container?.resources?.limits?.get("cpu")?.number?.toFloat()).isEqualTo(cluster.spec.taskManager.requiredCPUs ?: 1.0f)
-        assertThat(container?.resources?.requests?.get("memory")?.number?.toInt()).isEqualTo((cluster.spec.taskManager.requiredMemory ?: 1024) * 1024 * 1024)
+        assertThat(container?.resources).isEqualTo(cluster.spec.taskManager.resources)
+
+        assertThat(container?.env?.get(2)?.value).isEqualTo(cluster.spec.taskManager?.maxHeapMemory?.toString() ?: "1024")
     }
 }
