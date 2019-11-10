@@ -17,7 +17,7 @@ spec:
       - disabled
   jobManager:
     serviceMode: NodePort
-    maxHeapMemory: 256,
+    maxHeapMemory: 256
     annotations:
       managed: true
     environment:
@@ -87,7 +87,7 @@ spec:
         memory: 256Mi
   taskManager:
     taskSlots: 1
-    maxHeapMemory: 1024,
+    maxHeapMemory: 1024
     annotations:
       managed: true
     environment:
