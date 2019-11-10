@@ -54,12 +54,12 @@ class UpdateStatusTest {
 
     @BeforeEach
     fun configure() {
-        val actualFlinkJobDigest = CustomResources.computeDigest(cluster.spec?.flinkJob)
-        val actualFlinkImageDigest = CustomResources.computeDigest(cluster.spec?.flinkImage)
+        val actualBootstrapDigest = CustomResources.computeDigest(cluster.spec?.bootstrap)
+        val actualRuntimeDigest = CustomResources.computeDigest(cluster.spec?.runtime)
         val actualJobManagerDigest = CustomResources.computeDigest(cluster.spec?.jobManager)
         val actualTaskManagerDigest = CustomResources.computeDigest(cluster.spec?.taskManager)
-        OperatorState.setFlinkJobDigest(cluster, actualFlinkJobDigest)
-        OperatorState.setFlinkImageDigest(cluster, actualFlinkImageDigest)
+        OperatorState.setBootstrapDigest(cluster, actualBootstrapDigest)
+        OperatorState.setRuntimeDigest(cluster, actualRuntimeDigest)
         OperatorState.setJobManagerDigest(cluster, actualJobManagerDigest)
         OperatorState.setTaskManagerDigest(cluster, actualTaskManagerDigest)
         OperatorState.setTaskAttempts(cluster, 1)

@@ -7,7 +7,7 @@ import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
 data class OperatorResources(
-    val jarUploadJobs: Map<ClusterId, V1Job>,
+    val bootstrapJobs: Map<ClusterId, V1Job>,
     val jobmanagerServices: Map<ClusterId, V1Service>,
     val jobmanagerStatefulSets: Map<ClusterId, V1StatefulSet>,
     val taskmanagerStatefulSets: Map<ClusterId, V1StatefulSet>,

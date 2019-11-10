@@ -54,7 +54,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is not defined and cluster is terminated but operator is not idle`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setTaskStatus(cluster, TaskStatus.Awaiting)
         OperatorState.setClusterStatus(cluster, ClusterStatus.Terminated)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
@@ -71,7 +71,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is not defined and cluster is terminated and savepoint is enabled`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setClusterStatus(cluster, ClusterStatus.Terminated)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
@@ -89,7 +89,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is not defined and cluster is suspended and savepoint is enabled`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setClusterStatus(cluster, ClusterStatus.Suspended)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
@@ -107,7 +107,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is not defined and cluster has failed and savepoint is enabled`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setClusterStatus(cluster, ClusterStatus.Failed)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
@@ -128,7 +128,7 @@ class ClusterStartTest {
 
     @Test
     fun `should return expected result when job is not defined and cluster is checkpointing and savepoint is enabled`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setClusterStatus(cluster, ClusterStatus.Checkpointing)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
@@ -155,8 +155,8 @@ class ClusterStartTest {
         assertThat(result.output).containsExactlyElementsOf(listOf(
             OperatorTask.StartingCluster,
             OperatorTask.CreateResources,
-            OperatorTask.DeleteUploadJob,
-            OperatorTask.CreateUploadJob,
+            OperatorTask.DeleteBootstrapJob,
+            OperatorTask.CreateBootstrapJob,
             OperatorTask.EraseSavepoint,
             OperatorTask.StartJob,
             OperatorTask.ClusterRunning
@@ -176,8 +176,8 @@ class ClusterStartTest {
         assertThat(result.output).containsExactlyElementsOf(listOf(
             OperatorTask.StartingCluster,
             OperatorTask.RestartPods,
-            OperatorTask.DeleteUploadJob,
-            OperatorTask.CreateUploadJob,
+            OperatorTask.DeleteBootstrapJob,
+            OperatorTask.CreateBootstrapJob,
             OperatorTask.EraseSavepoint,
             OperatorTask.StartJob,
             OperatorTask.ClusterRunning
@@ -196,12 +196,12 @@ class ClusterStartTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             OperatorTask.StoppingCluster,
-            OperatorTask.DeleteUploadJob,
+            OperatorTask.DeleteBootstrapJob,
             OperatorTask.TerminatePods,
             OperatorTask.DeleteResources,
             OperatorTask.StartingCluster,
             OperatorTask.CreateResources,
-            OperatorTask.CreateUploadJob,
+            OperatorTask.CreateBootstrapJob,
             OperatorTask.EraseSavepoint,
             OperatorTask.StartJob,
             OperatorTask.ClusterRunning
@@ -236,8 +236,8 @@ class ClusterStartTest {
         assertThat(result.output).containsExactlyElementsOf(listOf(
             OperatorTask.StartingCluster,
             OperatorTask.CreateResources,
-            OperatorTask.DeleteUploadJob,
-            OperatorTask.CreateUploadJob,
+            OperatorTask.DeleteBootstrapJob,
+            OperatorTask.CreateBootstrapJob,
             OperatorTask.StartJob,
             OperatorTask.ClusterRunning
         ))
@@ -256,8 +256,8 @@ class ClusterStartTest {
         assertThat(result.output).containsExactlyElementsOf(listOf(
             OperatorTask.StartingCluster,
             OperatorTask.RestartPods,
-            OperatorTask.DeleteUploadJob,
-            OperatorTask.CreateUploadJob,
+            OperatorTask.DeleteBootstrapJob,
+            OperatorTask.CreateBootstrapJob,
             OperatorTask.StartJob,
             OperatorTask.ClusterRunning
         ))
@@ -275,12 +275,12 @@ class ClusterStartTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             OperatorTask.StoppingCluster,
-            OperatorTask.DeleteUploadJob,
+            OperatorTask.DeleteBootstrapJob,
             OperatorTask.TerminatePods,
             OperatorTask.DeleteResources,
             OperatorTask.StartingCluster,
             OperatorTask.CreateResources,
-            OperatorTask.CreateUploadJob,
+            OperatorTask.CreateBootstrapJob,
             OperatorTask.StartJob,
             OperatorTask.ClusterRunning
         ))

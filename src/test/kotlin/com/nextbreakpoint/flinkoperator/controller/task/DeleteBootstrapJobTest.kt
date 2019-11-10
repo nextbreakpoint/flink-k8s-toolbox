@@ -19,14 +19,14 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class DeleteUploadJobTest {
+class DeleteBootstrapJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(OperatorContext::class.java)
     private val controller = mock(OperatorController::class.java)
     private val resources = mock(OperatorResources::class.java)
     private val time = System.currentTimeMillis()
-    private val task = DeleteUploadJob()
+    private val task = DeleteBootstrapJob()
 
     @BeforeEach
     fun configure() {
@@ -54,7 +54,7 @@ class DeleteUploadJobTest {
 
     @Test
     fun `onExecuting should return expected result when job can't be deleted`() {
-        given(controller.deleteUploadJob(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(controller.deleteBootstrapJob(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -62,7 +62,7 @@ class DeleteUploadJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).deleteUploadJob(eq(clusterId))
+        verify(controller, times(1)).deleteBootstrapJob(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -71,7 +71,7 @@ class DeleteUploadJobTest {
 
     @Test
     fun `onExecuting should return expected result when job has been deleted`() {
-        given(controller.deleteUploadJob(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(controller.deleteBootstrapJob(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -79,7 +79,7 @@ class DeleteUploadJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).deleteUploadJob(eq(clusterId))
+        verify(controller, times(1)).deleteBootstrapJob(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)

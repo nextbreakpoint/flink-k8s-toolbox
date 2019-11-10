@@ -74,9 +74,9 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubern
     private fun tryStoppingCluster(flinkCluster: V1FlinkCluster, params: StopOptions): List<OperatorTask> {
         val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
 
-        val jobSpec = flinkCluster.spec?.flinkJob
+        val bootstrapSpec = flinkCluster.spec?.bootstrap
 
-        return if (jobSpec == null) {
+        return if (bootstrapSpec == null) {
             when (clusterStatus) {
                 ClusterStatus.Running ->
                     if (params.deleteResources) {

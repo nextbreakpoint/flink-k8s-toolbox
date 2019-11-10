@@ -53,7 +53,7 @@ class ClusterCheckpointingTest {
 
     @Test
     fun `should return expected result when job is not defined`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         val result = command.execute(clusterId, null)
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)

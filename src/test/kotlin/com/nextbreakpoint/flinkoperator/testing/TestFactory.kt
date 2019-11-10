@@ -20,13 +20,14 @@ object TestFactory {
             """
             {
               "taskManagers": $taskManagers,
-              "flinkImage": {
-                "pullSecrets": "regcred",
+              "runtime": {
+                "pullSecrets": "flink-regcred",
                 "pullPolicy": "IfNotPresent",
-                "flinkImage": "registry:30000/flink:1.7.2"
+                "image": "registry:30000/flink:1.9.0"
               },
-              "flinkJob": {
-                "pullSecrets": "regcred",
+              "bootstrap": {
+                "serviceAccount": "bootstrap-test",
+                "pullSecrets": "bootstrap-regcred",
                 "pullPolicy": "IfNotPresent",
                 "image": "registry:30000/flink-jobs:1",
                 "jarPath": "/flink-jobs.jar",
@@ -37,8 +38,9 @@ object TestFactory {
                 ]
               },
               "jobManager": {
+                "serviceAccount": "jobmanager-test",
                 "serviceMode": "ClusterIP",
-                "maxHeapMemory": 256,
+                "maxHeapMemory": 512,
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",
@@ -131,8 +133,9 @@ object TestFactory {
                 }
               },
               "taskManager": {
+                "serviceAccount": "taskmanager-test",
                 "taskSlots": $taskSlots,
-                "maxHeapMemory": 1024,
+                "maxHeapMemory": 2048,
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",
@@ -316,7 +319,7 @@ object TestFactory {
         val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
         val resources = createClusterResources(uid, cluster)
         return OperatorResources(
-            mapOf(clusterId to (resources.jarUploadJob ?: throw RuntimeException())),
+            mapOf(clusterId to (resources.bootstrapJob ?: throw RuntimeException())),
             mapOf(clusterId to (resources.jobmanagerService ?: throw RuntimeException())),
             mapOf(clusterId to (resources.jobmanagerStatefulSet ?: throw RuntimeException())),
             mapOf(clusterId to (resources.taskmanagerStatefulSet ?: throw RuntimeException())),

@@ -43,7 +43,7 @@ spec:
               type: integer
               nullable: false
               minimum: 0
-            flinkImage:
+            runtime:
               description: A Flink image specification.
               type: object
               nullable: false
@@ -65,8 +65,8 @@ spec:
                   type: string
                   nullable: false
               required:
-                - flinkImage
-            flinkJob:
+                - image
+            bootstrap:
               description: A Flink job specification.
               type: object
               nullable: true
@@ -84,7 +84,7 @@ spec:
                     - Always
                     - IfNotPresent
                 image:
-                  description: Image to use for uploading Flink jar.
+                  description: Image to use for bootstrapping Flink job.
                   type: string
                   nullable: false
                 className:
@@ -8336,9 +8336,9 @@ spec:
                 - savepointTargetPath
                 - jobRestartPolicy
           required:
+            - runtime
             - jobManager
             - taskManager
-            - flinkImage
             - operator
         status:
           type: object
@@ -8373,8 +8373,8 @@ spec:
                   - EraseSavepoint
                   - CreateResources
                   - DeleteResources
-                  - CreateUploadJob
-                  - DeleteUploadJob
+                  - CreateBootstrapJob
+                  - DeleteBootstrapJob
                   - TerminatePods
                   - RestartPods
                   - CancelJob
@@ -8412,14 +8412,17 @@ spec:
               type: string
             savepointTimestamp:
               type: integer
-            digestOfJobManager:
-              type: string
-            digestOfTaskManager:
-              type: string
-            digestOfFlinkImage:
-              type: string
-            digestOfFlinkJob:
-              type: string
+            digest:
+              type: object
+              properties:
+                runtime:
+                  type: string
+                bootstrap:
+                  type: string
+                jobManager:
+                  type: string
+                taskManager:
+                  type: string
           required:
             - timestamp
             - tasks

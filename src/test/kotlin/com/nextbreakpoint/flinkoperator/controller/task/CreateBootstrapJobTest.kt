@@ -20,14 +20,14 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class CreateUploadJobTest {
+class CreateBootstrapJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(OperatorContext::class.java)
     private val controller = mock(OperatorController::class.java)
     private val resources = mock(OperatorResources::class.java)
     private val time = System.currentTimeMillis()
-    private val task = CreateUploadJob()
+    private val task = CreateBootstrapJob()
 
     @BeforeEach
     fun configure() {
@@ -36,12 +36,12 @@ class CreateUploadJobTest {
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
-        given(context.haveUploadJobResourceDiverged(any())).thenReturn(false)
+        given(context.hasBootstrapJobDiverged(any())).thenReturn(false)
     }
 
     @Test
     fun `onExecuting should return expected result when job is not defined`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
@@ -52,7 +52,7 @@ class CreateUploadJobTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.UPLOADING_JAR_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.BOOTSTRAPPING_JOB_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -85,7 +85,7 @@ class CreateUploadJobTest {
     @Test
     fun `onExecuting should return expected result when jar has not been uploaded yet`() {
         given(controller.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(controller.uploadJar(eq(clusterId), any())).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(controller.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -94,7 +94,7 @@ class CreateUploadJobTest {
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).removeJar(eq(clusterId))
-        verify(controller, times(1)).uploadJar(eq(clusterId), any())
+        verify(controller, times(1)).createBootstrapJob(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -104,7 +104,7 @@ class CreateUploadJobTest {
     @Test
     fun `onExecuting should return expected result when jar can't be uploaded`() {
         given(controller.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(controller.uploadJar(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
+        given(controller.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -113,7 +113,7 @@ class CreateUploadJobTest {
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).removeJar(eq(clusterId))
-        verify(controller, times(1)).uploadJar(eq(clusterId), any())
+        verify(controller, times(1)).createBootstrapJob(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -123,7 +123,7 @@ class CreateUploadJobTest {
     @Test
     fun `onExecuting should return expected result when jar has been uploaded`() {
         given(controller.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(controller.uploadJar(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(controller.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -132,7 +132,7 @@ class CreateUploadJobTest {
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).removeJar(eq(clusterId))
-        verify(controller, times(1)).uploadJar(eq(clusterId), any())
+        verify(controller, times(1)).createBootstrapJob(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -141,7 +141,7 @@ class CreateUploadJobTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.UPLOADING_JAR_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.BOOTSTRAPPING_JOB_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -156,9 +156,9 @@ class CreateUploadJobTest {
 
     @Test
     fun `onAwaiting should return expected result when resources diverged`() {
-        given(context.haveUploadJobResourceDiverged(any())).thenReturn(true)
+        given(context.hasBootstrapJobDiverged(any())).thenReturn(true)
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
-        resources.jarUploadJobs.get(clusterId)?.spec?.template?.spec?.serviceAccountName = "xxx"
+        resources.bootstrapJobs.get(clusterId)?.spec?.template?.spec?.serviceAccountName = "xxx"
         given(context.resources).thenReturn(resources)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
@@ -166,7 +166,7 @@ class CreateUploadJobTest {
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
-        verify(context, times(1)).haveUploadJobResourceDiverged(any())
+        verify(context, times(1)).hasBootstrapJobDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
@@ -185,7 +185,7 @@ class CreateUploadJobTest {
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
-        verify(context, times(1)).haveUploadJobResourceDiverged(any())
+        verify(context, times(1)).hasBootstrapJobDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isJarReady(eq(clusterId))
@@ -205,7 +205,7 @@ class CreateUploadJobTest {
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
-        verify(context, times(1)).haveUploadJobResourceDiverged(any())
+        verify(context, times(1)).hasBootstrapJobDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isJarReady(eq(clusterId))
@@ -225,7 +225,7 @@ class CreateUploadJobTest {
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
-        verify(context, times(1)).haveUploadJobResourceDiverged(any())
+        verify(context, times(1)).hasBootstrapJobDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isJarReady(eq(clusterId))

@@ -1,20 +1,20 @@
 package com.nextbreakpoint.flinkoperator.cli.command
 
 import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
-import com.nextbreakpoint.flinkoperator.cli.UploadCommand
+import com.nextbreakpoint.flinkoperator.cli.BootstrapCommand
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.UploadOptions
+import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import org.apache.log4j.Logger
 import java.io.File
 
-class UploadJAR : UploadCommand<UploadOptions> {
+class BootstrapJAR : BootstrapCommand<BootstrapOptions> {
     companion object {
-        private val logger = Logger.getLogger(UploadJAR::class.simpleName)
+        private val logger = Logger.getLogger(BootstrapJAR::class.simpleName)
     }
 
-    override fun run(flinkOptions: FlinkOptions, namespace: String, clusterName: String, args: UploadOptions) {
+    override fun run(flinkOptions: FlinkOptions, namespace: String, clusterName: String, args: BootstrapOptions) {
         try {
             logger.info("Uploading JAR file ${args.jarPath}...")
 

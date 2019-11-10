@@ -48,7 +48,7 @@ class JobStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernete
             val taskSlots = params.spec.taskManager?.taskSlots ?: 1
             val parallelism = taskManagers * taskSlots
 
-            flinkContext.runJar(address, jarFile, params.spec.flinkJob, parallelism, savepointPath)
+            flinkContext.runJar(address, jarFile, params.spec.bootstrap, parallelism, savepointPath)
 
             return Result(
                 ResultStatus.SUCCESS,

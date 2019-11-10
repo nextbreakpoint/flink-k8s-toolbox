@@ -11,7 +11,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 
 class CancelJob : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        if (context.flinkCluster.spec?.flinkJob == null) {
+        if (context.flinkCluster.spec?.bootstrap == null) {
             return Result(
                 ResultStatus.FAILED,
                 "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"

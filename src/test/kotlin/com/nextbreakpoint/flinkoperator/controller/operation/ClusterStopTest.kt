@@ -54,7 +54,7 @@ class ClusterStopTest {
 
     @Test
     fun `should return expected result when operator is not idle`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setTaskStatus(cluster, TaskStatus.Awaiting)
         OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = true))
@@ -87,7 +87,7 @@ class ClusterStopTest {
 
     @Test
     fun `should return expected result when cluster is running, job is not defined and resources must be deleted`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
@@ -107,7 +107,7 @@ class ClusterStopTest {
 
     @Test
     fun `should return expected result when cluster is running, job is not defined and resources are not deleted`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = false))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
@@ -126,7 +126,7 @@ class ClusterStopTest {
 
     @Test
     fun `should return expected result when cluster is not running and job is not defined`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         OperatorState.setClusterStatus(cluster, ClusterStatus.Suspended)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = false))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))

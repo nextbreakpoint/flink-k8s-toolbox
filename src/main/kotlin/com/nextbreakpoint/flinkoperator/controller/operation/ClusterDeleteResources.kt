@@ -18,7 +18,7 @@ class ClusterDeleteResources(flinkOptions: FlinkOptions, flinkContext: FlinkCont
         try {
             logger.info("Deleting resources of cluster ${clusterId.name}...")
 
-            kubernetesContext.deleteUploadJobs(clusterId)
+            kubernetesContext.deleteBootstrapJobs(clusterId)
 
             kubernetesContext.deleteStatefulSets(clusterId)
 

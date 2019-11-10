@@ -14,11 +14,11 @@ class InitialiseCluster : OperatorTaskHandler {
         OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
         OperatorState.setTaskAttempts(context.flinkCluster, 0)
 
-        if (context.flinkCluster.spec.flinkJob != null) {
+        if (context.flinkCluster.spec.bootstrap != null) {
             OperatorState.appendTasks(context.flinkCluster,
                 listOf(
                     OperatorTask.CreateResources,
-                    OperatorTask.CreateUploadJob,
+                    OperatorTask.CreateBootstrapJob,
                     OperatorTask.StartJob,
                     OperatorTask.ClusterRunning
                 )
@@ -34,13 +34,13 @@ class InitialiseCluster : OperatorTaskHandler {
 
         val jobManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.jobManager)
         val taskManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.taskManager)
-        val flinkImageDigest = CustomResources.computeDigest(context.flinkCluster.spec?.flinkImage)
-        val flinkJobDigest = CustomResources.computeDigest(context.flinkCluster.spec?.flinkJob)
+        val runtimeDigest = CustomResources.computeDigest(context.flinkCluster.spec?.runtime)
+        val bootstrapDigest = CustomResources.computeDigest(context.flinkCluster.spec?.bootstrap)
 
         OperatorState.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
         OperatorState.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
-        OperatorState.setFlinkImageDigest(context.flinkCluster, flinkImageDigest)
-        OperatorState.setFlinkJobDigest(context.flinkCluster, flinkJobDigest)
+        OperatorState.setRuntimeDigest(context.flinkCluster, runtimeDigest)
+        OperatorState.setBootstrapDigest(context.flinkCluster, bootstrapDigest)
 
         OperatorState.setTaskManagers(context.flinkCluster, 0)
 

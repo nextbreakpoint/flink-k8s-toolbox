@@ -111,75 +111,75 @@ Each arrow in this graph represents a specific sequence of tasks which are execu
 
 The possible tasks which are executed to transition from one status to another are:
 
-- **INITIALISE_CLUSTER** 
+- **INITIALISE CLUSTER** 
 
   Initialise primary resource and change cluster status to starting.    
   
-- **CLUSTER_RUNNING** 
+- **CLUSTER RUNNING** 
 
   Detect changes in the primary resource and restart cluster if needed. Change cluster status to FAILED if job stops running. Periodically triggers a new savepoint.     
 
-- **CLUSTER_HALTED** 
+- **CLUSTER HALTED** 
 
   Detect changes in the primary resource and restart cluster if needed. Change cluster status to RUNNING if there is a running job.    
   
-- **STARTING_CLUSTER** 
+- **STARTING CLUSTER** 
 
   Set cluster status to STARTING.
        
-- **STOPPING_CLUSTER** 
+- **STOPPING CLUSTER** 
 
   Set cluster status to STOPPING.
   
-- **RESCALE_CLUSTER** 
+- **RESCALE CLUSTER** 
 
   Change number of Task Managers.
   
-- **CREATING_SAVEPOINT** 
-
-  Set cluster status to CHECKPOINTING.
-  
-- **CREATE_RESOURCES** 
+- **CREATE RESOURCES** 
 
   Create secondary resources and wait until resources reach expected status.
   
-- **DELETE_RESOURCES** 
+- **DELETE RESOURCES** 
 
   Delete secondary resources and wait until resources reach expected status.
   
-- **DELETE_UPLOAD_JOB** 
-
-  Remove batch job previously used to upload JAR file.
-  
-- **TERMINATE_PODS** 
-
-  Terminate pods scaling down resources (set replicas to 0). 
-  
-- **RESTART_PODS** 
-
-  Restart pods scaling up resources (set replicas to expected number of Task Managers). 
-  
-- **UPLOAD_JAR** 
+- **CREATE BOOTSTRAP JOB** 
 
   Schedule batch job which upload JAR file to Flink.  
   
-- **CANCEL_JOB** 
+- **DELETE BOOTSTRAP JOB** 
+
+  Remove batch job previously used to upload JAR file.
+  
+- **TERMINATE PODS** 
+
+  Terminate pods scaling down resources (set replicas to 0). 
+  
+- **RESTART PODS** 
+
+  Restart pods scaling up resources (set replicas to expected number of Task Managers). 
+  
+- **CANCEL JOB** 
 
   Cancel job creating a new savepoint and wait until savepoint is completed.  
   
-- **START_JOB** 
+- **START JOB** 
 
   Start job using configuration from primary resource. Restart job from savepoint when savepoint path is available in primary resource.   
   
-- **STOP_JOB** 
+- **STOP JOB** 
 
   Cancel job without creating a savepoint.  
   
-- **CREATE_SAVEPOINT** 
+- **CREATING SAVEPOINT** 
+
+  Set cluster status to CHECKPOINTING.
+  
+- **CREATE SAVEPOINT** 
 
   Trigger new savepoint and wait until savepoint is completed. 
   
-- **ERASE_SAVEPOINT** 
+- **ERASE SAVEPOINT** 
 
   Delete savepoint from resource status. 
 
@@ -356,11 +356,12 @@ Create a FlinkCluster file:
       name: test
     spec:
       taskManagers: 1
-      flinkImage:
-        pullPolicy: Never
-        flinkImage: flink:1.7.2
-      flinkJob:
-        image: flink-jobs:1
+      runtime:
+        pullPolicy: Always
+        image: privaterepo/fflink:1.9.0
+      bootstrap:
+        pullPolicy: Always
+        image: privaterepo/flink-jobs:1
         jarPath: /flink-jobs.jar
         className: com.nextbreakpoint.flink.jobs.TestJob
         arguments:
@@ -496,7 +497,7 @@ The output should look like:
       operator      Access operator subcommands
       cluster       Access cluster subcommands
       savepoint     Access savepoint subcommands
-      upload        Access upload subcommands
+      bootstrap     Access bootstrap subcommands
       job           Access job subcommands
       jobmanager    Access JobManager subcommands
       taskmanager   Access TaskManager subcommands
@@ -526,12 +527,13 @@ Create a JSON file:
     cat <<EOF >flink-cluster-test.json
     {
       "taskManagers": 1,
-      "flinkImage": {
-        "pullPolicy": "Never",
-        "flinkImage": "flink:1.7.2"
+      "runtime": {
+        "pullPolicy": "Always",
+        "image": "privaterepo/flink:1.9.0"
       },
-      "flinkJob": {
-        "image": "flink-jobs:1",
+      "bootstrap": {
+        "pullPolicy": "Always",
+        "image": "privaterepo/flink-jobs:1",
         "jarPath": "/flink-jobs.jar",
         "className": "com.nextbreakpoint.flink.jobs.TestJob",
         "arguments": [
@@ -749,11 +751,11 @@ Flink jobs must be packaged in a regular JAR file and uploaded to the JobManager
 
 Upload a JAR file using the command:
 
-    java -jar flink-k8s-toolbox-1.2.0-beta.jar upload jar --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar flink-k8s-toolbox-1.2.0-beta.jar bootstrap upload --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 When running outside Kubernetes use the command:
 
-    java -jar flink-k8s-toolbox-1.2.0-beta.jar upload jar --kube-config=/your-kube-config.conf --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar flink-k8s-toolbox-1.2.0-beta.jar bootstrap upload --kube-config=/your-kube-config.conf --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 ### How to run the Operator for testing
 

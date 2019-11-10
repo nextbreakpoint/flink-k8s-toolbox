@@ -14,12 +14,12 @@ import com.nextbreakpoint.flinkoperator.cli.command.SavepointTrigger
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagerMetrics
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagersList
-import com.nextbreakpoint.flinkoperator.cli.command.UploadJAR
+import com.nextbreakpoint.flinkoperator.cli.command.BootstrapJAR
 
 object DefaultCommandFactory : CommandFactory {
     override fun createRunOperatorCommand() = LaunchOperator()
 
-    override fun createUploadJARCommand() = UploadJAR()
+    override fun createBootstrapCommand() = BootstrapJAR()
 
     override fun createCreateClusterCommand() = ClusterCreate()
 

@@ -29,8 +29,8 @@ class OperatorContext(
         return false
     }
 
-    fun haveUploadJobResourceDiverged(clusterResourcesStatus: ClusterResourcesStatus): Boolean {
-        if (clusterResourcesStatus.jarUploadJob.first != ResourceStatus.VALID) {
+    fun hasBootstrapJobDiverged(clusterResourcesStatus: ClusterResourcesStatus): Boolean {
+        if (clusterResourcesStatus.bootstrapJob.first != ResourceStatus.VALID) {
             return true
         }
 

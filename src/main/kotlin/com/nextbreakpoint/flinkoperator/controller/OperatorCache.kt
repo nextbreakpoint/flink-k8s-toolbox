@@ -10,7 +10,7 @@ import io.kubernetes.client.models.V1StatefulSet
 
 class OperatorCache {
     private val flinkClusters = mutableMapOf<ClusterId, V1FlinkCluster>()
-    private val jarUploadJobs = mutableMapOf<ClusterId, V1Job>()
+    private val bootstrapJobs = mutableMapOf<ClusterId, V1Job>()
     private val jobmanagerServices = mutableMapOf<ClusterId, V1Service>()
     private val jobmanagerStatefulSets = mutableMapOf<ClusterId, V1StatefulSet>()
     private val taskmanagerStatefulSets = mutableMapOf<ClusterId, V1StatefulSet>()
@@ -63,7 +63,7 @@ class OperatorCache {
     }
 
     fun onJobChanged(resource: V1Job) {
-        jarUploadJobs.put(
+        bootstrapJobs.put(
             ClusterId(
                 namespace = resource.metadata.namespace,
                 name = extractClusterName(resource.metadata),
@@ -72,7 +72,7 @@ class OperatorCache {
     }
 
     fun onJobDeleted(resource: V1Job) {
-        jarUploadJobs.remove(
+        bootstrapJobs.remove(
             ClusterId(
                 namespace = resource.metadata.namespace,
                 name = extractClusterName(resource.metadata),
@@ -171,7 +171,7 @@ class OperatorCache {
 
     fun getClusters(): List<Pair<V1FlinkCluster, OperatorResources>> {
         val resources = OperatorResources(
-            jarUploadJobs.toMap(),
+            bootstrapJobs.toMap(),
             jobmanagerServices.toMap(),
             jobmanagerStatefulSets.toMap(),
             taskmanagerStatefulSets.toMap(),
@@ -183,7 +183,7 @@ class OperatorCache {
 
     fun getResources(): OperatorResources {
         return OperatorResources(
-            jarUploadJobs.toMap(),
+            bootstrapJobs.toMap(),
             jobmanagerServices.toMap(),
             jobmanagerStatefulSets.toMap(),
             taskmanagerStatefulSets.toMap(),
@@ -194,7 +194,7 @@ class OperatorCache {
 
     fun getOrphanedClusters(): Set<ClusterId> {
         val deletedClusters = mutableSetOf<ClusterId>()
-        deletedClusters.addAll(jarUploadJobs.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)
+        deletedClusters.addAll(bootstrapJobs.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)
         deletedClusters.addAll(jobmanagerServices.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)
         deletedClusters.addAll(jobmanagerStatefulSets.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)
         deletedClusters.addAll(taskmanagerStatefulSets.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)
@@ -208,7 +208,7 @@ class OperatorCache {
     }
 
     fun onJobDeleteAll() {
-        jarUploadJobs.clear()
+        bootstrapJobs.clear()
     }
 
     fun onServiceDeleteAll() {

@@ -67,8 +67,8 @@ class InitialiseClusterTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorState.getFlinkJobDigest(cluster)).isNotNull()
-        assertThat(OperatorState.getFlinkImageDigest(cluster)).isNotNull()
+        assertThat(OperatorState.getBootstrapDigest(cluster)).isNotNull()
+        assertThat(OperatorState.getRuntimeDigest(cluster)).isNotNull()
         assertThat(OperatorState.getJobManagerDigest(cluster)).isNotNull()
         assertThat(OperatorState.getTaskManagerDigest(cluster)).isNotNull()
     }
@@ -83,7 +83,7 @@ class InitialiseClusterTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateResources)
         OperatorState.selectNextTask(cluster)
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateUploadJob)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.CreateBootstrapJob)
         OperatorState.selectNextTask(cluster)
         assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.StartJob)
         OperatorState.selectNextTask(cluster)
@@ -92,7 +92,7 @@ class InitialiseClusterTest {
 
     @Test
     fun `onExecuting should initialise tasks when job is not defined`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
