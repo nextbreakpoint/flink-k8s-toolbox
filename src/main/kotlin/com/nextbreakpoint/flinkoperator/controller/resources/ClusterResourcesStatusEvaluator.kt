@@ -65,11 +65,7 @@ class ClusterResourcesStatusEvaluator {
             }
         }
 
-        if (bootstrapJob.spec.template.spec.containers.size != 1) {
-            statusReport.add("unexpected number of containers")
-        }
-
-        if (bootstrapJob.spec.template.spec.containers.size > 0) {
+        if (bootstrapJob.spec.template.spec.containers?.size == 1) {
             val container = bootstrapJob.spec.template.spec.containers.get(0)
 
             if (container.image != flinkCluster.spec.bootstrap.image) {
@@ -105,6 +101,8 @@ class ClusterResourcesStatusEvaluator {
                     }
                 }
             }
+        } else {
+            statusReport.add("unexpected number of containers")
         }
 
         if (statusReport.size > 0) {
@@ -196,15 +194,11 @@ class ClusterResourcesStatusEvaluator {
         val initContainerCount = flinkCluster.spec?.jobManager?.initContainers?.size ?: 0
         val sideContainerCount = flinkCluster.spec?.jobManager?.sideContainers?.size ?: 0
 
-        if (jobmanagerStatefulSet.spec.template.spec.initContainers.size != initContainerCount) {
+        if (jobmanagerStatefulSet.spec.template.spec.initContainers?.size != initContainerCount) {
             statusReport.add("unexpected number of init containers")
         }
 
-        if (jobmanagerStatefulSet.spec.template.spec.containers.size != sideContainerCount + 1) {
-            statusReport.add("unexpected number of containers")
-        }
-
-        if (jobmanagerStatefulSet.spec.template.spec.containers.size > 0) {
+        if (jobmanagerStatefulSet.spec.template.spec.containers?.size == sideContainerCount + 1) {
             val container = jobmanagerStatefulSet.spec.template.spec.containers.get(0)
 
             if (container.image != flinkCluster.spec.runtime?.image) {
@@ -254,6 +248,8 @@ class ClusterResourcesStatusEvaluator {
             if (jobmanagerEnvironmentVariables != flinkCluster.spec.jobManager.environment ?: listOf<V1EnvVar>()) {
                 statusReport.add("container environment variables don't match")
             }
+        } else {
+            statusReport.add("unexpected number of containers")
         }
 
         if (statusReport.size > 0) {
@@ -315,15 +311,11 @@ class ClusterResourcesStatusEvaluator {
         val initContainerCount = flinkCluster.spec?.jobManager?.initContainers?.size ?: 0
         val sideContainerCount = flinkCluster.spec?.jobManager?.sideContainers?.size ?: 0
 
-        if (taskmanagerStatefulSet.spec.template.spec.initContainers.size != initContainerCount) {
+        if (taskmanagerStatefulSet.spec.template.spec.initContainers?.size != initContainerCount) {
             statusReport.add("unexpected number of init containers")
         }
 
-        if (taskmanagerStatefulSet.spec.template.spec.containers.size != sideContainerCount + 1) {
-            statusReport.add("unexpected number of containers")
-        }
-
-        if (taskmanagerStatefulSet.spec.template.spec.containers.size > 0) {
+        if (taskmanagerStatefulSet.spec.template.spec.containers?.size == sideContainerCount + 1) {
             val container = taskmanagerStatefulSet.spec.template.spec.containers.get(0)
 
             if (container.image != flinkCluster.spec.runtime?.image) {
@@ -380,6 +372,8 @@ class ClusterResourcesStatusEvaluator {
             if (!taskmanagerEnvironmentVariables.equals(flinkCluster.spec.taskManager.environment ?: listOf<V1EnvVar>())) {
                 statusReport.add("container environment variables don't match")
             }
+        } else {
+            statusReport.add("unexpected number of containers")
         }
 
         if (statusReport.size > 0) {
