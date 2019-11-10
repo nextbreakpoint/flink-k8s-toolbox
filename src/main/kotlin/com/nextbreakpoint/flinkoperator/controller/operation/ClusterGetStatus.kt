@@ -31,10 +31,10 @@ class ClusterGetStatus(flinkOptions: FlinkOptions, flinkContext: FlinkContext, k
                 "savepointTimestamp" to (clusterState.savepointTimestamp?.toString() ?: ""),
                 "savepointJobId" to (clusterState.savepointJobId ?: ""),
                 "savepointTriggerId" to (clusterState.savepointTriggerId ?: ""),
-                "digestOfFlinkJob" to (clusterState.digestOfFlinkJob ?: ""),
-                "digestOfFlinkImage" to (clusterState.digestOfFlinkImage ?: ""),
-                "digestOfJobManager" to (clusterState.digestOfJobManager ?: ""),
-                "digestOfTaskManager" to (clusterState.digestOfTaskManager ?: "")
+                "runtimeDigest" to (clusterState.digest?.runtime ?: ""),
+                "bootstrapDigest" to (clusterState.digest?.bootstrap ?: ""),
+                "jobManagerDigest" to (clusterState.digest?.jobManager ?: ""),
+                "taskManagerDigest" to (clusterState.digest?.taskManager ?: "")
             )
 
             return Result(

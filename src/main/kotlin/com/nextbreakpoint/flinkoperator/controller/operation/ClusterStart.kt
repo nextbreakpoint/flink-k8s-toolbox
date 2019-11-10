@@ -74,9 +74,9 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
     private fun tryStartingCluster(flinkCluster: V1FlinkCluster, params: StartOptions): List<OperatorTask> {
         val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
 
-        val jobSpec = flinkCluster.spec?.flinkJob
+        val bootstrapSpec = flinkCluster.spec?.bootstrap
 
-        return if (jobSpec == null) {
+        return if (bootstrapSpec == null) {
             when (clusterStatus) {
                 ClusterStatus.Terminated ->
                     listOf(
@@ -108,8 +108,8 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                         listOf(
                             OperatorTask.StartingCluster,
                             OperatorTask.CreateResources,
-                            OperatorTask.DeleteUploadJob,
-                            OperatorTask.CreateUploadJob,
+                            OperatorTask.DeleteBootstrapJob,
+                            OperatorTask.CreateBootstrapJob,
                             OperatorTask.EraseSavepoint,
                             OperatorTask.StartJob,
                             OperatorTask.ClusterRunning
@@ -118,8 +118,8 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                         listOf(
                             OperatorTask.StartingCluster,
                             OperatorTask.CreateResources,
-                            OperatorTask.DeleteUploadJob,
-                            OperatorTask.CreateUploadJob,
+                            OperatorTask.DeleteBootstrapJob,
+                            OperatorTask.CreateBootstrapJob,
                             OperatorTask.StartJob,
                             OperatorTask.ClusterRunning
                         )
@@ -129,8 +129,8 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                         listOf(
                             OperatorTask.StartingCluster,
                             OperatorTask.RestartPods,
-                            OperatorTask.DeleteUploadJob,
-                            OperatorTask.CreateUploadJob,
+                            OperatorTask.DeleteBootstrapJob,
+                            OperatorTask.CreateBootstrapJob,
                             OperatorTask.EraseSavepoint,
                             OperatorTask.StartJob,
                             OperatorTask.ClusterRunning
@@ -139,8 +139,8 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                         listOf(
                             OperatorTask.StartingCluster,
                             OperatorTask.RestartPods,
-                            OperatorTask.DeleteUploadJob,
-                            OperatorTask.CreateUploadJob,
+                            OperatorTask.DeleteBootstrapJob,
+                            OperatorTask.CreateBootstrapJob,
                             OperatorTask.StartJob,
                             OperatorTask.ClusterRunning
                         )
@@ -149,12 +149,12 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                     if (params.withoutSavepoint) {
                         listOf(
                             OperatorTask.StoppingCluster,
-                            OperatorTask.DeleteUploadJob,
+                            OperatorTask.DeleteBootstrapJob,
                             OperatorTask.TerminatePods,
                             OperatorTask.DeleteResources,
                             OperatorTask.StartingCluster,
                             OperatorTask.CreateResources,
-                            OperatorTask.CreateUploadJob,
+                            OperatorTask.CreateBootstrapJob,
                             OperatorTask.EraseSavepoint,
                             OperatorTask.StartJob,
                             OperatorTask.ClusterRunning
@@ -162,12 +162,12 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                     } else {
                         listOf(
                             OperatorTask.StoppingCluster,
-                            OperatorTask.DeleteUploadJob,
+                            OperatorTask.DeleteBootstrapJob,
                             OperatorTask.TerminatePods,
                             OperatorTask.DeleteResources,
                             OperatorTask.StartingCluster,
                             OperatorTask.CreateResources,
-                            OperatorTask.CreateUploadJob,
+                            OperatorTask.CreateBootstrapJob,
                             OperatorTask.StartJob,
                             OperatorTask.ClusterRunning
                         )

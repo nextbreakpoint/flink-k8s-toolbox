@@ -1,5 +1,5 @@
 package com.nextbreakpoint.flinkoperator.common.model
 
-data class UploadOptions(
+data class BootstrapOptions(
     val jarPath: String
 )

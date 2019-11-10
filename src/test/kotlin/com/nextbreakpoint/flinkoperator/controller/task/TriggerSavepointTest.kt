@@ -42,7 +42,7 @@ class TriggerSavepointTest {
 
     @Test
     fun `onExecuting should return expected result when job is not defined`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)

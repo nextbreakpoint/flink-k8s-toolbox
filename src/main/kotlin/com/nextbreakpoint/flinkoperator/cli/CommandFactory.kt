@@ -5,12 +5,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.model.UploadOptions
+import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 
 interface CommandFactory {
     fun createRunOperatorCommand() : ServerCommand<OperatorConfig>
 
-    fun createUploadJARCommand() : UploadCommand<UploadOptions>
+    fun createBootstrapCommand() : BootstrapCommand<BootstrapOptions>
 
     fun createCreateClusterCommand() : RemoteCommand<String>
 

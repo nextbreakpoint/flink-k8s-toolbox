@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 import java.util.Objects;
 
-public class V1FlinkJobSpec {
+public class V1BootstrapSpec {
     @SerializedName("pullSecrets")
     private String pullSecrets;
     @SerializedName("pullPolicy")
@@ -18,88 +18,94 @@ public class V1FlinkJobSpec {
     private String jarPath;
     @SerializedName("arguments")
     private List<String> arguments;
-
-    public String getPullPolicy() {
-        return pullPolicy;
-    }
-
-    public V1FlinkJobSpec setPullPolicy(String pullPolicy) {
-        this.pullPolicy = pullPolicy;
-        return this;
-    }
+    @SerializedName("serviceAccount")
+    private String serviceAccount;
 
     public String getPullSecrets() {
         return pullSecrets;
     }
 
-    public V1FlinkJobSpec setPullSecrets(String pullSecrets) {
+    public void setPullSecrets(String pullSecrets) {
         this.pullSecrets = pullSecrets;
-        return this;
+    }
+
+    public String getPullPolicy() {
+        return pullPolicy;
+    }
+
+    public void setPullPolicy(String pullPolicy) {
+        this.pullPolicy = pullPolicy;
     }
 
     public String getImage() {
         return image;
     }
 
-    public V1FlinkJobSpec setImage(String image) {
+    public void setImage(String image) {
         this.image = image;
-        return this;
-    }
-
-    public List<String> getArguments() {
-        return arguments;
-    }
-
-    public V1FlinkJobSpec setArguments(List<String> arguments) {
-        this.arguments = arguments;
-        return this;
     }
 
     public String getClassName() {
         return className;
     }
 
-    public V1FlinkJobSpec setClassName(String className) {
+    public void setClassName(String className) {
         this.className = className;
-        return this;
     }
 
     public String getJarPath() {
         return jarPath;
     }
 
-    public V1FlinkJobSpec setJarPath(String jarPath) {
+    public void setJarPath(String jarPath) {
         this.jarPath = jarPath;
-        return this;
+    }
+
+    public List<String> getArguments() {
+        return arguments;
+    }
+
+    public void setArguments(List<String> arguments) {
+        this.arguments = arguments;
+    }
+
+    public String getServiceAccount() {
+        return serviceAccount;
+    }
+
+    public void setServiceAccount(String serviceAccount) {
+        this.serviceAccount = serviceAccount;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        V1FlinkJobSpec that = (V1FlinkJobSpec) o;
+        V1BootstrapSpec that = (V1BootstrapSpec) o;
         return Objects.equals(getPullSecrets(), that.getPullSecrets()) &&
                 Objects.equals(getPullPolicy(), that.getPullPolicy()) &&
                 Objects.equals(getImage(), that.getImage()) &&
                 Objects.equals(getClassName(), that.getClassName()) &&
                 Objects.equals(getJarPath(), that.getJarPath()) &&
-                Objects.equals(getArguments(), that.getArguments());
+                Objects.equals(getArguments(), that.getArguments()) &&
+                Objects.equals(getServiceAccount(), that.getServiceAccount());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getPullSecrets(), getPullPolicy(), getImage(), getClassName(), getJarPath(), getArguments());
+        return Objects.hash(getPullSecrets(), getPullPolicy(), getImage(), getClassName(), getJarPath(), getArguments(), getServiceAccount());
     }
 
     @Override
     public String toString() {
-        return "V1FlinkJobSpec{" +
+        return "V1BootstrapSpec{" +
                 "pullSecrets='" + pullSecrets + '\'' +
                 ", pullPolicy='" + pullPolicy + '\'' +
                 ", image='" + image + '\'' +
                 ", className='" + className + '\'' +
                 ", jarPath='" + jarPath + '\'' +
                 ", arguments=" + arguments +
+                ", serviceAccount='" + serviceAccount + '\'' +
                 '}';
     }
 }

@@ -5,22 +5,22 @@ import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
 data class ClusterResources(
-    val jarUploadJob: V1Job?,
+    val bootstrapJob: V1Job?,
     val jobmanagerService: V1Service?,
     val jobmanagerStatefulSet: V1StatefulSet?,
     val taskmanagerStatefulSet: V1StatefulSet?
 ) {
     fun withJobManagerService(jobmanagerService: V1Service?) =
         ClusterResources(
-            jarUploadJob = this.jarUploadJob,
+            bootstrapJob = this.bootstrapJob,
             jobmanagerService = jobmanagerService,
             jobmanagerStatefulSet = this.jobmanagerStatefulSet,
             taskmanagerStatefulSet = this.taskmanagerStatefulSet
         )
 
-    fun withJarUploadJob(jarUploadJob: V1Job?) =
+    fun withBootstrapJob(bootstrapJob: V1Job?) =
         ClusterResources(
-            jarUploadJob = jarUploadJob,
+            bootstrapJob = bootstrapJob,
             jobmanagerService = this.jobmanagerService,
             jobmanagerStatefulSet = this.jobmanagerStatefulSet,
             taskmanagerStatefulSet = this.taskmanagerStatefulSet
@@ -28,7 +28,7 @@ data class ClusterResources(
 
     fun withJobManagerStatefulSet(jobmanagerStatefulSet: V1StatefulSet?) =
         ClusterResources(
-            jarUploadJob = this.jarUploadJob,
+            bootstrapJob = this.bootstrapJob,
             jobmanagerService = this.jobmanagerService,
             jobmanagerStatefulSet = jobmanagerStatefulSet,
             taskmanagerStatefulSet = this.taskmanagerStatefulSet
@@ -36,7 +36,7 @@ data class ClusterResources(
 
     fun withTaskManagerStatefulSet(taskmanagerStatefulSet: V1StatefulSet?) =
         ClusterResources(
-            jarUploadJob = this.jarUploadJob,
+            bootstrapJob = this.bootstrapJob,
             jobmanagerService = this.jobmanagerService,
             jobmanagerStatefulSet = this.jobmanagerStatefulSet,
             taskmanagerStatefulSet = taskmanagerStatefulSet

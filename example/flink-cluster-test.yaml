@@ -4,10 +4,10 @@ metadata:
   name: test
 spec:
   taskManagers: 1
-  flinkImage:
+  runtime:
     pullPolicy: Never
-    flinkImage: example/flink:1.9.0
-  flinkJob:
+    image: example/flink:1.9.0
+  bootstrap:
     pullPolicy: Never
     image: example/flink-jobs:1
     jarPath: /flink-jobs.jar

@@ -19,25 +19,25 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class JarUploadTest {
+class CreateBootstrapJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val resources = mock(ClusterResources::class.java)
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkContext = mock(FlinkContext::class.java)
     private val kubernetesContext = mock(KubernetesContext::class.java)
-    private val command = JarUpload(flinkOptions, flinkContext, kubernetesContext)
+    private val command = CreateBootstrapJob(flinkOptions, flinkContext, kubernetesContext)
 
     @BeforeEach
     fun configure() {
         val job = V1JobBuilder().withNewMetadata().withName("xxx").endMetadata().build()
-        given(kubernetesContext.createUploadJob(eq(clusterId), any())).thenReturn(job)
+        given(kubernetesContext.createBootstrapJob(eq(clusterId), any())).thenReturn(job)
     }
 
     @Test
     fun `should fail when kubernetesContext throws exception`() {
-        given(kubernetesContext.listUploadJobs(eq(clusterId))).thenThrow(RuntimeException::class.java)
+        given(kubernetesContext.listBootstrapJobs(eq(clusterId))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, resources)
-        verify(kubernetesContext, times(1)).listUploadJobs(eq(clusterId))
+        verify(kubernetesContext, times(1)).listBootstrapJobs(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
         verifyNoMoreInteractions(flinkContext)
         assertThat(result).isNotNull()
@@ -48,9 +48,9 @@ class JarUploadTest {
     @Test
     fun `should return expected result when there are jobs`() {
         val jobs = V1JobListBuilder().addNewItem().endItem().build()
-        given(kubernetesContext.listUploadJobs(eq(clusterId))).thenReturn(jobs)
+        given(kubernetesContext.listBootstrapJobs(eq(clusterId))).thenReturn(jobs)
         val result = command.execute(clusterId, resources)
-        verify(kubernetesContext, times(1)).listUploadJobs(eq(clusterId))
+        verify(kubernetesContext, times(1)).listBootstrapJobs(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
         verifyNoMoreInteractions(flinkContext)
         assertThat(result).isNotNull()
@@ -61,10 +61,10 @@ class JarUploadTest {
     @Test
     fun `should return expected result when there aren't jobs`() {
         val jobs = V1JobListBuilder().build()
-        given(kubernetesContext.listUploadJobs(eq(clusterId))).thenReturn(jobs)
+        given(kubernetesContext.listBootstrapJobs(eq(clusterId))).thenReturn(jobs)
         val result = command.execute(clusterId, resources)
-        verify(kubernetesContext, times(1)).listUploadJobs(eq(clusterId))
-        verify(kubernetesContext, times(1)).createUploadJob(eq(clusterId), any())
+        verify(kubernetesContext, times(1)).listBootstrapJobs(eq(clusterId))
+        verify(kubernetesContext, times(1)).createBootstrapJob(eq(clusterId), any())
         verifyNoMoreInteractions(kubernetesContext)
         verifyNoMoreInteractions(flinkContext)
         assertThat(result).isNotNull()

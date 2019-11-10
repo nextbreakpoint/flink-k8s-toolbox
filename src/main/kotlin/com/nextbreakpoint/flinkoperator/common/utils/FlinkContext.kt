@@ -17,7 +17,7 @@ import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
 import com.nextbreakpoint.flinkclient.model.TaskManagerDetailsInfo
 import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
 import com.nextbreakpoint.flinkclient.model.TriggerResponse
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkJobSpec
+import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.Metric
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
@@ -144,7 +144,7 @@ object FlinkContext {
         }
     }
 
-    fun runJar(address: FlinkAddress, jarFile: JarFileInfo, flinkJob: V1FlinkJobSpec, parallelism: Int, savepointPath: String?) {
+    fun runJar(address: FlinkAddress, jarFile: JarFileInfo, bootstrap: V1BootstrapSpec, parallelism: Int, savepointPath: String?) {
         try {
             val flinkApi = createFlinkClient(address)
 
@@ -152,9 +152,9 @@ object FlinkContext {
                 jarFile.id,
                 false,
                 savepointPath,
-                flinkJob.arguments.joinToString(separator = " "),
+                bootstrap.arguments.joinToString(separator = " "),
                 null,
-                flinkJob.className,
+                bootstrap.className,
                 parallelism,
                 null,
                 null

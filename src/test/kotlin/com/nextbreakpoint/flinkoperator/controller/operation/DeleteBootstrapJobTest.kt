@@ -15,12 +15,12 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class DeleteUploadJobTest {
+class DeleteBootstrapJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkContext = mock(FlinkContext::class.java)
     private val kubernetesContext = mock(KubernetesContext::class.java)
-    private val command = DeleteUploadJob(flinkOptions, flinkContext, kubernetesContext)
+    private val command = DeleteBootstrapJob(flinkOptions, flinkContext, kubernetesContext)
 
     @BeforeEach
     fun configure() {
@@ -28,9 +28,9 @@ class DeleteUploadJobTest {
 
     @Test
     fun `should fail when kubernetesContext throws exception`() {
-        given(kubernetesContext.deleteUploadJobs(eq(clusterId))).thenThrow(RuntimeException::class.java)
+        given(kubernetesContext.deleteBootstrapJobs(eq(clusterId))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).deleteUploadJobs(eq(clusterId))
+        verify(kubernetesContext, times(1)).deleteBootstrapJobs(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
         verifyNoMoreInteractions(flinkContext)
         assertThat(result).isNotNull()
@@ -39,10 +39,10 @@ class DeleteUploadJobTest {
     }
 
     @Test
-    fun `should delete upload job and pods`() {
+    fun `should delete bootstrap job and pods`() {
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).deleteUploadJobs(eq(clusterId))
-        verify(kubernetesContext, times(1)).deleteUploadJobPods(eq(clusterId))
+        verify(kubernetesContext, times(1)).deleteBootstrapJobs(eq(clusterId))
+        verify(kubernetesContext, times(1)).deleteBootstrapJobPods(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
         verifyNoMoreInteractions(flinkContext)
         assertThat(result).isNotNull()

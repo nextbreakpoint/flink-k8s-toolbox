@@ -109,7 +109,7 @@ class ExtractSchemas {
                 }
             }.toMap()
             localDefinition["properties"] = expandedProperties
-            val additionalProperties = localDefinition["additionalProperties"] as Map<String, Any>?
+            val additionalProperties = localDefinition["additionalProperties"]
             if (additionalProperties != null) {
                 val ref = additionalProperties["\$ref"] as String?
                 if (ref != null) {

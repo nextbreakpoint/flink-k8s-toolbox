@@ -2,6 +2,7 @@ package com.nextbreakpoint.flinkoperator.controller
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
+import com.nextbreakpoint.flinkoperator.common.crd.V1ResourceDigest
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
@@ -132,7 +133,7 @@ object OperatorState {
     fun setJobManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.digestOfJobManager = digest
+        flinkCluster.status?.digest?.jobManager = digest
 
         flinkCluster.status?.timestamp = currentTimeMillis()
     }
@@ -140,38 +141,38 @@ object OperatorState {
     fun setTaskManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.digestOfTaskManager = digest
+        flinkCluster.status?.digest?.taskManager = digest
 
         flinkCluster.status?.timestamp = currentTimeMillis()
     }
 
-    fun setFlinkImageDigest(flinkCluster: V1FlinkCluster, digest: String) {
+    fun setRuntimeDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.digestOfFlinkImage = digest
+        flinkCluster.status?.digest?.runtime = digest
 
         flinkCluster.status?.timestamp = currentTimeMillis()
     }
 
-    fun setFlinkJobDigest(flinkCluster: V1FlinkCluster, digest: String) {
+    fun setBootstrapDigest(flinkCluster: V1FlinkCluster, digest: String) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.digestOfFlinkJob= digest
+        flinkCluster.status?.digest?.bootstrap = digest
 
         flinkCluster.status?.timestamp = currentTimeMillis()
     }
 
     fun getJobManagerDigest(flinkCluster: V1FlinkCluster): String? =
-        flinkCluster.status?.digestOfJobManager
+        flinkCluster.status?.digest?.jobManager
 
     fun getTaskManagerDigest(flinkCluster: V1FlinkCluster): String? =
-        flinkCluster.status?.digestOfTaskManager
+        flinkCluster.status?.digest?.taskManager
 
-    fun getFlinkImageDigest(flinkCluster: V1FlinkCluster): String? =
-        flinkCluster.status?.digestOfFlinkImage
+    fun getRuntimeDigest(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.status?.digest?.runtime
 
-    fun getFlinkJobDigest(flinkCluster: V1FlinkCluster): String? =
-        flinkCluster.status?.digestOfFlinkJob
+    fun getBootstrapDigest(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.status?.digest?.bootstrap
 
     fun setTaskAttempts(flinkCluster: V1FlinkCluster, attempts: Int) {
         ensureState(flinkCluster)
@@ -228,6 +229,7 @@ object OperatorState {
     private fun ensureState(flinkCluster: V1FlinkCluster) {
         if (flinkCluster.status == null) {
             flinkCluster.status = V1FlinkClusterStatus()
+            flinkCluster.status.digest = V1ResourceDigest()
         }
     }
 }

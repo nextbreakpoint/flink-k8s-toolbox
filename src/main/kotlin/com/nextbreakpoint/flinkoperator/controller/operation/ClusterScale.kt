@@ -74,9 +74,9 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
     private fun tryScalingCluster(flinkCluster: V1FlinkCluster, params: ScaleOptions): List<OperatorTask> {
         val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
 
-        val jobSpec = flinkCluster.spec?.flinkJob
+        val bootstrapSpec = flinkCluster.spec?.bootstrap
 
-        return if (jobSpec == null) {
+        return if (bootstrapSpec == null) {
             when (clusterStatus) {
                 ClusterStatus.Running ->
                     if (params.taskManagers > 0) {
@@ -103,8 +103,8 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                             OperatorTask.CancelJob,
                             OperatorTask.RescaleCluster,
                             OperatorTask.StartingCluster,
-                            OperatorTask.DeleteUploadJob,
-                            OperatorTask.CreateUploadJob,
+                            OperatorTask.DeleteBootstrapJob,
+                            OperatorTask.CreateBootstrapJob,
                             OperatorTask.StartJob,
                             OperatorTask.ClusterRunning
                         )

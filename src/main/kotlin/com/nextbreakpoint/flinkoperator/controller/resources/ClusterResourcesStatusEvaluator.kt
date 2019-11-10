@@ -3,7 +3,6 @@ package com.nextbreakpoint.flinkoperator.controller.resources
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import io.kubernetes.client.models.V1EnvVar
 
 class ClusterResourcesStatusEvaluator {
@@ -12,7 +11,7 @@ class ClusterResourcesStatusEvaluator {
         flinkCluster: V1FlinkCluster,
         clusterResources: ClusterResources
     ): ClusterResourcesStatus {
-        val uploadJobStatus = evaluateUploadJobStatus(clusterResources, clusterId, flinkCluster)
+        val bootstrapJobStatus = evaluateBootstrapJobStatus(clusterResources, clusterId, flinkCluster)
 
         val jobmanagerServiceStatus = evaluateJobManagerServiceStatus(clusterResources, clusterId, flinkCluster)
 
@@ -21,7 +20,7 @@ class ClusterResourcesStatusEvaluator {
         val taskmanagerStatefulSetStatus = evaluateTaskManagerStatefulSetStatus(clusterResources, clusterId, flinkCluster)
 
         return ClusterResourcesStatus(
-            jarUploadJob = uploadJobStatus,
+            bootstrapJob = bootstrapJobStatus,
             jobmanagerService = jobmanagerServiceStatus,
             jobmanagerStatefulSet = jobmanagerStatefulSetStatus,
             taskmanagerStatefulSet = taskmanagerStatefulSetStatus
@@ -31,60 +30,60 @@ class ClusterResourcesStatusEvaluator {
     private fun extractArgument(containerArguments: List<String>, name: String) =
         containerArguments.filter { it.startsWith(name) }.map { it.substringAfter("=") }.firstOrNull()
 
-    private fun evaluateUploadJobStatus(
+    private fun evaluateBootstrapJobStatus(
         clusterResources: ClusterResources,
         clusterId: ClusterId,
         flinkCluster: V1FlinkCluster
     ): Pair<ResourceStatus, List<String>> {
-        val jarUploadJob = clusterResources.jarUploadJob ?: return ResourceStatus.MISSING to listOf()
+        val bootstrapJob = clusterResources.bootstrapJob ?: return ResourceStatus.MISSING to listOf()
 
         val statusReport = mutableListOf<String>()
 
-        if (jarUploadJob.metadata.labels["component"]?.equals("flink") != true) {
+        if (bootstrapJob.metadata.labels["component"]?.equals("flink") != true) {
             statusReport.add("component label missing or invalid")
         }
 
-        if (jarUploadJob.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
+        if (bootstrapJob.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
             statusReport.add("name label missing or invalid")
         }
 
-        if (jarUploadJob.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
+        if (bootstrapJob.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (jarUploadJob.spec.template.spec.serviceAccountName != "flink-upload") {
+        if (bootstrapJob.spec.template.spec.serviceAccountName != flinkCluster.spec.bootstrap?.serviceAccount ?: "default") {
             statusReport.add("service account does not match")
         }
 
-        if (flinkCluster.spec.flinkJob?.pullSecrets != null) {
-            if (jarUploadJob.spec.template.spec.imagePullSecrets.size != 1) {
+        if (flinkCluster.spec.bootstrap?.pullSecrets != null) {
+            if (bootstrapJob.spec.template.spec.imagePullSecrets.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (jarUploadJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkJob?.pullSecrets) {
+                if (bootstrapJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.bootstrap?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }
         }
 
-        if (jarUploadJob.spec.template.spec.containers.size != 1) {
+        if (bootstrapJob.spec.template.spec.containers.size != 1) {
             statusReport.add("unexpected number of containers")
         }
 
-        if (jarUploadJob.spec.template.spec.containers.size > 0) {
-            val container = jarUploadJob.spec.template.spec.containers.get(0)
+        if (bootstrapJob.spec.template.spec.containers.size > 0) {
+            val container = bootstrapJob.spec.template.spec.containers.get(0)
 
-            if (container.image != flinkCluster.spec.flinkJob.image) {
+            if (container.image != flinkCluster.spec.bootstrap.image) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.runtime?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 
-            if (container.args.size < 1 || container.args[0] != "upload") {
-                statusReport.add("missing upload command: ${container.args.joinToString(separator = ",")}")
+            if (container.args.size < 1 || container.args[0] != "bootstrap") {
+                statusReport.add("missing bootstrap command: ${container.args.joinToString(separator = ",")}")
             } else {
-                if (container.args.size < 2 || container.args[1] != "jar") {
+                if (container.args.size < 2 || container.args[1] != "upload") {
                     statusReport.add("unexpected sub command: ${container.args.joinToString(separator = ",")}")
                 } else {
                     val jobNamespace = extractArgument(container.args, "--namespace")
@@ -101,7 +100,7 @@ class ClusterResourcesStatusEvaluator {
                         statusReport.add("unexpected argument cluster name: ${container.args.joinToString(separator = " ")}")
                     }
 
-                    if (jobJarPath == null || jobJarPath != flinkCluster.spec.flinkJob.jarPath) {
+                    if (jobJarPath == null || jobJarPath != flinkCluster.spec.bootstrap.jarPath) {
                         statusReport.add("unexpected argument jar path: ${container.args.joinToString(separator = " ")}")
                     }
                 }
@@ -180,11 +179,11 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("service account does not match")
         }
 
-        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+        if (flinkCluster.spec.runtime?.pullSecrets != null) {
             if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets?.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.runtime?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }
@@ -208,11 +207,11 @@ class ClusterResourcesStatusEvaluator {
         if (jobmanagerStatefulSet.spec.template.spec.containers.size > 0) {
             val container = jobmanagerStatefulSet.spec.template.spec.containers.get(0)
 
-            if (container.image != flinkCluster.spec.flinkImage?.flinkImage) {
+            if (container.image != flinkCluster.spec.runtime?.image) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.runtime?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 
@@ -293,11 +292,11 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("service account does not match")
         }
 
-        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+        if (flinkCluster.spec.runtime?.pullSecrets != null) {
             if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.runtime?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }
@@ -327,11 +326,11 @@ class ClusterResourcesStatusEvaluator {
         if (taskmanagerStatefulSet.spec.template.spec.containers.size > 0) {
             val container = taskmanagerStatefulSet.spec.template.spec.containers.get(0)
 
-            if (container.image != flinkCluster.spec.flinkImage?.flinkImage) {
+            if (container.image != flinkCluster.spec.runtime?.image) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.runtime?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 

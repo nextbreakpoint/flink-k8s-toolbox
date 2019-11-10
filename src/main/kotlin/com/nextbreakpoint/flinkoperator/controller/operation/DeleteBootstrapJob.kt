@@ -9,25 +9,25 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
 import org.apache.log4j.Logger
 
-class DeleteUploadJob(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class DeleteBootstrapJob(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, Void?>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
-        private val logger = Logger.getLogger(DeleteUploadJob::class.simpleName)
+        private val logger = Logger.getLogger(DeleteBootstrapJob::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {
-            logger.info("Deleting upload job of cluster ${clusterId.name}...")
+            logger.info("Deleting bootstrap job of cluster ${clusterId.name}...")
 
-            kubernetesContext.deleteUploadJobs(clusterId)
+            kubernetesContext.deleteBootstrapJobs(clusterId)
 
-            kubernetesContext.deleteUploadJobPods(clusterId)
+            kubernetesContext.deleteBootstrapJobPods(clusterId)
 
             return Result(
                 ResultStatus.SUCCESS,
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't delete upload job of cluster ${clusterId.name}", e)
+            logger.error("Can't delete bootstrap job of cluster ${clusterId.name}", e)
 
             return Result(
                 ResultStatus.FAILED,

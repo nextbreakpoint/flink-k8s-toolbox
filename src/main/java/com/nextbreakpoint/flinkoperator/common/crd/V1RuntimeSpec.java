@@ -4,19 +4,19 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.Objects;
 
-public class V1FlinkImageSpec {
+public class V1RuntimeSpec {
     @SerializedName("pullSecrets")
     private String pullSecrets;
     @SerializedName("pullPolicy")
     private String pullPolicy;
-    @SerializedName("flinkImage")
-    private String flinkImage;
+    @SerializedName("image")
+    private String image;
 
     public String getPullPolicy() {
         return pullPolicy;
     }
 
-    public V1FlinkImageSpec setPullPolicy(String pullPolicy) {
+    public V1RuntimeSpec setPullPolicy(String pullPolicy) {
         this.pullPolicy = pullPolicy;
         return this;
     }
@@ -25,17 +25,17 @@ public class V1FlinkImageSpec {
         return pullSecrets;
     }
 
-    public V1FlinkImageSpec setPullSecrets(String pullSecrets) {
+    public V1RuntimeSpec setPullSecrets(String pullSecrets) {
         this.pullSecrets = pullSecrets;
         return this;
     }
 
-    public String getFlinkImage() {
-        return flinkImage;
+    public String getImage() {
+        return image;
     }
 
-    public V1FlinkImageSpec setFlinkImage(String flinkImage) {
-        this.flinkImage = flinkImage;
+    public V1RuntimeSpec setImage(String image) {
+        this.image = image;
         return this;
     }
 
@@ -43,23 +43,23 @@ public class V1FlinkImageSpec {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        V1FlinkImageSpec that = (V1FlinkImageSpec) o;
+        V1RuntimeSpec that = (V1RuntimeSpec) o;
         return Objects.equals(getPullSecrets(), that.getPullSecrets()) &&
                 Objects.equals(getPullPolicy(), that.getPullPolicy()) &&
-                Objects.equals(getFlinkImage(), that.getFlinkImage());
+                Objects.equals(getImage(), that.getImage());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getPullSecrets(), getPullPolicy(), getFlinkImage());
+        return Objects.hash(getPullSecrets(), getPullPolicy(), getImage());
     }
 
     @Override
     public String toString() {
-        return "V1FlinkImageSpec{" +
+        return "V1RuntimeSpec{" +
                 "pullSecrets='" + pullSecrets + '\'' +
                 ", pullPolicy='" + pullPolicy + '\'' +
-                ", flinkImage='" + flinkImage + '\'' +
+                ", image='" + image + '\'' +
                 '}';
     }
 }

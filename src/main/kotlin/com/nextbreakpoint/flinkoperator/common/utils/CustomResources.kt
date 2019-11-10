@@ -5,8 +5,8 @@ import com.nextbreakpoint.flinkoperator.common.crd.DateTimeSerializer
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterList
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkImageSpec
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkJobSpec
+import com.nextbreakpoint.flinkoperator.common.crd.V1RuntimeSpec
+import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1JobManagerSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1TaskManagerSpec
 import org.joda.time.DateTime
@@ -22,14 +22,14 @@ object CustomResources {
 
     fun parseV1FlinkClusterSpec(body: String): V1FlinkClusterSpec = gson.fromJson(body, V1FlinkClusterSpec::class.java)
 
-    fun computeDigest(spec: V1FlinkImageSpec?): String {
+    fun computeDigest(spec: V1RuntimeSpec?): String {
         return if (spec == null) "" else String(
             Base64.getEncoder().encode(
                 MessageDigest.getInstance("MD5").digest(
                     gson.toJson(spec).toByteArray())))
     }
 
-    fun computeDigest(spec: V1FlinkJobSpec?): String {
+    fun computeDigest(spec: V1BootstrapSpec?): String {
         return if (spec == null) "" else String(
             Base64.getEncoder().encode(
                 MessageDigest.getInstance("MD5").digest(

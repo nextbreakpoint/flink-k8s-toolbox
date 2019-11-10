@@ -32,14 +32,16 @@ public class V1FlinkClusterStatus {
     private String savepointTriggerId;
     @SerializedName("savepointTimestamp")
     private Long savepointTimestamp;
-    @SerializedName("digestOfJobManager")
-    private String digestOfJobManager;
-    @SerializedName("digestOfTaskManager")
-    private String digestOfTaskManager;
-    @SerializedName("digestOfFlinkImage")
-    private String digestOfFlinkImage;
-    @SerializedName("digestOfFlinkJob")
-    private String digestOfFlinkJob;
+    @SerializedName("digest")
+    private V1ResourceDigest digest;
+
+    public String[] getLabelSelector() {
+        return labelSelector;
+    }
+
+    public void setLabelSelector(String[] labelSelector) {
+        this.labelSelector = labelSelector;
+    }
 
     public Integer getTaskManagers() {
         return taskManagers;
@@ -49,12 +51,20 @@ public class V1FlinkClusterStatus {
         this.taskManagers = taskManagers;
     }
 
-    public String[] getLabelSelector() {
-        return labelSelector;
+    public Integer getTotalTaskSlots() {
+        return totalTaskSlots;
     }
 
-    public void setLabelSelector(String[] labelSelector) {
-        this.labelSelector = labelSelector;
+    public void setTotalTaskSlots(Integer totalTaskSlots) {
+        this.totalTaskSlots = totalTaskSlots;
+    }
+
+    public Integer getJobParallelism() {
+        return jobParallelism;
+    }
+
+    public void setJobParallelism(Integer jobParallelism) {
+        this.jobParallelism = jobParallelism;
     }
 
     public Long getTimestamp() {
@@ -129,52 +139,12 @@ public class V1FlinkClusterStatus {
         this.savepointTimestamp = savepointTimestamp;
     }
 
-    public String getDigestOfJobManager() {
-        return digestOfJobManager;
+    public V1ResourceDigest getDigest() {
+        return digest;
     }
 
-    public void setDigestOfJobManager(String digestOfJobManager) {
-        this.digestOfJobManager = digestOfJobManager;
-    }
-
-    public String getDigestOfTaskManager() {
-        return digestOfTaskManager;
-    }
-
-    public void setDigestOfTaskManager(String digestOfTaskManager) {
-        this.digestOfTaskManager = digestOfTaskManager;
-    }
-
-    public String getDigestOfFlinkImage() {
-        return digestOfFlinkImage;
-    }
-
-    public void setDigestOfFlinkImage(String digestOfFlinkImage) {
-        this.digestOfFlinkImage = digestOfFlinkImage;
-    }
-
-    public String getDigestOfFlinkJob() {
-        return digestOfFlinkJob;
-    }
-
-    public void setDigestOfFlinkJob(String digestOfFlinkJob) {
-        this.digestOfFlinkJob = digestOfFlinkJob;
-    }
-
-    public Integer getTotalTaskSlots() {
-        return totalTaskSlots;
-    }
-
-    public void setTotalTaskSlots(Integer taskSlots) {
-        this.totalTaskSlots = taskSlots;
-    }
-
-    public Integer getJobParallelism() {
-        return jobParallelism;
-    }
-
-    public void setJobParallelism(Integer jobParallelism) {
-        this.jobParallelism = jobParallelism;
+    public void setDigest(V1ResourceDigest digest) {
+        this.digest = digest;
     }
 
     @Override
@@ -195,15 +165,12 @@ public class V1FlinkClusterStatus {
                 Objects.equals(getSavepointJobId(), that.getSavepointJobId()) &&
                 Objects.equals(getSavepointTriggerId(), that.getSavepointTriggerId()) &&
                 Objects.equals(getSavepointTimestamp(), that.getSavepointTimestamp()) &&
-                Objects.equals(getDigestOfJobManager(), that.getDigestOfJobManager()) &&
-                Objects.equals(getDigestOfTaskManager(), that.getDigestOfTaskManager()) &&
-                Objects.equals(getDigestOfFlinkImage(), that.getDigestOfFlinkImage()) &&
-                Objects.equals(getDigestOfFlinkJob(), that.getDigestOfFlinkJob());
+                Objects.equals(getDigest(), that.getDigest());
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getTaskManagers(), getTotalTaskSlots(), getJobParallelism(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigestOfJobManager(), getDigestOfTaskManager(), getDigestOfFlinkImage(), getDigestOfFlinkJob());
+        int result = Objects.hash(getTaskManagers(), getTotalTaskSlots(), getJobParallelism(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigest());
         result = 31 * result + Arrays.hashCode(getLabelSelector());
         result = 31 * result + Arrays.hashCode(getTasks());
         return result;
@@ -225,10 +192,7 @@ public class V1FlinkClusterStatus {
                 ", savepointJobId='" + savepointJobId + '\'' +
                 ", savepointTriggerId='" + savepointTriggerId + '\'' +
                 ", savepointTimestamp=" + savepointTimestamp +
-                ", digestOfJobManager='" + digestOfJobManager + '\'' +
-                ", digestOfTaskManager='" + digestOfTaskManager + '\'' +
-                ", digestOfFlinkImage='" + digestOfFlinkImage + '\'' +
-                ", digestOfFlinkJob='" + digestOfFlinkJob + '\'' +
+                ", digest=" + digest +
                 '}';
     }
 }

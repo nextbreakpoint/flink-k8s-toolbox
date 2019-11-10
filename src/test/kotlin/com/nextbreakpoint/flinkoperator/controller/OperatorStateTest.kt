@@ -169,8 +169,8 @@ class OperatorStateTest {
     fun `should store flink image digest and update timestamp`() {
         val timestamp = System.currentTimeMillis()
         assertThat(OperatorState.getOperatorTimestamp(flinkCluster)).isEqualTo(0)
-        OperatorState.setFlinkImageDigest(flinkCluster, "XXX")
-        assertThat(OperatorState.getFlinkImageDigest(flinkCluster)).isEqualTo("XXX")
+        OperatorState.setRuntimeDigest(flinkCluster, "XXX")
+        assertThat(OperatorState.getRuntimeDigest(flinkCluster)).isEqualTo("XXX")
         assertThat(OperatorState.getOperatorTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
     }
 
@@ -178,8 +178,8 @@ class OperatorStateTest {
     fun `should store flink job digest and update timestamp`() {
         val timestamp = System.currentTimeMillis()
         assertThat(OperatorState.getOperatorTimestamp(flinkCluster)).isEqualTo(0)
-        OperatorState.setFlinkJobDigest(flinkCluster, "XXX")
-        assertThat(OperatorState.getFlinkJobDigest(flinkCluster)).isEqualTo("XXX")
+        OperatorState.setBootstrapDigest(flinkCluster, "XXX")
+        assertThat(OperatorState.getBootstrapDigest(flinkCluster)).isEqualTo("XXX")
         assertThat(OperatorState.getOperatorTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
     }
 

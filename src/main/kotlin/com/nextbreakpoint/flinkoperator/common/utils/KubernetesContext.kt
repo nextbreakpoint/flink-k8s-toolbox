@@ -676,7 +676,7 @@ object KubernetesContext {
         }
     }
 
-    fun deleteUploadJobs(clusterId: ClusterId) {
+    fun deleteBootstrapJobs(clusterId: ClusterId) {
         val jobs = batchApi.listNamespacedJob(
             clusterId.namespace,
             null,
@@ -782,13 +782,13 @@ object KubernetesContext {
         }
     }
 
-    fun listUploadJobs(clusterId: ClusterId): V1JobList {
+    fun listBootstrapJobs(clusterId: ClusterId): V1JobList {
         return batchApi.listNamespacedJob(
             clusterId.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-upload-${clusterId.name}",
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
             null,
             null,
             5,
@@ -796,10 +796,10 @@ object KubernetesContext {
         )
     }
 
-    fun createUploadJob(clusterId: ClusterId, params: ClusterResources): V1Job {
+    fun createBootstrapJob(clusterId: ClusterId, params: ClusterResources): V1Job {
         return batchApi.createNamespacedJob(
             clusterId.namespace,
-            params.jarUploadJob,
+            params.bootstrapJob,
             null,
             null,
             null
@@ -995,13 +995,13 @@ object KubernetesContext {
         }
     }
 
-    fun deleteUploadJobPods(clusterId: ClusterId) {
+    fun deleteBootstrapJobPods(clusterId: ClusterId) {
         val pods = coreApi.listNamespacedPod(
             clusterId.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-upload-${clusterId.name}",
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
             null,
             null,
             5,
@@ -1034,7 +1034,7 @@ object KubernetesContext {
         }
     }
 
-    fun deleteUploadJobs(
+    fun deleteBootstrapJobs(
         api: BatchV1Api,
         clusterId: ClusterId
     ) {
@@ -1043,7 +1043,7 @@ object KubernetesContext {
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-upload-${clusterId.name}",
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
             null,
             null,
             5,
