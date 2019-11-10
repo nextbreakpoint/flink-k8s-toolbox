@@ -44,7 +44,8 @@ keyUsage             = digitalSignature,keyAgreement
 [alt_names]
 DNS.1                = localhost
 DNS.2                = 127.0.0.1
-DNS.3                = ${OPERATOR_HOST}
+DNS.3                = host.docker.internal
+DNS.4                = ${OPERATOR_HOST}
 EOF
 
 ## Create certificate authority (CA)
