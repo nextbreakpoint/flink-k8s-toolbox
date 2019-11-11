@@ -155,11 +155,11 @@ Run Flink Operator using Docker image:
 
 Run Flink Operator using Helm and local registry:
 
-    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set runtime.repository=registry:30000/flink-k8s-toolbox --set runtime.pullPolicy=Always --set bootstrap.image.pullPolicy=Always
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
 
 Run Flink Operator using Helm and local image:
 
-    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set runtime.repository=flink-k8s-toolbox --set runtime.pullPolicy=Never --set bootstrap.image.pullPolicy=Always
+    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
 
 
 
