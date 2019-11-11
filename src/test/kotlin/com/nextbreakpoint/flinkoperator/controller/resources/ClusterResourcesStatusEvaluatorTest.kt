@@ -18,7 +18,7 @@ class ClusterResourcesStatusEvaluatorTest {
 
     private val clusterId = UUID.randomUUID().toString()
 
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
     private val identity = ClusterId(
         namespace = "test",
@@ -34,7 +34,7 @@ class ClusterResourcesStatusEvaluatorTest {
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.VALID)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.VALID)
         assertThat(actualStatus.jobmanagerService.first).isEqualTo(ResourceStatus.VALID)
         assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.VALID)
         assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.VALID)
@@ -52,14 +52,14 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return missing resource when the upload job is not present`() {
-        val expectedResources = createTestClusterResources(cluster).withJarUploadJob(null)
+    fun `should return missing resource when the bootstrap job is not present`() {
+        val expectedResources = createTestClusterResources(cluster).withBootstrapJob(null)
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.MISSING)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.MISSING)
     }
 
     @Test
@@ -205,6 +205,20 @@ class ClusterResourcesStatusEvaluatorTest {
         val expectedResources = createTestClusterResources(cluster)
 
         expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.containers = listOf()
+
+        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
+
+        printStatus(actualStatus)
+
+        assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.jobmanagerStatefulSet.second).hasSize(1)
+    }
+
+    @Test
+    fun `should return divergent resource when the job manager statefulset does not have the expected number of init containers`() {
+        val expectedResources = createTestClusterResources(cluster)
+
+        expectedResources.jobmanagerStatefulSet?.spec?.template?.spec?.initContainers = listOf()
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
@@ -383,6 +397,20 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
+    fun `should return divergent resource when the task manager statefulset does not have the expected number of init containers`() {
+        val expectedResources = createTestClusterResources(cluster)
+
+        expectedResources.taskmanagerStatefulSet?.spec?.template?.spec?.initContainers = listOf()
+
+        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
+
+        printStatus(actualStatus)
+
+        assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(1)
+    }
+
+    @Test
     fun `should return divergent resource when the task manager statefulset does not have the expected container image`() {
         val expectedResources = createTestClusterResources(cluster)
 
@@ -481,7 +509,7 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     private fun printStatus(clusterResourcesStatus: ClusterResourcesStatus) {
-        clusterResourcesStatus.jarUploadJob.second.forEach { println("uploadJob job: ${it}") }
+        clusterResourcesStatus.bootstrapJob.second.forEach { println("bootstrapJob job: ${it}") }
 
         clusterResourcesStatus.jobmanagerService.second.forEach { println("jobmanager service: ${it}") }
 
@@ -491,157 +519,157 @@ class ClusterResourcesStatusEvaluatorTest {
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected labels`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected labels`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.metadata?.labels = mapOf()
+        expectedResources.bootstrapJob?.metadata?.labels = mapOf()
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(3)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(3)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected service account`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected service account`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.serviceAccountName = "xxx"
+        expectedResources.bootstrapJob?.spec?.template?.spec?.serviceAccountName = "xxx"
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected pull secrets`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected pull secrets`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.imagePullSecrets = listOf()
+        expectedResources.bootstrapJob?.spec?.template?.spec?.imagePullSecrets = listOf()
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected pull secrets name`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected pull secrets name`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.imagePullSecrets?.get(0)?.name = "xxx"
+        expectedResources.bootstrapJob?.spec?.template?.spec?.imagePullSecrets?.get(0)?.name = "xxx"
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have containers`() {
+    fun `should return divergent resource when the bootstrap job does not have containers`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.containers = listOf()
+        expectedResources.bootstrapJob?.spec?.template?.spec?.containers = listOf()
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected container image`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected container image`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.containers?.get(0)?.image = "xxx"
+        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.image = "xxx"
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected container pull policy`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected container pull policy`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.containers?.get(0)?.imagePullPolicy = "xxx"
+        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.imagePullPolicy = "xxx"
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected container arguments`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected container arguments`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf()
+        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf()
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected job argument`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected job argument`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("xxx", "jar")
+        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("xxx", "bootstrap")
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected job arguments`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected job arguments`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("upload", "xxx")
+        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("bootstrap", "xxx")
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(1)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
     }
 
     @Test
-    fun `should return divergent resource when the upload job does not have the expected job jar arguments`() {
+    fun `should return divergent resource when the bootstrap job does not have the expected job jar arguments`() {
         val expectedResources = createTestClusterResources(cluster)
 
-        expectedResources.jarUploadJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("upload", "jar")
+        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("bootstrap", "upload")
 
         val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.jarUploadJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jarUploadJob.second).hasSize(3)
+        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
+        assertThat(actualStatus.bootstrapJob.second).hasSize(3)
     }
 
     private fun createLabels(
@@ -673,7 +701,7 @@ class ClusterResourcesStatusEvaluatorTest {
         ).build()
 
         return ClusterResources(
-            jarUploadJob = targetResources.jarUploadJob,
+            bootstrapJob = targetResources.bootstrapJob,
             jobmanagerService = targetResources.jobmanagerService,
             jobmanagerStatefulSet = targetResources.jobmanagerStatefulSet,
             taskmanagerStatefulSet = targetResources.taskmanagerStatefulSet

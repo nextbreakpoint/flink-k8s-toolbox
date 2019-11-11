@@ -30,7 +30,13 @@ spec:
       labels:
         app: {{ $root.Values.name | default "flink-operator" | quote }}
     spec:
-      serviceAccountName: flink-operator
+      serviceAccountName: {{ $root.Values.serviceAccount | default "flink-operator" }}
+      {{- if $root.Values.image }}
+      {{- if $root.Values.image.pullSecrets }}
+      imagePullSecrets:
+        - name: {{ toYaml $root.Values.image.pullSecrets | indent 8 | trim }}
+      {{- end}}
+      {{- end}}
       volumes:
         {{- if $root.Values.secretName}}
         - name: secret-vol

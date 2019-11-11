@@ -22,12 +22,12 @@ class ClusterResourcesBuilder(
             namespace, clusterId, clusterOwner, flinkCluster
         )
 
-        val jarUploadJob = factory.createJarUploadJob(
+        val bootstrapJob = factory.createBootstrapJob(
             namespace, clusterId, clusterOwner, flinkCluster
         )
 
         return ClusterResources(
-            jarUploadJob = jarUploadJob,
+            bootstrapJob = bootstrapJob,
             jobmanagerService = jobmanagerService,
             jobmanagerStatefulSet = jobmanagerStatefulSet,
             taskmanagerStatefulSet = taskmanagerStatefulSet

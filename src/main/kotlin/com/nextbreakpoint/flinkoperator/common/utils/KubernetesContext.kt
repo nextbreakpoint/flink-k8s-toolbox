@@ -10,6 +10,7 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import io.kubernetes.client.ApiClient
+import io.kubernetes.client.ApiException
 import io.kubernetes.client.ApiResponse
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.PortForward
@@ -106,76 +107,79 @@ object KubernetesContext {
 
             val response = call.execute()
 
-            if (!response.isSuccessful) {
-                throw RuntimeException("Can't fetch custom object $clusterName")
-            }
-
-            response.body().use {
-                val flinkCluster = CustomResources.parseV1FlinkCluster(it.source().readUtf8Line())
-
-                val clusterId = flinkCluster.metadata.uid
-
-                val services = coreApi.listNamespacedService(
-                    namespace,
-                    null,
-                    null,
-                    null,
-                    "name=$clusterName,uid=$clusterId,role=jobmanager",
-                    1,
-                    null,
-                    30,
-                    null
-                )
-
-                if (!services.items.isEmpty()) {
-                    val service = services.items.get(0)
-
-                    logger.debug("Found JobManager service ${service.metadata.name}")
-
-                    if (flinkOptions.useNodePort) {
-                        service.spec.ports.filter {
-                            it.name.equals("ui")
-                        }.filter {
-                            it.nodePort != null
-                        }.map {
-                            it.nodePort
-                        }.firstOrNull()?.let {
-                            jobmanagerPort = it
-                        }
-                    } else {
-                        service.spec.ports.filter {
-                            it.name.equals("ui")
-                        }.filter {
-                            it.port != null
-                        }.map {
-                            it.port
-                        }.firstOrNull()?.let {
-                            jobmanagerPort = it
-                        }
-                        jobmanagerHost = service.spec.clusterIP
-                    }
-                } else {
-                    throw RuntimeException("JobManager service not found (name=$clusterName, id=$clusterId)")
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    body.source().use { source -> logger.error(source.readUtf8Line()) }
+                    throw RuntimeException("Can't fetch custom object $clusterName")
                 }
 
-                val pods = coreApi.listNamespacedPod(
-                    namespace,
-                    null,
-                    null,
-                    null,
-                    "name=$clusterName,uid=$clusterId,role=jobmanager",
-                    1,
-                    null,
-                    30,
-                    null
-                )
+                body.source().use { source ->
+                    val flinkCluster = CustomResources.parseV1FlinkCluster(source.readUtf8Line())
 
-                if (!pods.items.isEmpty()) {
-                    val pod = pods.items.get(0)
+                    val clusterId = flinkCluster.metadata.uid
 
-                    logger.debug("Found JobManager pod ${pod.metadata.name}")
-                } else {
-                    throw RuntimeException("JobManager pod not found (name=$clusterName, id=$clusterId)")
+                    val services = coreApi.listNamespacedService(
+                        namespace,
+                        null,
+                        null,
+                        null,
+                        "name=$clusterName,uid=$clusterId,role=jobmanager",
+                        1,
+                        null,
+                        30,
+                        null
+                    )
+
+                    if (!services.items.isEmpty()) {
+                        val service = services.items.get(0)
+
+                        logger.debug("Found JobManager service ${service.metadata.name}")
+
+                        if (flinkOptions.useNodePort) {
+                            service.spec.ports.filter {
+                                it.name.equals("ui")
+                            }.filter {
+                                it.nodePort != null
+                            }.map {
+                                it.nodePort
+                            }.firstOrNull()?.let {
+                                jobmanagerPort = it
+                            }
+                        } else {
+                            service.spec.ports.filter {
+                                it.name.equals("ui")
+                            }.filter {
+                                it.port != null
+                            }.map {
+                                it.port
+                            }.firstOrNull()?.let {
+                                jobmanagerPort = it
+                            }
+                            jobmanagerHost = service.spec.clusterIP
+                        }
+                    } else {
+                        throw RuntimeException("JobManager service not found (name=$clusterName, id=$clusterId)")
+                    }
+
+                    val pods = coreApi.listNamespacedPod(
+                        namespace,
+                        null,
+                        null,
+                        null,
+                        "name=$clusterName,uid=$clusterId,role=jobmanager",
+                        1,
+                        null,
+                        30,
+                        null
+                    )
+
+                    if (!pods.items.isEmpty()) {
+                        val pod = pods.items.get(0)
+
+                        logger.debug("Found JobManager pod ${pod.metadata.name}")
+                    } else {
+                        throw RuntimeException("JobManager pod not found (name=$clusterName, id=$clusterId)")
+                    }
                 }
             }
         }
@@ -206,8 +210,11 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            throw RuntimeException("Can't update annotations of cluster ${clusterId.name}")
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't update annotations of cluster ${clusterId.name}")
+            }
         }
     }
 
@@ -216,7 +223,7 @@ object KubernetesContext {
             "status" to status
         )
 
-        val response = objectApi.patchNamespacedCustomObjectCall(
+        val response = objectApi.patchNamespacedCustomObjectStatusCall(
             "nextbreakpoint.com",
             "v1",
             clusterId.namespace,
@@ -227,8 +234,11 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            throw RuntimeException("Can't update state of cluster ${clusterId.name}")
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't update status of cluster ${clusterId.name}")
+            }
         }
     }
 
@@ -363,12 +373,15 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            throw RuntimeException("Can't fetch custom objects")
-        }
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't fetch custom objects")
+            }
 
-        return response.body().use {
-            CustomResources.parseV1FlinkClusterList(it.source().readUtf8Line()).items
+            return body.source().use { source ->
+                CustomResources.parseV1FlinkClusterList(source.readUtf8Line()).items
+            }
         }
     }
 
@@ -383,12 +396,15 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (!response.isSuccessful) {
-            throw RuntimeException("Can't fetch custom object $name")
-        }
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't fetch custom object $name")
+            }
 
-        return response.body().use {
-            CustomResources.parseV1FlinkCluster(it.source().readUtf8Line())
+            return body.source().use { source ->
+                CustomResources.parseV1FlinkCluster(source.readUtf8Line())
+            }
         }
     }
 
@@ -660,7 +676,7 @@ object KubernetesContext {
         }
     }
 
-    fun deleteUploadJobs(clusterId: ClusterId) {
+    fun deleteBootstrapJobs(clusterId: ClusterId) {
         val jobs = batchApi.listNamespacedJob(
             clusterId.namespace,
             null,
@@ -702,7 +718,7 @@ object KubernetesContext {
     fun updateSavepointPath(clusterId: ClusterId, savepointPath: String) {
         val patch = mapOf<String, Any?>(
             "spec" to mapOf<String, Any?>(
-                "flinkOperator" to mapOf<String, Any?>(
+                "operator" to mapOf<String, Any?>(
                     "savepointPath" to savepointPath
                 )
             )
@@ -719,47 +735,60 @@ object KubernetesContext {
             null
         ).execute()
 
-        if (response.isSuccessful) {
-            logger.info("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
-        } else {
-            logger.error("Can't update savepoint of cluster ${clusterId.name}")
+        response.body().use { body ->
+            if (response.isSuccessful) {
+                logger.info("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
+            } else {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                logger.error("Can't update savepoint of cluster ${clusterId.name}")
+            }
         }
     }
 
     fun createFlinkCluster(flinkCluster: V1FlinkCluster): ApiResponse<Any> {
-        return objectApi.createNamespacedCustomObjectWithHttpInfo(
-            "nextbreakpoint.com",
-            "v1",
-            flinkCluster.metadata.namespace,
-            "flinkclusters",
-            CustomResources.convertToMap(flinkCluster) /* oh boy, it works with map but not with json or pojo !!! */,
-            null
-        )
+        try {
+            return objectApi.createNamespacedCustomObjectWithHttpInfo(
+                "nextbreakpoint.com",
+                "v1",
+                flinkCluster.metadata.namespace,
+                "flinkclusters",
+                flinkCluster,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
     }
 
     fun deleteFlinkCluster(clusterId: ClusterId): ApiResponse<Any> {
-        val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
+        try {
+            val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
 
-        return objectApi.deleteNamespacedCustomObjectWithHttpInfo(
-            "nextbreakpoint.com",
-            "v1",
-            clusterId.namespace,
-            "flinkclusters",
-            clusterId.name,
-            deleteOptions,
-            null,
-            null,
-            null
-        )
+            return objectApi.deleteNamespacedCustomObjectWithHttpInfo(
+                "nextbreakpoint.com",
+                "v1",
+                clusterId.namespace,
+                "flinkclusters",
+                clusterId.name,
+                deleteOptions,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
     }
 
-    fun listUploadJobs(clusterId: ClusterId): V1JobList {
+    fun listBootstrapJobs(clusterId: ClusterId): V1JobList {
         return batchApi.listNamespacedJob(
             clusterId.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-upload-${clusterId.name}",
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
             null,
             null,
             5,
@@ -767,10 +796,10 @@ object KubernetesContext {
         )
     }
 
-    fun createUploadJob(clusterId: ClusterId, params: ClusterResources): V1Job {
+    fun createBootstrapJob(clusterId: ClusterId, params: ClusterResources): V1Job {
         return batchApi.createNamespacedJob(
             clusterId.namespace,
-            params.jarUploadJob,
+            params.bootstrapJob,
             null,
             null,
             null
@@ -847,14 +876,16 @@ object KubernetesContext {
                     null
                 ).execute()
 
-                if (response.isSuccessful) {
-                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
-                } else {
-                    logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                response.body().use { body ->
+                    if (response.isSuccessful) {
+                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                    } else {
+                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
     }
@@ -899,14 +930,16 @@ object KubernetesContext {
                     null
                 ).execute()
 
-                if (response.isSuccessful) {
-                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
-                } else {
-                    logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                response.body().use { body ->
+                    if (response.isSuccessful) {
+                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                    } else {
+                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
     }
@@ -948,25 +981,27 @@ object KubernetesContext {
                     null
                 ).execute()
 
-                if (response.isSuccessful) {
-                    logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
-                } else {
-                    logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                response.body().use { body ->
+                    if (response.isSuccessful) {
+                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                    } else {
+                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
     }
 
-    fun deleteUploadJobPods(clusterId: ClusterId) {
+    fun deleteBootstrapJobPods(clusterId: ClusterId) {
         val pods = coreApi.listNamespacedPod(
             clusterId.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-upload-${clusterId.name}",
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
             null,
             null,
             5,
@@ -999,7 +1034,7 @@ object KubernetesContext {
         }
     }
 
-    fun deleteUploadJobs(
+    fun deleteBootstrapJobs(
         api: BatchV1Api,
         clusterId: ClusterId
     ) {
@@ -1008,7 +1043,7 @@ object KubernetesContext {
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-upload-${clusterId.name}",
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
             null,
             null,
             5,
@@ -1039,6 +1074,107 @@ object KubernetesContext {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
         }
+    }
+
+    fun rescaleCluster(clusterId: ClusterId, taskManagers: Int) {
+        val patch = mapOf<String, Any?>(
+            "spec" to mapOf<String, Any?>(
+                "replicas" to taskManagers
+            )
+        )
+
+        val response = objectApi.patchNamespacedCustomObjectScaleCall(
+            "nextbreakpoint.com",
+            "v1",
+            clusterId.namespace,
+            "flinkclusters",
+            clusterId.name,
+            patch,
+            null,
+            null
+        ).execute()
+
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't modify scale of cluster ${clusterId.name}")
+            }
+        }
+    }
+
+    fun setTaskManagerStatefulSetReplicas(clusterId: ClusterId, taskManagers: Int) {
+        val statefulSets = appsApi.listNamespacedStatefulSet(
+            clusterId.namespace,
+            null,
+            null,
+            null,
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+            null,
+            null,
+            5,
+            null
+        )
+
+        if (statefulSets.items.size == 0) {
+            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
+        }
+
+        statefulSets.items.forEach { statefulSet ->
+            try {
+                logger.info("Scaling StatefulSet ${statefulSet.metadata.name}...")
+
+                val patch = listOf(
+                    mapOf<String, Any?>(
+                        "op" to "replace",
+                        "path" to "/spec/replicas",
+                        "value" to taskManagers
+                    )
+                )
+
+                val response = appsApi.patchNamespacedStatefulSetScaleCall(
+                    statefulSet.metadata.name,
+                    clusterId.namespace,
+                    V1Patch(Gson().toJson(patch)),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ).execute()
+
+                response.body().use { body ->
+                    if (response.isSuccessful) {
+                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                    } else {
+                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
+            }
+        }
+    }
+
+    fun getTaskManagerStatefulSetReplicas(clusterId: ClusterId): Int {
+        val statefulSets = appsApi.listNamespacedStatefulSet(
+            clusterId.namespace,
+            null,
+            null,
+            null,
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+            null,
+            null,
+            5,
+            null
+        )
+
+        if (statefulSets.items.size == 0) {
+            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
+        }
+
+        return statefulSets.items.firstOrNull()?.status?.currentReplicas ?: 0
     }
 
     @ExperimentalCoroutinesApi
@@ -1137,10 +1273,10 @@ object KubernetesContext {
 
     private fun createKubernetesClient(kubeConfig: String?, timeout: Long): ApiClient? {
         val client = if (kubeConfig?.isNotBlank() == true) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
-        client.httpClient.setConnectTimeout(10000, TimeUnit.MILLISECONDS)
+        client.httpClient.setConnectTimeout(timeout, TimeUnit.MILLISECONDS)
         client.httpClient.setWriteTimeout(timeout, TimeUnit.MILLISECONDS)
         client.httpClient.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
-//            client.isDebugging = true
+        client.isDebugging = System.getProperty("kubernetes.client.debugging", "false")!!.toBoolean()
         return client
     }
 }

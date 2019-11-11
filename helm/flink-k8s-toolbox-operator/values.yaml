@@ -4,8 +4,9 @@
 
 image:
   repository: nextbreakpoint/flink-k8s-toolbox
-  tag: 1.1.12-beta
+  tag: 1.2.0-beta
   pullPolicy: Always
+  pullSecrets:
 
 annotations:
 
@@ -21,6 +22,8 @@ resources:
     cpu: "1000m"
 
 secretName:
+
+serviceAccount: flink-operator
 
 keystore:
   pathKey: keystore.jks

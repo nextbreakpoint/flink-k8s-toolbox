@@ -5,7 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class DefaultClusterResourcesFactoryTest {
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace ="flink", taskManagers = 3, taskSlots = 2)
 
     @Test
     fun `should create job manager service`() {
@@ -42,12 +42,12 @@ class DefaultClusterResourcesFactoryTest {
     }
 
     @Test
-    fun `should create upload job when submitting job`() {
-        val job = DefaultClusterResourcesFactory.createJarUploadJob("test", "xxx", "myself", cluster)
+    fun `should create bootstrap job when submitting job`() {
+        val job = DefaultClusterResourcesFactory.createBootstrapJob("test", "xxx", "myself", cluster)
 
         assertThat(job).isNotNull()
 
-        assertThat(job?.metadata?.name).isEqualTo("flink-upload-${cluster.metadata.name}")
+        assertThat(job?.metadata?.name).isEqualTo("flink-bootstrap-${cluster.metadata.name}")
 
         val labels = job?.metadata?.labels
         assertThat(labels).hasSize(4)
@@ -63,9 +63,9 @@ class DefaultClusterResourcesFactoryTest {
 
         val podSpec = job?.spec?.template?.spec
         assertThat(podSpec?.restartPolicy).isEqualTo("OnFailure")
-        assertThat(podSpec?.serviceAccountName).isEqualTo("flink-upload")
+        assertThat(podSpec?.serviceAccountName).isEqualTo("bootstrap-test")
         assertThat(podSpec?.imagePullSecrets).hasSize(1)
-        assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo(cluster.spec.flinkImage?.pullSecrets)
+        assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo("bootstrap-regcred")
         assertThat(podSpec?.affinity).isNotNull()
         assertThat(podSpec?.affinity?.podAffinity).isNotNull()
         assertThat(podSpec?.affinity?.podAffinity?.preferredDuringSchedulingIgnoredDuringExecution).isNotNull()
@@ -74,13 +74,13 @@ class DefaultClusterResourcesFactoryTest {
 
         val container = podSpec?.containers?.get(0)
         assertThat(container?.ports).isNull()
-        assertThat(container?.imagePullPolicy).isEqualTo(cluster.spec.flinkImage?.pullPolicy ?: "Always")
+        assertThat(container?.imagePullPolicy).isEqualTo("IfNotPresent")
         assertThat(container?.args).hasSize(5)
-        assertThat(container?.args?.get(0)).isEqualTo("upload")
-        assertThat(container?.args?.get(1)).isEqualTo("jar")
+        assertThat(container?.args?.get(0)).isEqualTo("bootstrap")
+        assertThat(container?.args?.get(1)).isEqualTo("upload")
         assertThat(container?.args?.get(2)).isEqualTo("--namespace=test")
         assertThat(container?.args?.get(3)).isEqualTo("--cluster-name=${cluster.metadata.name}")
-        assertThat(container?.args?.get(4)).isEqualTo("--jar-path=${cluster.spec?.flinkJob?.jarPath}")
+        assertThat(container?.args?.get(4)).isEqualTo("--jar-path=${cluster.spec?.bootstrap?.jarPath}")
         assertThat(container?.env).hasSize(2)
         assertThat(container?.env?.get(0)?.name).isEqualTo("POD_NAME")
         assertThat(container?.env?.get(1)?.name).isEqualTo("POD_NAMESPACE")
@@ -120,9 +120,9 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(statefulset?.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.toSuffixedString()).isEqualTo("1Gi")
 
         val podSpec = statefulset?.spec?.template?.spec
-        assertThat(podSpec?.serviceAccountName).isEqualTo(cluster.spec.jobManager?.serviceAccount ?: "default")
+        assertThat(podSpec?.serviceAccountName).isEqualTo("jobmanager-test")
         assertThat(podSpec?.imagePullSecrets).hasSize(1)
-        assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo(cluster.spec.flinkImage?.pullSecrets)
+        assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo("flink-regcred")
         assertThat(podSpec?.affinity).isNotNull()
         assertThat(podSpec?.affinity?.podAntiAffinity).isNotNull()
         assertThat(podSpec?.affinity?.podAntiAffinity?.preferredDuringSchedulingIgnoredDuringExecution).isNotNull()
@@ -132,8 +132,8 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(podSpec?.initContainers).hasSize(1)
 
         val container = podSpec?.containers?.get(0)
-        assertThat(container?.image).isEqualTo(cluster.spec.flinkImage?.flinkImage)
-        assertThat(container?.imagePullPolicy).isEqualTo(cluster.spec.flinkImage?.pullPolicy ?: "Always")
+        assertThat(container?.image).isEqualTo("registry:30000/flink:1.9.0")
+        assertThat(container?.imagePullPolicy).isEqualTo("IfNotPresent")
         assertThat(container?.ports).hasSize(4)
         assertThat(container?.ports?.get(0)?.name).isEqualTo("ui")
         assertThat(container?.ports?.get(1)?.name).isEqualTo("rpc")
@@ -150,8 +150,9 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.env?.get(4)?.value).isEqualTo("graphite.default.svc.cluster.local")
         assertThat(container?.volumeMounts).hasSize(4)
         assertThat(container?.volumeMounts?.get(3)?.name).isEqualTo("jobmanager")
-        assertThat(container?.resources?.limits?.get("cpu")?.number?.toFloat()).isEqualTo(cluster.spec.jobManager.requiredCPUs ?: 1.0f)
-        assertThat(container?.resources?.requests?.get("memory")?.number?.toInt()).isEqualTo((cluster.spec.jobManager.requiredMemory ?: 256) * 1024 * 1024)
+        assertThat(container?.resources).isEqualTo(cluster.spec.jobManager.resources)
+
+        assertThat(container?.env?.get(2)?.value).isEqualTo("512")
     }
 
     @Test
@@ -170,7 +171,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(labels?.get("component")).isEqualTo("flink")
         assertThat(labels?.get("role")).isEqualTo("taskmanager")
 
-        assertThat(statefulset?.spec?.replicas).isEqualTo(cluster.spec.taskManager.replicas ?: 1)
+        assertThat(statefulset?.spec?.replicas).isEqualTo(3)
         assertThat(statefulset?.spec?.updateStrategy).isNotNull()
         assertThat(statefulset?.spec?.serviceName).isEqualTo("taskmanager")
         assertThat(statefulset?.spec?.selector).isNotNull()
@@ -188,9 +189,9 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(statefulset?.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.toSuffixedString()).isEqualTo("5Gi")
 
         val podSpec = statefulset?.spec?.template?.spec
-        assertThat(podSpec?.serviceAccountName).isEqualTo(cluster.spec.taskManager?.serviceAccount ?: "default")
+        assertThat(podSpec?.serviceAccountName).isEqualTo("taskmanager-test")
         assertThat(podSpec?.imagePullSecrets).hasSize(1)
-        assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo(cluster.spec.flinkImage?.pullSecrets)
+        assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo("flink-regcred")
         assertThat(podSpec?.affinity).isNotNull()
         assertThat(podSpec?.affinity?.podAntiAffinity).isNotNull()
         assertThat(podSpec?.affinity?.podAntiAffinity?.preferredDuringSchedulingIgnoredDuringExecution).isNotNull()
@@ -200,8 +201,8 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(podSpec?.initContainers).hasSize(1)
 
         val container = podSpec?.containers?.get(0)
-        assertThat(container?.image).isEqualTo(cluster.spec.flinkImage?.flinkImage)
-        assertThat(container?.imagePullPolicy).isEqualTo(cluster.spec.flinkImage?.pullPolicy ?: "Always")
+        assertThat(container?.image).isEqualTo("registry:30000/flink:1.9.0")
+        assertThat(container?.imagePullPolicy).isEqualTo("IfNotPresent")
         assertThat(container?.ports).hasSize(2)
         assertThat(container?.ports?.get(0)?.name).isEqualTo("data")
         assertThat(container?.ports?.get(1)?.name).isEqualTo("ipc")
@@ -213,12 +214,13 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.env?.get(2)?.name).isEqualTo("FLINK_TM_HEAP")
         assertThat(container?.env?.get(3)?.name).isEqualTo("JOB_MANAGER_RPC_ADDRESS")
         assertThat(container?.env?.get(4)?.name).isEqualTo("TASK_MANAGER_NUMBER_OF_TASK_SLOTS")
-        assertThat(container?.env?.get(4)?.value).isEqualTo("${cluster.spec.taskManager.taskSlots ?: 1}")
+        assertThat(container?.env?.get(4)?.value).isEqualTo("2")
         assertThat(container?.env?.get(5)?.name).isEqualTo("FLINK_GRAPHITE_HOST")
         assertThat(container?.env?.get(5)?.value).isEqualTo("graphite.default.svc.cluster.local")
         assertThat(container?.volumeMounts).hasSize(4)
         assertThat(container?.volumeMounts?.get(3)?.name).isEqualTo("taskmanager")
-        assertThat(container?.resources?.limits?.get("cpu")?.number?.toFloat()).isEqualTo(cluster.spec.taskManager.requiredCPUs ?: 1.0f)
-        assertThat(container?.resources?.requests?.get("memory")?.number?.toInt()).isEqualTo((cluster.spec.taskManager.requiredMemory ?: 1024) * 1024 * 1024)
+        assertThat(container?.resources).isEqualTo(cluster.spec.taskManager.resources)
+
+        assertThat(container?.env?.get(2)?.value).isEqualTo("2048")
     }
 }

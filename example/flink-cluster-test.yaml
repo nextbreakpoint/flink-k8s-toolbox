@@ -3,21 +3,24 @@ kind: FlinkCluster
 metadata:
   name: test
 spec:
-  flinkImage:
+  taskManagers: 1
+  runtime:
     pullPolicy: Never
-    flinkImage: example/flink:1.9.0
-  flinkJob:
+    image: example/flink:1.9.0
+  bootstrap:
+    serviceAccount: flink-bootstrap
+    pullPolicy: Never
     image: example/flink-jobs:1
     jarPath: /flink-jobs.jar
     className: com.nextbreakpoint.flink.jobs.TestJob
-    parallelism: 1
     arguments:
       - --DEVELOP_MODE
       - disabled
   jobManager:
+    serviceMode: NodePort
+    maxHeapMemory: 256
     annotations:
       managed: true
-    serviceMode: NodePort
     environment:
     - name: FLINK_ENVIRONMENT
       value: test
@@ -76,7 +79,16 @@ spec:
           resources:
             requests:
               storage: 1Gi
+    resources:
+      limits:
+        cpu: '1'
+        memory: 512Mi
+      requests:
+        cpu: '0.1'
+        memory: 256Mi
   taskManager:
+    taskSlots: 1
+    maxHeapMemory: 1024
     annotations:
       managed: true
     environment:
@@ -134,8 +146,15 @@ spec:
           resources:
             requests:
               storage: 5Gi
-  flinkOperator:
+    resources:
+      limits:
+        cpu: '1'
+        memory: 2048Mi
+      requests:
+        cpu: '0.2'
+        memory: 1024Mi
+  operator:
     savepointMode: Manual
     savepointInterval: 60
     savepointTargetPath: file:///var/savepoints
-    jobRestartPolicy: OnFailure
+    jobRestartPolicy: Always

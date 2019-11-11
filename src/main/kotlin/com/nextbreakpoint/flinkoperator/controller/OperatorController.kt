@@ -7,56 +7,76 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterCreateResources
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterDeleteResources
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterGetStatus
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterIsReady
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterIsRunning
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterIsSuspended
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterIsTerminated
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterStart
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterStop
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterUpdateSavepoint
-import com.nextbreakpoint.flinkoperator.controller.command.ClusterUpdateStatus
-import com.nextbreakpoint.flinkoperator.controller.command.FlinkClusterCreate
-import com.nextbreakpoint.flinkoperator.controller.command.FlinkClusterDelete
-import com.nextbreakpoint.flinkoperator.controller.command.JarIsReady
-import com.nextbreakpoint.flinkoperator.controller.command.JarRemove
-import com.nextbreakpoint.flinkoperator.controller.command.JarRun
-import com.nextbreakpoint.flinkoperator.controller.command.JarUpload
-import com.nextbreakpoint.flinkoperator.controller.command.JobCancel
-import com.nextbreakpoint.flinkoperator.controller.command.JobHasStarted
-import com.nextbreakpoint.flinkoperator.controller.command.JobHasStopped
-import com.nextbreakpoint.flinkoperator.controller.command.JobStop
-import com.nextbreakpoint.flinkoperator.controller.command.PodsAreTerminated
-import com.nextbreakpoint.flinkoperator.controller.command.PodsRestart
-import com.nextbreakpoint.flinkoperator.controller.command.PodsTerminate
-import com.nextbreakpoint.flinkoperator.controller.command.SavepointCreate
-import com.nextbreakpoint.flinkoperator.controller.command.SavepointGetStatus
-import com.nextbreakpoint.flinkoperator.controller.command.SavepointTrigger
-import com.nextbreakpoint.flinkoperator.controller.command.UploadJobDeleteResource
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCreateResources
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterDeleteResources
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterGetStatus
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsReady
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsRunning
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsSuspended
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsTerminated
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStart
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStop
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterScale
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointUpdate
+import com.nextbreakpoint.flinkoperator.controller.operation.UpdateStatus
+import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterCreate
+import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterDelete
+import com.nextbreakpoint.flinkoperator.controller.operation.JarIsReady
+import com.nextbreakpoint.flinkoperator.controller.operation.JarRemove
+import com.nextbreakpoint.flinkoperator.controller.operation.JobStart
+import com.nextbreakpoint.flinkoperator.controller.operation.CreateBootstrapJob
+import com.nextbreakpoint.flinkoperator.controller.operation.JobCancel
+import com.nextbreakpoint.flinkoperator.controller.operation.JobHasStarted
+import com.nextbreakpoint.flinkoperator.controller.operation.JobHasStopped
+import com.nextbreakpoint.flinkoperator.controller.operation.JobStop
+import com.nextbreakpoint.flinkoperator.controller.operation.PodsAreTerminated
+import com.nextbreakpoint.flinkoperator.controller.operation.PodsRestart
+import com.nextbreakpoint.flinkoperator.controller.operation.PodsTerminate
+import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterScale
+import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStart
+import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStop
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCheckpointing
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetStatus
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
+import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetReplicas
+import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersSetReplicas
+import com.nextbreakpoint.flinkoperator.controller.operation.DeleteBootstrapJob
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 
 class OperatorController(
     val flinkOptions: FlinkOptions,
     val flinkContext: FlinkContext,
     val kubernetesContext: KubernetesContext,
-    val operatorTasks: Map<OperatorTask, OperatorTaskHandler>
+    val cache: OperatorCache,
+    val taskHandlers: Map<OperatorTask, OperatorTaskHandler>
 ) {
-    fun startCluster(clusterId: ClusterId, options: StartOptions, cache: OperatorCache) : Result<List<OperatorTask>> =
+    fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
+        RequestClusterStart(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
+
+    fun requestStopCluster(clusterId: ClusterId, options: StopOptions) : Result<Void?> =
+        RequestClusterStop(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
+
+    fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
+        RequestClusterScale(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
+
+    fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<OperatorTask>> =
         ClusterStart(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
 
-    fun stopCluster(clusterId: ClusterId, options: StopOptions, cache: OperatorCache) : Result<List<OperatorTask>> =
+    fun stopCluster(clusterId: ClusterId, options: StopOptions) : Result<List<OperatorTask>> =
         ClusterStop(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
 
-    fun createSavepoint(clusterId: ClusterId, cache: OperatorCache) : Result<List<OperatorTask>> =
-        SavepointCreate(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, null)
+    fun scaleCluster(clusterId: ClusterId, options: ScaleOptions) : Result<List<OperatorTask>> =
+        ClusterScale(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
 
-    fun getClusterStatus(clusterId: ClusterId, cache: OperatorCache) : Result<Map<String, String>> =
+    fun createSavepoint(clusterId: ClusterId) : Result<List<OperatorTask>> =
+        ClusterCheckpointing(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, null)
+
+    fun getClusterStatus(clusterId: ClusterId) : Result<Map<String, String>> =
         ClusterGetStatus(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, null)
 
     fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : Result<Void?> =
@@ -65,11 +85,14 @@ class OperatorController(
     fun deleteFlinkCluster(clusterId: ClusterId) : Result<Void?> =
         FlinkClusterDelete(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
-    fun updateClusterStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster, resources: OperatorResources) : Result<Void?> =
-        ClusterUpdateStatus(this, resources, operatorTasks).execute(clusterId, flinkCluster)
+    fun updateClusterStatus(clusterId: ClusterId) : Result<Void?> =
+        UpdateStatus(this).execute(clusterId, null)
 
     fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
         ClusterCreateResources(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, clusterResources)
+
+    fun deleteClusterResources(clusterId: ClusterId) : Result<Void?> =
+        ClusterDeleteResources(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
     fun removeJar(clusterId: ClusterId) : Result<Void?> =
         JarRemove(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
@@ -77,17 +100,20 @@ class OperatorController(
     fun isJarReady(clusterId: ClusterId) : Result<Void?> =
         JarIsReady(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
+    fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
+        SavepointUpdate(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, savepointPath)
+
     fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest?> =
         SavepointTrigger(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
 
     fun getSavepointStatus(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
         SavepointGetStatus(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, savepointRequest)
 
-    fun deleteClusterResources(clusterId: ClusterId) : Result<Void?> =
-        ClusterDeleteResources(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
+    fun createBootstrapJob(clusterId: ClusterId, clusterResources: ClusterResources): Result<Void?> =
+        CreateBootstrapJob(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, clusterResources)
 
-    fun deleteUploadJobResource(clusterId: ClusterId) : Result<Void?> =
-        UploadJobDeleteResource(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
+    fun deleteBootstrapJob(clusterId: ClusterId) : Result<Void?> =
+        DeleteBootstrapJob(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
     fun terminatePods(clusterId: ClusterId) : Result<Void?> =
         PodsTerminate(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
@@ -98,14 +124,14 @@ class OperatorController(
     fun arePodsTerminated(clusterId: ClusterId): Result<Void?> =
         PodsAreTerminated(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
-    fun runJar(clusterId: ClusterId, cluster: V1FlinkCluster) : Result<Void?> =
-        JarRun(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, cluster)
-
-    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest?> =
-        JobCancel(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
+    fun startJob(clusterId: ClusterId, cluster: V1FlinkCluster) : Result<Void?> =
+        JobStart(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, cluster)
 
     fun stopJob(clusterId: ClusterId): Result<Void?> =
         JobStop(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
+
+    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest?> =
+        JobCancel(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
 
     fun isClusterReady(clusterId: ClusterId): Result<Void?> =
         ClusterIsReady(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
@@ -125,18 +151,18 @@ class OperatorController(
     fun isJobStopped(clusterId: ClusterId): Result<Void?> =
         JobHasStopped(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
-    fun uploadJar(clusterId: ClusterId, clusterResources: ClusterResources): Result<Void?> =
-        JarUpload(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, clusterResources)
+    fun setTaskManagersReplicas(clusterId: ClusterId, taskManagers: Int) : Result<Void?> =
+        TaskManagersSetReplicas(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, taskManagers)
 
-    fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
-        ClusterUpdateSavepoint(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, savepointPath)
-
-//    fun updateAnnotations(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
-//        kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata?.annotations ?: emptyMap())
-//    }
+    fun getTaskManagersReplicas(clusterId: ClusterId) : Result<Int> =
+        TaskManagersGetReplicas(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
 
     fun updateState(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
         kubernetesContext.updateStatus(clusterId, flinkCluster.status)
+    }
+
+    fun updateAnnotations(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
+        kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata.annotations)
     }
 
     fun currentTimeMillis() = System.currentTimeMillis()

@@ -84,13 +84,13 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .build()
     }
 
-    override fun createJarUploadJob(
+    override fun createBootstrapJob(
         namespace: String,
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
     ): V1Job? {
-        if (flinkCluster.spec.flinkJob == null) {
+        if (flinkCluster.spec.bootstrap == null) {
             return null
         }
 
@@ -98,11 +98,11 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             throw RuntimeException("name is required")
         }
 
-        if (flinkCluster.spec.flinkJob.image == null) {
+        if (flinkCluster.spec.bootstrap.image == null) {
             throw RuntimeException("image is required")
         }
 
-        if (flinkCluster.spec.flinkJob.jarPath == null) {
+        if (flinkCluster.spec.bootstrap.jarPath == null) {
             throw RuntimeException("jarPath is required")
         }
 
@@ -124,34 +124,34 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             )
 
         val arguments =
-            createJarUploadArguments(
-                namespace, flinkCluster.metadata.name, flinkCluster.spec.flinkJob.jarPath
+            createBootstrapArguments(
+                namespace, flinkCluster.metadata.name, flinkCluster.spec.bootstrap.jarPath
             )
 
         val jobSelector = V1LabelSelector().matchLabels(jobLabels)
 
         val jobAffinity =
-            createUploadJobAffinity(
+            createBootstrapJobAffinity(
                 jobSelector
             )
 
         val pullSecrets =
             createObjectReferenceListOrNull(
-                flinkCluster.spec.flinkImage?.pullSecrets
+                flinkCluster.spec.bootstrap?.pullSecrets
             )
 
         val jobPodSpec = V1PodSpecBuilder()
             .addToContainers(V1Container())
             .editFirstContainer()
-            .withName("flink-upload")
-            .withImage(flinkCluster.spec.flinkJob.image)
-            .withImagePullPolicy(flinkCluster.spec.flinkImage?.pullPolicy ?: "Always")
+            .withName("flink-bootstrap")
+            .withImage(flinkCluster.spec.bootstrap.image)
+            .withImagePullPolicy(flinkCluster.spec.bootstrap?.pullPolicy ?: "Always")
             .withArgs(arguments)
             .addToEnv(podNameEnvVar)
             .addToEnv(podNamespaceEnvVar)
-            .withResources(createUploadJobResourceRequirements())
+            .withResources(createBootstrapJobResourceRequirements())
             .endContainer()
-            .withServiceAccountName("flink-upload"/* TODO make configurable */)
+            .withServiceAccountName(flinkCluster.spec.bootstrap?.serviceAccount ?: "default")
             .withImagePullSecrets(pullSecrets)
             .withRestartPolicy("OnFailure")
             .withAffinity(jobAffinity)
@@ -159,7 +159,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val job = V1JobBuilder()
             .editOrNewMetadata()
-            .withName("flink-upload-${flinkCluster.metadata.name}")
+            .withName("flink-bootstrap-${flinkCluster.metadata.name}")
             .withLabels(jobLabels)
             .endMetadata()
             .editOrNewSpec()
@@ -169,7 +169,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withTtlSecondsAfterFinished(30)
             .editOrNewTemplate()
             .editOrNewMetadata()
-            .withName("flink-upload-${flinkCluster.metadata.name}")
+            .withName("flink-bootstrap-${flinkCluster.metadata.name}")
             .withLabels(jobLabels)
             .endMetadata()
             .withSpec(jobPodSpec)
@@ -190,7 +190,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             throw RuntimeException("name is required")
         }
 
-        if (flinkCluster.spec.flinkImage?.flinkImage == null) {
+        if (flinkCluster.spec.runtime?.image == null) {
             throw RuntimeException("flinkImage is required")
         }
 
@@ -245,7 +245,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val jobManagerHeapEnvVar =
             createEnvVar(
-                "FLINK_JM_HEAP", flinkCluster.spec.jobManager?.requiredMemory?.toString() ?: "256"
+                "FLINK_JM_HEAP", flinkCluster.spec.jobManager?.maxHeapMemory?.toString() ?: "256"
             )
 
         val rpcAddressEnvVar =
@@ -274,8 +274,8 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         }
 
         val jobmanagerContainer = V1ContainerBuilder()
-            .withImage(flinkCluster.spec.flinkImage?.flinkImage)
-            .withImagePullPolicy(flinkCluster.spec.flinkImage?.pullPolicy ?: "Always")
+            .withImage(flinkCluster.spec.runtime?.image)
+            .withImagePullPolicy(flinkCluster.spec.runtime?.pullPolicy ?: "Always")
             .withName("flink-jobmanager")
             .withArgs(listOf("jobmanager"))
             .addToPorts(port8081)
@@ -286,17 +286,12 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addAllToVolumeMounts(flinkCluster.spec.jobManager?.volumeMounts ?: listOf())
             .withEnv(jobmanagerVariables)
             .withEnvFrom(flinkCluster.spec.jobManager?.environmentFrom)
-            .withResources(
-                createResourceRequirements(
-                    flinkCluster.spec.jobManager?.requiredCPUs ?: 1.0f,
-                    flinkCluster.spec.jobManager?.requiredMemory ?: 256
-                )
-            )
+            .withResources(flinkCluster.spec.jobManager?.resources)
             .build()
 
-        val jobmanagerPullSecrets = if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+        val jobmanagerPullSecrets = if (flinkCluster.spec.runtime?.pullSecrets != null) {
             listOf(
-                V1LocalObjectReference().name(flinkCluster.spec.flinkImage?.pullSecrets)
+                V1LocalObjectReference().name(flinkCluster.spec.runtime?.pullSecrets)
             )
         } else null
 
@@ -352,7 +347,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             throw RuntimeException("name is required")
         }
 
-        if (flinkCluster.spec.flinkImage?.flinkImage == null) {
+        if (flinkCluster.spec.runtime?.image == null) {
             throw RuntimeException("flinkImage is required")
         }
 
@@ -397,7 +392,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val taskManagerHeapEnvVar =
             createEnvVar(
-                "FLINK_TM_HEAP", flinkCluster.spec.taskManager?.requiredMemory?.toString() ?: "1024"
+                "FLINK_TM_HEAP", flinkCluster.spec.taskManager?.maxHeapMemory?.toString() ?: "1024"
             )
 
         val rpcAddressEnvVar =
@@ -427,8 +422,8 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         }
 
         val taskmanagerContainer = V1ContainerBuilder()
-            .withImage(flinkCluster.spec.flinkImage?.flinkImage)
-            .withImagePullPolicy(flinkCluster.spec.flinkImage?.pullPolicy ?: "Always")
+            .withImage(flinkCluster.spec.runtime?.image)
+            .withImagePullPolicy(flinkCluster.spec.runtime?.pullPolicy ?: "Always")
             .withName("flink-taskmanager")
             .withArgs(listOf("taskmanager"))
             .addToPorts(port6121)
@@ -437,12 +432,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .addAllToVolumeMounts(flinkCluster.spec.taskManager?.volumeMounts ?: listOf())
             .withEnv(taskmanagerVariables)
             .withEnvFrom(flinkCluster.spec.taskManager?.environmentFrom)
-            .withResources(
-                createResourceRequirements(
-                    flinkCluster.spec.taskManager?.requiredCPUs ?: 1.0f,
-                    flinkCluster.spec.taskManager?.requiredMemory ?: 1024
-                )
-            )
+            .withResources(flinkCluster.spec.taskManager?.resources)
             .build()
 
         val taskmanagerAffinity =
@@ -450,9 +440,9 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
                 jobmanagerSelector, taskmanagerSelector
             )
 
-        val taskmanagerPullSecrets = if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+        val taskmanagerPullSecrets = if (flinkCluster.spec.runtime?.pullSecrets != null) {
             listOf(
-                V1LocalObjectReference().name(flinkCluster.spec.flinkImage?.pullSecrets)
+                V1LocalObjectReference().name(flinkCluster.spec.runtime?.pullSecrets)
             )
         } else null
 
@@ -482,10 +472,12 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         taskmanagerPodMetadata.annotations = flinkCluster.spec.taskManager?.annotations
 
+        val replicas = flinkCluster.spec?.taskManagers ?: 1
+
         return V1StatefulSetBuilder()
             .withMetadata(taskmanagerMetadata)
             .editOrNewSpec()
-            .withReplicas(flinkCluster.spec.taskManager?.replicas ?: 1)
+            .withReplicas(replicas)
             .editOrNewTemplate()
             .withSpec(taskmanagerPodSpec)
             .withMetadata(taskmanagerPodMetadata)
@@ -519,7 +511,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             )
         )
 
-    private fun createUploadJobAffinity(
+    private fun createBootstrapJobAffinity(
         jobSelector: V1LabelSelector?
     ): V1Affinity = V1Affinity()
         .podAffinity(
@@ -534,19 +526,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             )
         )
 
-//    private fun createPersistentVolumeClaimSpec(
-//        storageClass: String,
-//        storageSize: Int
-//    ) = V1PersistentVolumeClaimSpec()
-//        .accessModes(listOf("ReadWriteOnce"))
-//        .storageClassName(storageClass)
-//        .resources(
-//            V1ResourceRequirements()
-//                .requests(
-//                    mapOf("storage" to Quantity(storageSize.toString()))
-//                )
-//        )
-
     private fun createObjectMeta(name: String, labels: Map<String, String>) = V1ObjectMeta().name(name).labels(labels)
 
     private fun createEnvVarFromField(name: String, fieldPath: String) =
@@ -556,31 +535,17 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
     private fun createEnvVar(name: String, value: String) = V1EnvVar().name(name).value(value)
 
-    private fun createResourceRequirements(cpus: Float, memory: Int) = V1ResourceRequirements()
+    private fun createBootstrapJobResourceRequirements() = V1ResourceRequirements()
         .limits(
             mapOf(
-                "cpu" to Quantity(cpus.toString()),
-                "memory" to Quantity(memory.times(1.5).toString() + "Mi")
-            )
-        )
-        .requests(
-            mapOf(
-                "cpu" to Quantity(cpus.div(4).toString()),
-                "memory" to Quantity(memory.toString() + "Mi")
-            )
-        )
-
-    private fun createUploadJobResourceRequirements() = V1ResourceRequirements()
-        .limits(
-            mapOf(
-                "cpu" to Quantity("0.2"),
-                "memory" to Quantity("200Mi")
+                "cpu" to Quantity("1"),
+                "memory" to Quantity("512Mi")
             )
         )
         .requests(
             mapOf(
                 "cpu" to Quantity("0.2"),
-                "memory" to Quantity("200Mi")
+                "memory" to Quantity("256Mi")
             )
         )
 
@@ -603,7 +568,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         } else null
     }
 
-    private fun createJarUploadArguments(
+    private fun createBootstrapArguments(
         namespace: String,
         clusterName: String,
         jarPath: String
@@ -612,8 +577,8 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         arguments.addAll(
             listOf(
+                "bootstrap",
                 "upload",
-                "jar",
                 "--namespace=$namespace",
                 "--cluster-name=$clusterName",
                 "--jar-path=$jarPath"

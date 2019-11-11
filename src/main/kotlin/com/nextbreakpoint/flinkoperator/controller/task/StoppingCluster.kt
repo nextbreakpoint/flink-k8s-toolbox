@@ -3,14 +3,14 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class StoppingCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.STOPPING)
-        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Stopping)
+        OperatorState.setTaskAttempts(context.flinkCluster, 0)
 
         return Result(
             ResultStatus.SUCCESS,

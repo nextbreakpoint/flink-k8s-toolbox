@@ -20,7 +20,7 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 
 class StartJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(OperatorContext::class.java)
     private val controller = mock(OperatorController::class.java)
     private val resources = mock(OperatorResources::class.java)
@@ -29,7 +29,7 @@ class StartJobTest {
 
     @BeforeEach
     fun configure() {
-        given(context.lastUpdated).thenReturn(time)
+        given(context.operatorTimestamp).thenReturn(time)
         given(context.controller).thenReturn(controller)
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
@@ -38,7 +38,7 @@ class StartJobTest {
 
     @Test
     fun `onExecuting should return expected result when job is not defined`() {
-        cluster.spec.flinkJob = null
+        cluster.spec.bootstrap = null
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
@@ -52,7 +52,7 @@ class StartJobTest {
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.STARTING_JOBS_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -66,7 +66,7 @@ class StartJobTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -77,11 +77,11 @@ class StartJobTest {
     @Test
     fun `onExecuting should return expected result when job has not been started yet`() {
         given(controller.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.runJar(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(controller.startJob(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -92,11 +92,11 @@ class StartJobTest {
     @Test
     fun `onExecuting should return expected result when job has failed`() {
         given(controller.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.runJar(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(controller.startJob(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -107,11 +107,11 @@ class StartJobTest {
     @Test
     fun `onExecuting should return expected result when job has been started`() {
         given(controller.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.runJar(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(controller.startJob(eq(clusterId), eq(cluster))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -124,7 +124,7 @@ class StartJobTest {
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.STARTING_JOBS_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -138,7 +138,7 @@ class StartJobTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -152,7 +152,7 @@ class StartJobTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -166,7 +166,7 @@ class StartJobTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()

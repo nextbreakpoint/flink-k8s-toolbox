@@ -2,7 +2,6 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
@@ -24,7 +23,7 @@ class CreateResources : OperatorTaskHandler {
     private val statusEvaluator = ClusterResourcesStatusEvaluator()
 
     override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.CREATING_CLUSTER_TIMEOUT) {
             return Result(
@@ -68,7 +67,7 @@ class CreateResources : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.CREATING_CLUSTER_TIMEOUT) {
             return Result(
@@ -120,13 +119,13 @@ class CreateResources : OperatorTaskHandler {
     }
 
     private fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: OperatorResources): ClusterResourcesStatus {
-        val jarUploadJob = resources.jarUploadJobs.get(clusterId)
+        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
         val jobmnagerService = resources.jobmanagerServices.get(clusterId)
         val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
         val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
 
         val actualResources = ClusterResources(
-            jarUploadJob = jarUploadJob,
+            bootstrapJob = bootstrapJob,
             jobmanagerService = jobmnagerService,
             jobmanagerStatefulSet = jobmanagerStatefulSet,
             taskmanagerStatefulSet = taskmanagerStatefulSet

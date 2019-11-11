@@ -8,26 +8,26 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 
 class ClusterResourcesTest {
-    private val jarUploadJob = mock(V1Job::class.java)
+    private val bootstrapJob = mock(V1Job::class.java)
     private val jobmanagerService = mock(V1Service::class.java)
     private val jobmanagerStatefulSet = mock(V1StatefulSet::class.java)
     private val taskmanagerStatefulSet = mock(V1StatefulSet::class.java)
 
     private val clusterResources = ClusterResources(
-        jarUploadJob = jarUploadJob,
+        bootstrapJob = bootstrapJob,
         jobmanagerService = jobmanagerService,
         jobmanagerStatefulSet = jobmanagerStatefulSet,
         taskmanagerStatefulSet = taskmanagerStatefulSet
     )
 
     @Test
-    fun `should copy resources and modify upload job`() {
-        assertThat(clusterResources.jarUploadJob).isEqualTo(jarUploadJob)
+    fun `should copy resources and modify bootstrap job`() {
+        assertThat(clusterResources.bootstrapJob).isEqualTo(bootstrapJob)
 
-        val resources = clusterResources.withJarUploadJob(null)
+        val resources = clusterResources.withBootstrapJob(null)
 
         assertThat(resources).isNotNull()
-        assertThat(resources.jarUploadJob).isNull()
+        assertThat(resources.bootstrapJob).isNull()
         assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
         assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
@@ -40,7 +40,7 @@ class ClusterResourcesTest {
         val resources = clusterResources.withJobManagerService(null)
 
         assertThat(resources).isNotNull()
-        assertThat(resources.jarUploadJob).isEqualTo(jarUploadJob)
+        assertThat(resources.bootstrapJob).isEqualTo(bootstrapJob)
         assertThat(resources.jobmanagerService).isNull()
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
         assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
@@ -53,7 +53,7 @@ class ClusterResourcesTest {
         val resources = clusterResources.withJobManagerStatefulSet(null)
 
         assertThat(resources).isNotNull()
-        assertThat(resources.jarUploadJob).isEqualTo(jarUploadJob)
+        assertThat(resources.bootstrapJob).isEqualTo(bootstrapJob)
         assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
         assertThat(resources.jobmanagerStatefulSet).isNull()
         assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
@@ -66,7 +66,7 @@ class ClusterResourcesTest {
         val resources = clusterResources.withTaskManagerStatefulSet(null)
 
         assertThat(resources).isNotNull()
-        assertThat(resources.jarUploadJob).isEqualTo(jarUploadJob)
+        assertThat(resources.bootstrapJob).isEqualTo(bootstrapJob)
         assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
         assertThat(resources.taskmanagerStatefulSet).isNull()
