@@ -99,10 +99,13 @@ Force deletion of pods if Kubernetes get stuck:
 
 ### Patch Flink Cluster resource     
 
-Example of patch operation to trigger cluster restart:
+Example of patch operation to change pullPolicy:
 
     kubectl patch -n flink fc test --type=json -p '[{"op":"replace","path":"/spec/runtime/pullPolicy","value":"Always"}]'
 
+Example of patch operation to change serviceMode:
+
+    kubectl patch -n flink fc test --type=json -p '[{"op":"replace","path":"/spec/jobManager/serviceMode","value":"ClusterIP"}]'
 
 
 ## Optionally install a local Docker Registry
