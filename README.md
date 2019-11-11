@@ -397,7 +397,7 @@ The Custom Resource Definition is installed with a separate Helm chart:
 
 The complete definition with the validation schema is defined in the Helm template:
 
-![Custom Resource Definition](/helm/flink-k8s-toolbox-crd/templates/crd.yaml "Custom Resource Definition")
+    https://github.com/nextbreakpoint/flink-k8s-toolbox/blob/master/helm/flink-k8s-toolbox-crd/templates/crd.yaml
 
 Do not delete the CRD unless you want to delete all custom resources depending on it.
 
