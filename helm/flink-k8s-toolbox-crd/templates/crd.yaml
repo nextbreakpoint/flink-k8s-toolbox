@@ -8387,7 +8387,7 @@ spec:
                 - Executing
                 - Awaiting
                 - Idle
-                - Faile
+                - Failed
             taskAttempts:
               type: integer
               nullable: false
