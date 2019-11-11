@@ -28,9 +28,11 @@ import java.util.concurrent.TimeUnit
 object FlinkContext {
     private val logger = Logger.getLogger(FlinkContext::class.simpleName)
 
+    private val TIMEOUT = 20000L
+
     fun getOverview(address: FlinkAddress): ClusterOverviewWithVersion {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getOverviewCall(null, null).execute()
 
@@ -52,7 +54,7 @@ object FlinkContext {
 
     fun listJars(address: FlinkAddress): List<JarFileInfo> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.listJarsCall(null, null).execute()
 
@@ -74,7 +76,7 @@ object FlinkContext {
 
     fun deleteJars(address: FlinkAddress, files: List<JarFileInfo>) {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             files.forEach {
                 val response = flinkApi.deleteJarCall(it.id, null, null).execute()
@@ -94,7 +96,7 @@ object FlinkContext {
 
     fun listRunningJobs(address: FlinkAddress): List<String> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobsCall( null, null).execute()
 
@@ -122,7 +124,7 @@ object FlinkContext {
 
     fun listJobs(address: FlinkAddress): List<JobIdWithStatus> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobsCall( null, null).execute()
 
@@ -146,7 +148,7 @@ object FlinkContext {
 
     fun runJar(address: FlinkAddress, jarFile: JarFileInfo, bootstrap: V1BootstrapSpec, parallelism: Int, savepointPath: String?) {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.runJarCall(
                 jarFile.id,
@@ -178,7 +180,7 @@ object FlinkContext {
 
     fun getCheckpointingStatistics(address: FlinkAddress, jobs: List<String>): Map<String, CheckpointingStatistics> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             return jobs.map { jobId ->
                 val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
@@ -204,7 +206,7 @@ object FlinkContext {
 
     fun createSavepoint(address: FlinkAddress, it: String, targetPath: String?): TriggerResponse {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val requestBody = SavepointTriggerRequestBody().cancelJob(true).targetDirectory(targetPath)
 
@@ -228,7 +230,7 @@ object FlinkContext {
 
     fun getJobDetails(address: FlinkAddress, jobId: String): JobDetailsInfo {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobDetailsCall(jobId, null, null).execute()
 
@@ -250,7 +252,7 @@ object FlinkContext {
 
     fun getJobMetrics(address: FlinkAddress, jobId: String, metricKey: String): List<Metric> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobMetricsCall(jobId, metricKey, null, null).execute()
 
@@ -272,7 +274,7 @@ object FlinkContext {
 
     fun getJobManagerMetrics(address: FlinkAddress, metricKey: String): List<Metric> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobManagerMetricsCall(metricKey, null, null).execute()
 
@@ -294,7 +296,7 @@ object FlinkContext {
 
     fun getTaskManagerMetrics(address: FlinkAddress, taskmanagerId: TaskManagerId, metricKey: String): List<Metric> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getTaskManagerMetricsCall(taskmanagerId.taskmanagerId, metricKey, null, null).execute()
 
@@ -316,7 +318,7 @@ object FlinkContext {
 
     fun getTaskManagerDetails(address: FlinkAddress, taskmanagerId: TaskManagerId): TaskManagerDetailsInfo {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getTaskManagerDetailsCall(taskmanagerId.taskmanagerId, null, null).execute()
 
@@ -338,7 +340,7 @@ object FlinkContext {
 
     fun terminateJobs(address: FlinkAddress, jobs: List<String>) {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             jobs.forEach {
                 val response = flinkApi.terminateJobCall(it, "cancel", null, null).execute()
@@ -358,7 +360,7 @@ object FlinkContext {
 
     fun getTaskManagersOverview(address: FlinkAddress): TaskManagersInfo {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getTaskManagersOverviewCall(null, null).execute()
 
@@ -380,7 +382,7 @@ object FlinkContext {
 
     fun getPendingSavepointRequests(address: FlinkAddress, requests: Map<String, String>): List<String> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             return requests.map { (jobId, requestId) ->
                 val response = flinkApi.getJobSavepointStatusCall(jobId, requestId, null, null).execute()
@@ -414,7 +416,7 @@ object FlinkContext {
 
     fun getLatestSavepointPaths(address: FlinkAddress, requests: Map<String, String>): Map<String, String> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             return requests.map { (jobId, _) ->
                 val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
@@ -450,7 +452,7 @@ object FlinkContext {
 
     fun triggerSavepoints(address: FlinkAddress, jobs: List<String>, targetPath: String?): Map<String, String>  {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             return jobs.map {
                 val requestBody = SavepointTriggerRequestBody().cancelJob(false).targetDirectory(targetPath)
@@ -480,7 +482,7 @@ object FlinkContext {
 
     fun uploadJarCall(address: FlinkAddress, file: File): JarUploadResponseBody {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.uploadJarCall(file, null, null).execute();
 
@@ -504,13 +506,13 @@ object FlinkContext {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    private fun createFlinkClient(address: FlinkAddress): FlinkApi {
+    private fun createFlinkClient(address: FlinkAddress, timeout: Long): FlinkApi {
         val flinkApi = FlinkApi()
         val apiClient = flinkApi.apiClient
         apiClient.basePath = "http://${address.host}:${address.port}"
-        apiClient.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
-        apiClient.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)
-        apiClient.httpClient.setReadTimeout(30000, TimeUnit.MILLISECONDS)
+        apiClient.httpClient.setConnectTimeout(timeout, TimeUnit.MILLISECONDS)
+        apiClient.httpClient.setWriteTimeout(timeout, TimeUnit.MILLISECONDS)
+        apiClient.httpClient.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
         apiClient.isDebugging = System.getProperty("flink.client.debugging", "false")!!.toBoolean()
         return flinkApi
     }
