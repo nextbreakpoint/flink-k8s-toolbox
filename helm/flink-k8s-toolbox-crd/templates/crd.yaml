@@ -8379,7 +8379,7 @@ spec:
                   - RestartPods
                   - CancelJob
                   - StartJob
-                  - StopJo
+                  - StopJob
             taskStatus:
               type: string
               nullable: false
