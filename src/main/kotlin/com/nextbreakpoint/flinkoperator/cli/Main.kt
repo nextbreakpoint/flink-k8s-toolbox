@@ -11,10 +11,11 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.nextbreakpoint.flinkoperator.common.model.ConnectionConfig
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.model.UploadOptions
+import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import org.apache.log4j.Logger
 import java.io.File
@@ -52,13 +53,14 @@ class Main(private val factory: CommandFactory) {
                 DeleteClusterCommand(factory),
                 GetClusterStatusCommand(factory),
                 StartClusterCommand(factory),
-                StopClusterCommand(factory)
+                StopClusterCommand(factory),
+                ScaleClusterCommand(factory)
             ),
             Savepoint().subcommands(
                 TriggerSavepointCommand(factory)
             ),
-            Upload().subcommands(
-                UploadJARCommand(factory)
+            Bootstrap().subcommands(
+                BootstrapCommand(factory)
             ),
             Job().subcommands(
                 GetJobDetailsCommand(factory),
@@ -93,7 +95,7 @@ class Main(private val factory: CommandFactory) {
         override fun run() = Unit
     }
 
-    class Upload: CliktCommand(name = "upload", help = "Access upload subcommands") {
+    class Bootstrap: CliktCommand(name = "bootstrap", help = "Access bootstrap subcommands") {
         override fun run() = Unit
     }
 
@@ -223,6 +225,32 @@ class Main(private val factory: CommandFactory) {
                 deleteResources = deleteResources
             )
             factory.createStopClusterCommand().run(
+                ConnectionConfig(
+                    host,
+                    port,
+                    keystorePath,
+                    keystoreSecret,
+                    truststorePath,
+                    truststoreSecret
+                ), clusterName, params)
+        }
+    }
+
+    class ScaleClusterCommand(private val factory: CommandFactory): CliktCommand(name = "scale", help="Scale a cluster") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val taskManagers: Int by option(help="Number of Task Managers").int().required()
+
+        override fun run() {
+            val params = ScaleOptions(
+                taskManagers = taskManagers
+            )
+            factory.createScaleClusterCommand().run(
                 ConnectionConfig(
                     host,
                     port,
@@ -424,7 +452,7 @@ class Main(private val factory: CommandFactory) {
         }
     }
 
-    class UploadJARCommand(private val factory: CommandFactory): CliktCommand(name="jar", help="Upload a JAR file") {
+    class BootstrapCommand(private val factory: CommandFactory): CliktCommand(name="upload", help="Upload a JAR file") {
         private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of kuke config")
@@ -433,7 +461,7 @@ class Main(private val factory: CommandFactory) {
         private val jarPath: String by option(help="The path of the JAR file to upload").required()
 
         override fun run() {
-            val params = UploadOptions(
+            val params = BootstrapOptions(
                 jarPath = jarPath
             )
             KubernetesContext.configure(kubeConfig)
@@ -442,7 +470,7 @@ class Main(private val factory: CommandFactory) {
                 portForward = portForward,
                 useNodePort = kubeConfig != null
             )
-            factory.createUploadJARCommand().run(flinkOptions, namespace, clusterName, params)
+            factory.createBootstrapCommand().run(flinkOptions, namespace, clusterName, params)
         }
     }
 }

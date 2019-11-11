@@ -10,7 +10,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 
 class DeleteResources : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
             return Result(
@@ -35,7 +35,7 @@ class DeleteResources : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
             return Result(
@@ -72,14 +72,14 @@ class DeleteResources : OperatorTaskHandler {
     }
 
     private fun resourcesHaveBeenRemoved(clusterId: ClusterId, resources: OperatorResources): Boolean {
-        val jarUploadJob = resources.jarUploadJobs.get(clusterId)
+        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
         val jobmnagerService = resources.jobmanagerServices.get(clusterId)
         val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
         val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
         val jobmanagerPersistentVolumeClaim = resources.jobmanagerPersistentVolumeClaims.get(clusterId)
         val taskmanagerPersistentVolumeClaim = resources.taskmanagerPersistentVolumeClaims.get(clusterId)
 
-        return jarUploadJob == null &&
+        return bootstrapJob == null &&
                 jobmnagerService == null &&
                 jobmanagerStatefulSet == null &&
                 taskmanagerStatefulSet == null &&

@@ -6,20 +6,16 @@ import io.kubernetes.client.models.V1ContainerPort;
 import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
+import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public class V1TaskManagerSpec {
-    @SerializedName("requiredCPUs")
-    private Float requiredCPUs;
-    @SerializedName("requiredMemory")
-    private Integer requiredMemory;
-    @SerializedName("replicas")
-    private Integer replicas;
     @SerializedName("taskSlots")
     private Integer taskSlots;
     @SerializedName("environment")
@@ -42,33 +38,10 @@ public class V1TaskManagerSpec {
     private List<V1Container> initContainers;
     @SerializedName("sideContainers")
     private List<V1Container> sideContainers;
-
-    public Float getRequiredCPUs() {
-        return requiredCPUs;
-    }
-
-    public V1TaskManagerSpec setRequiredCPUs(Float requiredCPUs) {
-        this.requiredCPUs = requiredCPUs;
-        return this;
-    }
-
-    public Integer getRequiredMemory() {
-        return requiredMemory;
-    }
-
-    public V1TaskManagerSpec setRequiredMemory(Integer requiredMemory) {
-        this.requiredMemory = requiredMemory;
-        return this;
-    }
-
-    public Integer getReplicas() {
-        return replicas;
-    }
-
-    public V1TaskManagerSpec setReplicas(Integer replicas) {
-        this.replicas = replicas;
-        return this;
-    }
+    @SerializedName("resources")
+    private V1ResourceRequirements resources;
+    @SerializedName("maxHeapMemory")
+    private Integer maxHeapMemory;
 
     public Integer getTaskSlots() {
         return taskSlots;
@@ -164,15 +137,28 @@ public class V1TaskManagerSpec {
         this.sideContainers = sideContainers;
     }
 
+    public V1ResourceRequirements getResources() {
+        return resources;
+    }
+
+    public void setResources(V1ResourceRequirements resources) {
+        this.resources = resources;
+    }
+
+    public Integer getMaxHeapMemory() {
+        return maxHeapMemory;
+    }
+
+    public void setMaxHeapMemory(Integer maxHeapMemory) {
+        this.maxHeapMemory = maxHeapMemory;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         V1TaskManagerSpec that = (V1TaskManagerSpec) o;
-        return Objects.equals(getRequiredCPUs(), that.getRequiredCPUs()) &&
-                Objects.equals(getRequiredMemory(), that.getRequiredMemory()) &&
-                Objects.equals(getReplicas(), that.getReplicas()) &&
-                Objects.equals(getTaskSlots(), that.getTaskSlots()) &&
+        return Objects.equals(getTaskSlots(), that.getTaskSlots()) &&
                 Objects.equals(getEnvironment(), that.getEnvironment()) &&
                 Objects.equals(getEnvironmentFrom(), that.getEnvironmentFrom()) &&
                 Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
@@ -182,21 +168,20 @@ public class V1TaskManagerSpec {
                 Objects.equals(getAnnotations(), that.getAnnotations()) &&
                 Objects.equals(getExtraPorts(), that.getExtraPorts()) &&
                 Objects.equals(getInitContainers(), that.getInitContainers()) &&
-                Objects.equals(getSideContainers(), that.getSideContainers());
+                Objects.equals(getSideContainers(), that.getSideContainers()) &&
+                Objects.equals(getResources(), that.getResources()) &&
+                Objects.equals(getMaxHeapMemory(), that.getMaxHeapMemory());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getRequiredCPUs(), getRequiredMemory(), getReplicas(), getTaskSlots(), getEnvironment(), getEnvironmentFrom(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers());
+        return Objects.hash(getTaskSlots(), getEnvironment(), getEnvironmentFrom(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers(), getResources(), getMaxHeapMemory());
     }
 
     @Override
     public String toString() {
         return "V1TaskManagerSpec{" +
-                "requiredCPUs=" + requiredCPUs +
-                ", requiredMemory=" + requiredMemory +
-                ", replicas=" + replicas +
-                ", taskSlots=" + taskSlots +
+                "taskSlots=" + taskSlots +
                 ", environment=" + environment +
                 ", environmentFrom=" + environmentFrom +
                 ", serviceAccount='" + serviceAccount + '\'' +
@@ -207,6 +192,8 @@ public class V1TaskManagerSpec {
                 ", extraPorts=" + extraPorts +
                 ", initContainers=" + initContainers +
                 ", sideContainers=" + sideContainers +
+                ", resources=" + resources +
+                ", maxHeapMemory=" + maxHeapMemory +
                 '}';
     }
 }

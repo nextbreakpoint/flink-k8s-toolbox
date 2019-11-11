@@ -17,7 +17,7 @@ import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
 import com.nextbreakpoint.flinkclient.model.TaskManagerDetailsInfo
 import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
 import com.nextbreakpoint.flinkclient.model.TriggerResponse
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkJobSpec
+import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.Metric
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
@@ -28,18 +28,22 @@ import java.util.concurrent.TimeUnit
 object FlinkContext {
     private val logger = Logger.getLogger(FlinkContext::class.simpleName)
 
+    private val TIMEOUT = 20000L
+
     fun getOverview(address: FlinkAddress): ClusterOverviewWithVersion {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getOverviewCall(null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't get cluster overview - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't get cluster overview - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), ClusterOverviewWithVersion::class.java)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), ClusterOverviewWithVersion::class.java)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -50,16 +54,18 @@ object FlinkContext {
 
     fun listJars(address: FlinkAddress): List<JarFileInfo> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.listJarsCall(null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't list JARs - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't list JARs - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), JarListInfo::class.java).files
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), JarListInfo::class.java).files
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -70,13 +76,15 @@ object FlinkContext {
 
     fun deleteJars(address: FlinkAddress, files: List<JarFileInfo>) {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             files.forEach {
                 val response = flinkApi.deleteJarCall(it.id, null, null).execute()
 
-                if (!response.isSuccessful) {
-                    throw CallException("Can't remove JAR - $address")
+                response.body().use { body ->
+                    if (!response.isSuccessful) {
+                        throw CallException("Can't remove JAR - $address")
+                    }
                 }
             }
         } catch (e : CallException) {
@@ -88,22 +96,24 @@ object FlinkContext {
 
     fun listRunningJobs(address: FlinkAddress): List<String> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobsCall( null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't get jobs - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't get jobs - $address")
+                }
 
-            response.body().use {
-                val jobsOverview = Gson().fromJson(it.source().readUtf8Line(), JobIdsWithStatusOverview::class.java)
+                body.source().use { source ->
+                    val jobsOverview = Gson().fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
 
-                return jobsOverview.jobs.filter {
-                    jobIdWithStatus -> jobIdWithStatus.status == JobIdWithStatus.StatusEnum.RUNNING
-                }.map {
-                    it.id
-                }.toList()
+                    return jobsOverview.jobs.filter {
+                        jobIdWithStatus -> jobIdWithStatus.status == JobIdWithStatus.StatusEnum.RUNNING
+                    }.map {
+                        it.id
+                    }.toList()
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -114,18 +124,20 @@ object FlinkContext {
 
     fun listJobs(address: FlinkAddress): List<JobIdWithStatus> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobsCall( null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't get jobs - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't get jobs - $address")
+                }
 
-            response.body().use {
-                val jobsOverview = Gson().fromJson(it.source().readUtf8Line(), JobIdsWithStatusOverview::class.java)
+                body.source().use { source ->
+                    val jobsOverview = Gson().fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
 
-                return jobsOverview.jobs
+                    return jobsOverview.jobs
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -134,28 +146,30 @@ object FlinkContext {
         }
     }
 
-    fun runJar(address: FlinkAddress, jarFile: JarFileInfo, flinkJob: V1FlinkJobSpec, savepointPath: String?) {
+    fun runJar(address: FlinkAddress, jarFile: JarFileInfo, bootstrap: V1BootstrapSpec, parallelism: Int, savepointPath: String?) {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.runJarCall(
                 jarFile.id,
                 false,
                 savepointPath,
-                flinkJob.arguments.joinToString(separator = " "),
+                bootstrap.arguments.joinToString(separator = " "),
                 null,
-                flinkJob.className,
-                flinkJob.parallelism,
+                bootstrap.className,
+                parallelism,
                 null,
                 null
             ).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't run JAR - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't run JAR - $address")
+                }
 
-            response.body().use {
-                logger.debug("Job started: ${it.source().readUtf8Line()}")
+                body.source().use { source ->
+                    logger.debug("Job started: ${source.readUtf8Line()}")
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -166,21 +180,21 @@ object FlinkContext {
 
     fun getCheckpointingStatistics(address: FlinkAddress, jobs: List<String>): Map<String, CheckpointingStatistics> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             return jobs.map { jobId ->
                 val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
 
-                if (!response.isSuccessful) {
-                    throw CallException("Can't get checkpointing statistics - $address")
-                }
-
                 jobId to response
-            }.filter {
-                it.second.code() == 200
             }.map {
-                it.first to it.second.body().use {
-                    Gson().fromJson(it.source().readUtf8Line(), CheckpointingStatistics::class.java)
+                it.second.body().use { body ->
+                    if (!it.second.isSuccessful) {
+                        throw CallException("Can't get checkpointing statistics - $address")
+                    }
+
+                    it.first to body.source().use { source ->
+                        Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
+                    }
                 }
             }.toMap()
         } catch (e : CallException) {
@@ -192,18 +206,20 @@ object FlinkContext {
 
     fun createSavepoint(address: FlinkAddress, it: String, targetPath: String?): TriggerResponse {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val requestBody = SavepointTriggerRequestBody().cancelJob(true).targetDirectory(targetPath)
 
             val response = flinkApi.createJobSavepointCall(requestBody, it, null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't request savepoint - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't request savepoint - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), TriggerResponse::class.java)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), TriggerResponse::class.java)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -214,16 +230,18 @@ object FlinkContext {
 
     fun getJobDetails(address: FlinkAddress, jobId: String): JobDetailsInfo {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobDetailsCall(jobId, null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't fetch job details - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't fetch job details - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), JobDetailsInfo::class.java)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), JobDetailsInfo::class.java)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -234,16 +252,18 @@ object FlinkContext {
 
     fun getJobMetrics(address: FlinkAddress, jobId: String, metricKey: String): List<Metric> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobMetricsCall(jobId, metricKey, null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't fetch job metrics - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't fetch job metrics - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -254,16 +274,18 @@ object FlinkContext {
 
     fun getJobManagerMetrics(address: FlinkAddress, metricKey: String): List<Metric> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getJobManagerMetricsCall(metricKey, null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't fetch job manager metrics - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't fetch job manager metrics - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -274,16 +296,18 @@ object FlinkContext {
 
     fun getTaskManagerMetrics(address: FlinkAddress, taskmanagerId: TaskManagerId, metricKey: String): List<Metric> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getTaskManagerMetricsCall(taskmanagerId.taskmanagerId, metricKey, null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't fetch task manager metrics - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't fetch task manager metrics - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -294,16 +318,18 @@ object FlinkContext {
 
     fun getTaskManagerDetails(address: FlinkAddress, taskmanagerId: TaskManagerId): TaskManagerDetailsInfo {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getTaskManagerDetailsCall(taskmanagerId.taskmanagerId, null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't fetch task manager details - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't fetch task manager details - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), object : TypeToken<TaskManagerDetailsInfo>() {}.type)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<TaskManagerDetailsInfo>() {}.type)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -314,13 +340,15 @@ object FlinkContext {
 
     fun terminateJobs(address: FlinkAddress, jobs: List<String>) {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             jobs.forEach {
                 val response = flinkApi.terminateJobCall(it, "cancel", null, null).execute()
 
-                if (!response.isSuccessful) {
-                    logger.warn("Can't cancel job $it - $address");
+                response.body().use { body ->
+                    if (!response.isSuccessful) {
+                        logger.warn("Can't cancel job $it - $address");
+                    }
                 }
             }
         } catch (e : CallException) {
@@ -332,16 +360,18 @@ object FlinkContext {
 
     fun getTaskManagersOverview(address: FlinkAddress): TaskManagersInfo {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.getTaskManagersOverviewCall(null, null).execute()
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't fetch task managers overview - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't fetch task managers overview - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), object : TypeToken<TaskManagersInfo>() {}.type)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<TaskManagersInfo>() {}.type)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -352,28 +382,28 @@ object FlinkContext {
 
     fun getPendingSavepointRequests(address: FlinkAddress, requests: Map<String, String>): List<String> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             return requests.map { (jobId, requestId) ->
                 val response = flinkApi.getJobSavepointStatusCall(jobId, requestId, null, null).execute()
 
-                if (!response.isSuccessful) {
-                    logger.error("Can't get savepoint status for job $jobId - $address")
-                }
-
                 jobId to response
-            }.filter {
-                it.second.isSuccessful
             }.map {
-                val asynchronousOperationResult = it.second.body().use {
-                    Gson().fromJson(it.source().readUtf8Line(), AsynchronousOperationResult::class.java)
-                }
+                it.second.body().use { body ->
+                    if (!it.second.isSuccessful) {
+                        logger.error("Can't get savepoint status for job ${it.first} - $address")
+                    }
 
-                if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
-                    logger.info("Savepoint still in progress for job ${it.first} - $address")
-                }
+                    val asynchronousOperationResult = body.source().use { source ->
+                        Gson().fromJson(source.readUtf8Line(), AsynchronousOperationResult::class.java)
+                    }
 
-                it.first to asynchronousOperationResult.status.id
+                    if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
+                        logger.info("Savepoint still in progress for job ${it.first} - $address")
+                    }
+
+                    it.first to asynchronousOperationResult.status.id
+                }
             }.filter {
                 it.second == QueueStatus.IdEnum.IN_PROGRESS
             }.map {
@@ -386,32 +416,32 @@ object FlinkContext {
 
     fun getLatestSavepointPaths(address: FlinkAddress, requests: Map<String, String>): Map<String, String> {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             return requests.map { (jobId, _) ->
                 val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
 
-                if (!response.isSuccessful) {
-                    logger.error("Can't get checkpointing statistics for job $jobId - $address")
-                }
-
                 jobId to response
-            }.filter {
-                it.second.isSuccessful
             }.map {
-                val checkpointingStatistics = it.second.body().use {
-                    Gson().fromJson(it.source().readUtf8Line(), CheckpointingStatistics::class.java)
+                it.second.body().use { body ->
+                    if (!it.second.isSuccessful) {
+                        logger.error("Can't get checkpointing statistics for job ${it.first} - $address")
+                    }
+
+                    val checkpointingStatistics = body.source().use { source ->
+                        Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
+                    }
+
+                    val savepoint = checkpointingStatistics.latest?.savepoint
+
+                    if (savepoint == null) {
+                        logger.error("Savepoint not found for job ${it.first} - $address")
+                    }
+
+                    val externalPathOrEmpty = savepoint?.externalPath ?: ""
+
+                    it.first to externalPathOrEmpty.trim('\"')
                 }
-
-                val savepoint = checkpointingStatistics.latest?.savepoint
-
-                if (savepoint == null) {
-                    logger.error("Savepoint not found for job ${it.first} - $address")
-                }
-
-                val externalPathOrEmpty = savepoint?.externalPath ?: ""
-
-                it.first to externalPathOrEmpty.trim('\"')
             }.filter {
                 it.second.isNotBlank()
             }.toMap()
@@ -422,23 +452,23 @@ object FlinkContext {
 
     fun triggerSavepoints(address: FlinkAddress, jobs: List<String>, targetPath: String?): Map<String, String>  {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             return jobs.map {
                 val requestBody = SavepointTriggerRequestBody().cancelJob(false).targetDirectory(targetPath)
 
                 val response = flinkApi.createJobSavepointCall(requestBody, it, null, null).execute()
 
-                if (!response.isSuccessful) {
-                    logger.warn("Can't request savepoint for job $it - $address")
-                }
-
                 it to response
-            }.filter {
-                it.second.isSuccessful
             }.map {
-                it.first to it.second.body().use {
-                    Gson().fromJson(it.source().readUtf8Line(), TriggerResponse::class.java)
+                it.second.body().use { body ->
+                    if (!it.second.isSuccessful) {
+                        logger.warn("Can't request savepoint for job $it - $address")
+                    }
+
+                    it.first to body.source().use { source ->
+                        Gson().fromJson(source.readUtf8Line(), TriggerResponse::class.java)
+                    }
                 }
             }.map {
                 it.first to it.second.requestId
@@ -452,16 +482,18 @@ object FlinkContext {
 
     fun uploadJarCall(address: FlinkAddress, file: File): JarUploadResponseBody {
         try {
-            val flinkApi = createFlinkClient(address)
+            val flinkApi = createFlinkClient(address, TIMEOUT)
 
             val response = flinkApi.uploadJarCall(file, null, null).execute();
 
-            if (!response.isSuccessful) {
-                throw CallException("Can't upload JAR - $address")
-            }
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("Can't upload JAR - $address")
+                }
 
-            response.body().use {
-                return Gson().fromJson(it.source().readUtf8Line(), object : TypeToken<JarUploadResponseBody>() {}.type)
+                body.source().use { source ->
+                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<JarUploadResponseBody>() {}.type)
+                }
             }
         } catch (e : CallException) {
             throw e
@@ -470,13 +502,18 @@ object FlinkContext {
         }
     }
 
-    private fun createFlinkClient(address: FlinkAddress): FlinkApi {
+    fun triggerJobRescaling(address: FlinkAddress, parallelism: Int) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    private fun createFlinkClient(address: FlinkAddress, timeout: Long): FlinkApi {
         val flinkApi = FlinkApi()
-        flinkApi.apiClient.basePath = "http://${address.host}:${address.port}"
-        flinkApi.apiClient.httpClient.setConnectTimeout(20000, TimeUnit.MILLISECONDS)
-        flinkApi.apiClient.httpClient.setWriteTimeout(30000, TimeUnit.MILLISECONDS)
-        flinkApi.apiClient.httpClient.setReadTimeout(30000, TimeUnit.MILLISECONDS)
-//        flinkApi.apiClient.isDebugging = true
+        val apiClient = flinkApi.apiClient
+        apiClient.basePath = "http://${address.host}:${address.port}"
+        apiClient.httpClient.setConnectTimeout(timeout, TimeUnit.MILLISECONDS)
+        apiClient.httpClient.setWriteTimeout(timeout, TimeUnit.MILLISECONDS)
+        apiClient.httpClient.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
+        apiClient.isDebugging = System.getProperty("flink.client.debugging", "false")!!.toBoolean()
         return flinkApi
     }
 }

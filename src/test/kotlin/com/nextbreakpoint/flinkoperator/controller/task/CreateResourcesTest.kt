@@ -22,7 +22,7 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 
 class CreateResourcesTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
-    private val cluster = TestFactory.aCluster("test", "flink")
+    private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(OperatorContext::class.java)
     private val controller = mock(OperatorController::class.java)
     private val resources = mock(OperatorResources::class.java)
@@ -31,7 +31,7 @@ class CreateResourcesTest {
 
     @BeforeEach
     fun configure() {
-        given(context.lastUpdated).thenReturn(time)
+        given(context.operatorTimestamp).thenReturn(time)
         given(context.controller).thenReturn(controller)
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
@@ -44,7 +44,7 @@ class CreateResourcesTest {
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CREATING_CLUSTER_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -62,7 +62,7 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())
@@ -84,7 +84,7 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())
@@ -107,7 +107,7 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())
@@ -130,7 +130,7 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())
@@ -149,7 +149,7 @@ class CreateResourcesTest {
         given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CREATING_CLUSTER_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
@@ -168,7 +168,7 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())
@@ -189,7 +189,7 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())
@@ -209,7 +209,7 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())
@@ -230,7 +230,7 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())
@@ -251,7 +251,7 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).lastUpdated
+        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, times(1)).haveClusterResourcesDiverged(any())

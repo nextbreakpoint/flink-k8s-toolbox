@@ -11,7 +11,7 @@ class ClusterResourcesStatusEvaluator {
         flinkCluster: V1FlinkCluster,
         clusterResources: ClusterResources
     ): ClusterResourcesStatus {
-        val uploadJobStatus = evaluateUploadJobStatus(clusterResources, clusterId, flinkCluster)
+        val bootstrapJobStatus = evaluateBootstrapJobStatus(clusterResources, clusterId, flinkCluster)
 
         val jobmanagerServiceStatus = evaluateJobManagerServiceStatus(clusterResources, clusterId, flinkCluster)
 
@@ -20,7 +20,7 @@ class ClusterResourcesStatusEvaluator {
         val taskmanagerStatefulSetStatus = evaluateTaskManagerStatefulSetStatus(clusterResources, clusterId, flinkCluster)
 
         return ClusterResourcesStatus(
-            jarUploadJob = uploadJobStatus,
+            bootstrapJob = bootstrapJobStatus,
             jobmanagerService = jobmanagerServiceStatus,
             jobmanagerStatefulSet = jobmanagerStatefulSetStatus,
             taskmanagerStatefulSet = taskmanagerStatefulSetStatus
@@ -30,60 +30,56 @@ class ClusterResourcesStatusEvaluator {
     private fun extractArgument(containerArguments: List<String>, name: String) =
         containerArguments.filter { it.startsWith(name) }.map { it.substringAfter("=") }.firstOrNull()
 
-    private fun evaluateUploadJobStatus(
+    private fun evaluateBootstrapJobStatus(
         clusterResources: ClusterResources,
         clusterId: ClusterId,
         flinkCluster: V1FlinkCluster
     ): Pair<ResourceStatus, List<String>> {
-        val jarUploadJob = clusterResources.jarUploadJob ?: return ResourceStatus.MISSING to listOf()
+        val bootstrapJob = clusterResources.bootstrapJob ?: return ResourceStatus.MISSING to listOf()
 
         val statusReport = mutableListOf<String>()
 
-        if (jarUploadJob.metadata.labels["component"]?.equals("flink") != true) {
+        if (bootstrapJob.metadata.labels["component"]?.equals("flink") != true) {
             statusReport.add("component label missing or invalid")
         }
 
-        if (jarUploadJob.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
+        if (bootstrapJob.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
             statusReport.add("name label missing or invalid")
         }
 
-        if (jarUploadJob.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
+        if (bootstrapJob.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (jarUploadJob.spec.template.spec.serviceAccountName != "flink-upload") {
+        if (bootstrapJob.spec.template.spec.serviceAccountName != flinkCluster.spec.bootstrap?.serviceAccount ?: "default") {
             statusReport.add("service account does not match")
         }
 
-        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
-            if (jarUploadJob.spec.template.spec.imagePullSecrets.size != 1) {
+        if (flinkCluster.spec.bootstrap?.pullSecrets != null) {
+            if (bootstrapJob.spec.template.spec.imagePullSecrets.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (jarUploadJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                if (bootstrapJob.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.bootstrap?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }
         }
 
-        if (jarUploadJob.spec.template.spec.containers.size != 1) {
-            statusReport.add("unexpected number of containers")
-        }
+        if (bootstrapJob.spec.template.spec.containers?.size == 1) {
+            val container = bootstrapJob.spec.template.spec.containers.get(0)
 
-        if (jarUploadJob.spec.template.spec.containers.size > 0) {
-            val container = jarUploadJob.spec.template.spec.containers.get(0)
-
-            if (container.image != flinkCluster.spec.flinkJob.image) {
+            if (container.image != flinkCluster.spec.bootstrap.image) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.runtime?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 
-            if (container.args.size < 1 || container.args[0] != "upload") {
-                statusReport.add("missing upload command: ${container.args.joinToString(separator = ",")}")
+            if (container.args.size < 1 || container.args[0] != "bootstrap") {
+                statusReport.add("missing bootstrap command: ${container.args.joinToString(separator = ",")}")
             } else {
-                if (container.args.size < 2 || container.args[1] != "jar") {
+                if (container.args.size < 2 || container.args[1] != "upload") {
                     statusReport.add("unexpected sub command: ${container.args.joinToString(separator = ",")}")
                 } else {
                     val jobNamespace = extractArgument(container.args, "--namespace")
@@ -100,11 +96,13 @@ class ClusterResourcesStatusEvaluator {
                         statusReport.add("unexpected argument cluster name: ${container.args.joinToString(separator = " ")}")
                     }
 
-                    if (jobJarPath == null || jobJarPath != flinkCluster.spec.flinkJob.jarPath) {
+                    if (jobJarPath == null || jobJarPath != flinkCluster.spec.bootstrap.jarPath) {
                         statusReport.add("unexpected argument jar path: ${container.args.joinToString(separator = " ")}")
                     }
                 }
             }
+        } else {
+            statusReport.add("unexpected number of containers")
         }
 
         if (statusReport.size > 0) {
@@ -179,11 +177,11 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("service account does not match")
         }
 
-        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+        if (flinkCluster.spec.runtime?.pullSecrets != null) {
             if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets?.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.runtime?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }
@@ -196,31 +194,23 @@ class ClusterResourcesStatusEvaluator {
         val initContainerCount = flinkCluster.spec?.jobManager?.initContainers?.size ?: 0
         val sideContainerCount = flinkCluster.spec?.jobManager?.sideContainers?.size ?: 0
 
-        if (jobmanagerStatefulSet.spec.template.spec.initContainers.size != initContainerCount) {
+        if (jobmanagerStatefulSet.spec.template.spec.initContainers?.size != initContainerCount) {
             statusReport.add("unexpected number of init containers")
         }
 
-        if (jobmanagerStatefulSet.spec.template.spec.containers.size != sideContainerCount + 1) {
-            statusReport.add("unexpected number of containers")
-        }
-
-        if (jobmanagerStatefulSet.spec.template.spec.containers.size > 0) {
+        if (jobmanagerStatefulSet.spec.template.spec.containers?.size == sideContainerCount + 1) {
             val container = jobmanagerStatefulSet.spec.template.spec.containers.get(0)
 
-            if (container.image != flinkCluster.spec.flinkImage?.flinkImage) {
+            if (container.image != flinkCluster.spec.runtime?.image) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.runtime?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 
-            if (container.resources.limits.get("cpu")?.number?.toFloat()?.equals(flinkCluster.spec.jobManager.requiredCPUs ?: 1.0f) != true) {
-                statusReport.add("container cpu limit doesn't match")
-            }
-
-            if (container.resources.requests.get("memory")?.number?.toInt()?.equals((flinkCluster.spec.jobManager.requiredMemory ?: 256) * 1024 * 1024) != true) {
-                statusReport.add("container memory limit doesn't match")
+            if (container.resources != flinkCluster.spec.jobManager?.resources) {
+                statusReport.add("container resources don't match")
             }
 
             val jobmanagerRpcAddressEnvVar = container.env.filter { it.name == "JOB_MANAGER_RPC_ADDRESS" }.firstOrNull()
@@ -231,7 +221,7 @@ class ClusterResourcesStatusEvaluator {
 
             val jobmanagerMemoryEnvVar = container.env.filter { it.name == "FLINK_JM_HEAP" }.firstOrNull()
 
-            if (jobmanagerMemoryEnvVar?.value == null || jobmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.jobManager.requiredMemory ?: 256) {
+            if (jobmanagerMemoryEnvVar?.value == null || jobmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.jobManager.maxHeapMemory ?: 256) {
                 statusReport.add("missing or invalid environment variable FLINK_JM_HEAP")
             }
 
@@ -258,6 +248,8 @@ class ClusterResourcesStatusEvaluator {
             if (jobmanagerEnvironmentVariables != flinkCluster.spec.jobManager.environment ?: listOf<V1EnvVar>()) {
                 statusReport.add("container environment variables don't match")
             }
+        } else {
+            statusReport.add("unexpected number of containers")
         }
 
         if (statusReport.size > 0) {
@@ -296,11 +288,11 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("service account does not match")
         }
 
-        if (flinkCluster.spec.flinkImage?.pullSecrets != null) {
+        if (flinkCluster.spec.runtime?.pullSecrets != null) {
             if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.flinkImage?.pullSecrets) {
+                if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.runtime?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }
@@ -310,38 +302,32 @@ class ClusterResourcesStatusEvaluator {
             statusReport.add("unexpected number of volume claim templates")
         }
 
-        if (taskmanagerStatefulSet.spec.replicas != flinkCluster.spec.taskManager.replicas ?: 1) {
+        val replicas = flinkCluster.spec?.taskManagers ?: 1
+
+        if (taskmanagerStatefulSet.spec.replicas != replicas) {
             statusReport.add("number of replicas doesn't match")
         }
 
         val initContainerCount = flinkCluster.spec?.jobManager?.initContainers?.size ?: 0
         val sideContainerCount = flinkCluster.spec?.jobManager?.sideContainers?.size ?: 0
 
-        if (taskmanagerStatefulSet.spec.template.spec.initContainers.size != initContainerCount) {
+        if (taskmanagerStatefulSet.spec.template.spec.initContainers?.size != initContainerCount) {
             statusReport.add("unexpected number of init containers")
         }
 
-        if (taskmanagerStatefulSet.spec.template.spec.containers.size != sideContainerCount + 1) {
-            statusReport.add("unexpected number of containers")
-        }
-
-        if (taskmanagerStatefulSet.spec.template.spec.containers.size > 0) {
+        if (taskmanagerStatefulSet.spec.template.spec.containers?.size == sideContainerCount + 1) {
             val container = taskmanagerStatefulSet.spec.template.spec.containers.get(0)
 
-            if (container.image != flinkCluster.spec.flinkImage?.flinkImage) {
+            if (container.image != flinkCluster.spec.runtime?.image) {
                 statusReport.add("container image does not match")
             }
 
-            if (container.imagePullPolicy != flinkCluster.spec.flinkImage?.pullPolicy) {
+            if (container.imagePullPolicy != flinkCluster.spec.runtime?.pullPolicy) {
                 statusReport.add("container image pull policy does not match")
             }
 
-            if (container.resources.limits.get("cpu")?.number?.toFloat()?.equals(flinkCluster.spec.taskManager.requiredCPUs ?: 1.0f) != true) {
-                statusReport.add("container cpu limit doesn't match")
-            }
-
-            if (container.resources.requests.get("memory")?.number?.toInt()?.equals((flinkCluster.spec.taskManager.requiredMemory ?: 1024) * 1024 * 1024) != true) {
-                statusReport.add("container memory limit doesn't match")
+            if (container.resources != flinkCluster.spec.taskManager?.resources) {
+                statusReport.add("container resources don't match")
             }
 
             val taskmanagerRpcAddressEnvVar = container.env.filter { it.name == "JOB_MANAGER_RPC_ADDRESS" }.firstOrNull()
@@ -352,7 +338,7 @@ class ClusterResourcesStatusEvaluator {
 
             val taskmanagerMemoryEnvVar = container.env.filter { it.name == "FLINK_TM_HEAP" }.firstOrNull()
 
-            if (taskmanagerMemoryEnvVar?.value == null || taskmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.taskManager.requiredMemory ?: 1024) {
+            if (taskmanagerMemoryEnvVar?.value == null || taskmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.taskManager.maxHeapMemory ?: 1024) {
                 statusReport.add("missing or invalid environment variable FLINK_TM_HEAP")
             }
 
@@ -386,6 +372,8 @@ class ClusterResourcesStatusEvaluator {
             if (!taskmanagerEnvironmentVariables.equals(flinkCluster.spec.taskManager.environment ?: listOf<V1EnvVar>())) {
                 statusReport.add("container environment variables don't match")
             }
+        } else {
+            statusReport.add("unexpected number of containers")
         }
 
         if (statusReport.size > 0) {

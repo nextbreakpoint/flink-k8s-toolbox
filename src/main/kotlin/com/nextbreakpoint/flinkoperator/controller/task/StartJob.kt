@@ -8,14 +8,14 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 
 class StartJob : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        if (context.flinkCluster.spec?.flinkJob == null) {
+        if (context.flinkCluster.spec?.bootstrap == null) {
             return Result(
                 ResultStatus.FAILED,
                 "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"
             )
         }
 
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {
             return Result(
@@ -33,7 +33,7 @@ class StartJob : OperatorTaskHandler {
             )
         }
 
-        val runJarResponse = context.controller.runJar(context.clusterId, context.flinkCluster)
+        val runJarResponse = context.controller.startJob(context.clusterId, context.flinkCluster)
 
         if (runJarResponse.status == ResultStatus.SUCCESS) {
             return Result(
@@ -49,7 +49,7 @@ class StartJob : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {
             return Result(

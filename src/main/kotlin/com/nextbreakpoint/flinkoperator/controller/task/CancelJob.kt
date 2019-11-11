@@ -3,22 +3,22 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 
 class CancelJob : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        if (context.flinkCluster.spec?.flinkJob == null) {
+        if (context.flinkCluster.spec?.bootstrap == null) {
             return Result(
                 ResultStatus.FAILED,
                 "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"
             )
         }
 
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.CANCELLING_JOBS_TIMEOUT) {
             return Result(
@@ -58,7 +58,7 @@ class CancelJob : OperatorTaskHandler {
     }
 
     override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.lastUpdated
+        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         if (elapsedTime > OperatorTimeouts.CANCELLING_JOBS_TIMEOUT) {
             return Result(

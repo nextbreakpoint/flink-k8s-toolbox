@@ -5,42 +5,48 @@ import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class InitialiseCluster : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.STARTING)
-        OperatorState.setOperatorTaskAttempts(context.flinkCluster, 0)
+        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
+        OperatorState.setTaskAttempts(context.flinkCluster, 0)
 
-        if (context.flinkCluster.spec.flinkJob != null) {
+        if (context.flinkCluster.spec.bootstrap != null) {
             OperatorState.appendTasks(context.flinkCluster,
                 listOf(
-                    OperatorTask.CREATE_RESOURCES,
-                    OperatorTask.UPLOAD_JAR,
-                    OperatorTask.START_JOB,
-                    OperatorTask.CLUSTER_RUNNING
+                    OperatorTask.CreateResources,
+                    OperatorTask.CreateBootstrapJob,
+                    OperatorTask.StartJob,
+                    OperatorTask.ClusterRunning
                 )
             )
         } else {
             OperatorState.appendTasks(context.flinkCluster,
                 listOf(
-                    OperatorTask.CREATE_RESOURCES,
-                    OperatorTask.CLUSTER_RUNNING
+                    OperatorTask.CreateResources,
+                    OperatorTask.ClusterRunning
                 )
             )
         }
 
         val jobManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.jobManager)
         val taskManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.taskManager)
-        val flinkImageDigest = CustomResources.computeDigest(context.flinkCluster.spec?.flinkImage)
-        val flinkJobDigest = CustomResources.computeDigest(context.flinkCluster.spec?.flinkJob)
+        val runtimeDigest = CustomResources.computeDigest(context.flinkCluster.spec?.runtime)
+        val bootstrapDigest = CustomResources.computeDigest(context.flinkCluster.spec?.bootstrap)
 
         OperatorState.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
         OperatorState.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
-        OperatorState.setFlinkImageDigest(context.flinkCluster, flinkImageDigest)
-        OperatorState.setFlinkJobDigest(context.flinkCluster, flinkJobDigest)
+        OperatorState.setRuntimeDigest(context.flinkCluster, runtimeDigest)
+        OperatorState.setBootstrapDigest(context.flinkCluster, bootstrapDigest)
+
+        OperatorState.setTaskManagers(context.flinkCluster, 0)
+
+        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 1
+        val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
+        OperatorState.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
 
         return Result(
             ResultStatus.SUCCESS,

@@ -15,27 +15,32 @@ import io.kubernetes.client.models.V1ServiceBuilder
 import io.kubernetes.client.models.V1StatefulSetBuilder
 
 object TestFactory {
-    fun aCluster(name: String, namespace: String): V1FlinkCluster {
+    fun aCluster(name: String, namespace: String, taskManagers: Int = 1, taskSlots: Int = 1): V1FlinkCluster {
         val flinkClusterSpec = CustomResources.parseV1FlinkClusterSpec(
             """
             {
-              "flinkImage": {
-                "pullSecrets": "regcred",
+              "taskManagers": $taskManagers,
+              "runtime": {
+                "pullSecrets": "flink-regcred",
                 "pullPolicy": "IfNotPresent",
-                "flinkImage": "registry:30000/flink:1.7.2"
+                "image": "registry:30000/flink:1.9.0"
               },
-              "flinkJob": {
+              "bootstrap": {
+                "serviceAccount": "bootstrap-test",
+                "pullSecrets": "bootstrap-regcred",
+                "pullPolicy": "IfNotPresent",
                 "image": "registry:30000/flink-jobs:1",
                 "jarPath": "/flink-jobs.jar",
                 "className": "com.nextbreakpoint.flink.jobs.TestJob",
-                "parallelism": 1,
                 "arguments": [
                   "--BUCKET_BASE_PATH",
                   "file:///var/tmp"
                 ]
               },
               "jobManager": {
+                "serviceAccount": "jobmanager-test",
                 "serviceMode": "ClusterIP",
+                "maxHeapMemory": 512,
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",
@@ -115,9 +120,22 @@ object TestFactory {
                       }
                     }
                   }
-                ]
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "1",
+                        "memory": "512Mi"
+                    },
+                    "requests": {
+                        "cpu": "0.1",
+                        "memory": "256Mi"
+                    }
+                }
               },
               "taskManager": {
+                "serviceAccount": "taskmanager-test",
+                "taskSlots": $taskSlots,
+                "maxHeapMemory": 2048,
                 "environment": [
                   {
                     "name": "FLINK_GRAPHITE_HOST",
@@ -190,9 +208,19 @@ object TestFactory {
                       }
                     }
                   }
-                ]
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "1",
+                        "memory": "2048Mi"
+                    },
+                    "requests": {
+                        "cpu": "0.2",
+                        "memory": "1024Mi"
+                    }
+                }
               },
-              "flinkOperator": {
+              "operator": {
                 "savepointMode": "AUTOMATIC",
                 "savepointInterval": "60",
                 "savepointTargetPath": "file:///var/tmp/test"
@@ -291,7 +319,7 @@ object TestFactory {
         val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
         val resources = createClusterResources(uid, cluster)
         return OperatorResources(
-            mapOf(clusterId to (resources.jarUploadJob ?: throw RuntimeException())),
+            mapOf(clusterId to (resources.bootstrapJob ?: throw RuntimeException())),
             mapOf(clusterId to (resources.jobmanagerService ?: throw RuntimeException())),
             mapOf(clusterId to (resources.jobmanagerStatefulSet ?: throw RuntimeException())),
             mapOf(clusterId to (resources.taskmanagerStatefulSet ?: throw RuntimeException())),

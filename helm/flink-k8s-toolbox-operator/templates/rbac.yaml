@@ -22,19 +22,19 @@ rules:
     resources: ["services"]
     verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: ["apps"]
-    resources: ["statefulsets"]
+    resources: ["statefulsets", "statefulsets/scale"]
     verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
   - apiGroups: ["batch"]
     resources: ["jobs"]
     verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: ["nextbreakpoint.com"]
-    resources: ["flinkclusters"]
+    resources: ["flinkclusters", "flinkclusters/status", "flinkclusters/scale"]
     verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: flink-upload
+  name: flink-bootstrap
   namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
@@ -79,7 +79,7 @@ subjects:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: flink-upload
+  name: flink-bootstrap
   namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
@@ -89,7 +89,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: flink-upload
+  name: flink-bootstrap
   namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
@@ -98,8 +98,8 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: flink-upload
+  name: flink-bootstrap
 subjects:
   - kind: ServiceAccount
-    name: flink-upload
+    name: flink-bootstrap
     namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}

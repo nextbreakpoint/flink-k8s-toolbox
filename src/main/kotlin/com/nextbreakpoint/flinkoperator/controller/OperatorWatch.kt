@@ -26,7 +26,7 @@ class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
                     context.owner().eventBus().publish("/resource/flinkcluster/delete", gson.toJson(resource))
                 }
             }, { namespace ->
-                logger.info("Refresh FlinkClusters resources...")
+                logger.debug("Refresh FlinkClusters resources...")
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/flinkcluster/deleteAll", "")
@@ -55,7 +55,7 @@ class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
                     context.owner().eventBus().publish("/resource/service/delete", gson.toJson(resource))
                 }
             }, { namespace ->
-                logger.info("Refresh Services resources...")
+                logger.debug("Refresh Services resources...")
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/service/deleteAll", "")
@@ -84,7 +84,7 @@ class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
                     context.owner().eventBus().publish("/resource/deployment/delete", gson.toJson(resource))
                 }
             }, { namespace ->
-                logger.info("Refresh Deployments resources...")
+                logger.debug("Refresh Deployments resources...")
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/deployment/deleteAll", "")
@@ -113,7 +113,7 @@ class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
                     context.owner().eventBus().publish("/resource/job/delete", gson.toJson(resource))
                 }
             }, { namespace ->
-                logger.info("Refresh Jobs resources...")
+                logger.debug("Refresh Jobs resources...")
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/job/deleteAll", "")
@@ -142,7 +142,7 @@ class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
                     context.owner().eventBus().publish("/resource/statefulset/delete", gson.toJson(resource))
                 }
             }, { namespace ->
-                logger.info("Refresh StatefulSets resources...")
+                logger.debug("Refresh StatefulSets resources...")
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/statefulset/deleteAll", "")
@@ -171,7 +171,7 @@ class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
                     context.owner().eventBus().publish("/resource/persistentvolumeclaim/delete", gson.toJson(resource))
                 }
             }, { namespace ->
-                logger.info("Refresh PersistentVolumeClaims resources...")
+                logger.debug("Refresh PersistentVolumeClaims resources...")
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/persistentvolumeclaim/deleteAll", "")
@@ -209,6 +209,7 @@ class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
                         }
                     }
                 }
+                Thread.sleep(1000L)
             } catch (e: InterruptedException) {
                 break
             } catch (e: RuntimeException) {
