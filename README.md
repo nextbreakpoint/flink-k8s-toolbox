@@ -454,8 +454,8 @@ Create a Flink Cluster file:
         jarPath: /flink-jobs.jar
         className: com.nextbreakpoint.flink.jobs.TestJob
         arguments:
-          - --BUCKET_BASE_PATH
-          - file:///var/tmp
+          - --DEVELOP_MODE
+          - disabled
       jobManager:
         serviceMode: NodePort
         annotations:
@@ -565,6 +565,15 @@ Tag and push the image to your Docker registry if needed:
     docker login some-registry
     docker push some-registry/flink-k8s-toolbox:1.2.0-beta
 
+## Automatic savepoints
+
+The operator automatically creates savepoints before stopping the cluster.
+This might happen when a change is applied to the cluster specification or the cluster is rescaled or manually stopped.
+This feature is very handy to avoid losing the status of the job.
+When the operator restarts the cluster, it uses the latest savepoint to recover the status of the job.
+However, for this feature to work properly, the savepoints must be created in a durable storage location such as HDFS or S3.
+Only a durable location can be used to recover the job after recreating the Job Manager and the Task Managers.
+
 ## How to use the Operator CLI
 
 Print the CLI usage:
@@ -622,8 +631,8 @@ Create a JSON file:
         "jarPath": "/flink-jobs.jar",
         "className": "com.nextbreakpoint.flink.jobs.TestJob",
         "arguments": [
-          "--BUCKET_BASE_PATH",
-          "file:///var/tmp"
+          "--DEVELOP_MODE",
+          "disabled"
         ]
       },
       "jobManager": {
