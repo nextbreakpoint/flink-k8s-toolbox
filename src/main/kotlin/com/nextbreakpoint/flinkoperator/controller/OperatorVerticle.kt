@@ -41,6 +41,8 @@ import com.nextbreakpoint.flinkoperator.controller.task.SuspendCluster
 import com.nextbreakpoint.flinkoperator.controller.task.TerminateCluster
 import com.nextbreakpoint.flinkoperator.controller.task.TerminatePods
 import com.nextbreakpoint.flinkoperator.controller.task.CreateBootstrapJob
+import com.nextbreakpoint.flinkoperator.controller.task.ReplaceResources
+import com.nextbreakpoint.flinkoperator.controller.task.UpdatingCluster
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PersistentVolumeClaim
@@ -89,12 +91,14 @@ class OperatorVerticle : AbstractVerticle() {
             OperatorTask.ClusterRunning to ClusterRunning(),
             OperatorTask.StartingCluster to StartingCluster(),
             OperatorTask.StoppingCluster to StoppingCluster(),
+            OperatorTask.UpdatingCluster to UpdatingCluster(),
             OperatorTask.RescaleCluster to RescaleCluster(),
             OperatorTask.CreatingSavepoint to CreatingSavepoint(),
             OperatorTask.TriggerSavepoint to TriggerSavepoint(),
             OperatorTask.EraseSavepoint to EraseSavepoint(),
             OperatorTask.CreateResources to CreateResources(),
             OperatorTask.DeleteResources to DeleteResources(),
+            OperatorTask.ReplaceResources to ReplaceResources(),
             OperatorTask.TerminatePods to TerminatePods(),
             OperatorTask.RestartPods to RestartPods(),
             OperatorTask.DeleteBootstrapJob to DeleteBootstrapJob(),
