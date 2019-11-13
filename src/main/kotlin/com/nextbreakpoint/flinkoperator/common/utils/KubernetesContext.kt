@@ -524,39 +524,111 @@ object KubernetesContext {
         clusterId: ClusterId,
         resources: ClusterResources
     ): V1Service {
-        return coreApi.createNamespacedService(
-            clusterId.namespace,
-            resources.jobmanagerService,
-            null,
-            null,
-            null
-        )
+        try {
+            return coreApi.createNamespacedService(
+                clusterId.namespace,
+                resources.jobmanagerService,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
     }
 
     fun createJobManagerStatefulSet(
         clusterId: ClusterId,
         resources: ClusterResources
     ): V1StatefulSet {
-        return appsApi.createNamespacedStatefulSet(
-            clusterId.namespace,
-            resources.jobmanagerStatefulSet,
-            null,
-            null,
-            null
-        )
+        try {
+            return appsApi.createNamespacedStatefulSet(
+                clusterId.namespace,
+                resources.jobmanagerStatefulSet,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
     }
 
     fun createTaskManagerStatefulSet(
         clusterId: ClusterId,
         resources: ClusterResources
     ): V1StatefulSet {
-        return appsApi.createNamespacedStatefulSet(
-            clusterId.namespace,
-            resources.taskmanagerStatefulSet,
-            null,
-            null,
-            null
-        )
+        try {
+            return appsApi.createNamespacedStatefulSet(
+                clusterId.namespace,
+                resources.taskmanagerStatefulSet,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
+    }
+
+    fun replaceJobManagerService(
+        clusterId: ClusterId,
+        resources: ClusterResources
+    ): V1Service {
+        try {
+            return coreApi.replaceNamespacedService(
+                "flink-jobmanager-${clusterId.name}",
+                clusterId.namespace,
+                resources.jobmanagerService,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
+    }
+
+    fun replaceJobManagerStatefulSet(
+        clusterId: ClusterId,
+        resources: ClusterResources
+    ): V1StatefulSet {
+        try {
+            return appsApi.replaceNamespacedStatefulSet(
+                "flink-jobmanager-${clusterId.name}",
+                clusterId.namespace,
+                resources.jobmanagerStatefulSet,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
+    }
+
+    fun replaceTaskManagerStatefulSet(
+        clusterId: ClusterId,
+        resources: ClusterResources
+    ): V1StatefulSet {
+        try {
+            return appsApi.replaceNamespacedStatefulSet(
+                "flink-taskmanager-${clusterId.name}",
+                clusterId.namespace,
+                resources.taskmanagerStatefulSet,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
     }
 
     fun deleteServices(clusterId: ClusterId) {

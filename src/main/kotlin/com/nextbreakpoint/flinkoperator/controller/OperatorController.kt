@@ -41,6 +41,7 @@ import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterScale
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStart
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStop
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCheckpointing
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterReplaceResources
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetStatus
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetReplicas
@@ -93,6 +94,9 @@ class OperatorController(
 
     fun deleteClusterResources(clusterId: ClusterId) : Result<Void?> =
         ClusterDeleteResources(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
+
+    fun replaceClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
+        ClusterReplaceResources(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, clusterResources)
 
     fun removeJar(clusterId: ClusterId) : Result<Void?> =
         JarRemove(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)

@@ -100,19 +100,34 @@ class ClusterHalted : OperatorTaskHandler {
                         OperatorState.setRuntimeDigest(context.flinkCluster, actualRuntimeDigest)
                         OperatorState.setBootstrapDigest(context.flinkCluster, actualBootstrapDigest)
 
-                        OperatorState.appendTasks(context.flinkCluster,
-                            listOf(
-                                OperatorTask.StoppingCluster,
-                                OperatorTask.TerminatePods,
-                                OperatorTask.DeleteResources,
-                                OperatorTask.StartingCluster,
-                                OperatorTask.DeleteBootstrapJob,
-                                OperatorTask.CreateResources,
-                                OperatorTask.CreateBootstrapJob,
-                                OperatorTask.StartJob,
-                                OperatorTask.ClusterRunning
+                        if (java.lang.Boolean.getBoolean("enableReplaceStrategy")) {
+                            OperatorState.appendTasks(
+                                context.flinkCluster,
+                                listOf(
+                                    OperatorTask.UpdatingCluster,
+                                    OperatorTask.ReplaceResources,
+                                    OperatorTask.DeleteBootstrapJob,
+                                    OperatorTask.CreateBootstrapJob,
+                                    OperatorTask.StartJob,
+                                    OperatorTask.ClusterRunning
+                                )
                             )
-                        )
+                        } else {
+                            OperatorState.appendTasks(
+                                context.flinkCluster,
+                                listOf(
+                                    OperatorTask.StoppingCluster,
+                                    OperatorTask.TerminatePods,
+                                    OperatorTask.DeleteResources,
+                                    OperatorTask.StartingCluster,
+                                    OperatorTask.CreateResources,
+                                    OperatorTask.DeleteBootstrapJob,
+                                    OperatorTask.CreateBootstrapJob,
+                                    OperatorTask.StartJob,
+                                    OperatorTask.ClusterRunning
+                                )
+                            )
+                        }
 
                         return Result(
                             ResultStatus.AWAIT,
@@ -139,7 +154,7 @@ class ClusterHalted : OperatorTaskHandler {
 
                         OperatorState.appendTasks(context.flinkCluster,
                             listOf(
-                                OperatorTask.StartingCluster,
+                                OperatorTask.UpdatingCluster,
                                 OperatorTask.DeleteBootstrapJob,
                                 OperatorTask.CreateBootstrapJob,
                                 OperatorTask.StartJob,

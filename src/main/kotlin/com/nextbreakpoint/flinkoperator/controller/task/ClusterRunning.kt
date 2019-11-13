@@ -106,20 +106,34 @@ class ClusterRunning : OperatorTaskHandler {
                         OperatorState.setRuntimeDigest(context.flinkCluster, actualRuntimeDigest)
                         OperatorState.setBootstrapDigest(context.flinkCluster, actualBootstrapDigest)
 
-                        OperatorState.appendTasks(context.flinkCluster,
-                            listOf(
-                                OperatorTask.StoppingCluster,
-                                OperatorTask.CancelJob,
-                                OperatorTask.TerminatePods,
-                                OperatorTask.DeleteResources,
-                                OperatorTask.StartingCluster,
-                                OperatorTask.DeleteBootstrapJob,
-                                OperatorTask.CreateResources,
-                                OperatorTask.CreateBootstrapJob,
-                                OperatorTask.StartJob,
-                                OperatorTask.ClusterRunning
+                        if (java.lang.Boolean.getBoolean("enableReplaceStrategy")) {
+                            OperatorState.appendTasks(context.flinkCluster,
+                                listOf(
+                                    OperatorTask.UpdatingCluster,
+                                    OperatorTask.CancelJob,
+                                    OperatorTask.ReplaceResources,
+                                    OperatorTask.DeleteBootstrapJob,
+                                    OperatorTask.CreateBootstrapJob,
+                                    OperatorTask.StartJob,
+                                    OperatorTask.ClusterRunning
+                                )
                             )
-                        )
+                        } else {
+                            OperatorState.appendTasks(context.flinkCluster,
+                                listOf(
+                                    OperatorTask.StoppingCluster,
+                                    OperatorTask.CancelJob,
+                                    OperatorTask.TerminatePods,
+                                    OperatorTask.DeleteResources,
+                                    OperatorTask.StartingCluster,
+                                    OperatorTask.CreateResources,
+                                    OperatorTask.DeleteBootstrapJob,
+                                    OperatorTask.CreateBootstrapJob,
+                                    OperatorTask.StartJob,
+                                    OperatorTask.ClusterRunning
+                                )
+                            )
+                        }
 
                         return Result(
                             ResultStatus.AWAIT,
@@ -146,9 +160,8 @@ class ClusterRunning : OperatorTaskHandler {
 
                         OperatorState.appendTasks(context.flinkCluster,
                             listOf(
-                                OperatorTask.StoppingCluster,
+                                OperatorTask.UpdatingCluster,
                                 OperatorTask.CancelJob,
-                                OperatorTask.StartingCluster,
                                 OperatorTask.DeleteBootstrapJob,
                                 OperatorTask.CreateBootstrapJob,
                                 OperatorTask.StartJob,

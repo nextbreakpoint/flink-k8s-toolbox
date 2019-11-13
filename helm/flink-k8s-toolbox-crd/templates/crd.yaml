@@ -8367,12 +8367,14 @@ spec:
                   - ClusterRunning
                   - StartingCluster
                   - StoppingCluster
+                  - UpdatingCluster
                   - RescaleCluster
                   - CreatingSavepoint
                   - TriggerSavepoint
                   - EraseSavepoint
                   - CreateResources
                   - DeleteResources
+                  - ReplaceResources
                   - CreateBootstrapJob
                   - DeleteBootstrapJob
                   - TerminatePods
@@ -8399,6 +8401,7 @@ spec:
                 - Unknown
                 - Starting
                 - Stopping
+                - Updating
                 - Running
                 - Failed
                 - Suspended
@@ -8471,3 +8474,9 @@ spec:
     - name: AGE
       type: date
       JSONPath: .metadata.creationTimestamp
+status:
+  acceptedNames:
+    kind: ''
+    plural: ''
+  conditions: []
+  storedVersions: []
