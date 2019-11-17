@@ -3,9 +3,11 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
@@ -25,6 +27,7 @@ class RestartPodsTest {
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(OperatorContext::class.java)
     private val controller = mock(OperatorController::class.java)
+    private val options = ScaleOptions(taskManagers = 1, taskSlots = 1)
     private val resources = mock(OperatorResources::class.java)
     private val time = System.currentTimeMillis()
     private val task = RestartPods()
@@ -36,6 +39,8 @@ class RestartPodsTest {
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
+        OperatorState.setTaskManagers(cluster, 1)
+        OperatorState.setTaskSlots(cluster, 1)
     }
 
     @Test
@@ -106,7 +111,7 @@ class RestartPodsTest {
 
     @Test
     fun `onAwaiting should return expected result when cluster is not ready yet`() {
-        given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(controller.isClusterReady(eq(clusterId), eq(options))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -114,7 +119,7 @@ class RestartPodsTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterReady(eq(clusterId))
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(options))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -123,7 +128,7 @@ class RestartPodsTest {
 
     @Test
     fun `onAwaiting should return expected result when cluster has failed`() {
-        given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(controller.isClusterReady(eq(clusterId), eq(options))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -131,7 +136,7 @@ class RestartPodsTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterReady(eq(clusterId))
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(options))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -140,7 +145,7 @@ class RestartPodsTest {
 
     @Test
     fun `onAwaiting should return expected result when cluster is ready`() {
-        given(controller.isClusterReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(controller.isClusterReady(eq(clusterId), eq(options))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -148,7 +153,7 @@ class RestartPodsTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterReady(eq(clusterId))
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(options))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)

@@ -8347,9 +8347,13 @@ spec:
               type: string
             taskManagers:
               type: integer
-            totalTaskSlots:
+            taskSlots:
               type: integer
             jobParallelism:
+              type: integer
+            activeTaskManagers:
+              type: integer
+            totalTaskSlots:
               type: integer
             timestamp:
               type: integer
@@ -8452,10 +8456,13 @@ spec:
       JSONPath: .status.tasks[0]
     - name: TASK-MANAGERS
       type: integer
-      JSONPath: .spec.taskManagers
-    - name: TASK-MANAGERS-READY
-      type: integer
       JSONPath: .status.taskManagers
+    - name: TASK-MANAGER-TASK-SLOTS
+      type: integer
+      JSONPath: .status.taskSlots
+    - name: ACTIVE-TASK-MANAGERS
+      type: integer
+      JSONPath: .status.activeTaskManagers
     - name: TOTAL-TASK-SLOTS
       type: integer
       JSONPath: .status.totalTaskSlots

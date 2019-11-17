@@ -81,16 +81,16 @@ class CreateBootstrapJob : OperatorTaskHandler {
             )
         }
 
-        val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
-
-        if (context.hasBootstrapJobDiverged(clusterStatus)) {
-            logger.info(clusterStatus.bootstrapJob.toString())
-
-            return Result(
-                ResultStatus.AWAIT,
-                "Resources of cluster ${context.flinkCluster.metadata.name} are not ready..."
-            )
-        }
+//        val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
+//
+//        if (context.hasBootstrapJobDiverged(clusterStatus)) {
+//            logger.info(clusterStatus.bootstrapJob.toString())
+//
+//            return Result(
+//                ResultStatus.AWAIT,
+//                "Resources of cluster ${context.flinkCluster.metadata.name} are not ready..."
+//            )
+//        }
 
         val response = context.controller.isJarReady(context.clusterId)
 
@@ -121,19 +121,19 @@ class CreateBootstrapJob : OperatorTaskHandler {
         )
     }
 
-    private fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: OperatorResources): ClusterResourcesStatus {
-        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
-        val jobmnagerService = resources.jobmanagerServices.get(clusterId)
-        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
-        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
-
-        val actualResources = ClusterResources(
-            bootstrapJob = bootstrapJob,
-            jobmanagerService = jobmnagerService,
-            jobmanagerStatefulSet = jobmanagerStatefulSet,
-            taskmanagerStatefulSet = taskmanagerStatefulSet
-        )
-
-        return statusEvaluator.evaluate(clusterId, cluster, actualResources)
-    }
+//    private fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: OperatorResources): ClusterResourcesStatus {
+//        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
+//        val jobmnagerService = resources.jobmanagerServices.get(clusterId)
+//        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
+//        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
+//
+//        val actualResources = ClusterResources(
+//            bootstrapJob = bootstrapJob,
+//            jobmanagerService = jobmnagerService,
+//            jobmanagerStatefulSet = jobmanagerStatefulSet,
+//            taskmanagerStatefulSet = taskmanagerStatefulSet
+//        )
+//
+//        return statusEvaluator.evaluate(clusterId, cluster, actualResources)
+//    }
 }

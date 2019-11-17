@@ -7,13 +7,17 @@ import java.util.Objects;
 
 public class V1FlinkClusterStatus {
     @SerializedName("labelSelector")
-    private String[] labelSelector;
+    private String labelSelector;
     @SerializedName("taskManagers")
     private Integer taskManagers;
-    @SerializedName("totalTaskSlots")
-    private Integer totalTaskSlots;
+    @SerializedName("taskSlots")
+    private Integer taskSlots;
     @SerializedName("jobParallelism")
     private Integer jobParallelism;
+    @SerializedName("activeTaskManagers")
+    private Integer activeTaskManagers;
+    @SerializedName("totalTaskSlots")
+    private Integer totalTaskSlots;
     @SerializedName("timestamp")
     private Long timestamp;
     @SerializedName("tasks")
@@ -35,11 +39,11 @@ public class V1FlinkClusterStatus {
     @SerializedName("digest")
     private V1ResourceDigest digest;
 
-    public String[] getLabelSelector() {
+    public String getLabelSelector() {
         return labelSelector;
     }
 
-    public void setLabelSelector(String[] labelSelector) {
+    public void setLabelSelector(String labelSelector) {
         this.labelSelector = labelSelector;
     }
 
@@ -51,12 +55,12 @@ public class V1FlinkClusterStatus {
         this.taskManagers = taskManagers;
     }
 
-    public Integer getTotalTaskSlots() {
-        return totalTaskSlots;
+    public Integer getTaskSlots() {
+        return taskSlots;
     }
 
-    public void setTotalTaskSlots(Integer totalTaskSlots) {
-        this.totalTaskSlots = totalTaskSlots;
+    public void setTaskSlots(Integer taskSlots) {
+        this.taskSlots = taskSlots;
     }
 
     public Integer getJobParallelism() {
@@ -65,6 +69,22 @@ public class V1FlinkClusterStatus {
 
     public void setJobParallelism(Integer jobParallelism) {
         this.jobParallelism = jobParallelism;
+    }
+
+    public Integer getActiveTaskManagers() {
+        return activeTaskManagers;
+    }
+
+    public void setActiveTaskManagers(Integer activeTaskManagers) {
+        this.activeTaskManagers = activeTaskManagers;
+    }
+
+    public Integer getTotalTaskSlots() {
+        return totalTaskSlots;
+    }
+
+    public void setTotalTaskSlots(Integer totalTaskSlots) {
+        this.totalTaskSlots = totalTaskSlots;
     }
 
     public Long getTimestamp() {
@@ -152,10 +172,12 @@ public class V1FlinkClusterStatus {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         V1FlinkClusterStatus that = (V1FlinkClusterStatus) o;
-        return Arrays.equals(getLabelSelector(), that.getLabelSelector()) &&
+        return Objects.equals(getLabelSelector(), that.getLabelSelector()) &&
                 Objects.equals(getTaskManagers(), that.getTaskManagers()) &&
-                Objects.equals(getTotalTaskSlots(), that.getTotalTaskSlots()) &&
+                Objects.equals(getTaskSlots(), that.getTaskSlots()) &&
                 Objects.equals(getJobParallelism(), that.getJobParallelism()) &&
+                Objects.equals(getActiveTaskManagers(), that.getActiveTaskManagers()) &&
+                Objects.equals(getTotalTaskSlots(), that.getTotalTaskSlots()) &&
                 Objects.equals(getTimestamp(), that.getTimestamp()) &&
                 Arrays.equals(getTasks(), that.getTasks()) &&
                 Objects.equals(getTaskStatus(), that.getTaskStatus()) &&
@@ -170,8 +192,7 @@ public class V1FlinkClusterStatus {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getTaskManagers(), getTotalTaskSlots(), getJobParallelism(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigest());
-        result = 31 * result + Arrays.hashCode(getLabelSelector());
+        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigest());
         result = 31 * result + Arrays.hashCode(getTasks());
         return result;
     }
@@ -179,10 +200,12 @@ public class V1FlinkClusterStatus {
     @Override
     public String toString() {
         return "V1FlinkClusterStatus{" +
-                "labelSelector=" + Arrays.toString(labelSelector) +
+                "labelSelector='" + labelSelector + '\'' +
                 ", taskManagers=" + taskManagers +
-                ", totalTaskSlots=" + totalTaskSlots +
+                ", taskSlots=" + taskSlots +
                 ", jobParallelism=" + jobParallelism +
+                ", activeTaskManagers=" + activeTaskManagers +
+                ", totalTaskSlots=" + totalTaskSlots +
                 ", timestamp=" + timestamp +
                 ", tasks=" + Arrays.toString(tasks) +
                 ", taskStatus='" + taskStatus + '\'' +

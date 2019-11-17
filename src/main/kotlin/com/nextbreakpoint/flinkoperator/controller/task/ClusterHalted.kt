@@ -5,6 +5,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
@@ -203,7 +204,12 @@ class ClusterHalted : OperatorTaskHandler {
                             val restartPolicy = OperatorParameters.getJobRestartPolicy(context.flinkCluster)
 
                             if (restartPolicy.toUpperCase() == "ALWAYS") {
-                                val clusterReady = context.controller.isClusterReady(context.clusterId)
+                                val options = ScaleOptions(
+                                    taskManagers = context.flinkCluster.status.taskManagers,
+                                    taskSlots = context.flinkCluster.status.taskSlots
+                                )
+
+                                val clusterReady = context.controller.isClusterReady(context.clusterId, options)
 
                                 if (clusterReady.status == ResultStatus.SUCCESS) {
                                     logger.info("Cluster ${context.clusterId.name} seems to be ready...")

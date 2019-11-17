@@ -8,7 +8,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 
 class EraseSavepoint : OperatorTaskHandler {
     override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setSavepointPath(context.flinkCluster, "")
+        OperatorState.setSavepointPath(context.flinkCluster, null)
 
         return Result(
             ResultStatus.SUCCESS,

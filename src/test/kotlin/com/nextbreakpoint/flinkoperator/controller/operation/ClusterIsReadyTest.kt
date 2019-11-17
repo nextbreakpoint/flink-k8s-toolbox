@@ -5,6 +5,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
@@ -23,6 +24,7 @@ class ClusterIsReadyTest {
     private val flinkContext = mock(FlinkContext::class.java)
     private val flinkAddress = FlinkAddress(host = "localhost", port = 8080)
     private val kubernetesContext = mock(KubernetesContext::class.java)
+    private val options = ScaleOptions(taskManagers = 2, taskSlots = 1)
     private val command = ClusterIsReady(flinkOptions, flinkContext, kubernetesContext)
 
     @BeforeEach
@@ -37,7 +39,7 @@ class ClusterIsReadyTest {
     @Test
     fun `should fail when kubernetesContext throws exception`() {
         given(kubernetesContext.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, options)
         verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubernetesContext)
         verifyNoMoreInteractions(flinkContext)
@@ -49,7 +51,7 @@ class ClusterIsReadyTest {
     @Test
     fun `should fail when flinkContext throws exception`() {
         given(flinkContext.getOverview(eq(flinkAddress))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, options)
         verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkContext, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubernetesContext)
@@ -62,10 +64,10 @@ class ClusterIsReadyTest {
     @Test
     fun `should return expected result when there aren't task managers`() {
         val overview = ClusterOverviewWithVersion()
-        overview.slotsAvailable = 1
+        overview.slotsAvailable = 2
         overview.taskmanagers = 0
         given(flinkContext.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, options)
         verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkContext, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubernetesContext)
@@ -79,9 +81,9 @@ class ClusterIsReadyTest {
     fun `should return expected result when there aren't available slots`() {
         val overview = ClusterOverviewWithVersion()
         overview.slotsAvailable = 0
-        overview.taskmanagers = 1
+        overview.taskmanagers = 2
         given(flinkContext.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, options)
         verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkContext, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubernetesContext)
@@ -94,10 +96,10 @@ class ClusterIsReadyTest {
     @Test
     fun `should return expected result when there are task managers and available slots`() {
         val overview = ClusterOverviewWithVersion()
-        overview.slotsAvailable = 1
-        overview.taskmanagers = 1
+        overview.slotsAvailable = 2
+        overview.taskmanagers = 2
         given(flinkContext.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, options)
         verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkContext, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubernetesContext)

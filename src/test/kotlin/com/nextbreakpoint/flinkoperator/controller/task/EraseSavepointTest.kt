@@ -53,7 +53,7 @@ class EraseSavepointTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorState.getSavepointPath(cluster)).isEqualTo("")
+        assertThat(OperatorState.getSavepointPath(cluster)).isNull()
     }
 
     @Test

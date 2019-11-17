@@ -4,6 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
@@ -34,7 +35,12 @@ class ReplaceResources : OperatorTaskHandler {
 
         val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
 
-        val response = context.controller.isClusterReady(context.clusterId)
+        val options = ScaleOptions(
+            taskManagers = context.flinkCluster.status.taskManagers,
+            taskSlots = context.flinkCluster.status.taskSlots
+        )
+
+        val response = context.controller.isClusterReady(context.clusterId, options)
 
         if (!context.haveClusterResourcesDiverged(clusterStatus) && response.status == ResultStatus.SUCCESS) {
             return Result(
@@ -93,20 +99,25 @@ class ReplaceResources : OperatorTaskHandler {
             )
         }
 
-        val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
+//        val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
+//
+//        if (context.haveClusterResourcesDiverged(clusterStatus)) {
+//            logger.info(clusterStatus.jobmanagerService.toString())
+//            logger.info(clusterStatus.jobmanagerStatefulSet.toString())
+//            logger.info(clusterStatus.taskmanagerStatefulSet.toString())
+//
+//            return Result(
+//                ResultStatus.AWAIT,
+//                "Wait for creation of resources of cluster ${context.flinkCluster.metadata.name}..."
+//            )
+//        }
 
-        if (context.haveClusterResourcesDiverged(clusterStatus)) {
-            logger.info(clusterStatus.jobmanagerService.toString())
-            logger.info(clusterStatus.jobmanagerStatefulSet.toString())
-            logger.info(clusterStatus.taskmanagerStatefulSet.toString())
+        val options = ScaleOptions(
+            taskManagers = context.flinkCluster.status.taskManagers,
+            taskSlots = context.flinkCluster.status.taskSlots
+        )
 
-            return Result(
-                ResultStatus.AWAIT,
-                "Wait for creation of resources of cluster ${context.flinkCluster.metadata.name}..."
-            )
-        }
-
-        val response = context.controller.isClusterReady(context.clusterId)
+        val response = context.controller.isClusterReady(context.clusterId, options)
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(

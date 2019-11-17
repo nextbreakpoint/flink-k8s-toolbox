@@ -9,6 +9,7 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -41,6 +42,8 @@ class JobStartTest {
         overview.jobsRunning = 0
         overview.jobsFinished = 0
         given(flinkContext.getOverview(eq(flinkAddress))).thenReturn(overview)
+        OperatorState.setSavepointPath(cluster, null)
+        OperatorState.setJobParallelism(cluster, 1)
     }
 
     @Test
@@ -129,7 +132,7 @@ class JobStartTest {
 
     @Test
     fun `should return expected result when there are jar files and there is a savepoint`() {
-        cluster.spec.operator.savepointPath = "/tmp/000"
+        OperatorState.setSavepointPath(cluster, "/tmp/000")
         val file1 = JarFileInfo()
         file1.id = "id1"
         file1.name = "file1"

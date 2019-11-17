@@ -25,6 +25,15 @@ class ClusterRunning : OperatorTaskHandler {
         OperatorState.setTaskAttempts(context.flinkCluster, 0)
         OperatorState.appendTasks(context.flinkCluster, listOf())
 
+        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 0
+        val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
+        OperatorState.setTaskManagers(context.flinkCluster, taskManagers)
+        OperatorState.setTaskSlots(context.flinkCluster, taskSlots)
+        OperatorState.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
+
+        val savepointPath = context.flinkCluster.spec?.operator?.savepointPath
+        OperatorState.setSavepointPath(context.flinkCluster, savepointPath)
+
         OperatorState.updateSavepointTimestamp(context.flinkCluster)
 
         return Result(
@@ -254,16 +263,17 @@ class ClusterRunning : OperatorTaskHandler {
             }
         }
 
-        val desiredTaskManagers = context.flinkCluster.spec?.taskManagers ?: 1
         val taskmanagerStatefulset = context.resources.taskmanagerStatefulSets[context.clusterId]
         val actualTaskManagers = taskmanagerStatefulset?.status?.replicas ?: 0
+        val currentTaskManagers = context.flinkCluster.status?.taskManagers ?: 1
+        val desiredTaskManagers = context.flinkCluster.spec?.taskManagers ?: 1
+        val currentTaskSlots = context.flinkCluster.status?.taskSlots ?: 1
+        val desiredTaskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
 
-        if (actualTaskManagers != desiredTaskManagers) {
-            val options = ScaleOptions(taskManagers = desiredTaskManagers)
+        if (actualTaskManagers != desiredTaskManagers || currentTaskManagers != desiredTaskManagers || currentTaskSlots != desiredTaskSlots) {
+            val options = ScaleOptions(taskManagers = desiredTaskManagers, taskSlots = desiredTaskSlots)
             val result = context.controller.scaleCluster(context.clusterId, options)
             if (result.status == ResultStatus.SUCCESS) {
-                val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
-                OperatorState.setJobParallelism(context.flinkCluster, desiredTaskManagers * taskSlots)
                 return Result(
                     ResultStatus.AWAIT,
                     ""
