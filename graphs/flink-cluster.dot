@@ -24,14 +24,14 @@ digraph state_machine {
   STARTING -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources created<BR/>and job running<BR/>or not present</TD>
+              <TD>Resources created<BR/>and job running<BR/>or not defined</TD>
           </TR>
       </TABLE>
   > ];
   STARTING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources<BR/>not created<BR/>or job present<BR/>but not running</TD>
+              <TD>Resources<BR/>not created<BR/>or job defined<BR/>but not running</TD>
           </TR>
       </TABLE>
   > ];
@@ -42,10 +42,17 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
+  RUNNING -> UPDATING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Specification modified</TD>
+          </TR>
+      </TABLE>
+  > ];
   RUNNING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Job is present<BR/>but it is no<BR/>longer running</TD>
+              <TD>Job is defined<BR/>but it is no<BR/>longer running</TD>
           </TR>
       </TABLE>
   > ];
@@ -53,6 +60,20 @@ digraph state_machine {
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>User stopped<BR/>the cluster</TD>
+          </TR>
+      </TABLE>
+  > ];
+  UPDATING -> FAILED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Resources<BR/>not created<BR/>or job defined<BR/>but not running</TD>
+          </TR>
+      </TABLE>
+  > ];
+  UPDATING -> RUNNING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Resources created<BR/>and job running<BR/>or not defined</TD>
           </TR>
       </TABLE>
   > ];
@@ -105,6 +126,13 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
+  SUSPENDED -> UPDATING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Specification modified</TD>
+          </TR>
+      </TABLE>
+  > ];
   TERMINATED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
@@ -126,8 +154,16 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
+  FAILED -> UPDATING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Specification modified</TD>
+          </TR>
+      </TABLE>
+  > ];
   STOPPING [ fillcolor=yellow ];
   STARTING [ fillcolor=yellow ];
+  UPDATING [ fillcolor=yellow ];
   RUNNING [ fillcolor=green ];
   FAILED [ fillcolor=red ];
   CHECKPOINTING [ fillcolor=skyblue ];
