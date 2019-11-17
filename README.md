@@ -216,7 +216,7 @@ All the possible tasks which the operator can execute to transition from one sta
 
   Set cluster status to CHECKPOINTING.
 
-- **CREATE SAVEPOINT**
+- **TRIGGER SAVEPOINT**
 
   Trigger new savepoint and wait until savepoint is completed.
 
@@ -550,8 +550,8 @@ List custom objects of type FlinkCluster with command:
 
 The command should produce an output like:
 
-    NAME   CLUSTER-STATUS   TASK-STATUS   TASK             TASK-MANAGERS   TASK-MANAGERS-READY   TOTAL-TASK-SLOTS   JOB-PARALLELISM   JOB-RESTART   SERVICE-MODE   SAVEPOINT-PATH                                       AGE
-    test   Running          Awaiting      ClusterRunning   2               2                     2                  2                 Always        NodePort       file:/var/savepoints/savepoint-e10867-8e1140f528ff   3m39s
+    NAME   CLUSTER-STATUS   TASK-STATUS   TASK             TASK-MANAGERS   TASK-MANAGER-TASK-SLOTS   ACTIVE-TASK-MANAGERS   TOTAL-TASK-SLOTS   JOB-PARALLELISM   JOB-RESTART   SERVICE-MODE   SAVEPOINT-PATH                                       AGE
+    test   Running          Idle          ClusterRunning   1               1                         0                      0                  1                 Always        NodePort       file:/var/savepoints/savepoint-214fad-2cc80e9eca80   9m38s
 
 ## Build Flink Operator from source code
 
@@ -821,7 +821,7 @@ Execute the command:
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.2.1-beta savepoint trigger --cluster-name=test --without-savepoint --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.2.1-beta savepoint trigger --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 ### How to get the status of a cluster
 
