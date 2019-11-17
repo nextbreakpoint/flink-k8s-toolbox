@@ -3,6 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import org.apache.log4j.Logger
@@ -23,9 +24,9 @@ class RescaleCluster : OperatorTaskHandler {
                 )
             }
 
-            val taskManagers = context.flinkCluster.spec?.taskManagers ?: 1
+            val desiredTaskManagers = OperatorState.getTaskManagers(context.flinkCluster)
 
-            val result = context.controller.setTaskManagersReplicas(context.clusterId, taskManagers)
+            val result = context.controller.setTaskManagersReplicas(context.clusterId, desiredTaskManagers)
 
             if (result.status != ResultStatus.SUCCESS) {
                 return Result(
@@ -59,8 +60,6 @@ class RescaleCluster : OperatorTaskHandler {
                 )
             }
 
-            val desiredTaskManagers = context.flinkCluster.spec?.taskManagers ?: 1
-
             val result = context.controller.getTaskManagersReplicas(context.clusterId)
 
             if (result.status != ResultStatus.SUCCESS) {
@@ -69,6 +68,8 @@ class RescaleCluster : OperatorTaskHandler {
                     "Task managers of cluster ${context.clusterId.name} have not been scaled yet..."
                 )
             }
+
+            val desiredTaskManagers = OperatorState.getTaskManagers(context.flinkCluster)
 
             if (desiredTaskManagers != result.output) {
                 return Result(

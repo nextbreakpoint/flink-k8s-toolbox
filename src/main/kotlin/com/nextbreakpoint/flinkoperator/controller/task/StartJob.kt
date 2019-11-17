@@ -38,7 +38,7 @@ class StartJob : OperatorTaskHandler {
         if (runJarResponse.status == ResultStatus.SUCCESS) {
             return Result(
                 ResultStatus.SUCCESS,
-                "Stating job of cluster ${context.flinkCluster.metadata.name}..."
+                "Starting job of cluster ${context.flinkCluster.metadata.name}..."
             )
         }
 
