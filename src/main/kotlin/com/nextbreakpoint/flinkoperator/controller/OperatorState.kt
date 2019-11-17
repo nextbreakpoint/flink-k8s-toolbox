@@ -90,7 +90,7 @@ object OperatorState {
         flinkCluster.status?.timestamp = currentTimeMillis()
     }
 
-    fun setSavepointPath(flinkCluster: V1FlinkCluster, path: String) {
+    fun setSavepointPath(flinkCluster: V1FlinkCluster, path: String?) {
         ensureState(flinkCluster)
 
         flinkCluster.status?.savepointTimestamp = currentTimeMillis()
@@ -196,6 +196,17 @@ object OperatorState {
     fun getTaskManagers(flinkCluster: V1FlinkCluster): Int =
         flinkCluster.status?.taskManagers ?: 0
 
+    fun setActiveTaskManagers(flinkCluster: V1FlinkCluster, taskManagers: Int) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.activeTaskManagers = taskManagers
+
+        flinkCluster.status?.timestamp = currentTimeMillis()
+    }
+
+    fun getActiveTaskManagers(flinkCluster: V1FlinkCluster): Int =
+        flinkCluster.status?.activeTaskManagers ?: 0
+
     fun setJobParallelism(flinkCluster: V1FlinkCluster, jobParallelism: Int) {
         ensureState(flinkCluster)
 
@@ -207,6 +218,17 @@ object OperatorState {
     fun getJobParallelism(flinkCluster: V1FlinkCluster): Int =
         flinkCluster.status?.jobParallelism ?: 0
 
+    fun setTaskSlots(flinkCluster: V1FlinkCluster, taskSlots: Int) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.taskSlots = taskSlots
+
+        flinkCluster.status?.timestamp = currentTimeMillis()
+    }
+
+    fun getTaskSlots(flinkCluster: V1FlinkCluster): Int =
+        flinkCluster.status?.taskSlots ?: 0
+
     fun setTotalTaskSlots(flinkCluster: V1FlinkCluster, totalTaskSlots: Int) {
         ensureState(flinkCluster)
 
@@ -217,6 +239,17 @@ object OperatorState {
 
     fun getTotalTaskSlots(flinkCluster: V1FlinkCluster): Int =
         flinkCluster.status?.totalTaskSlots ?: 0
+
+    fun setLabelSelector(flinkCluster: V1FlinkCluster, labelSelector: String) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.labelSelector = labelSelector
+
+        flinkCluster.status?.timestamp = currentTimeMillis()
+    }
+
+    fun getLabelSelector(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.status?.labelSelector
 
     private fun currentTimeMillis(): Long {
         try {

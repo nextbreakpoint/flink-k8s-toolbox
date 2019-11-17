@@ -9,6 +9,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1RuntimeSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1JobManagerSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1TaskManagerSpec
+import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import org.joda.time.DateTime
 import java.security.MessageDigest
 import java.util.Base64
@@ -51,4 +52,6 @@ object CustomResources {
     }
 
     fun convertToMap(flinkCluster: V1FlinkCluster): Map<String, Any?> = gson.fromJson(gson.toJson(flinkCluster), Map::class.java) as Map<String, Any?>
+
+    fun makeLabelSelector(clusterId: ClusterId) = "uid=${clusterId.uuid},name=${clusterId.name},owner=flink-operator,component=flink,role=taskmanager"
 }

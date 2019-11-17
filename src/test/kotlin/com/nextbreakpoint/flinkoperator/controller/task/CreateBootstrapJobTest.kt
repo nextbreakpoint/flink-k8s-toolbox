@@ -155,27 +155,6 @@ class CreateBootstrapJobTest {
     }
 
     @Test
-    fun `onAwaiting should return expected result when resources diverged`() {
-        given(context.hasBootstrapJobDiverged(any())).thenReturn(true)
-        val resources = TestFactory.createResources(clusterId.uuid, cluster)
-        resources.bootstrapJobs.get(clusterId)?.spec?.template?.spec?.serviceAccountName = "xxx"
-        given(context.resources).thenReturn(resources)
-        val result = task.onAwaiting(context)
-        verify(context, atLeastOnce()).clusterId
-        verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).resources
-        verify(context, times(1)).hasBootstrapJobDiverged(any())
-        verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verifyNoMoreInteractions(controller)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isNotBlank()
-    }
-
-    @Test
     fun `onAwaiting should return expected result when jar is not ready`() {
         given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
         given(controller.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
@@ -184,8 +163,6 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).resources
-        verify(context, times(1)).hasBootstrapJobDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isJarReady(eq(clusterId))
@@ -204,8 +181,6 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).resources
-        verify(context, times(1)).hasBootstrapJobDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isJarReady(eq(clusterId))
@@ -224,8 +199,6 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).resources
-        verify(context, times(1)).hasBootstrapJobDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isJarReady(eq(clusterId))

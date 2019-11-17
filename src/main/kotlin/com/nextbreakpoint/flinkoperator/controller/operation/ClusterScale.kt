@@ -55,6 +55,10 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                 )
             }
 
+            OperatorState.setTaskManagers(flinkCluster, params.taskManagers)
+            OperatorState.setTaskSlots(flinkCluster, params.taskSlots)
+            OperatorState.setJobParallelism(flinkCluster, params.taskManagers * params.taskSlots)
+
             OperatorState.appendTasks(flinkCluster, statusList)
 
             return Result(

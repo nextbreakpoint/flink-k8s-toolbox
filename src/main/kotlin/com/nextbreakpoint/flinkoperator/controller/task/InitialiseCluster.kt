@@ -42,11 +42,17 @@ class InitialiseCluster : OperatorTaskHandler {
         OperatorState.setRuntimeDigest(context.flinkCluster, runtimeDigest)
         OperatorState.setBootstrapDigest(context.flinkCluster, bootstrapDigest)
 
-        OperatorState.setTaskManagers(context.flinkCluster, 0)
-
-        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 1
+        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 0
         val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
+        OperatorState.setTaskManagers(context.flinkCluster, taskManagers)
+        OperatorState.setTaskSlots(context.flinkCluster, taskSlots)
         OperatorState.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
+
+        val savepointPath = context.flinkCluster.spec?.operator?.savepointPath
+        OperatorState.setSavepointPath(context.flinkCluster, savepointPath)
+
+        val labelSelector = CustomResources.makeLabelSelector(context.clusterId)
+        OperatorState.setLabelSelector(context.flinkCluster, labelSelector)
 
         return Result(
             ResultStatus.SUCCESS,

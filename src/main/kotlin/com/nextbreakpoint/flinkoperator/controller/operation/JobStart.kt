@@ -42,11 +42,8 @@ class JobStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernete
                 )
             }
 
-            val savepointPath = OperatorParameters.getSavepointPath(params)
-
-            val taskManagers = params.spec?.taskManagers ?: 1
-            val taskSlots = params.spec.taskManager?.taskSlots ?: 1
-            val parallelism = taskManagers * taskSlots
+            val savepointPath = params.status.savepointPath
+            val parallelism = params.status.jobParallelism
 
             flinkContext.runJar(address, jarFile, params.spec.bootstrap, parallelism, savepointPath)
 

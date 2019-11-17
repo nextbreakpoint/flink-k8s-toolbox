@@ -137,8 +137,8 @@ class OperatorController(
     fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest?> =
         JobCancel(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
 
-    fun isClusterReady(clusterId: ClusterId): Result<Void?> =
-        ClusterIsReady(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)
+    fun isClusterReady(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
+        ClusterIsReady(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
 
     fun isClusterRunning(clusterId: ClusterId): Result<Boolean> =
         ClusterIsRunning(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, null)

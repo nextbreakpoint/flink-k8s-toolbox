@@ -143,8 +143,8 @@ class UpdateStatus(
     private fun updateStatusTaskManagers(flinkCluster: V1FlinkCluster, statefulSet: V1StatefulSet?) {
         val taskManagers = statefulSet?.status?.readyReplicas ?: 0
         if (OperatorState.getTaskManagers(flinkCluster) != taskManagers) {
-            val taskSlots = flinkCluster.spec?.taskManager?.taskSlots ?: 1
-            OperatorState.setTaskManagers(flinkCluster, taskManagers)
+            val taskSlots = flinkCluster.status?.taskSlots ?: 1
+            OperatorState.setActiveTaskManagers(flinkCluster, taskManagers)
             OperatorState.setTotalTaskSlots(flinkCluster,taskManagers * taskSlots)
         }
     }
