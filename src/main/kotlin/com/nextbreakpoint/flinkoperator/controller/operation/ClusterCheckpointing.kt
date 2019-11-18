@@ -9,12 +9,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.TaskOperation
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import org.apache.log4j.Logger
 
-class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<Void?, List<ClusterTask>>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: Cache) : Operation<Void?, List<ClusterTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterCheckpointing::class.simpleName)
     }
@@ -32,7 +32,7 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContex
                 )
             }
 
-            val operatorStatus = OperatorState.getCurrentTaskStatus(flinkCluster)
+            val operatorStatus = Status.getCurrentTaskStatus(flinkCluster)
 
             if (operatorStatus != TaskStatus.Idle) {
                 logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
@@ -40,14 +40,14 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContex
                 return Result(
                     ResultStatus.AWAIT,
                     listOf(
-                        OperatorState.getCurrentTask(
+                        Status.getCurrentTask(
                             flinkCluster
                         )
                     )
                 )
             }
 
-            val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
+            val clusterStatus = Status.getClusterStatus(flinkCluster)
 
             if (clusterStatus != ClusterStatus.Running) {
                 logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
@@ -55,7 +55,7 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContex
                 return Result(
                     ResultStatus.AWAIT,
                     listOf(
-                        OperatorState.getCurrentTask(
+                        Status.getCurrentTask(
                             flinkCluster
                         )
                     )
@@ -68,7 +68,7 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContex
                 ClusterTask.ClusterRunning
             )
 
-            OperatorState.appendTasks(flinkCluster, statusList)
+            Status.appendTasks(flinkCluster, statusList)
 
             return Result(
                 ResultStatus.SUCCESS,

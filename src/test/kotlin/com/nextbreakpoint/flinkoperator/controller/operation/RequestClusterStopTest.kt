@@ -10,9 +10,9 @@ import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
-import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.core.Annotations
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -31,14 +31,14 @@ class RequestClusterStopTest {
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkContext = mock(FlinkContext::class.java)
     private val kubernetesContext = mock(KubernetesContext::class.java)
-    private val operatorCache = mock(OperatorCache::class.java)
+    private val operatorCache = mock(Cache::class.java)
     private val command = RequestClusterStop(flinkOptions, flinkContext, kubernetesContext, operatorCache)
 
     @BeforeEach
     fun configure() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.Terminated)
-        OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
+        Status.setClusterStatus(cluster, ClusterStatus.Terminated)
+        Status.setTaskStatus(cluster, TaskStatus.Idle)
+        Status.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 
@@ -57,9 +57,9 @@ class RequestClusterStopTest {
 
     @Test
     fun `should return expected result when stopping without savepoint and not deleting resources`() {
-        OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.setClusterStatus(cluster, ClusterStatus.Stopping)
-        val actionTimestamp = OperatorAnnotations.getActionTimestamp(cluster)
+        Status.setTaskStatus(cluster, TaskStatus.Idle)
+        Status.setClusterStatus(cluster, ClusterStatus.Stopping)
+        val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = false))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verify(kubernetesContext, times(1)).updateAnnotations(eq(clusterId), KotlinMockito.any())
@@ -69,17 +69,17 @@ class RequestClusterStopTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
-        assertThat(OperatorAnnotations.getManualAction(cluster)).isEqualTo(ManualAction.STOP)
-        assertThat(OperatorAnnotations.isWithSavepoint(cluster)).isEqualTo(true)
-        assertThat(OperatorAnnotations.isDeleteResources(cluster)).isEqualTo(false)
-        assertThat(OperatorAnnotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
+        assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.STOP)
+        assertThat(Annotations.isWithSavepoint(cluster)).isEqualTo(true)
+        assertThat(Annotations.isDeleteResources(cluster)).isEqualTo(false)
+        assertThat(Annotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
     }
 
     @Test
     fun `should return expected result when stopping with savepoint and deleting resources`() {
-        OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.setClusterStatus(cluster, ClusterStatus.Stopping)
-        val actionTimestamp = OperatorAnnotations.getActionTimestamp(cluster)
+        Status.setTaskStatus(cluster, TaskStatus.Idle)
+        Status.setClusterStatus(cluster, ClusterStatus.Stopping)
+        val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = false, deleteResources = true))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verify(kubernetesContext, times(1)).updateAnnotations(eq(clusterId), KotlinMockito.any())
@@ -89,9 +89,9 @@ class RequestClusterStopTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
-        assertThat(OperatorAnnotations.getManualAction(cluster)).isEqualTo(ManualAction.STOP)
-        assertThat(OperatorAnnotations.isWithSavepoint(cluster)).isEqualTo(false)
-        assertThat(OperatorAnnotations.isDeleteResources(cluster)).isEqualTo(true)
-        assertThat(OperatorAnnotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
+        assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.STOP)
+        assertThat(Annotations.isWithSavepoint(cluster)).isEqualTo(false)
+        assertThat(Annotations.isDeleteResources(cluster)).isEqualTo(true)
+        assertThat(Annotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
     }
 }

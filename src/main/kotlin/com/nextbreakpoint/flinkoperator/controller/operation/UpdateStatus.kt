@@ -8,18 +8,18 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
-import com.nextbreakpoint.flinkoperator.controller.TaskOperation
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorController
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTask
+import com.nextbreakpoint.flinkoperator.controller.core.Annotations
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.OperationController
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.Task
 import io.kubernetes.client.models.V1StatefulSet
 import org.apache.log4j.Logger
 
 class UpdateStatus(
-    private val controller: OperatorController
-) : TaskOperation<Void?, Void?>(
+    private val controller: OperationController
+) : Operation<Void?, Void?>(
     controller.flinkOptions,
     controller.flinkContext,
     controller.kubernetesContext
@@ -36,15 +36,15 @@ class UpdateStatus(
 
             logOperatorAnnotations(flinkCluster)
 
-            val operatorTimestamp = OperatorState.getOperatorTimestamp(flinkCluster)
+            val operatorTimestamp = Status.getOperatorTimestamp(flinkCluster)
 
-            val actionTimestamp = OperatorAnnotations.getActionTimestamp(flinkCluster)
+            val actionTimestamp = Annotations.getActionTimestamp(flinkCluster)
 
-            val context = OperatorContext(
+            val context = TaskContext(
                 operatorTimestamp, actionTimestamp, clusterId, flinkCluster, resources, controller
             )
 
-            if (OperatorState.hasCurrentTask(flinkCluster)) {
+            if (Status.hasCurrentTask(flinkCluster)) {
                 return update(clusterId, context)
             } else {
                 return initialise(clusterId, context)
@@ -61,12 +61,12 @@ class UpdateStatus(
 
     private fun initialise(
         clusterId: ClusterId,
-        context: OperatorContext
+        context: TaskContext
     ): Result<Void?> {
-        OperatorState.appendTasks(context.flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Unknown)
-        OperatorState.setTaskAttempts(context.flinkCluster, 0)
-        OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
+        Status.appendTasks(context.flinkCluster, listOf(ClusterTask.InitialiseCluster))
+        Status.setClusterStatus(context.flinkCluster, ClusterStatus.Unknown)
+        Status.setTaskAttempts(context.flinkCluster, 0)
+        Status.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
 
         controller.updateState(clusterId, context.flinkCluster)
 
@@ -80,11 +80,11 @@ class UpdateStatus(
 
     private fun update(
         clusterId: ClusterId,
-        context: OperatorContext
+        context: TaskContext
     ): Result<Void?> {
-        val taskStatus = OperatorState.getCurrentTaskStatus(context.flinkCluster)
+        val taskStatus = Status.getCurrentTaskStatus(context.flinkCluster)
 
-        val currentTask = OperatorState.getCurrentTask(context.flinkCluster)
+        val currentTask = Status.getCurrentTask(context.flinkCluster)
 
         logger.info("Cluster ${clusterId.name}, status ${taskStatus}, task ${currentTask.name}")
 
@@ -96,20 +96,20 @@ class UpdateStatus(
 
         updateStatusTaskManagers(context.flinkCluster, statefulSet)
 
-        val operatorTimestamp = OperatorState.getOperatorTimestamp(context.flinkCluster)
+        val operatorTimestamp = Status.getOperatorTimestamp(context.flinkCluster)
 
         if (operatorTimestamp != context.operatorTimestamp) {
             controller.updateState(clusterId, context.flinkCluster)
         }
 
-        val actionTimestamp = OperatorAnnotations.getActionTimestamp(context.flinkCluster)
+        val actionTimestamp = Annotations.getActionTimestamp(context.flinkCluster)
 
         if (actionTimestamp != context.actionTimestamp) {
             controller.updateAnnotations(clusterId, context.flinkCluster)
         }
 
-        if (OperatorState.getSavepointPath(context.flinkCluster) != context.flinkCluster.spec.operator.savepointPath) {
-            controller.updateSavepoint(clusterId, OperatorState.getSavepointPath(context.flinkCluster) ?: "")
+        if (Status.getSavepointPath(context.flinkCluster) != context.flinkCluster.spec.operator.savepointPath) {
+            controller.updateSavepoint(clusterId, Status.getSavepointPath(context.flinkCluster) ?: "")
         }
 
         return when {
@@ -142,31 +142,31 @@ class UpdateStatus(
 
     private fun updateStatusTaskManagers(flinkCluster: V1FlinkCluster, statefulSet: V1StatefulSet?) {
         val taskManagers = statefulSet?.status?.readyReplicas ?: 0
-        if (OperatorState.getActiveTaskManagers(flinkCluster) != taskManagers) {
-            OperatorState.setActiveTaskManagers(flinkCluster, taskManagers)
+        if (Status.getActiveTaskManagers(flinkCluster) != taskManagers) {
+            Status.setActiveTaskManagers(flinkCluster, taskManagers)
         }
         val taskSlots = flinkCluster.status?.taskSlots ?: 1
-        if (OperatorState.getTotalTaskSlots(flinkCluster) != taskManagers * taskSlots) {
-            OperatorState.setTotalTaskSlots(flinkCluster,taskManagers * taskSlots)
+        if (Status.getTotalTaskSlots(flinkCluster) != taskManagers * taskSlots) {
+            Status.setTotalTaskSlots(flinkCluster,taskManagers * taskSlots)
         }
     }
 
     private fun updateTask(
-        context: OperatorContext,
+        context: TaskContext,
         taskStatus: TaskStatus,
-        task: OperatorTask
+        task: Task
     ): Result<out String?> {
         return when (taskStatus) {
             TaskStatus.Executing -> {
                 val result = task.onExecuting(context)
                 if (result.status == ResultStatus.SUCCESS) {
-                    OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Awaiting)
+                    Status.setTaskStatus(context.flinkCluster, TaskStatus.Awaiting)
                     Result(
                         ResultStatus.SUCCESS,
                         result.output
                     )
                 } else if (result.status == ResultStatus.FAILED) {
-                    OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Failed)
+                    Status.setTaskStatus(context.flinkCluster, TaskStatus.Failed)
                     Result(
                         ResultStatus.FAILED,
                         result.output
@@ -181,13 +181,13 @@ class UpdateStatus(
             TaskStatus.Awaiting -> {
                 val result = task.onAwaiting(context)
                 if (result.status == ResultStatus.SUCCESS) {
-                    OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Idle)
+                    Status.setTaskStatus(context.flinkCluster, TaskStatus.Idle)
                     Result(
                         ResultStatus.SUCCESS,
                         result.output
                     )
                 } else if (result.status == ResultStatus.FAILED) {
-                    OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Failed)
+                    Status.setTaskStatus(context.flinkCluster, TaskStatus.Failed)
                     Result(
                         ResultStatus.FAILED,
                         result.output
@@ -202,14 +202,14 @@ class UpdateStatus(
             TaskStatus.Idle -> {
                 val result = task.onIdle(context)
                 if (result.status == ResultStatus.FAILED) {
-                    OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Failed)
+                    Status.setTaskStatus(context.flinkCluster, TaskStatus.Failed)
                     Result(
                         ResultStatus.FAILED,
                         result.output
                     )
-                } else if (OperatorState.getNextOperatorTask(context.flinkCluster) != null) {
-                    OperatorState.selectNextTask(context.flinkCluster)
-                    OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
+                } else if (Status.getNextOperatorTask(context.flinkCluster) != null) {
+                    Status.selectNextTask(context.flinkCluster)
+                    Status.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
                     Result(
                         ResultStatus.SUCCESS,
                         result.output
@@ -223,10 +223,10 @@ class UpdateStatus(
             }
             TaskStatus.Failed -> {
                 task.onFailed(context)
-                OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Failed)
-                OperatorState.resetTasks(context.flinkCluster, listOf(ClusterTask.ClusterHalted))
-                OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
-                OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
+                Status.setClusterStatus(context.flinkCluster, ClusterStatus.Failed)
+                Status.resetTasks(context.flinkCluster, listOf(ClusterTask.ClusterHalted))
+                Status.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
+                Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
                 Result(
                     ResultStatus.FAILED,
                     "Task failed"

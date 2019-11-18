@@ -7,8 +7,8 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
@@ -26,13 +26,13 @@ class ClusterGetStatusTest {
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkContext = mock(FlinkContext::class.java)
     private val kubernetesContext = mock(KubernetesContext::class.java)
-    private val operatorCache = mock(OperatorCache::class.java)
+    private val operatorCache = mock(Cache::class.java)
     private val command = ClusterGetStatus(flinkOptions, flinkContext, kubernetesContext, operatorCache)
 
     @BeforeEach
     fun configure() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
-        OperatorState.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
+        Status.setClusterStatus(cluster, ClusterStatus.Running)
+        Status.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 

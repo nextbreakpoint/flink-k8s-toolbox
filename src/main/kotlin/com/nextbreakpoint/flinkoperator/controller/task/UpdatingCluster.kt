@@ -3,14 +3,14 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTask
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.Task
 
-class UpdatingCluster : OperatorTask {
-    override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Updating)
-        OperatorState.setTaskAttempts(context.flinkCluster, 0)
+class UpdatingCluster : Task {
+    override fun onExecuting(context: TaskContext): Result<String> {
+        Status.setClusterStatus(context.flinkCluster, ClusterStatus.Updating)
+        Status.setTaskAttempts(context.flinkCluster, 0)
 
         return Result(
             ResultStatus.SUCCESS,
@@ -18,21 +18,21 @@ class UpdatingCluster : OperatorTask {
         )
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.SUCCESS,
             "Cluster ${context.clusterId.name} is updating..."
         )
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
+    override fun onIdle(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
         )
     }
 
-    override fun onFailed(context: OperatorContext): Result<String> {
+    override fun onFailed(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""

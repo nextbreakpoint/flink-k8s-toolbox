@@ -8,9 +8,9 @@ import org.apache.log4j.Logger
 import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
 
-class OperatorWatch(val gson: Gson, val kubernetesContext: KubernetesContext) {
+class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
     companion object {
-        private val logger: Logger = Logger.getLogger(OperatorWatch::class.simpleName)
+        private val logger: Logger = Logger.getLogger(WatchAdapter::class.simpleName)
     }
 
     fun watchFlinkClusters(context: Context, namespace: String) {

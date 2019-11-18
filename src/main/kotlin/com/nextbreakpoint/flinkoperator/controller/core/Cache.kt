@@ -1,4 +1,4 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
@@ -8,7 +8,7 @@ import io.kubernetes.client.models.V1PersistentVolumeClaim
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
-class OperatorCache {
+class Cache {
     private val flinkClusters = mutableMapOf<ClusterId, V1FlinkCluster>()
     private val bootstrapJobs = mutableMapOf<ClusterId, V1Job>()
     private val jobmanagerServices = mutableMapOf<ClusterId, V1Service>()
@@ -169,8 +169,8 @@ class OperatorCache {
         }
     }
 
-    fun getClusters(): List<Pair<V1FlinkCluster, OperatorResources>> {
-        val resources = OperatorResources(
+    fun getClusters(): List<Pair<V1FlinkCluster, CachedResources>> {
+        val resources = CachedResources(
             bootstrapJobs.toMap(),
             jobmanagerServices.toMap(),
             jobmanagerStatefulSets.toMap(),
@@ -181,8 +181,8 @@ class OperatorCache {
         return flinkClusters.values.map { flinkCluster -> flinkCluster to resources }.toList()
     }
 
-    fun getResources(): OperatorResources {
-        return OperatorResources(
+    fun getResources(): CachedResources {
+        return CachedResources(
             bootstrapJobs.toMap(),
             jobmanagerServices.toMap(),
             jobmanagerStatefulSets.toMap(),

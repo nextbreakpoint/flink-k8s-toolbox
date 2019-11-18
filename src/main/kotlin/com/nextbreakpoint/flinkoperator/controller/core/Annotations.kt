@@ -1,9 +1,9 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 
-object OperatorAnnotations {
+object Annotations {
     val MANUAL_ACTION       = "flink-operator/manual-action"
     val ACTION_TIMESTAMP    = "flink-operator/action-timestamp"
     val WITHOUT_SAVEPOINT   = "flink-operator/without-savepoint"
@@ -23,7 +23,8 @@ object OperatorAnnotations {
     fun setManualAction(flinkCluster: V1FlinkCluster, manualAction: ManualAction) {
         val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
         annotations[MANUAL_ACTION] = manualAction.toString()
-        annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
+        annotations[ACTION_TIMESTAMP] = currentTimeMillis()
+            .toString()
         flinkCluster.metadata?.annotations = annotations
     }
 
@@ -34,7 +35,8 @@ object OperatorAnnotations {
     fun setWithoutSavepoint(flinkCluster: V1FlinkCluster, withoutSavepoint: Boolean) {
         val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
         annotations[WITHOUT_SAVEPOINT] = withoutSavepoint.toString()
-        annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
+        annotations[ACTION_TIMESTAMP] = currentTimeMillis()
+            .toString()
         flinkCluster.metadata?.annotations = annotations
     }
 
@@ -45,7 +47,8 @@ object OperatorAnnotations {
     fun setDeleteResources(flinkCluster: V1FlinkCluster, deleteResources: Boolean) {
         val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
         annotations[DELETE_RESOURCES] = deleteResources.toString()
-        annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
+        annotations[ACTION_TIMESTAMP] = currentTimeMillis()
+            .toString()
         flinkCluster.metadata?.annotations = annotations
     }
 

@@ -2,10 +2,10 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorController
-import com.nextbreakpoint.flinkoperator.controller.OperatorResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.OperationController
+import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -19,9 +19,9 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 class EraseSavepointTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
-    private val context = mock(OperatorContext::class.java)
-    private val controller = mock(OperatorController::class.java)
-    private val resources = mock(OperatorResources::class.java)
+    private val context = mock(TaskContext::class.java)
+    private val controller = mock(OperationController::class.java)
+    private val resources = mock(CachedResources::class.java)
     private val time = System.currentTimeMillis()
     private val task = EraseSavepoint()
 
@@ -53,7 +53,7 @@ class EraseSavepointTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorState.getSavepointPath(cluster)).isNull()
+        assertThat(Status.getSavepointPath(cluster)).isNull()
     }
 
     @Test

@@ -2,22 +2,22 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorTask
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatusEvaluator
+import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesValidator
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 import org.apache.log4j.Logger
 
-class CreateBootstrapJob : OperatorTask {
+class CreateBootstrapJob : Task {
     companion object {
         private val logger: Logger = Logger.getLogger(CreateBootstrapJob::class.simpleName)
     }
 
-    private val statusEvaluator = ClusterResourcesStatusEvaluator()
+    private val statusEvaluator = ClusterResourcesValidator()
 
-    override fun onExecuting(context: OperatorContext): Result<String> {
+    override fun onExecuting(context: TaskContext): Result<String> {
         if (context.flinkCluster.spec?.bootstrap == null) {
             return Result(
                 ResultStatus.FAILED,
@@ -27,7 +27,7 @@ class CreateBootstrapJob : OperatorTask {
 
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.BOOTSTRAPPING_JOB_TIMEOUT) {
+        if (elapsedTime > Timeout.BOOTSTRAPPING_JOB_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to upload JAR file to cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -66,10 +66,10 @@ class CreateBootstrapJob : OperatorTask {
         )
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.BOOTSTRAPPING_JOB_TIMEOUT) {
+        if (elapsedTime > Timeout.BOOTSTRAPPING_JOB_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "JAR file has not been uploaded to cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -102,14 +102,14 @@ class CreateBootstrapJob : OperatorTask {
         )
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
+    override fun onIdle(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
         )
     }
 
-    override fun onFailed(context: OperatorContext): Result<String> {
+    override fun onFailed(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""

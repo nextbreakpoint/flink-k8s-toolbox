@@ -15,6 +15,9 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.OperationController
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
@@ -144,11 +147,18 @@ class OperatorVerticle : AbstractVerticle() {
 
         val flinkContext = FlinkContext
 
-        val watch = OperatorWatch(gson, kubernetesContext)
+        val watch =
+            WatchAdapter(gson, kubernetesContext)
 
-        val cache = OperatorCache()
+        val cache = Cache()
 
-        val controller = OperatorController(flinkOptions, flinkContext, kubernetesContext, cache, tasksHandlers)
+        val controller = OperationController(
+            flinkOptions,
+            flinkContext,
+            kubernetesContext,
+            cache,
+            tasksHandlers
+        )
 
         val mainRouter = Router.router(vertx)
 
@@ -167,25 +177,45 @@ class OperatorVerticle : AbstractVerticle() {
 
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/start", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    cache.getClusterId(
+                        ns,
+                        ctx.pathParam("name")
+                    ), ctx.bodyAsString
+                )
             ) })
         }
 
         mainRouter.put("/cluster/:name/stop").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/stop", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    cache.getClusterId(
+                        ns,
+                        ctx.pathParam("name")
+                    ), ctx.bodyAsString
+                )
             ) })
         }
 
         mainRouter.put("/cluster/:name/scale").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/scale", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    cache.getClusterId(
+                        ns,
+                        ctx.pathParam("name")
+                    ), ctx.bodyAsString
+                )
             ) })
         }
 
         mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
             handleRequest(routingContext, namespace, "/cluster/savepoint", BiFunction { ctx, ns -> gson.toJson(
-                OperatorMessage(cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString)
+                com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    cache.getClusterId(
+                        ns,
+                        ctx.pathParam("name")
+                    ), ctx.bodyAsString
+                )
             ) })
         }
 
@@ -245,19 +275,19 @@ class OperatorVerticle : AbstractVerticle() {
 
 
         vertx.eventBus().consumer<String>("/cluster/start") { message ->
-            handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
+            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
                 gson.toJson(controller.requestStartCluster(it.clusterId, gson.fromJson(it.json, StartOptions::class.java)))
             })
         }
 
         vertx.eventBus().consumer<String>("/cluster/stop") { message ->
-            handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
+            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
                 gson.toJson(controller.requestStopCluster(it.clusterId, gson.fromJson(it.json, StopOptions::class.java)))
             })
         }
 
         vertx.eventBus().consumer<String>("/cluster/scale") { message ->
-            handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
+            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
                 gson.toJson(controller.requestScaleCluster(it.clusterId, gson.fromJson(it.json, ScaleOptions::class.java)))
             })
         }
@@ -274,7 +304,7 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/cluster/savepoint") { message ->
-            handleCommand<OperatorMessage>(message, worker, Function { gson.fromJson(it.body(), OperatorMessage::class.java) }, Function {
+            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
                 gson.toJson(controller.createSavepoint(it.clusterId))
             })
         }
@@ -408,10 +438,10 @@ class OperatorVerticle : AbstractVerticle() {
         }.toMap()
     }
 
-    private fun updateMetrics(resourcesCache: OperatorCache, gauges: Map<ClusterStatus, AtomicInteger>) {
+    private fun updateMetrics(resourcesCache: Cache, gauges: Map<ClusterStatus, AtomicInteger>) {
         val counters = resourcesCache.getFlinkClusters()
             .foldRight(mutableMapOf<ClusterStatus, Int>()) { flinkCluster, counters ->
-                val status = OperatorState.getClusterStatus(flinkCluster)
+                val status = Status.getClusterStatus(flinkCluster)
                 counters.compute(status) { _, value -> if (value != null) value + 1 else 1 }
                 counters
             }
@@ -474,8 +504,8 @@ class OperatorVerticle : AbstractVerticle() {
         ClusterId(namespace = flinkCluster.metadata.namespace, name = flinkCluster.metadata.name, uuid = flinkCluster.metadata.uid)
 
     private fun doUpdateClusters(
-        controller: OperatorController,
-        cache: OperatorCache,
+        controller: OperationController,
+        cache: Cache,
         worker: WorkerExecutor
     ) {
         val observable = Observable.from(cache.getClusters()).map { pair ->
@@ -493,8 +523,8 @@ class OperatorVerticle : AbstractVerticle() {
     }
 
     private fun doDeleteOrphans(
-        controller: OperatorController,
-        cache: OperatorCache,
+        controller: OperationController,
+        cache: Cache,
         worker: WorkerExecutor
     ) {
         val observable = Observable.from(cache.getOrphanedClusters()).map { clusterId ->

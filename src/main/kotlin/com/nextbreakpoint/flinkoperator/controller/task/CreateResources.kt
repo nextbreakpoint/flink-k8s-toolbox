@@ -5,28 +5,28 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorTask
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatusEvaluator
+import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesValidator
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 import org.apache.log4j.Logger
 
-class CreateResources : OperatorTask {
+class CreateResources : Task {
     companion object {
         private val logger: Logger = Logger.getLogger(CreateResources::class.simpleName)
     }
 
-    private val statusEvaluator = ClusterResourcesStatusEvaluator()
+    private val statusEvaluator = ClusterResourcesValidator()
 
-    override fun onExecuting(context: OperatorContext): Result<String> {
+    override fun onExecuting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.CREATING_CLUSTER_TIMEOUT) {
+        if (elapsedTime > Timeout.CREATING_CLUSTER_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to create resources of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -72,10 +72,10 @@ class CreateResources : OperatorTask {
         )
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.CREATING_CLUSTER_TIMEOUT) {
+        if (elapsedTime > Timeout.CREATING_CLUSTER_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to create resources of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -115,21 +115,21 @@ class CreateResources : OperatorTask {
         )
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
+    override fun onIdle(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
         )
     }
 
-    override fun onFailed(context: OperatorContext): Result<String> {
+    override fun onFailed(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
         )
     }
 
-    private fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: OperatorResources): ClusterResourcesStatus {
+    private fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: CachedResources): ClusterResourcesStatus {
         val bootstrapJob = resources.bootstrapJobs.get(clusterId)
         val jobmnagerService = resources.jobmanagerServices.get(clusterId)
         val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
