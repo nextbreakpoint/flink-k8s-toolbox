@@ -1,8 +1,8 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 
-data class OperatorMessage(
+data class Message(
     val clusterId: ClusterId,
     val json: String
 )

@@ -3,14 +3,14 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTask
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Configuration
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
-class CancelJob : OperatorTask {
-    override fun onExecuting(context: OperatorContext): Result<String> {
+class CancelJob : Task {
+    override fun onExecuting(context: TaskContext): Result<String> {
         if (context.flinkCluster.spec?.bootstrap == null) {
             return Result(
                 ResultStatus.FAILED,
@@ -20,7 +20,7 @@ class CancelJob : OperatorTask {
 
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.CANCELLING_JOBS_TIMEOUT) {
+        if (elapsedTime > Timeout.CANCELLING_JOB_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to cancel job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -37,13 +37,13 @@ class CancelJob : OperatorTask {
         }
 
         val options = SavepointOptions(
-            targetPath = OperatorParameters.getSavepointTargetPath(context.flinkCluster)
+            targetPath = Configuration.getSavepointTargetPath(context.flinkCluster)
         )
 
         val savepointRequest = context.controller.cancelJob(context.clusterId, options)
 
         if (savepointRequest.status == ResultStatus.SUCCESS && savepointRequest.output != null) {
-            OperatorState.setSavepointRequest(context.flinkCluster, savepointRequest.output)
+            Status.setSavepointRequest(context.flinkCluster, savepointRequest.output)
 
             return Result(
                 ResultStatus.SUCCESS,
@@ -57,17 +57,17 @@ class CancelJob : OperatorTask {
         )
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.CANCELLING_JOBS_TIMEOUT) {
+        if (elapsedTime > Timeout.CANCELLING_JOB_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to cancel job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
             )
         }
 
-        val savepointRequest = OperatorState.getSavepointRequest(context.flinkCluster)
+        val savepointRequest = Status.getSavepointRequest(context.flinkCluster)
 
         if (savepointRequest == null) {
             return Result(
@@ -79,8 +79,8 @@ class CancelJob : OperatorTask {
         val completedSavepoint = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
 
         if (completedSavepoint.status == ResultStatus.SUCCESS) {
-            if (OperatorParameters.getSavepointPath(context.flinkCluster) != completedSavepoint.output) {
-                OperatorState.setSavepointPath(context.flinkCluster, completedSavepoint.output)
+            if (Configuration.getSavepointPath(context.flinkCluster) != completedSavepoint.output) {
+                Status.setSavepointPath(context.flinkCluster, completedSavepoint.output)
             }
         }
 
@@ -106,14 +106,14 @@ class CancelJob : OperatorTask {
         )
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
+    override fun onIdle(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
         )
     }
 
-    override fun onFailed(context: OperatorContext): Result<String> {
+    override fun onFailed(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""

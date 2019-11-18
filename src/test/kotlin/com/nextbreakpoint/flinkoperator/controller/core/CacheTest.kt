@@ -1,4 +1,4 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
@@ -6,8 +6,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
-class OperatorCacheTest {
-    private val cache = OperatorCache()
+class CacheTest {
+    private val cache = Cache()
 
     @Test
     fun `cache is empty`() {

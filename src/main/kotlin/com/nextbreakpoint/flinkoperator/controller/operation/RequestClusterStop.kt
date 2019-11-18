@@ -8,12 +8,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
-import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.TaskOperation
+import com.nextbreakpoint.flinkoperator.controller.core.Annotations
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class RequestClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<StopOptions, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class RequestClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: Cache) : Operation<StopOptions, Void?>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(RequestClusterStop::class.simpleName)
     }
@@ -22,9 +22,9 @@ class RequestClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext,
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            OperatorAnnotations.setWithoutSavepoint(flinkCluster, params.withoutSavepoint)
-            OperatorAnnotations.setDeleteResources(flinkCluster, params.deleteResources)
-            OperatorAnnotations.setManualAction(flinkCluster, ManualAction.STOP)
+            Annotations.setWithoutSavepoint(flinkCluster, params.withoutSavepoint)
+            Annotations.setDeleteResources(flinkCluster, params.deleteResources)
+            Annotations.setManualAction(flinkCluster, ManualAction.STOP)
 
             kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata?.annotations.orEmpty())
 

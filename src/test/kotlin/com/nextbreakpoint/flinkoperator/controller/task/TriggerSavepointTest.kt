@@ -4,11 +4,11 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorController
-import com.nextbreakpoint.flinkoperator.controller.OperatorResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.OperationController
+import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -25,9 +25,9 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 class TriggerSavepointTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
-    private val context = mock(OperatorContext::class.java)
-    private val controller = mock(OperatorController::class.java)
-    private val resources = mock(OperatorResources::class.java)
+    private val context = mock(TaskContext::class.java)
+    private val controller = mock(OperationController::class.java)
+    private val resources = mock(CachedResources::class.java)
     private val time = System.currentTimeMillis()
     private val task = TriggerSavepoint()
 
@@ -53,7 +53,7 @@ class TriggerSavepointTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CREATING_SAVEPOINT_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + Timeout.CREATING_SAVEPOINT_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -68,7 +68,7 @@ class TriggerSavepointTest {
 
     @Test
     fun `onExecuting should return expected result when savepoint request has been created already`() {
-        OperatorState.setSavepointRequest(cluster, SavepointRequest(jobId = "1", triggerId = "100"))
+        Status.setSavepointRequest(cluster, SavepointRequest(jobId = "1", triggerId = "100"))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -140,12 +140,12 @@ class TriggerSavepointTest {
         val result = task.onExecuting(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(OperatorState.getSavepointRequest(cluster)).isEqualTo(savepointRequest)
+        assertThat(Status.getSavepointRequest(cluster)).isEqualTo(savepointRequest)
     }
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CREATING_SAVEPOINT_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + Timeout.CREATING_SAVEPOINT_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -175,7 +175,7 @@ class TriggerSavepointTest {
     @Test
     fun `onAwaiting should return expected result when savepoint has not been completed yet`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-        OperatorState.setSavepointRequest(cluster, savepointRequest)
+        Status.setSavepointRequest(cluster, savepointRequest)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.AWAIT, ""))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
@@ -194,7 +194,7 @@ class TriggerSavepointTest {
     @Test
     fun `onAwaiting should return expected result when savepoint has been completed`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-        OperatorState.setSavepointRequest(cluster, savepointRequest)
+        Status.setSavepointRequest(cluster, savepointRequest)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.SUCCESS, "/tmp/000"))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
@@ -213,18 +213,18 @@ class TriggerSavepointTest {
     @Test
     fun `onAwaiting should set savepoint path when savepoint has been completed`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-        OperatorState.setSavepointRequest(cluster, savepointRequest)
+        Status.setSavepointRequest(cluster, savepointRequest)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.SUCCESS, "/tmp/000"))
         val result = task.onAwaiting(context)
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
-        assertThat(OperatorState.getSavepointPath(cluster)).isEqualTo("/tmp/000")
+        assertThat(Status.getSavepointPath(cluster)).isEqualTo("/tmp/000")
     }
 
     @Test
     fun `onAwaiting should return expected result when savepoint has failed`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-        OperatorState.setSavepointRequest(cluster, savepointRequest)
+        Status.setSavepointRequest(cluster, savepointRequest)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.FAILED, ""))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId

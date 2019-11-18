@@ -1,4 +1,4 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
@@ -50,12 +50,12 @@ import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersSetRepl
 import com.nextbreakpoint.flinkoperator.controller.operation.DeleteBootstrapJob
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 
-class OperatorController(
+class OperationController(
     val flinkOptions: FlinkOptions,
     val flinkContext: FlinkContext,
     val kubernetesContext: KubernetesContext,
-    val cache: OperatorCache,
-    val taskHandlers: Map<ClusterTask, OperatorTask>
+    val cache: Cache,
+    val taskHandlers: Map<ClusterTask, Task>
 ) {
     fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
         RequestClusterStart(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)

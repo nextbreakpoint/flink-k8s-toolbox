@@ -3,17 +3,17 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorTask
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 
-class RestartPods : OperatorTask {
-    override fun onExecuting(context: OperatorContext): Result<String> {
+class RestartPods : Task {
+    override fun onExecuting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.TERMINATING_PODS_TIMEOUT) {
+        if (elapsedTime > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -43,10 +43,10 @@ class RestartPods : OperatorTask {
         )
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.TERMINATING_PODS_TIMEOUT) {
+        if (elapsedTime > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -73,14 +73,14 @@ class RestartPods : OperatorTask {
         )
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
+    override fun onIdle(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
         )
     }
 
-    override fun onFailed(context: OperatorContext): Result<String> {
+    override fun onFailed(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""

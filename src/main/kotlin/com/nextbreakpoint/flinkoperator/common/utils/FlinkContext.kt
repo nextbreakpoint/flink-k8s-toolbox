@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit
 object FlinkContext {
     private val logger = Logger.getLogger(FlinkContext::class.simpleName)
 
-    private val TIMEOUT = 20000L
+    private const val TIMEOUT = 20000L
 
     fun getOverview(address: FlinkAddress): ClusterOverviewWithVersion {
         try {

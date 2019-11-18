@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
@@ -315,10 +315,10 @@ object TestFactory {
         .endMetadata()
         .build()
 
-    fun createResources(uid: String, cluster: V1FlinkCluster): OperatorResources {
+    fun createResources(uid: String, cluster: V1FlinkCluster): CachedResources {
         val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
         val resources = createClusterResources(uid, cluster)
-        return OperatorResources(
+        return CachedResources(
             mapOf(clusterId to (resources.bootstrapJob ?: throw RuntimeException())),
             mapOf(clusterId to (resources.jobmanagerService ?: throw RuntimeException())),
             mapOf(clusterId to (resources.jobmanagerStatefulSet ?: throw RuntimeException())),
@@ -328,10 +328,10 @@ object TestFactory {
         )
     }
 
-    fun createResourcesWithoutJob(uid: String, cluster: V1FlinkCluster): OperatorResources {
+    fun createResourcesWithoutJob(uid: String, cluster: V1FlinkCluster): CachedResources {
         val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
         val resources = createClusterResources(uid, cluster)
-        return OperatorResources(
+        return CachedResources(
             mapOf(),
             mapOf(clusterId to (resources.jobmanagerService ?: throw RuntimeException())),
             mapOf(clusterId to (resources.jobmanagerStatefulSet ?: throw RuntimeException())),
@@ -341,8 +341,8 @@ object TestFactory {
         )
     }
 
-    fun createEmptyResources(): OperatorResources {
-        return OperatorResources(
+    fun createEmptyResources(): CachedResources {
+        return CachedResources(
             mapOf(),
             mapOf(),
             mapOf(),

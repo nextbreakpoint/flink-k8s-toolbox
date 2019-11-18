@@ -2,12 +2,12 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorTask
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
-class StartJob : OperatorTask {
-    override fun onExecuting(context: OperatorContext): Result<String> {
+class StartJob : Task {
+    override fun onExecuting(context: TaskContext): Result<String> {
         if (context.flinkCluster.spec?.bootstrap == null) {
             return Result(
                 ResultStatus.FAILED,
@@ -17,7 +17,7 @@ class StartJob : OperatorTask {
 
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {
+        if (elapsedTime > Timeout.STARTING_JOB_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to start job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -48,10 +48,10 @@ class StartJob : OperatorTask {
         )
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-        if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {
+        if (elapsedTime > Timeout.STARTING_JOB_TIMEOUT) {
             return Result(
                 ResultStatus.FAILED,
                 "Failed to start job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -73,14 +73,14 @@ class StartJob : OperatorTask {
         )
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
+    override fun onIdle(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
         )
     }
 
-    override fun onFailed(context: OperatorContext): Result<String> {
+    override fun onFailed(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""

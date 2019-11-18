@@ -11,12 +11,12 @@ import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.TaskOperation
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import org.apache.log4j.Logger
 
-class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<StartOptions, List<ClusterTask>>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: Cache) : Operation<StartOptions, List<ClusterTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterStart::class.simpleName)
     }
@@ -25,7 +25,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            val operatorStatus = OperatorState.getCurrentTaskStatus(flinkCluster)
+            val operatorStatus = Status.getCurrentTaskStatus(flinkCluster)
 
             if (operatorStatus != TaskStatus.Idle) {
                 logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
@@ -33,7 +33,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                 return Result(
                     ResultStatus.AWAIT,
                     listOf(
-                        OperatorState.getCurrentTask(
+                        Status.getCurrentTask(
                             flinkCluster
                         )
                     )
@@ -48,14 +48,14 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                 return Result(
                     ResultStatus.AWAIT,
                     listOf(
-                        OperatorState.getCurrentTask(
+                        Status.getCurrentTask(
                             flinkCluster
                         )
                     )
                 )
             }
 
-            OperatorState.appendTasks(flinkCluster, statusList)
+            Status.appendTasks(flinkCluster, statusList)
 
             return Result(
                 ResultStatus.SUCCESS,
@@ -72,7 +72,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
     }
 
     private fun tryStartingCluster(flinkCluster: V1FlinkCluster, params: StartOptions): List<ClusterTask> {
-        val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
+        val clusterStatus = Status.getClusterStatus(flinkCluster)
 
         val bootstrapSpec = flinkCluster.spec?.bootstrap
 

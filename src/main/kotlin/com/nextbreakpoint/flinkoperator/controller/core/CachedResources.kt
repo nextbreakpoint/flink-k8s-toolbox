@@ -1,4 +1,4 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import io.kubernetes.client.models.V1Job
@@ -6,7 +6,7 @@ import io.kubernetes.client.models.V1PersistentVolumeClaim
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
-data class OperatorResources(
+data class CachedResources(
     val bootstrapJobs: Map<ClusterId, V1Job>,
     val jobmanagerServices: Map<ClusterId, V1Service>,
     val jobmanagerStatefulSets: Map<ClusterId, V1StatefulSet>,

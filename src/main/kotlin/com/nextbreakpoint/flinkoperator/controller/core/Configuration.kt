@@ -1,8 +1,8 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 
-object OperatorParameters {
+object Configuration {
     fun getSavepointMode(flinkCluster: V1FlinkCluster) : String =
         flinkCluster.spec?.operator?.savepointMode ?: "MANUAL"
 

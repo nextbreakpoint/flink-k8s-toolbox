@@ -1,17 +1,17 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
 
-class OperatorContext(
+class TaskContext(
     val operatorTimestamp: Long,
     val actionTimestamp: Long,
     val clusterId: ClusterId,
     val flinkCluster: V1FlinkCluster,
-    val resources: OperatorResources,
-    val controller: OperatorController
+    val resources: CachedResources,
+    val controller: OperationController
 ) {
     fun haveClusterResourcesDiverged(clusterResourcesStatus: ClusterResourcesStatus): Boolean {
         if (clusterResourcesStatus.jobmanagerService.first != ResourceStatus.VALID) {

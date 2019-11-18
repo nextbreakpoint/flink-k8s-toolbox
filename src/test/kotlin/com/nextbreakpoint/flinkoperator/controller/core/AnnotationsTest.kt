@@ -1,8 +1,8 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
 
-class OperatorAnnotationsTest {
+class AnnotationsTest {
     private val flinkCluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
 //    @Test

@@ -1,4 +1,4 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
@@ -8,7 +8,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 
-object OperatorState {
+object Status {
     fun hasCurrentTask(flinkCluster: V1FlinkCluster) : Boolean = flinkCluster.status?.tasks?.isNotEmpty() ?: false
 
     fun getCurrentTask(flinkCluster: V1FlinkCluster) : ClusterTask =
@@ -54,7 +54,8 @@ object OperatorState {
 
         flinkCluster.status?.tasks = if (tasks.isEmpty()) arrayOf(task) else tasks.toTypedArray()
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun appendTasks(flinkCluster: V1FlinkCluster, tasks: List<ClusterTask>) {
@@ -66,7 +67,8 @@ object OperatorState {
 
         flinkCluster.status?.tasks = currentTask.plus(newTasks).toTypedArray()
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun resetTasks(flinkCluster: V1FlinkCluster, tasks: List<ClusterTask>) {
@@ -76,7 +78,8 @@ object OperatorState {
 
         flinkCluster.status?.tasks = newTasks.toTypedArray()
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun setTaskStatus(flinkCluster: V1FlinkCluster, status: TaskStatus) {
@@ -84,39 +87,46 @@ object OperatorState {
 
         flinkCluster.status?.taskStatus = status.toString()
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun setSavepointPath(flinkCluster: V1FlinkCluster, path: String?) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.savepointTimestamp = currentTimeMillis()
+        flinkCluster.status?.savepointTimestamp =
+            currentTimeMillis()
 
         flinkCluster.status?.savepointPath = path
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun setSavepointRequest(flinkCluster: V1FlinkCluster, request: SavepointRequest) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.savepointTimestamp = currentTimeMillis()
+        flinkCluster.status?.savepointTimestamp =
+            currentTimeMillis()
 
         flinkCluster.status?.savepointJobId = request.jobId
         flinkCluster.status?.savepointTriggerId = request.triggerId
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun updateSavepointTimestamp(flinkCluster: V1FlinkCluster) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.savepointTimestamp = currentTimeMillis()
+        flinkCluster.status?.savepointTimestamp =
+            currentTimeMillis()
 
         flinkCluster.status?.savepointJobId = null
         flinkCluster.status?.savepointTriggerId = null
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun setClusterStatus(flinkCluster: V1FlinkCluster, status: ClusterStatus) {
@@ -124,7 +134,8 @@ object OperatorState {
 
         flinkCluster.status?.clusterStatus = status.toString()
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun setJobManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
@@ -132,7 +143,8 @@ object OperatorState {
 
         flinkCluster.status?.digest?.jobManager = digest
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun setTaskManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
@@ -140,7 +152,8 @@ object OperatorState {
 
         flinkCluster.status?.digest?.taskManager = digest
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun setRuntimeDigest(flinkCluster: V1FlinkCluster, digest: String) {
@@ -148,7 +161,8 @@ object OperatorState {
 
         flinkCluster.status?.digest?.runtime = digest
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun setBootstrapDigest(flinkCluster: V1FlinkCluster, digest: String) {
@@ -156,7 +170,8 @@ object OperatorState {
 
         flinkCluster.status?.digest?.bootstrap = digest
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun getJobManagerDigest(flinkCluster: V1FlinkCluster): String? =
@@ -176,7 +191,8 @@ object OperatorState {
 
         flinkCluster.status?.taskAttempts = attempts
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun getTaskAttempts(flinkCluster: V1FlinkCluster): Int =
@@ -187,7 +203,8 @@ object OperatorState {
 
         flinkCluster.status?.taskManagers = taskManagers
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun getTaskManagers(flinkCluster: V1FlinkCluster): Int =
@@ -198,7 +215,8 @@ object OperatorState {
 
         flinkCluster.status?.activeTaskManagers = taskManagers
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun getActiveTaskManagers(flinkCluster: V1FlinkCluster): Int =
@@ -209,7 +227,8 @@ object OperatorState {
 
         flinkCluster.status?.jobParallelism = jobParallelism
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun getJobParallelism(flinkCluster: V1FlinkCluster): Int =
@@ -220,7 +239,8 @@ object OperatorState {
 
         flinkCluster.status?.taskSlots = taskSlots
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun getTaskSlots(flinkCluster: V1FlinkCluster): Int =
@@ -231,7 +251,8 @@ object OperatorState {
 
         flinkCluster.status?.totalTaskSlots = totalTaskSlots
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun getTotalTaskSlots(flinkCluster: V1FlinkCluster): Int =
@@ -242,7 +263,8 @@ object OperatorState {
 
         flinkCluster.status?.labelSelector = labelSelector
 
-        flinkCluster.status?.timestamp = currentTimeMillis()
+        flinkCluster.status?.timestamp =
+            currentTimeMillis()
     }
 
     fun getLabelSelector(flinkCluster: V1FlinkCluster): String? =

@@ -8,9 +8,9 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
-import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.controller.core.Annotations
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
@@ -28,14 +28,14 @@ class TaskManagersGetReplicasTest {
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkContext = mock(FlinkContext::class.java)
     private val kubernetesContext = mock(KubernetesContext::class.java)
-    private val operatorCache = mock(OperatorCache::class.java)
+    private val operatorCache = mock(Cache::class.java)
     private val command = TaskManagersGetReplicas(flinkOptions, flinkContext, kubernetesContext)
 
     @BeforeEach
     fun configure() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
-        OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(ClusterTask.ClusterHalted))
+        Status.setClusterStatus(cluster, ClusterStatus.Running)
+        Status.setTaskStatus(cluster, TaskStatus.Idle)
+        Status.appendTasks(cluster, listOf(ClusterTask.ClusterHalted))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
         given(kubernetesContext.getTaskManagerStatefulSetReplicas(eq(clusterId))).thenReturn(4)
     }
@@ -55,7 +55,7 @@ class TaskManagersGetReplicasTest {
 
     @Test
     fun `should return expected result`() {
-        val actionTimestamp = OperatorAnnotations.getActionTimestamp(cluster)
+        val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verify(kubernetesContext, times(1)).getTaskManagerStatefulSetReplicas(eq(clusterId))
         verifyNoMoreInteractions(kubernetesContext)
@@ -64,6 +64,6 @@ class TaskManagersGetReplicasTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isEqualTo(4)
-        assertThat(OperatorAnnotations.getActionTimestamp(cluster)).isEqualTo(actionTimestamp)
+        assertThat(Annotations.getActionTimestamp(cluster)).isEqualTo(actionTimestamp)
     }
 }

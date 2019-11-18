@@ -5,7 +5,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import io.kubernetes.client.models.V1EnvVar
 
-class ClusterResourcesStatusEvaluator {
+class ClusterResourcesValidator {
     fun evaluate(
         clusterId: ClusterId,
         flinkCluster: V1FlinkCluster,

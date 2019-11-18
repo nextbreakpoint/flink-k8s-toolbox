@@ -13,8 +13,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
-class ClusterResourcesStatusEvaluatorTest {
-    private val statusEvaluator = ClusterResourcesStatusEvaluator()
+class ClusterResourcesValidatorTest {
+    private val statusEvaluator = ClusterResourcesValidator()
 
     private val clusterId = UUID.randomUUID().toString()
 

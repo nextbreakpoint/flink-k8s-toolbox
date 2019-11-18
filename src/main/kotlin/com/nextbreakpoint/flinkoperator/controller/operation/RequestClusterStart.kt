@@ -8,12 +8,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
-import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.TaskOperation
+import com.nextbreakpoint.flinkoperator.controller.core.Annotations
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class RequestClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<StartOptions, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class RequestClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: Cache) : Operation<StartOptions, Void?>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(RequestClusterStart::class.simpleName)
     }
@@ -22,8 +22,8 @@ class RequestClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            OperatorAnnotations.setWithoutSavepoint(flinkCluster, params.withoutSavepoint)
-            OperatorAnnotations.setManualAction(flinkCluster, ManualAction.START)
+            Annotations.setWithoutSavepoint(flinkCluster, params.withoutSavepoint)
+            Annotations.setManualAction(flinkCluster, ManualAction.START)
 
             kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata?.annotations.orEmpty())
 

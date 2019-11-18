@@ -2,29 +2,29 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTask
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import org.apache.log4j.Logger
 
-class RescaleCluster : OperatorTask {
+class RescaleCluster : Task {
     companion object {
         private val logger = Logger.getLogger(RescaleCluster::class.simpleName)
     }
 
-    override fun onExecuting(context: OperatorContext): Result<String> {
+    override fun onExecuting(context: TaskContext): Result<String> {
         try {
             val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-            if (elapsedTime > OperatorTimeouts.RESCALING_CLUSTER_TIMEOUT) {
+            if (elapsedTime > Timeout.RESCALING_CLUSTER_TIMEOUT) {
                 return Result(
                     ResultStatus.FAILED,
                     "Failed to rescale task managers of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
                 )
             }
 
-            val desiredTaskManagers = OperatorState.getTaskManagers(context.flinkCluster)
+            val desiredTaskManagers = Status.getTaskManagers(context.flinkCluster)
 
             val result = context.controller.setTaskManagersReplicas(context.clusterId, desiredTaskManagers)
 
@@ -49,11 +49,11 @@ class RescaleCluster : OperatorTask {
         }
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): Result<String> {
         try {
             val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
-            if (elapsedTime > OperatorTimeouts.RESCALING_CLUSTER_TIMEOUT) {
+            if (elapsedTime > Timeout.RESCALING_CLUSTER_TIMEOUT) {
                 return Result(
                     ResultStatus.FAILED,
                     "Failed to scale task managers of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
@@ -69,7 +69,7 @@ class RescaleCluster : OperatorTask {
                 )
             }
 
-            val desiredTaskManagers = OperatorState.getTaskManagers(context.flinkCluster)
+            val desiredTaskManagers = Status.getTaskManagers(context.flinkCluster)
 
             if (desiredTaskManagers != result.output) {
                 return Result(
@@ -92,14 +92,14 @@ class RescaleCluster : OperatorTask {
         }
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
+    override fun onIdle(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
         )
     }
 
-    override fun onFailed(context: OperatorContext): Result<String> {
+    override fun onFailed(context: TaskContext): Result<String> {
         return Result(
             ResultStatus.AWAIT,
             ""
