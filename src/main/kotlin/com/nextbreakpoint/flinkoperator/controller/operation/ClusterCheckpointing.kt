@@ -3,23 +3,23 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.TaskOperation
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import org.apache.log4j.Logger
 
-class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : OperatorCommand<Void?, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<Void?, List<ClusterTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterCheckpointing::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<List<OperatorTask>> {
+    override fun execute(clusterId: ClusterId, params: Void?): Result<List<ClusterTask>> {
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
@@ -63,9 +63,9 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkContext: FlinkContex
             }
 
             val statusList = listOf(
-                OperatorTask.CreatingSavepoint,
-                OperatorTask.TriggerSavepoint,
-                OperatorTask.ClusterRunning
+                ClusterTask.CreatingSavepoint,
+                ClusterTask.TriggerSavepoint,
+                ClusterTask.ClusterRunning
             )
 
             OperatorState.appendTasks(flinkCluster, statusList)

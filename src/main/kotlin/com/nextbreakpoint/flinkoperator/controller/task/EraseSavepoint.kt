@@ -4,9 +4,9 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 
-class EraseSavepoint : OperatorTaskHandler {
+class EraseSavepoint : OperatorTask {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorState.setSavepointPath(context.flinkCluster, null)
 

@@ -1,16 +1,22 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
+import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
+import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
+import io.kubernetes.client.models.V1StatefulSetBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,14 +26,16 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class CreateBootstrapJobTest {
+class ReplaceResourcesTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(OperatorContext::class.java)
     private val controller = mock(OperatorController::class.java)
     private val resources = mock(OperatorResources::class.java)
+    private val cache = mock(OperatorCache::class.java)
+    private val clusterScaling = ClusterScaling(taskManagers = 1, taskSlots = 1)
     private val time = System.currentTimeMillis()
-    private val task = CreateBootstrapJob()
+    private val task = ReplaceResources()
 
     @BeforeEach
     fun configure() {
@@ -36,23 +44,19 @@ class CreateBootstrapJobTest {
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
-        given(context.hasBootstrapJobDiverged(any())).thenReturn(false)
-    }
-
-    @Test
-    fun `onExecuting should return expected result when job is not defined`() {
-        cluster.spec.bootstrap = null
-        val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotBlank()
+        given(controller.cache).thenReturn(cache)
+        given(cache.getResources()).thenReturn(resources)
+        val jobmanagerStatefulSets = mapOf(clusterId to V1StatefulSetBuilder().withNewMetadata().endMetadata().build())
+        val taskmanagerStatefulSets = mapOf(clusterId to V1StatefulSetBuilder().withNewMetadata().endMetadata().build())
+        given(resources.jobmanagerStatefulSets).thenReturn(jobmanagerStatefulSets)
+        given(resources.taskmanagerStatefulSets).thenReturn(taskmanagerStatefulSets)
+        OperatorState.setTaskManagers(cluster, 1)
+        OperatorState.setTaskSlots(cluster, 1)
     }
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.BOOTSTRAPPING_JOB_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CREATING_CLUSTER_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -66,16 +70,44 @@ class CreateBootstrapJobTest {
     }
 
     @Test
-    fun `onExecuting should return expected result when jar can't be removed`() {
-        given(controller.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+    fun `onExecuting should return expected result when resources have been already created and cluster is ready`() {
+        val resources = TestFactory.createResourcesWithoutJob(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).resources
+        verify(context, times(1)).haveClusterResourcesDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).removeJar(eq(clusterId))
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verifyNoMoreInteractions(controller)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.output).isNotBlank()
+    }
+
+    @Test
+    fun `onExecuting should return expected result when resources have not been created yet`() {
+        val resources = TestFactory.createResources(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(controller.replaceClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.AWAIT, null))
+        val result = task.onExecuting(context)
+        verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).resources
+        verify(context, times(1)).haveClusterResourcesDiverged(any())
+        verifyNoMoreInteractions(context)
+        verify(controller, times(1)).currentTimeMillis()
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verify(controller, times(1)).replaceClusterResources(eq(clusterId), any())
+        verify(controller, atLeastOnce()).cache
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -83,18 +115,23 @@ class CreateBootstrapJobTest {
     }
 
     @Test
-    fun `onExecuting should return expected result when jar has not been uploaded yet`() {
-        given(controller.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(controller.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.AWAIT, null))
+    fun `onExecuting should return expected result when resources can't be created`() {
+        val resources = TestFactory.createResources(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(controller.replaceClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).resources
+        verify(context, times(1)).haveClusterResourcesDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).removeJar(eq(clusterId))
-        verify(controller, times(1)).createBootstrapJob(eq(clusterId), any())
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verify(controller, times(1)).replaceClusterResources(eq(clusterId), any())
+        verify(controller, atLeastOnce()).cache
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -102,37 +139,23 @@ class CreateBootstrapJobTest {
     }
 
     @Test
-    fun `onExecuting should return expected result when jar can't be uploaded`() {
-        given(controller.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(controller.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
+    fun `onExecuting should return expected result when resources have been created`() {
+        val resources = TestFactory.createResources(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(controller.replaceClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).resources
+        verify(context, times(1)).haveClusterResourcesDiverged(any())
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).removeJar(eq(clusterId))
-        verify(controller, times(1)).createBootstrapJob(eq(clusterId), any())
-        verifyNoMoreInteractions(controller)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isNotBlank()
-    }
-
-    @Test
-    fun `onExecuting should return expected result when jar has been uploaded`() {
-        given(controller.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(controller.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, null))
-        val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).clusterId
-        verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
-        verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).removeJar(eq(clusterId))
-        verify(controller, times(1)).createBootstrapJob(eq(clusterId), any())
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verify(controller, times(1)).replaceClusterResources(eq(clusterId), any())
+        verify(controller, atLeastOnce()).cache
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -141,7 +164,7 @@ class CreateBootstrapJobTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.BOOTSTRAPPING_JOB_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + OperatorTimeouts.CREATING_CLUSTER_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -155,9 +178,10 @@ class CreateBootstrapJobTest {
     }
 
     @Test
-    fun `onAwaiting should return expected result when jar is not ready`() {
-        given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
-        given(controller.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+    fun `onAwaiting should return expected result when resources are not ready`() {
+        val resources = TestFactory.createResources(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -165,7 +189,7 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isJarReady(eq(clusterId))
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -173,9 +197,10 @@ class CreateBootstrapJobTest {
     }
 
     @Test
-    fun `onAwaiting should return expected result when can't get jar status`() {
-        given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
-        given(controller.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+    fun `onAwaiting should return expected result when cluster is not ready yet`() {
+        val resources = TestFactory.createResources(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -183,7 +208,7 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isJarReady(eq(clusterId))
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -191,9 +216,10 @@ class CreateBootstrapJobTest {
     }
 
     @Test
-    fun `onAwaiting should return expected result when jar is ready`() {
-        given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
-        given(controller.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+    fun `onAwaiting should return expected result when cluster has failed`() {
+        val resources = TestFactory.createResources(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -201,7 +227,26 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isJarReady(eq(clusterId))
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verifyNoMoreInteractions(controller)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.output).isNotBlank()
+    }
+
+    @Test
+    fun `onAwaiting should return expected result when cluster is ready`() {
+        val resources = TestFactory.createResources(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        val result = task.onAwaiting(context)
+        verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
+        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, atLeastOnce()).controller
+        verifyNoMoreInteractions(context)
+        verify(controller, times(1)).currentTimeMillis()
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)

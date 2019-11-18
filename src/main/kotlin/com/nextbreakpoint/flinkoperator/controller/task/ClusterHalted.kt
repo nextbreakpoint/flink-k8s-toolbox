@@ -1,21 +1,21 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import org.apache.log4j.Logger
 
-class ClusterHalted : OperatorTaskHandler {
+class ClusterHalted : OperatorTask {
     companion object {
         private val logger: Logger = Logger.getLogger(ClusterHalted::class.simpleName)
     }
@@ -101,31 +101,31 @@ class ClusterHalted : OperatorTaskHandler {
                         OperatorState.setRuntimeDigest(context.flinkCluster, actualRuntimeDigest)
                         OperatorState.setBootstrapDigest(context.flinkCluster, actualBootstrapDigest)
 
-                        if (java.lang.Boolean.getBoolean("enableReplaceStrategy")) {
+                        if (java.lang.Boolean.getBoolean("disableReplaceStrategy")) {
                             OperatorState.appendTasks(
                                 context.flinkCluster,
                                 listOf(
-                                    OperatorTask.UpdatingCluster,
-                                    OperatorTask.ReplaceResources,
-                                    OperatorTask.DeleteBootstrapJob,
-                                    OperatorTask.CreateBootstrapJob,
-                                    OperatorTask.StartJob,
-                                    OperatorTask.ClusterRunning
+                                    ClusterTask.StoppingCluster,
+                                    ClusterTask.TerminatePods,
+                                    ClusterTask.DeleteResources,
+                                    ClusterTask.StartingCluster,
+                                    ClusterTask.CreateResources,
+                                    ClusterTask.DeleteBootstrapJob,
+                                    ClusterTask.CreateBootstrapJob,
+                                    ClusterTask.StartJob,
+                                    ClusterTask.ClusterRunning
                                 )
                             )
                         } else {
                             OperatorState.appendTasks(
                                 context.flinkCluster,
                                 listOf(
-                                    OperatorTask.StoppingCluster,
-                                    OperatorTask.TerminatePods,
-                                    OperatorTask.DeleteResources,
-                                    OperatorTask.StartingCluster,
-                                    OperatorTask.CreateResources,
-                                    OperatorTask.DeleteBootstrapJob,
-                                    OperatorTask.CreateBootstrapJob,
-                                    OperatorTask.StartJob,
-                                    OperatorTask.ClusterRunning
+                                    ClusterTask.UpdatingCluster,
+                                    ClusterTask.ReplaceResources,
+                                    ClusterTask.DeleteBootstrapJob,
+                                    ClusterTask.CreateBootstrapJob,
+                                    ClusterTask.StartJob,
+                                    ClusterTask.ClusterRunning
                                 )
                             )
                         }
@@ -155,11 +155,11 @@ class ClusterHalted : OperatorTaskHandler {
 
                         OperatorState.appendTasks(context.flinkCluster,
                             listOf(
-                                OperatorTask.UpdatingCluster,
-                                OperatorTask.DeleteBootstrapJob,
-                                OperatorTask.CreateBootstrapJob,
-                                OperatorTask.StartJob,
-                                OperatorTask.ClusterRunning
+                                ClusterTask.UpdatingCluster,
+                                ClusterTask.DeleteBootstrapJob,
+                                ClusterTask.CreateBootstrapJob,
+                                ClusterTask.StartJob,
+                                ClusterTask.ClusterRunning
                             )
                         )
 
@@ -193,7 +193,7 @@ class ClusterHalted : OperatorTaskHandler {
                             logger.info("Cluster ${context.clusterId.name} seems to be running...")
 
                             OperatorState.appendTasks(context.flinkCluster, listOf(
-                                OperatorTask.ClusterRunning
+                                ClusterTask.ClusterRunning
                             ))
 
                             return Result(
@@ -204,12 +204,12 @@ class ClusterHalted : OperatorTaskHandler {
                             val restartPolicy = OperatorParameters.getJobRestartPolicy(context.flinkCluster)
 
                             if (restartPolicy.toUpperCase() == "ALWAYS") {
-                                val options = ScaleOptions(
+                                val clusterScaling = ClusterScaling(
                                     taskManagers = context.flinkCluster.status.taskManagers,
                                     taskSlots = context.flinkCluster.status.taskSlots
                                 )
 
-                                val clusterReady = context.controller.isClusterReady(context.clusterId, options)
+                                val clusterReady = context.controller.isClusterReady(context.clusterId, clusterScaling)
 
                                 if (clusterReady.status == ResultStatus.SUCCESS) {
                                     logger.info("Cluster ${context.clusterId.name} seems to be ready...")
@@ -219,10 +219,10 @@ class ClusterHalted : OperatorTaskHandler {
                                         logger.info("Restarting job of cluster ${context.clusterId.name}...")
 
                                         OperatorState.appendTasks(context.flinkCluster, listOf(
-                                            OperatorTask.DeleteBootstrapJob,
-                                            OperatorTask.CreateBootstrapJob,
-                                            OperatorTask.StartJob,
-                                            OperatorTask.ClusterRunning
+                                            ClusterTask.DeleteBootstrapJob,
+                                            ClusterTask.CreateBootstrapJob,
+                                            ClusterTask.StartJob,
+                                            ClusterTask.ClusterRunning
                                         ))
 
                                         return Result(

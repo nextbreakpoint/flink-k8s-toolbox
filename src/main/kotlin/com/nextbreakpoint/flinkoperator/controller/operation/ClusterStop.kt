@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
@@ -12,16 +12,16 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.TaskOperation
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import org.apache.log4j.Logger
 
-class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : OperatorCommand<StopOptions, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<StopOptions, List<ClusterTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterStop::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: StopOptions): Result<List<OperatorTask>> {
+    override fun execute(clusterId: ClusterId, params: StopOptions): Result<List<ClusterTask>> {
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
@@ -71,7 +71,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubern
         }
     }
 
-    private fun tryStoppingCluster(flinkCluster: V1FlinkCluster, params: StopOptions): List<OperatorTask> {
+    private fun tryStoppingCluster(flinkCluster: V1FlinkCluster, params: StopOptions): List<ClusterTask> {
         val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
 
         val bootstrapSpec = flinkCluster.spec?.bootstrap
@@ -81,18 +81,18 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubern
                 ClusterStatus.Running ->
                     if (params.deleteResources) {
                         listOf(
-                            OperatorTask.StoppingCluster,
-                            OperatorTask.TerminatePods,
-                            OperatorTask.DeleteResources,
-                            OperatorTask.TerminatedCluster,
-                            OperatorTask.ClusterHalted
+                            ClusterTask.StoppingCluster,
+                            ClusterTask.TerminatePods,
+                            ClusterTask.DeleteResources,
+                            ClusterTask.TerminatedCluster,
+                            ClusterTask.ClusterHalted
                         )
                     } else {
                         listOf(
-                            OperatorTask.StoppingCluster,
-                            OperatorTask.TerminatePods,
-                            OperatorTask.SuspendCluster,
-                            OperatorTask.ClusterHalted
+                            ClusterTask.StoppingCluster,
+                            ClusterTask.TerminatePods,
+                            ClusterTask.SuspendCluster,
+                            ClusterTask.ClusterHalted
                         )
                     }
                 else -> listOf()
@@ -103,57 +103,57 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubern
                     if (params.deleteResources) {
                         if (params.withoutSavepoint) {
                             listOf(
-                                OperatorTask.StoppingCluster,
-                                OperatorTask.StopJob,
-                                OperatorTask.TerminatePods,
-                                OperatorTask.DeleteResources,
-                                OperatorTask.TerminatedCluster,
-                                OperatorTask.ClusterHalted
+                                ClusterTask.StoppingCluster,
+                                ClusterTask.StopJob,
+                                ClusterTask.TerminatePods,
+                                ClusterTask.DeleteResources,
+                                ClusterTask.TerminatedCluster,
+                                ClusterTask.ClusterHalted
                             )
                         } else {
                             listOf(
-                                OperatorTask.StoppingCluster,
-                                OperatorTask.CancelJob,
-                                OperatorTask.TerminatePods,
-                                OperatorTask.DeleteResources,
-                                OperatorTask.TerminatedCluster,
-                                OperatorTask.ClusterHalted
+                                ClusterTask.StoppingCluster,
+                                ClusterTask.CancelJob,
+                                ClusterTask.TerminatePods,
+                                ClusterTask.DeleteResources,
+                                ClusterTask.TerminatedCluster,
+                                ClusterTask.ClusterHalted
                             )
                         }
                     } else {
                         if (params.withoutSavepoint) {
                             listOf(
-                                OperatorTask.StoppingCluster,
-                                OperatorTask.StopJob,
-                                OperatorTask.TerminatePods,
-                                OperatorTask.SuspendCluster,
-                                OperatorTask.ClusterHalted
+                                ClusterTask.StoppingCluster,
+                                ClusterTask.StopJob,
+                                ClusterTask.TerminatePods,
+                                ClusterTask.SuspendCluster,
+                                ClusterTask.ClusterHalted
                             )
                         } else {
                             listOf(
-                                OperatorTask.StoppingCluster,
-                                OperatorTask.CancelJob,
-                                OperatorTask.TerminatePods,
-                                OperatorTask.SuspendCluster,
-                                OperatorTask.ClusterHalted
+                                ClusterTask.StoppingCluster,
+                                ClusterTask.CancelJob,
+                                ClusterTask.TerminatePods,
+                                ClusterTask.SuspendCluster,
+                                ClusterTask.ClusterHalted
                             )
                         }
                     }
                 ClusterStatus.Suspended ->
                     listOf(
-                        OperatorTask.StoppingCluster,
-                        OperatorTask.TerminatePods,
-                        OperatorTask.DeleteResources,
-                        OperatorTask.TerminatedCluster,
-                        OperatorTask.ClusterHalted
+                        ClusterTask.StoppingCluster,
+                        ClusterTask.TerminatePods,
+                        ClusterTask.DeleteResources,
+                        ClusterTask.TerminatedCluster,
+                        ClusterTask.ClusterHalted
                     )
                 ClusterStatus.Failed ->
                     listOf(
-                        OperatorTask.StoppingCluster,
-                        OperatorTask.TerminatePods,
-                        OperatorTask.DeleteResources,
-                        OperatorTask.TerminatedCluster,
-                        OperatorTask.ClusterHalted
+                        ClusterTask.StoppingCluster,
+                        ClusterTask.TerminatePods,
+                        ClusterTask.DeleteResources,
+                        ClusterTask.TerminatedCluster,
+                        ClusterTask.ClusterHalted
                     )
                 else -> listOf()
             }

@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
@@ -32,7 +32,7 @@ class ClusterGetStatusTest {
     @BeforeEach
     fun configure() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.ClusterRunning))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 

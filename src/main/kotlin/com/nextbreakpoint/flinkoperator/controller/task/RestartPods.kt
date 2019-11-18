@@ -1,15 +1,15 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 
-class RestartPods : OperatorTaskHandler {
+class RestartPods : OperatorTask {
     override fun onExecuting(context: OperatorContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
@@ -53,12 +53,12 @@ class RestartPods : OperatorTaskHandler {
             )
         }
 
-        val options = ScaleOptions(
+        val clusterScaling = ClusterScaling(
             taskManagers = context.flinkCluster.status.taskManagers,
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        val response = context.controller.isClusterReady(context.clusterId, options)
+        val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(

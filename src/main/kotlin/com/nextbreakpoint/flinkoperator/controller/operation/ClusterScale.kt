@@ -4,24 +4,24 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.TaskOperation
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import org.apache.log4j.Logger
 
-class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : OperatorCommand<ScaleOptions, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<ClusterScaling, List<ClusterTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
-        private val logger = Logger.getLogger(ClusterScale::class.simpleName)
+        private val logger = Logger.getLogger(ClusterScaling::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: ScaleOptions): Result<List<OperatorTask>> {
+    override fun execute(clusterId: ClusterId, params: ClusterScaling): Result<List<ClusterTask>> {
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
@@ -75,7 +75,7 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
         }
     }
 
-    private fun tryScalingCluster(flinkCluster: V1FlinkCluster, params: ScaleOptions): List<OperatorTask> {
+    private fun tryScalingCluster(flinkCluster: V1FlinkCluster, params: ClusterScaling): List<ClusterTask> {
         val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
 
         val bootstrapSpec = flinkCluster.spec?.bootstrap
@@ -85,15 +85,15 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                 ClusterStatus.Running ->
                     if (params.taskManagers > 0) {
                         listOf(
-                            OperatorTask.RescaleCluster,
-                            OperatorTask.ClusterRunning
+                            ClusterTask.RescaleCluster,
+                            ClusterTask.ClusterRunning
                         )
                     } else {
                         listOf(
-                            OperatorTask.StoppingCluster,
-                            OperatorTask.TerminatePods,
-                            OperatorTask.SuspendCluster,
-                            OperatorTask.ClusterHalted
+                            ClusterTask.StoppingCluster,
+                            ClusterTask.TerminatePods,
+                            ClusterTask.SuspendCluster,
+                            ClusterTask.ClusterHalted
                         )
                     }
                 else -> listOf()
@@ -103,22 +103,22 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                 ClusterStatus.Running ->
                     if (params.taskManagers > 0) {
                         listOf(
-                            OperatorTask.StoppingCluster,
-                            OperatorTask.CancelJob,
-                            OperatorTask.RescaleCluster,
-                            OperatorTask.StartingCluster,
-                            OperatorTask.DeleteBootstrapJob,
-                            OperatorTask.CreateBootstrapJob,
-                            OperatorTask.StartJob,
-                            OperatorTask.ClusterRunning
+                            ClusterTask.StoppingCluster,
+                            ClusterTask.CancelJob,
+                            ClusterTask.RescaleCluster,
+                            ClusterTask.StartingCluster,
+                            ClusterTask.DeleteBootstrapJob,
+                            ClusterTask.CreateBootstrapJob,
+                            ClusterTask.StartJob,
+                            ClusterTask.ClusterRunning
                         )
                     } else {
                         listOf(
-                            OperatorTask.StoppingCluster,
-                            OperatorTask.CancelJob,
-                            OperatorTask.TerminatePods,
-                            OperatorTask.SuspendCluster,
-                            OperatorTask.ClusterHalted
+                            ClusterTask.StoppingCluster,
+                            ClusterTask.CancelJob,
+                            ClusterTask.TerminatePods,
+                            ClusterTask.SuspendCluster,
+                            ClusterTask.ClusterHalted
                         )
                     }
                 else -> listOf()

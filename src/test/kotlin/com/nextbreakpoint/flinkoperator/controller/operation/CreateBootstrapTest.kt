@@ -19,7 +19,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class CreateBootstrapJobTest {
+class CreateBootstrapTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val resources = mock(ClusterResources::class.java)
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)

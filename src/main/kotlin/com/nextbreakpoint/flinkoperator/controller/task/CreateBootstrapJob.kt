@@ -1,21 +1,16 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatusEvaluator
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 import org.apache.log4j.Logger
 
-class CreateBootstrapJob : OperatorTaskHandler {
+class CreateBootstrapJob : OperatorTask {
     companion object {
         private val logger: Logger = Logger.getLogger(CreateBootstrapJob::class.simpleName)
     }

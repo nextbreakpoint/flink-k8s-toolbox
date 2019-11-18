@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
@@ -35,7 +35,7 @@ class ClusterStartTest {
     fun configure() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
         OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.ClusterHalted))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.ClusterHalted))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 
@@ -65,7 +65,7 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.ClusterHalted
+            ClusterTask.ClusterHalted
         ))
     }
 
@@ -81,9 +81,9 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StartingCluster,
-            OperatorTask.CreateResources,
-            OperatorTask.ClusterRunning
+            ClusterTask.StartingCluster,
+            ClusterTask.CreateResources,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -99,9 +99,9 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StartingCluster,
-            OperatorTask.RestartPods,
-            OperatorTask.ClusterRunning
+            ClusterTask.StartingCluster,
+            ClusterTask.RestartPods,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -117,12 +117,12 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StoppingCluster,
-            OperatorTask.TerminatePods,
-            OperatorTask.DeleteResources,
-            OperatorTask.StartingCluster,
-            OperatorTask.CreateResources,
-            OperatorTask.ClusterRunning
+            ClusterTask.StoppingCluster,
+            ClusterTask.TerminatePods,
+            ClusterTask.DeleteResources,
+            ClusterTask.StartingCluster,
+            ClusterTask.CreateResources,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -138,7 +138,7 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.ClusterHalted
+            ClusterTask.ClusterHalted
         ))
     }
 
@@ -153,13 +153,13 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StartingCluster,
-            OperatorTask.CreateResources,
-            OperatorTask.DeleteBootstrapJob,
-            OperatorTask.CreateBootstrapJob,
-            OperatorTask.EraseSavepoint,
-            OperatorTask.StartJob,
-            OperatorTask.ClusterRunning
+            ClusterTask.StartingCluster,
+            ClusterTask.CreateResources,
+            ClusterTask.DeleteBootstrapJob,
+            ClusterTask.CreateBootstrapJob,
+            ClusterTask.EraseSavepoint,
+            ClusterTask.StartJob,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -174,13 +174,13 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StartingCluster,
-            OperatorTask.RestartPods,
-            OperatorTask.DeleteBootstrapJob,
-            OperatorTask.CreateBootstrapJob,
-            OperatorTask.EraseSavepoint,
-            OperatorTask.StartJob,
-            OperatorTask.ClusterRunning
+            ClusterTask.StartingCluster,
+            ClusterTask.RestartPods,
+            ClusterTask.DeleteBootstrapJob,
+            ClusterTask.CreateBootstrapJob,
+            ClusterTask.EraseSavepoint,
+            ClusterTask.StartJob,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -195,16 +195,16 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StoppingCluster,
-            OperatorTask.DeleteBootstrapJob,
-            OperatorTask.TerminatePods,
-            OperatorTask.DeleteResources,
-            OperatorTask.StartingCluster,
-            OperatorTask.CreateResources,
-            OperatorTask.CreateBootstrapJob,
-            OperatorTask.EraseSavepoint,
-            OperatorTask.StartJob,
-            OperatorTask.ClusterRunning
+            ClusterTask.StoppingCluster,
+            ClusterTask.DeleteBootstrapJob,
+            ClusterTask.TerminatePods,
+            ClusterTask.DeleteResources,
+            ClusterTask.StartingCluster,
+            ClusterTask.CreateResources,
+            ClusterTask.CreateBootstrapJob,
+            ClusterTask.EraseSavepoint,
+            ClusterTask.StartJob,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -219,7 +219,7 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.ClusterHalted
+            ClusterTask.ClusterHalted
         ))
     }
 
@@ -234,12 +234,12 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StartingCluster,
-            OperatorTask.CreateResources,
-            OperatorTask.DeleteBootstrapJob,
-            OperatorTask.CreateBootstrapJob,
-            OperatorTask.StartJob,
-            OperatorTask.ClusterRunning
+            ClusterTask.StartingCluster,
+            ClusterTask.CreateResources,
+            ClusterTask.DeleteBootstrapJob,
+            ClusterTask.CreateBootstrapJob,
+            ClusterTask.StartJob,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -254,12 +254,12 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StartingCluster,
-            OperatorTask.RestartPods,
-            OperatorTask.DeleteBootstrapJob,
-            OperatorTask.CreateBootstrapJob,
-            OperatorTask.StartJob,
-            OperatorTask.ClusterRunning
+            ClusterTask.StartingCluster,
+            ClusterTask.RestartPods,
+            ClusterTask.DeleteBootstrapJob,
+            ClusterTask.CreateBootstrapJob,
+            ClusterTask.StartJob,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -274,15 +274,15 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.StoppingCluster,
-            OperatorTask.DeleteBootstrapJob,
-            OperatorTask.TerminatePods,
-            OperatorTask.DeleteResources,
-            OperatorTask.StartingCluster,
-            OperatorTask.CreateResources,
-            OperatorTask.CreateBootstrapJob,
-            OperatorTask.StartJob,
-            OperatorTask.ClusterRunning
+            ClusterTask.StoppingCluster,
+            ClusterTask.DeleteBootstrapJob,
+            ClusterTask.TerminatePods,
+            ClusterTask.DeleteResources,
+            ClusterTask.StartingCluster,
+            ClusterTask.CreateResources,
+            ClusterTask.CreateBootstrapJob,
+            ClusterTask.StartJob,
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -297,7 +297,7 @@ class ClusterStartTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.ClusterHalted
+            ClusterTask.ClusterHalted
         ))
     }
 }

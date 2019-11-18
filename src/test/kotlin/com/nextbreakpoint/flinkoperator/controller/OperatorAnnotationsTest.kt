@@ -1,12 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
-import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 
 class OperatorAnnotationsTest {
     private val flinkCluster = TestFactory.aCluster(name = "test", namespace = "flink")

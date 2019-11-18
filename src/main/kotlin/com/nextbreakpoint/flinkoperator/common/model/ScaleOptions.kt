@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flinkoperator.common.model
 
 data class ScaleOptions(
-    val taskManagers: Int,
-    val taskSlots: Int
+    val taskManagers: Int
 )

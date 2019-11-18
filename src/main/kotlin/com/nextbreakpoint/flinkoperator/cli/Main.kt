@@ -245,12 +245,10 @@ class Main(private val factory: CommandFactory) {
         private val truststoreSecret: String? by option(help="The truststore secret")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val taskManagers: Int by option(help="Number of Task Managers").int().required()
-        private val taskSlots: Int by option(help="Number of Task Slots per Task Manager").int().default(1)
 
         override fun run() {
             val params = ScaleOptions(
-                taskManagers = taskManagers,
-                taskSlots = taskSlots
+                taskManagers = taskManagers
             )
             factory.createScaleClusterCommand().run(
                 ConnectionConfig(

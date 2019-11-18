@@ -4,15 +4,15 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.crd.V1ResourceDigest
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 
 object OperatorState {
     fun hasCurrentTask(flinkCluster: V1FlinkCluster) : Boolean = flinkCluster.status?.tasks?.isNotEmpty() ?: false
 
-    fun getCurrentTask(flinkCluster: V1FlinkCluster) : OperatorTask =
-        flinkCluster.status?.tasks?.filter { it.isNotBlank() }?.map { OperatorTask.valueOf(it) }?.firstOrNull() ?: OperatorTask.ClusterHalted
+    fun getCurrentTask(flinkCluster: V1FlinkCluster) : ClusterTask =
+        flinkCluster.status?.tasks?.filter { it.isNotBlank() }?.map { ClusterTask.valueOf(it) }?.firstOrNull() ?: ClusterTask.ClusterHalted
 
     fun getCurrentTaskStatus(flinkCluster: V1FlinkCluster) : TaskStatus {
         val status = flinkCluster.status?.taskStatus
@@ -32,11 +32,8 @@ object OperatorState {
 
     fun getSavepointRequest(flinkCluster: V1FlinkCluster) : SavepointRequest? {
         val savepointJobId = flinkCluster.status?.savepointJobId
-        if (savepointJobId == null || savepointJobId == "") {
-            return null
-        }
         val savepointTriggerId = flinkCluster.status?.savepointTriggerId
-        if (savepointTriggerId == null || savepointTriggerId == "") {
+        if (savepointJobId == null || savepointTriggerId == null) {
             return null
         }
         return SavepointRequest(jobId = savepointJobId, triggerId = savepointTriggerId)
@@ -45,13 +42,13 @@ object OperatorState {
     fun getSavepointTimestamp(flinkCluster: V1FlinkCluster) : Long =
         flinkCluster.status?.savepointTimestamp?.toLong() ?: 0
 
-    fun getNextOperatorTask(flinkCluster: V1FlinkCluster) : OperatorTask? =
-        flinkCluster.status?.tasks?.drop(1)?.map { OperatorTask.valueOf(it) }?.firstOrNull()
+    fun getNextOperatorTask(flinkCluster: V1FlinkCluster) : ClusterTask? =
+        flinkCluster.status?.tasks?.drop(1)?.map { ClusterTask.valueOf(it) }?.firstOrNull()
 
     fun selectNextTask(flinkCluster: V1FlinkCluster) {
         ensureState(flinkCluster)
 
-        val task = flinkCluster.status?.tasks?.firstOrNull() ?: OperatorTask.ClusterHalted.toString()
+        val task = flinkCluster.status?.tasks?.firstOrNull() ?: ClusterTask.ClusterHalted.toString()
 
         val tasks = flinkCluster.status?.tasks?.drop(1).orEmpty()
 
@@ -60,7 +57,7 @@ object OperatorState {
         flinkCluster.status?.timestamp = currentTimeMillis()
     }
 
-    fun appendTasks(flinkCluster: V1FlinkCluster, tasks: List<OperatorTask>) {
+    fun appendTasks(flinkCluster: V1FlinkCluster, tasks: List<ClusterTask>) {
         ensureState(flinkCluster)
 
         val currentTask = flinkCluster.status?.tasks?.toList().orEmpty().toMutableList()
@@ -72,7 +69,7 @@ object OperatorState {
         flinkCluster.status?.timestamp = currentTimeMillis()
     }
 
-    fun resetTasks(flinkCluster: V1FlinkCluster, tasks: List<OperatorTask>) {
+    fun resetTasks(flinkCluster: V1FlinkCluster, tasks: List<ClusterTask>) {
         ensureState(flinkCluster)
 
         val newTasks = tasks.map { it.toString() }.toList()
