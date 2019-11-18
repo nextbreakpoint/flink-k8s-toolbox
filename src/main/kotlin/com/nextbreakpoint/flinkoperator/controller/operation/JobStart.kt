@@ -5,21 +5,21 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class JobStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<V1FlinkCluster, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<V1FlinkCluster, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobStart::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: V1FlinkCluster): Result<Void?> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val overview = flinkContext.getOverview(address)
+            val overview = flinkClient.getOverview(address)
 
             if (overview.jobsRunning > 0) {
                 return Result(
@@ -28,7 +28,7 @@ class JobStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernete
                 )
             }
 
-            val files = flinkContext.listJars(address)
+            val files = flinkClient.listJars(address)
 
             val jarFile = files.maxBy { it.uploaded }
 
@@ -44,7 +44,7 @@ class JobStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernete
             val savepointPath = params.status.savepointPath
             val parallelism = params.status.jobParallelism
 
-            flinkContext.runJar(address, jarFile, params.spec.bootstrap, parallelism, savepointPath)
+            flinkClient.runJar(address, jarFile, params.spec.bootstrap, parallelism, savepointPath)
 
             return Result(
                 ResultStatus.SUCCESS,

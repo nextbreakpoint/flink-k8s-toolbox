@@ -6,14 +6,14 @@ import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class RequestClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: Cache) : Operation<StopOptions, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class RequestClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val cache: Cache) : Operation<StopOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(RequestClusterStop::class.simpleName)
     }
@@ -26,7 +26,7 @@ class RequestClusterStop(flinkOptions: FlinkOptions, flinkContext: FlinkContext,
             Annotations.setDeleteResources(flinkCluster, params.deleteResources)
             Annotations.setManualAction(flinkCluster, ManualAction.STOP)
 
-            kubernetesContext.updateAnnotations(clusterId, flinkCluster.metadata?.annotations.orEmpty())
+            kubeClient.updateAnnotations(clusterId, flinkCluster.metadata?.annotations.orEmpty())
 
             return Result(
                 ResultStatus.SUCCESS,

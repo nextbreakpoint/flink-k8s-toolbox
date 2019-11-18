@@ -6,21 +6,21 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class JobCancel(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<SavepointOptions, SavepointRequest?>(flinkOptions, flinkContext, kubernetesContext) {
+class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<SavepointOptions, SavepointRequest?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobCancel::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: SavepointOptions): Result<SavepointRequest?> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val runningJobs = flinkContext.listRunningJobs(address)
+            val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.size != 1) {
                 logger.warn("Expected exactly one job running in cluster ${clusterId.name}")
@@ -31,7 +31,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernet
                 )
             }
 
-            val inprogressCheckpoints = flinkContext.getCheckpointingStatistics(address, runningJobs)
+            val inprogressCheckpoints = flinkClient.getCheckpointingStatistics(address, runningJobs)
 
             if (inprogressCheckpoints.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
                 logger.warn("Savepoint already in progress in cluster ${clusterId.name}")
@@ -45,7 +45,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernet
             val requests = runningJobs.map {
                 logger.info("Cancelling job $it of cluster ${clusterId.name}...")
 
-                val response = flinkContext.createSavepoint(address, it, params.targetPath)
+                val response = flinkClient.createSavepoint(address, it, params.targetPath)
 
                 it to response.requestId
             }.onEach {

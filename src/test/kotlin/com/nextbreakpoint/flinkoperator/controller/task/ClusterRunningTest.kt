@@ -3,17 +3,17 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
+import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
-import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
+import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -45,10 +45,10 @@ class ClusterRunningTest {
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
-        val actualBootstrapDigest = CustomResources.computeDigest(cluster.spec?.bootstrap)
-        val actualRuntimeDigest = CustomResources.computeDigest(cluster.spec?.runtime)
-        val actualJobManagerDigest = CustomResources.computeDigest(cluster.spec?.jobManager)
-        val actualTaskManagerDigest = CustomResources.computeDigest(cluster.spec?.taskManager)
+        val actualBootstrapDigest = ClusterResource.computeDigest(cluster.spec?.bootstrap)
+        val actualRuntimeDigest = ClusterResource.computeDigest(cluster.spec?.runtime)
+        val actualJobManagerDigest = ClusterResource.computeDigest(cluster.spec?.jobManager)
+        val actualTaskManagerDigest = ClusterResource.computeDigest(cluster.spec?.taskManager)
         Status.setBootstrapDigest(cluster, actualBootstrapDigest)
         Status.setRuntimeDigest(cluster, actualRuntimeDigest)
         Status.setJobManagerDigest(cluster, actualJobManagerDigest)

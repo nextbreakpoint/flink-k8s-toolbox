@@ -4,22 +4,22 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import org.apache.log4j.Logger
 
-class ClusterReplaceResources(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<ClusterResources, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterReplaceResources(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<ClusterResources, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(ClusterReplaceResources::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
-            val jobmanagerStatefulSets = kubernetesContext.listJobManagerStatefulSets(clusterId)
+            val jobmanagerStatefulSets = kubeClient.listJobManagerStatefulSets(clusterId)
 
-            val taskmanagerStatefulSets = kubernetesContext.listTaskManagerStatefulSets(clusterId)
+            val taskmanagerStatefulSets = kubeClient.listTaskManagerStatefulSets(clusterId)
 
             if (jobmanagerStatefulSets.items.isEmpty() || taskmanagerStatefulSets.items.isEmpty()) {
                 throw RuntimeException("Previous resources don't exist")
@@ -27,17 +27,17 @@ class ClusterReplaceResources(flinkOptions: FlinkOptions, flinkContext: FlinkCon
 
             logger.info("Replacing resources of cluster ${clusterId.name}...")
 
-            kubernetesContext.deleteServices(clusterId)
+            kubeClient.deleteServices(clusterId)
 
-            val jobmanagerServiceOut = kubernetesContext.createJobManagerService(clusterId, params)
+            val jobmanagerServiceOut = kubeClient.createJobManagerService(clusterId, params)
 
             logger.info("Service replaced ${jobmanagerServiceOut.metadata.name}")
 
-            val jobmanagerStatefulSetOut = kubernetesContext.replaceJobManagerStatefulSet(clusterId, params)
+            val jobmanagerStatefulSetOut = kubeClient.replaceJobManagerStatefulSet(clusterId, params)
 
             logger.info("JobManager replaced ${jobmanagerStatefulSetOut.metadata.name}")
 
-            val taskmanagerStatefulSetOut = kubernetesContext.replaceTaskManagerStatefulSet(clusterId, params)
+            val taskmanagerStatefulSetOut = kubeClient.replaceTaskManagerStatefulSet(clusterId, params)
 
             logger.info("TaskManager replaced ${taskmanagerStatefulSetOut.metadata.name}")
 

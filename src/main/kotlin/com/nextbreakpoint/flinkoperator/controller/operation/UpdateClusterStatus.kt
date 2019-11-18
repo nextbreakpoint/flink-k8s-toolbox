@@ -3,29 +3,29 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
+import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
-import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import io.kubernetes.client.models.V1StatefulSet
 import org.apache.log4j.Logger
 
-class UpdateStatus(
+class UpdateClusterStatus(
     private val controller: OperationController
 ) : Operation<Void?, Void?>(
     controller.flinkOptions,
-    controller.flinkContext,
-    controller.kubernetesContext
+    controller.flinkClient,
+    controller.kubeClient
 ) {
     companion object {
-        private val logger: Logger = Logger.getLogger(UpdateStatus::class.simpleName)
+        private val logger: Logger = Logger.getLogger(UpdateClusterStatus::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
@@ -68,7 +68,7 @@ class UpdateStatus(
         Status.setTaskAttempts(context.flinkCluster, 0)
         Status.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
 
-        controller.updateState(clusterId, context.flinkCluster)
+        controller.updateStatus(clusterId, context.flinkCluster)
 
         logger.info("Initialising cluster ${clusterId.name}...")
 
@@ -99,7 +99,7 @@ class UpdateStatus(
         val operatorTimestamp = Status.getOperatorTimestamp(context.flinkCluster)
 
         if (operatorTimestamp != context.operatorTimestamp) {
-            controller.updateState(clusterId, context.flinkCluster)
+            controller.updateStatus(clusterId, context.flinkCluster)
         }
 
         val actionTimestamp = Annotations.getActionTimestamp(context.flinkCluster)

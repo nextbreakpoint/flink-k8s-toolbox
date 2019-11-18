@@ -6,21 +6,21 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class TaskManagerDetails(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext): Operation<TaskManagerId, String>(flinkOptions, flinkContext, kubernetesContext) {
+class TaskManagerDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient): Operation<TaskManagerId, String>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(TaskManagerDetails::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: TaskManagerId): Result<String> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val details = flinkContext.getTaskManagerDetails(address, params)
+            val details = flinkClient.getTaskManagerDetails(address, params)
 
             return Result(
                 ResultStatus.SUCCESS,

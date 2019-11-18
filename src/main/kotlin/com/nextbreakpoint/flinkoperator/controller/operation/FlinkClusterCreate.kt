@@ -5,12 +5,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<V1FlinkCluster, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<V1FlinkCluster, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(FlinkClusterCreate::class.simpleName)
     }
@@ -23,7 +23,7 @@ class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkContext: FlinkContext,
                 .metadata(params.metadata)
                 .spec(params.spec)
 
-            val response = kubernetesContext.createFlinkCluster(flinkCluster)
+            val response = kubeClient.createFlinkCluster(flinkCluster)
 
             if (response.statusCode == 201) {
                 logger.info("Custom object created ${flinkCluster.metadata.name}")

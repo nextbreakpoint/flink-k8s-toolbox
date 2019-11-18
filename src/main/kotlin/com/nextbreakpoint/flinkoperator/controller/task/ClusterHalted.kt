@@ -2,17 +2,17 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
+import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Configuration
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import org.apache.log4j.Logger
 
 class ClusterHalted : Task {
@@ -64,10 +64,10 @@ class ClusterHalted : Task {
                 "Missing required annotations in cluster ${context.clusterId.name}"
             )
         } else {
-            val actualJobManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.jobManager)
-            val actualTaskManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.taskManager)
-            val actualRuntimeDigest = CustomResources.computeDigest(context.flinkCluster.spec?.runtime)
-            val actualBootstrapDigest = CustomResources.computeDigest(context.flinkCluster.spec?.bootstrap)
+            val actualJobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
+            val actualTaskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
+            val actualRuntimeDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.runtime)
+            val actualBootstrapDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.bootstrap)
 
             val changes = mutableListOf<String>()
 

@@ -6,21 +6,21 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class SavepointTrigger(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<SavepointOptions, SavepointRequest?>(flinkOptions, flinkContext, kubernetesContext) {
+class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<SavepointOptions, SavepointRequest?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(SavepointTrigger::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: SavepointOptions): Result<SavepointRequest?> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val runningJobs = flinkContext.listRunningJobs(address)
+            val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.size > 1) {
                 logger.warn("There are multiple jobs running in cluster ${clusterId.name}")
@@ -35,7 +35,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkContext: FlinkContext, k
                 )
             }
 
-            val checkpointingStatistics = flinkContext.getCheckpointingStatistics(address, runningJobs)
+            val checkpointingStatistics = flinkClient.getCheckpointingStatistics(address, runningJobs)
 
             if (checkpointingStatistics.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
                 logger.warn("Savepoint in progress for job in cluster ${clusterId.name}")
@@ -46,7 +46,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkContext: FlinkContext, k
                 )
             }
 
-            val savepointRequests = flinkContext.triggerSavepoints(address, runningJobs, params.targetPath)
+            val savepointRequests = flinkClient.triggerSavepoints(address, runningJobs, params.targetPath)
 
             return Result(
                 ResultStatus.SUCCESS,

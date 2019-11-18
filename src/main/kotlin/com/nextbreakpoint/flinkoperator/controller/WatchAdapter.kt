@@ -1,14 +1,14 @@
 package com.nextbreakpoint.flinkoperator.controller
 
 import com.google.gson.Gson
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import io.kubernetes.client.util.Watch
 import io.vertx.core.Context
 import org.apache.log4j.Logger
 import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
 
-class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
+class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
     companion object {
         private val logger: Logger = Logger.getLogger(WatchAdapter::class.simpleName)
     }
@@ -16,7 +16,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
     fun watchFlinkClusters(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                kubernetesContext.watchFlickClusters(it)
+                kubeClient.watchFlickClusters(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/flinkcluster/change", gson.toJson(resource))
@@ -30,7 +30,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/flinkcluster/deleteAll", "")
-                        val resources = kubernetesContext.listFlinkClusters(namespace)
+                        val resources = kubeClient.listFlinkClusters(namespace)
                         resources.forEach { resource ->
                             context.owner().eventBus().publish("/resource/flinkcluster/change", gson.toJson(resource))
                         }
@@ -45,7 +45,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
     fun watchServices(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                kubernetesContext.watchServices(it)
+                kubeClient.watchServices(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/service/change", gson.toJson(resource))
@@ -59,7 +59,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/service/deleteAll", "")
-                        val resources = kubernetesContext.listServiceResources(namespace)
+                        val resources = kubeClient.listServiceResources(namespace)
                         resources.forEach { resource ->
                             context.owner().eventBus().publish("/resource/service/change", gson.toJson(resource))
                         }
@@ -74,7 +74,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
     fun watchDeployments(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                kubernetesContext.watchDeployments(it)
+                kubeClient.watchDeployments(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/deployment/change", gson.toJson(resource))
@@ -88,7 +88,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/deployment/deleteAll", "")
-                        val resources = kubernetesContext.listDeploymentResources(namespace)
+                        val resources = kubeClient.listDeploymentResources(namespace)
                         resources.forEach { resource ->
                             context.owner().eventBus().publish("/resource/deployment/change", gson.toJson(resource))
                         }
@@ -103,7 +103,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
     fun watchJobs(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                kubernetesContext.watchJobs(it)
+                kubeClient.watchJobs(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/job/change", gson.toJson(resource))
@@ -117,7 +117,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/job/deleteAll", "")
-                        val resources = kubernetesContext.listJobResources(namespace)
+                        val resources = kubeClient.listJobResources(namespace)
                         resources.forEach { resource ->
                             context.owner().eventBus().publish("/resource/job/change", gson.toJson(resource))
                         }
@@ -132,7 +132,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
     fun watchStatefulSets(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                kubernetesContext.watchStatefulSets(it)
+                kubeClient.watchStatefulSets(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/statefulset/change", gson.toJson(resource))
@@ -146,7 +146,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/statefulset/deleteAll", "")
-                        val resources = kubernetesContext.listStatefulSetResources(namespace)
+                        val resources = kubeClient.listStatefulSetResources(namespace)
                         resources.forEach { resource ->
                             context.owner().eventBus().publish("/resource/statefulset/change", gson.toJson(resource))
                         }
@@ -161,7 +161,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
     fun watchPersistentVolumeClaims(context: Context, namespace: String) {
         thread {
             watchResources(namespace, {
-                kubernetesContext.watchPermanentVolumeClaims(it)
+                kubeClient.watchPermanentVolumeClaims(it)
             }, { resource ->
                 context.runOnContext {
                     context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", gson.toJson(resource))
@@ -175,7 +175,7 @@ class WatchAdapter(val gson: Gson, val kubernetesContext: KubernetesContext) {
                 context.runOnContext {
                     try {
                         context.owner().eventBus().publish("/resource/persistentvolumeclaim/deleteAll", "")
-                        val resources = kubernetesContext.listPermanentVolumeClaimResources(namespace)
+                        val resources = kubeClient.listPermanentVolumeClaimResources(namespace)
                         resources.forEach { resource ->
                             context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", gson.toJson(resource))
                         }

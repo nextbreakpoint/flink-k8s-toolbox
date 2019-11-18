@@ -4,12 +4,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class SavepointUpdate(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<String, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class SavepointUpdate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<String, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(SavepointUpdate::class.simpleName)
     }
@@ -18,7 +18,7 @@ class SavepointUpdate(flinkOptions: FlinkOptions, flinkContext: FlinkContext, ku
         try {
             logger.info("Updating savepoint of cluster ${clusterId.name}...")
 
-            kubernetesContext.updateSavepointPath(clusterId, params)
+            kubeClient.updateSavepointPath(clusterId, params)
 
             return Result(
                 ResultStatus.SUCCESS,
