@@ -9,10 +9,10 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.TaskOperation
 import org.apache.log4j.Logger
 
-class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<TaskManagerId, String>(flinkOptions, flinkContext, kubernetesContext) {
+class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : TaskOperation<TaskManagerId, String>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(TaskManagerMetrics::class.simpleName)
     }

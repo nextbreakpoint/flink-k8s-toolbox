@@ -6,7 +6,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
@@ -84,28 +84,28 @@ class OperatorVerticle : AbstractVerticle() {
         private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
 
         private val tasksHandlers = mapOf(
-            OperatorTask.InitialiseCluster to InitialiseCluster(),
-            OperatorTask.TerminatedCluster to TerminateCluster(),
-            OperatorTask.SuspendCluster to SuspendCluster(),
-            OperatorTask.ClusterHalted to ClusterHalted(),
-            OperatorTask.ClusterRunning to ClusterRunning(),
-            OperatorTask.StartingCluster to StartingCluster(),
-            OperatorTask.StoppingCluster to StoppingCluster(),
-            OperatorTask.UpdatingCluster to UpdatingCluster(),
-            OperatorTask.RescaleCluster to RescaleCluster(),
-            OperatorTask.CreatingSavepoint to CreatingSavepoint(),
-            OperatorTask.TriggerSavepoint to TriggerSavepoint(),
-            OperatorTask.EraseSavepoint to EraseSavepoint(),
-            OperatorTask.CreateResources to CreateResources(),
-            OperatorTask.DeleteResources to DeleteResources(),
-            OperatorTask.ReplaceResources to ReplaceResources(),
-            OperatorTask.TerminatePods to TerminatePods(),
-            OperatorTask.RestartPods to RestartPods(),
-            OperatorTask.DeleteBootstrapJob to DeleteBootstrapJob(),
-            OperatorTask.CreateBootstrapJob to CreateBootstrapJob(),
-            OperatorTask.CancelJob to CancelJob(),
-            OperatorTask.StartJob to StartJob(),
-            OperatorTask.StopJob to StopJob()
+            ClusterTask.InitialiseCluster to InitialiseCluster(),
+            ClusterTask.TerminatedCluster to TerminateCluster(),
+            ClusterTask.SuspendCluster to SuspendCluster(),
+            ClusterTask.ClusterHalted to ClusterHalted(),
+            ClusterTask.ClusterRunning to ClusterRunning(),
+            ClusterTask.StartingCluster to StartingCluster(),
+            ClusterTask.StoppingCluster to StoppingCluster(),
+            ClusterTask.UpdatingCluster to UpdatingCluster(),
+            ClusterTask.RescaleCluster to RescaleCluster(),
+            ClusterTask.CreatingSavepoint to CreatingSavepoint(),
+            ClusterTask.TriggerSavepoint to TriggerSavepoint(),
+            ClusterTask.EraseSavepoint to EraseSavepoint(),
+            ClusterTask.CreateResources to CreateResources(),
+            ClusterTask.DeleteResources to DeleteResources(),
+            ClusterTask.ReplaceResources to ReplaceResources(),
+            ClusterTask.TerminatePods to TerminatePods(),
+            ClusterTask.RestartPods to RestartPods(),
+            ClusterTask.DeleteBootstrapJob to DeleteBootstrapJob(),
+            ClusterTask.CreateBootstrapJob to CreateBootstrapJob(),
+            ClusterTask.CancelJob to CancelJob(),
+            ClusterTask.StartJob to StartJob(),
+            ClusterTask.StopJob to StopJob()
         )
     }
 

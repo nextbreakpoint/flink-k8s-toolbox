@@ -7,10 +7,10 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.TaskOperation
 import org.apache.log4j.Logger
 
-class ClusterGetStatus(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : OperatorCommand<Void?, Map<String, String>>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterGetStatus(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<Void?, Map<String, String>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterGetStatus::class.simpleName)
     }

@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
@@ -12,16 +12,16 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.TaskOperation
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
 import org.apache.log4j.Logger
 
-class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : OperatorCommand<StartOptions, List<OperatorTask>>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext, private val cache: OperatorCache) : TaskOperation<StartOptions, List<ClusterTask>>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterStart::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: StartOptions): Result<List<OperatorTask>> {
+    override fun execute(clusterId: ClusterId, params: StartOptions): Result<List<ClusterTask>> {
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
@@ -71,7 +71,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
         }
     }
 
-    private fun tryStartingCluster(flinkCluster: V1FlinkCluster, params: StartOptions): List<OperatorTask> {
+    private fun tryStartingCluster(flinkCluster: V1FlinkCluster, params: StartOptions): List<ClusterTask> {
         val clusterStatus = OperatorState.getClusterStatus(flinkCluster)
 
         val bootstrapSpec = flinkCluster.spec?.bootstrap
@@ -80,24 +80,24 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
             when (clusterStatus) {
                 ClusterStatus.Terminated ->
                     listOf(
-                        OperatorTask.StartingCluster,
-                        OperatorTask.CreateResources,
-                        OperatorTask.ClusterRunning
+                        ClusterTask.StartingCluster,
+                        ClusterTask.CreateResources,
+                        ClusterTask.ClusterRunning
                     )
                 ClusterStatus.Suspended ->
                     listOf(
-                        OperatorTask.StartingCluster,
-                        OperatorTask.RestartPods,
-                        OperatorTask.ClusterRunning
+                        ClusterTask.StartingCluster,
+                        ClusterTask.RestartPods,
+                        ClusterTask.ClusterRunning
                     )
                 ClusterStatus.Failed ->
                     listOf(
-                        OperatorTask.StoppingCluster,
-                        OperatorTask.TerminatePods,
-                        OperatorTask.DeleteResources,
-                        OperatorTask.StartingCluster,
-                        OperatorTask.CreateResources,
-                        OperatorTask.ClusterRunning
+                        ClusterTask.StoppingCluster,
+                        ClusterTask.TerminatePods,
+                        ClusterTask.DeleteResources,
+                        ClusterTask.StartingCluster,
+                        ClusterTask.CreateResources,
+                        ClusterTask.ClusterRunning
                     )
                 else -> listOf()
             }
@@ -106,70 +106,70 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuber
                 ClusterStatus.Terminated ->
                     if (params.withoutSavepoint) {
                         listOf(
-                            OperatorTask.StartingCluster,
-                            OperatorTask.CreateResources,
-                            OperatorTask.DeleteBootstrapJob,
-                            OperatorTask.CreateBootstrapJob,
-                            OperatorTask.EraseSavepoint,
-                            OperatorTask.StartJob,
-                            OperatorTask.ClusterRunning
+                            ClusterTask.StartingCluster,
+                            ClusterTask.CreateResources,
+                            ClusterTask.DeleteBootstrapJob,
+                            ClusterTask.CreateBootstrapJob,
+                            ClusterTask.EraseSavepoint,
+                            ClusterTask.StartJob,
+                            ClusterTask.ClusterRunning
                         )
                     } else {
                         listOf(
-                            OperatorTask.StartingCluster,
-                            OperatorTask.CreateResources,
-                            OperatorTask.DeleteBootstrapJob,
-                            OperatorTask.CreateBootstrapJob,
-                            OperatorTask.StartJob,
-                            OperatorTask.ClusterRunning
+                            ClusterTask.StartingCluster,
+                            ClusterTask.CreateResources,
+                            ClusterTask.DeleteBootstrapJob,
+                            ClusterTask.CreateBootstrapJob,
+                            ClusterTask.StartJob,
+                            ClusterTask.ClusterRunning
                         )
                     }
                 ClusterStatus.Suspended ->
                     if (params.withoutSavepoint) {
                         listOf(
-                            OperatorTask.StartingCluster,
-                            OperatorTask.RestartPods,
-                            OperatorTask.DeleteBootstrapJob,
-                            OperatorTask.CreateBootstrapJob,
-                            OperatorTask.EraseSavepoint,
-                            OperatorTask.StartJob,
-                            OperatorTask.ClusterRunning
+                            ClusterTask.StartingCluster,
+                            ClusterTask.RestartPods,
+                            ClusterTask.DeleteBootstrapJob,
+                            ClusterTask.CreateBootstrapJob,
+                            ClusterTask.EraseSavepoint,
+                            ClusterTask.StartJob,
+                            ClusterTask.ClusterRunning
                         )
                     } else {
                         listOf(
-                            OperatorTask.StartingCluster,
-                            OperatorTask.RestartPods,
-                            OperatorTask.DeleteBootstrapJob,
-                            OperatorTask.CreateBootstrapJob,
-                            OperatorTask.StartJob,
-                            OperatorTask.ClusterRunning
+                            ClusterTask.StartingCluster,
+                            ClusterTask.RestartPods,
+                            ClusterTask.DeleteBootstrapJob,
+                            ClusterTask.CreateBootstrapJob,
+                            ClusterTask.StartJob,
+                            ClusterTask.ClusterRunning
                         )
                     }
                 ClusterStatus.Failed ->
                     if (params.withoutSavepoint) {
                         listOf(
-                            OperatorTask.StoppingCluster,
-                            OperatorTask.DeleteBootstrapJob,
-                            OperatorTask.TerminatePods,
-                            OperatorTask.DeleteResources,
-                            OperatorTask.StartingCluster,
-                            OperatorTask.CreateResources,
-                            OperatorTask.CreateBootstrapJob,
-                            OperatorTask.EraseSavepoint,
-                            OperatorTask.StartJob,
-                            OperatorTask.ClusterRunning
+                            ClusterTask.StoppingCluster,
+                            ClusterTask.DeleteBootstrapJob,
+                            ClusterTask.TerminatePods,
+                            ClusterTask.DeleteResources,
+                            ClusterTask.StartingCluster,
+                            ClusterTask.CreateResources,
+                            ClusterTask.CreateBootstrapJob,
+                            ClusterTask.EraseSavepoint,
+                            ClusterTask.StartJob,
+                            ClusterTask.ClusterRunning
                         )
                     } else {
                         listOf(
-                            OperatorTask.StoppingCluster,
-                            OperatorTask.DeleteBootstrapJob,
-                            OperatorTask.TerminatePods,
-                            OperatorTask.DeleteResources,
-                            OperatorTask.StartingCluster,
-                            OperatorTask.CreateResources,
-                            OperatorTask.CreateBootstrapJob,
-                            OperatorTask.StartJob,
-                            OperatorTask.ClusterRunning
+                            ClusterTask.StoppingCluster,
+                            ClusterTask.DeleteBootstrapJob,
+                            ClusterTask.TerminatePods,
+                            ClusterTask.DeleteResources,
+                            ClusterTask.StartingCluster,
+                            ClusterTask.CreateResources,
+                            ClusterTask.CreateBootstrapJob,
+                            ClusterTask.StartJob,
+                            ClusterTask.ClusterRunning
                         )
                     }
                 else -> listOf()

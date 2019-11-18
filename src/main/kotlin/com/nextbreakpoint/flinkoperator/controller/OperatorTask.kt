@@ -2,7 +2,7 @@ package com.nextbreakpoint.flinkoperator.controller
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
 
-interface OperatorTaskHandler {
+interface OperatorTask {
     fun onExecuting(context: OperatorContext): Result<String>
 
     fun onAwaiting(context: OperatorContext): Result<String>

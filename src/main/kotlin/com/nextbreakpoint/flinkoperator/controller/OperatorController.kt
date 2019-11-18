@@ -2,8 +2,9 @@ package com.nextbreakpoint.flinkoperator.controller
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
@@ -21,7 +22,6 @@ import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsSuspended
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsTerminated
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStart
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStop
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterScale
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointUpdate
 import com.nextbreakpoint.flinkoperator.controller.operation.UpdateStatus
 import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterCreate
@@ -42,6 +42,7 @@ import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStart
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStop
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCheckpointing
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterReplaceResources
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterScale
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetStatus
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetReplicas
@@ -54,7 +55,7 @@ class OperatorController(
     val flinkContext: FlinkContext,
     val kubernetesContext: KubernetesContext,
     val cache: OperatorCache,
-    val taskHandlers: Map<OperatorTask, OperatorTaskHandler>
+    val taskHandlers: Map<ClusterTask, OperatorTask>
 ) {
     fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
         RequestClusterStart(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
@@ -65,16 +66,16 @@ class OperatorController(
     fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
         RequestClusterScale(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
 
-    fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<OperatorTask>> =
+    fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<ClusterTask>> =
         ClusterStart(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
 
-    fun stopCluster(clusterId: ClusterId, options: StopOptions) : Result<List<OperatorTask>> =
+    fun stopCluster(clusterId: ClusterId, options: StopOptions) : Result<List<ClusterTask>> =
         ClusterStop(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
 
-    fun scaleCluster(clusterId: ClusterId, options: ScaleOptions) : Result<List<OperatorTask>> =
-        ClusterScale(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, options)
+    fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling) : Result<List<ClusterTask>> =
+        ClusterScale(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, clusterScaling)
 
-    fun createSavepoint(clusterId: ClusterId) : Result<List<OperatorTask>> =
+    fun createSavepoint(clusterId: ClusterId) : Result<List<ClusterTask>> =
         ClusterCheckpointing(flinkOptions, flinkContext, kubernetesContext, cache).execute(clusterId, null)
 
     fun getClusterStatus(clusterId: ClusterId) : Result<Map<String, String>> =
@@ -137,7 +138,7 @@ class OperatorController(
     fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest?> =
         JobCancel(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
 
-    fun isClusterReady(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
+    fun isClusterReady(clusterId: ClusterId, options: ClusterScaling): Result<Void?> =
         ClusterIsReady(flinkOptions, flinkContext, kubernetesContext).execute(clusterId, options)
 
     fun isClusterRunning(clusterId: ClusterId): Result<Boolean> =

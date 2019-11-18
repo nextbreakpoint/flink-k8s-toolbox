@@ -4,22 +4,22 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.TaskOperation
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import io.kubernetes.client.models.V1StatefulSet
 import org.apache.log4j.Logger
 
 class UpdateStatus(
     private val controller: OperatorController
-) : OperatorCommand<Void?, Void?>(
+) : TaskOperation<Void?, Void?>(
     controller.flinkOptions,
     controller.flinkContext,
     controller.kubernetesContext
@@ -63,7 +63,7 @@ class UpdateStatus(
         clusterId: ClusterId,
         context: OperatorContext
     ): Result<Void?> {
-        OperatorState.appendTasks(context.flinkCluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(context.flinkCluster, listOf(ClusterTask.InitialiseCluster))
         OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Unknown)
         OperatorState.setTaskAttempts(context.flinkCluster, 0)
         OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
@@ -154,11 +154,11 @@ class UpdateStatus(
     private fun updateTask(
         context: OperatorContext,
         taskStatus: TaskStatus,
-        taskHandler: OperatorTaskHandler
+        task: OperatorTask
     ): Result<out String?> {
         return when (taskStatus) {
             TaskStatus.Executing -> {
-                val result = taskHandler.onExecuting(context)
+                val result = task.onExecuting(context)
                 if (result.status == ResultStatus.SUCCESS) {
                     OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Awaiting)
                     Result(
@@ -179,7 +179,7 @@ class UpdateStatus(
                 }
             }
             TaskStatus.Awaiting -> {
-                val result = taskHandler.onAwaiting(context)
+                val result = task.onAwaiting(context)
                 if (result.status == ResultStatus.SUCCESS) {
                     OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Idle)
                     Result(
@@ -200,7 +200,7 @@ class UpdateStatus(
                 }
             }
             TaskStatus.Idle -> {
-                val result = taskHandler.onIdle(context)
+                val result = task.onIdle(context)
                 if (result.status == ResultStatus.FAILED) {
                     OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Failed)
                     Result(
@@ -222,9 +222,9 @@ class UpdateStatus(
                 }
             }
             TaskStatus.Failed -> {
-                taskHandler.onFailed(context)
+                task.onFailed(context)
                 OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Failed)
-                OperatorState.resetTasks(context.flinkCluster, listOf(OperatorTask.ClusterHalted))
+                OperatorState.resetTasks(context.flinkCluster, listOf(ClusterTask.ClusterHalted))
                 OperatorState.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
                 OperatorAnnotations.setManualAction(context.flinkCluster, ManualAction.NONE)
                 Result(
@@ -241,6 +241,6 @@ class UpdateStatus(
         annotations.forEach { (key, value) -> logger.debug("$key = $value") }
     }
 
-    private fun getOperatorTaskOrThrow(clusterTask: OperatorTask) =
+    private fun getOperatorTaskOrThrow(clusterTask: ClusterTask) =
         controller.taskHandlers.get(clusterTask) ?: throw RuntimeException("Unsupported task $clusterTask")
 }

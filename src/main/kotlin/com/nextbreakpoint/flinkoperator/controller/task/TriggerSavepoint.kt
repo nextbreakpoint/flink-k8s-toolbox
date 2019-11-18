@@ -3,14 +3,13 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
-import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorParameters
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 
-class TriggerSavepoint : OperatorTaskHandler {
+class TriggerSavepoint : OperatorTask {
     override fun onExecuting(context: OperatorContext): Result<String> {
         if (context.flinkCluster.spec?.bootstrap == null) {
             return Result(
@@ -44,7 +43,7 @@ class TriggerSavepoint : OperatorTaskHandler {
         val savepointRequest = context.controller.triggerSavepoint(context.clusterId, options)
 
         if (savepointRequest.status == ResultStatus.SUCCESS && savepointRequest.output != null) {
-            OperatorState.setSavepointRequest(context.flinkCluster, savepointRequest.output as SavepointRequest)
+            OperatorState.setSavepointRequest(context.flinkCluster, savepointRequest.output)
 
             return Result(
                 ResultStatus.SUCCESS,

@@ -5,9 +5,9 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 
-class StoppingCluster : OperatorTaskHandler {
+class StoppingCluster : OperatorTask {
     override fun onExecuting(context: OperatorContext): Result<String> {
         OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Stopping)
         OperatorState.setTaskAttempts(context.flinkCluster, 0)

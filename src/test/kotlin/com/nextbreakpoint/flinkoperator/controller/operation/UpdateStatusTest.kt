@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
@@ -16,7 +16,7 @@ import com.nextbreakpoint.flinkoperator.controller.OperatorCache
 import com.nextbreakpoint.flinkoperator.controller.OperatorController
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -38,9 +38,9 @@ class UpdateStatusTest {
     private val kubernetesContext = mock(KubernetesContext::class.java)
     private val controller = mock(OperatorController::class.java)
     private val resources = mock(OperatorResources::class.java)
-    private val handler = mock(OperatorTaskHandler::class.java)
+    private val handler = mock(OperatorTask::class.java)
     private val cache = mock(OperatorCache::class.java)
-    private val taskHandlers = mapOf(OperatorTask.InitialiseCluster to handler)
+    private val taskHandlers = mapOf(ClusterTask.InitialiseCluster to handler)
     private val command = clusterUpdateStatus()
 
     private fun clusterUpdateStatus(): UpdateStatus {
@@ -87,7 +87,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Executing)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Unknown)
         assertThat(OperatorState.getTaskAttempts(cluster)).isEqualTo(0)
@@ -95,7 +95,7 @@ class UpdateStatusTest {
 
     @Test
     fun `should fail when task handler is not defined`() {
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.ClusterRunning))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -116,7 +116,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is executing and result status is success`() {
         given(handler.onExecuting(any())).thenReturn(Result(status = ResultStatus.SUCCESS, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Executing)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -134,7 +134,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Awaiting)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -143,7 +143,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is executing and result status is failed`() {
         given(handler.onExecuting(any())).thenReturn(Result(status = ResultStatus.FAILED, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Executing)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -161,7 +161,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Failed)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -170,7 +170,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is executing and result status is await`() {
         given(handler.onExecuting(any())).thenReturn(Result(status = ResultStatus.AWAIT, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Executing)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -187,7 +187,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNull()
         assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Executing)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -196,7 +196,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is awaiting and result status is success`() {
         given(handler.onAwaiting(any())).thenReturn(Result(status = ResultStatus.SUCCESS, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Awaiting)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -214,7 +214,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Idle)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -223,7 +223,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is awaiting and result status is failed`() {
         given(handler.onAwaiting(any())).thenReturn(Result(status = ResultStatus.FAILED, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Awaiting)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -241,7 +241,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Failed)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -250,7 +250,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is awaiting and result status is await`() {
         given(handler.onAwaiting(any())).thenReturn(Result(status = ResultStatus.AWAIT, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Awaiting)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -267,7 +267,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNull()
         assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Awaiting)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -276,7 +276,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is idle and there is a new task`() {
         given(handler.onIdle(any())).thenReturn(Result(status = ResultStatus.SUCCESS, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster, OperatorTask.ClusterRunning))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster, ClusterTask.ClusterRunning))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -294,7 +294,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterRunning)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.ClusterRunning)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Executing)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -303,7 +303,7 @@ class UpdateStatusTest {
     fun `should not update cluster resource when task status is idle and there isn't a new task`() {
         given(handler.onIdle(any())).thenReturn(Result(status = ResultStatus.SUCCESS, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -320,7 +320,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNull()
         assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Idle)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -329,7 +329,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is idle and result status is failed`() {
         given(handler.onIdle(any())).thenReturn(Result(status = ResultStatus.FAILED, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster, OperatorTask.ClusterRunning))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster, ClusterTask.ClusterRunning))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -347,7 +347,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Failed)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }
@@ -356,7 +356,7 @@ class UpdateStatusTest {
     fun `should update cluster resource when task status is failed`() {
         given(handler.onFailed(any())).thenReturn(Result(status = ResultStatus.SUCCESS, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Failed)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster, OperatorTask.ClusterRunning))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster, ClusterTask.ClusterRunning))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -375,7 +375,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
         assertThat(timestamp).isNotEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.ClusterHalted)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.ClusterHalted)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Executing)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Failed)
         assertThat(OperatorAnnotations.getManualAction(cluster)).isEqualTo(ManualAction.NONE)
@@ -386,7 +386,7 @@ class UpdateStatusTest {
         cluster.spec.operator.savepointPath = "file://tmp/000"
         given(handler.onIdle(any())).thenReturn(Result(status = ResultStatus.SUCCESS, output = ""))
         OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.InitialiseCluster))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = OperatorState.getOperatorTimestamp(cluster)
         val result = command.execute(clusterId, null)
         verifyNoMoreInteractions(kubernetesContext)
@@ -404,7 +404,7 @@ class UpdateStatusTest {
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNull()
         assertThat(timestamp).isEqualTo(OperatorState.getOperatorTimestamp(cluster))
-        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(OperatorTask.InitialiseCluster)
+        assertThat(OperatorState.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
         assertThat(OperatorState.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Idle)
         assertThat(OperatorState.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
     }

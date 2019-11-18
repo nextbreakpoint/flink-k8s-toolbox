@@ -6,11 +6,11 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
 import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.TaskOperation
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import org.apache.log4j.Logger
 
-class ClusterCreateResources(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<ClusterResources, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterCreateResources(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : TaskOperation<ClusterResources, Void?>(flinkOptions, flinkContext, kubernetesContext) {
     companion object {
         private val logger = Logger.getLogger(ClusterCreateResources::class.simpleName)
     }

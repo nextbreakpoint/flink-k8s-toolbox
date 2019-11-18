@@ -4,11 +4,11 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import org.apache.log4j.Logger
 
-class RescaleCluster : OperatorTaskHandler {
+class RescaleCluster : OperatorTask {
     companion object {
         private val logger = Logger.getLogger(RescaleCluster::class.simpleName)
     }

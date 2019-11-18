@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
@@ -34,7 +34,7 @@ class ClusterCheckpointingTest {
     fun configure() {
         OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
         OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.ClusterRunning))
+        OperatorState.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 
@@ -75,7 +75,7 @@ class ClusterCheckpointingTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.ClusterRunning
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -90,7 +90,7 @@ class ClusterCheckpointingTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.ClusterRunning
+            ClusterTask.ClusterRunning
         ))
     }
 
@@ -104,9 +104,9 @@ class ClusterCheckpointingTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            OperatorTask.CreatingSavepoint,
-            OperatorTask.TriggerSavepoint,
-            OperatorTask.ClusterRunning
+            ClusterTask.CreatingSavepoint,
+            ClusterTask.TriggerSavepoint,
+            ClusterTask.ClusterRunning
         ))
     }
 }

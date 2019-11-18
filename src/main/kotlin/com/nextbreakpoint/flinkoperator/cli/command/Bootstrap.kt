@@ -9,9 +9,9 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
 import org.apache.log4j.Logger
 import java.io.File
 
-class BootstrapJAR : BootstrapCommand<BootstrapOptions> {
+class Bootstrap : BootstrapCommand<BootstrapOptions> {
     companion object {
-        private val logger = Logger.getLogger(BootstrapJAR::class.simpleName)
+        private val logger = Logger.getLogger(Bootstrap::class.simpleName)
     }
 
     override fun run(flinkOptions: FlinkOptions, namespace: String, clusterName: String, args: BootstrapOptions) {

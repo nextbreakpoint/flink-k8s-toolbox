@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.common.model
 
-enum class OperatorTask {
+enum class ClusterTask {
     InitialiseCluster,
     TerminatedCluster,
     SuspendCluster,

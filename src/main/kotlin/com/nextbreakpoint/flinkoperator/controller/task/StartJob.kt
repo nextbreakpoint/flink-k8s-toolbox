@@ -3,10 +3,10 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 
-class StartJob : OperatorTaskHandler {
+class StartJob : OperatorTask {
     override fun onExecuting(context: OperatorContext): Result<String> {
         if (context.flinkCluster.spec?.bootstrap == null) {
             return Result(

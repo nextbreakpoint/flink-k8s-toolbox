@@ -2,12 +2,12 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.controller.OperatorContext
 import com.nextbreakpoint.flinkoperator.controller.OperatorResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.OperatorTask
 import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
@@ -16,7 +16,7 @@ import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesSta
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 import org.apache.log4j.Logger
 
-class ReplaceResources : OperatorTaskHandler {
+class ReplaceResources : OperatorTask {
     companion object {
         private val logger: Logger = Logger.getLogger(ReplaceResources::class.simpleName)
     }
@@ -35,12 +35,12 @@ class ReplaceResources : OperatorTaskHandler {
 
         val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
 
-        val options = ScaleOptions(
+        val clusterScaling = ClusterScaling(
             taskManagers = context.flinkCluster.status.taskManagers,
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        val response = context.controller.isClusterReady(context.clusterId, options)
+        val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
 
         if (!context.haveClusterResourcesDiverged(clusterStatus) && response.status == ResultStatus.SUCCESS) {
             return Result(
@@ -112,12 +112,12 @@ class ReplaceResources : OperatorTaskHandler {
 //            )
 //        }
 
-        val options = ScaleOptions(
+        val clusterScaling = ClusterScaling(
             taskManagers = context.flinkCluster.status.taskManagers,
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        val response = context.controller.isClusterReady(context.clusterId, options)
+        val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
 
         if (response.status == ResultStatus.SUCCESS) {
             return Result(
