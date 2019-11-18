@@ -4,19 +4,19 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class TaskManagersGetReplicas(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<Void?, Int>(flinkOptions, flinkContext, kubernetesContext) {
+class TaskManagersGetReplicas(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Int>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(TaskManagersGetReplicas::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Int> {
         try {
-            val replicas = kubernetesContext.getTaskManagerStatefulSetReplicas(clusterId)
+            val replicas = kubeClient.getTaskManagerStatefulSetReplicas(clusterId)
 
             return Result(
                 ResultStatus.SUCCESS,

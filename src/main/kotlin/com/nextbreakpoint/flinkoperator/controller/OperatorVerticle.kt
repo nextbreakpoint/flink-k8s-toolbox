@@ -5,16 +5,16 @@ import com.nextbreakpoint.flinkoperator.common.crd.DateTimeSerializer
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
+import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
@@ -25,15 +25,16 @@ import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersList
 import com.nextbreakpoint.flinkoperator.controller.task.CancelJob
-import com.nextbreakpoint.flinkoperator.controller.task.CreatingSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.ClusterHalted
 import com.nextbreakpoint.flinkoperator.controller.task.ClusterRunning
+import com.nextbreakpoint.flinkoperator.controller.task.CreateBootstrapJob
 import com.nextbreakpoint.flinkoperator.controller.task.CreateResources
-import com.nextbreakpoint.flinkoperator.controller.task.TriggerSavepoint
-import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
+import com.nextbreakpoint.flinkoperator.controller.task.CreatingSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.DeleteBootstrapJob
+import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
 import com.nextbreakpoint.flinkoperator.controller.task.EraseSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.InitialiseCluster
+import com.nextbreakpoint.flinkoperator.controller.task.ReplaceResources
 import com.nextbreakpoint.flinkoperator.controller.task.RescaleCluster
 import com.nextbreakpoint.flinkoperator.controller.task.RestartPods
 import com.nextbreakpoint.flinkoperator.controller.task.StartJob
@@ -43,8 +44,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.StoppingCluster
 import com.nextbreakpoint.flinkoperator.controller.task.SuspendCluster
 import com.nextbreakpoint.flinkoperator.controller.task.TerminateCluster
 import com.nextbreakpoint.flinkoperator.controller.task.TerminatePods
-import com.nextbreakpoint.flinkoperator.controller.task.CreateBootstrapJob
-import com.nextbreakpoint.flinkoperator.controller.task.ReplaceResources
+import com.nextbreakpoint.flinkoperator.controller.task.TriggerSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.UpdatingCluster
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1ObjectMeta
@@ -143,19 +143,19 @@ class OperatorVerticle : AbstractVerticle() {
             useNodePort = useNodePort
         )
 
-        val kubernetesContext = KubernetesContext
+        val kubeClient = KubeClient
 
-        val flinkContext = FlinkContext
+        val flinkClient = FlinkClient
 
         val watch =
-            WatchAdapter(gson, kubernetesContext)
+            WatchAdapter(gson, kubeClient)
 
         val cache = Cache()
 
         val controller = OperationController(
             flinkOptions,
-            flinkContext,
-            kubernetesContext,
+            flinkClient,
+            kubeClient,
             cache,
             tasksHandlers
         )
@@ -226,37 +226,37 @@ class OperatorVerticle : AbstractVerticle() {
 
         mainRouter.get("/cluster/:name/job/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobDetails(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
+                JobDetails(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/job/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobMetrics(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
+                JobMetrics(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/jobmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                JobManagerMetrics(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
+                JobManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagersList(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
+                TaskManagersList(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/details").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerDetails(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
+                TaskManagerDetails(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
             ) })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/metrics").handler { routingContext ->
             handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerMetrics(flinkOptions, flinkContext, kubernetesContext).execute(cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
+                TaskManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
             ) })
         }
 
@@ -455,7 +455,7 @@ class OperatorVerticle : AbstractVerticle() {
 
     private fun makeV1FlinkCluster(context: RoutingContext, namespace: String): V1FlinkCluster {
         val objectMeta = V1ObjectMeta().namespace(namespace).name(context.pathParam("name"))
-        val flinkClusterSpec = CustomResources.parseV1FlinkClusterSpec(context.bodyAsString)
+        val flinkClusterSpec = ClusterResource.parseV1FlinkClusterSpec(context.bodyAsString)
         val flinkCluster = V1FlinkCluster()
         flinkCluster.metadata = objectMeta
         flinkCluster.spec = flinkClusterSpec

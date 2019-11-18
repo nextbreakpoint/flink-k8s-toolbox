@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.testing
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
@@ -16,7 +16,7 @@ import io.kubernetes.client.models.V1StatefulSetBuilder
 
 object TestFactory {
     fun aCluster(name: String, namespace: String, taskManagers: Int = 1, taskSlots: Int = 1): V1FlinkCluster {
-        val flinkClusterSpec = CustomResources.parseV1FlinkClusterSpec(
+        val flinkClusterSpec = ClusterResource.parseV1FlinkClusterSpec(
             """
             {
               "taskManagers": $taskManagers,

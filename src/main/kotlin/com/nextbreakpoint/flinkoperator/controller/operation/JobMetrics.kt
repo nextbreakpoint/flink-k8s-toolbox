@@ -6,21 +6,21 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.JobStats
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class JobMetrics(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<Void?, String>(flinkOptions, flinkContext, kubernetesContext) {
+class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, String>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobMetrics::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val runningJobs = flinkContext.listRunningJobs(address)
+            val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.isEmpty()) {
                 logger.info("Can't find a running job in cluster ${clusterId.name}")
@@ -35,7 +35,7 @@ class JobMetrics(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuberne
                 logger.warn("There are multiple jobs running in cluster ${clusterId.name}")
             }
 
-            val metrics = flinkContext.getJobMetrics(address, runningJobs.first(),
+            val metrics = flinkClient.getJobMetrics(address, runningJobs.first(),
                 "totalNumberOfCheckpoints,numberOfCompletedCheckpoints,numberOfInProgressCheckpoints,numberOfFailedCheckpoints,lastCheckpointDuration,lastCheckpointSize,lastCheckpointRestoreTimestamp,lastCheckpointAlignmentBuffered,lastCheckpointExternalPath,fullRestarts,restartingTime,uptime,downtime"
             )
 

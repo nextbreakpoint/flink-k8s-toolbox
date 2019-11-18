@@ -7,8 +7,8 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.JobStats
 import com.nextbreakpoint.flinkoperator.common.model.Metric
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -23,25 +23,25 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 class JobMetricsTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
-    private val flinkContext = mock(FlinkContext::class.java)
-    private val kubernetesContext = mock(KubernetesContext::class.java)
+    private val flinkClient = mock(FlinkClient::class.java)
+    private val kubeClient = mock(KubeClient::class.java)
     private val flinkAddress = FlinkAddress(host = "localhost", port = 8080)
-    private val command = JobMetrics(flinkOptions, flinkContext, kubernetesContext)
+    private val command = JobMetrics(flinkOptions, flinkClient, kubeClient)
 
     @BeforeEach
     fun configure() {
-        given(kubernetesContext.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenReturn(flinkAddress)
-        given(flinkContext.getJobMetrics(eq(flinkAddress), eq("1"), any())).thenReturn(listOf(Metric("totalNumberOfCheckpoints", "10"), Metric("lastCheckpointSize", "100")))
-        given(flinkContext.listRunningJobs(eq(flinkAddress))).thenReturn(listOf("1"))
+        given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenReturn(flinkAddress)
+        given(flinkClient.getJobMetrics(eq(flinkAddress), eq("1"), any())).thenReturn(listOf(Metric("totalNumberOfCheckpoints", "10"), Metric("lastCheckpointSize", "100")))
+        given(flinkClient.listRunningJobs(eq(flinkAddress))).thenReturn(listOf("1"))
     }
 
     @Test
-    fun `should fail when kubernetesContext throws exception`() {
-        given(kubernetesContext.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
+    fun `should fail when kubeClient throws exception`() {
+        given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isEqualTo("{}")
@@ -49,12 +49,12 @@ class JobMetricsTest {
 
     @Test
     fun `should return expected result when there aren't running jobs`() {
-        given(flinkContext.listRunningJobs(eq(flinkAddress))).thenReturn(listOf())
+        given(flinkClient.listRunningJobs(eq(flinkAddress))).thenReturn(listOf())
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
-        verify(flinkContext, times(1)).listRunningJobs(eq(flinkAddress))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
+        verify(flinkClient, times(1)).listRunningJobs(eq(flinkAddress))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isEqualTo("{}")
@@ -63,11 +63,11 @@ class JobMetricsTest {
     @Test
     fun `should return expected result`() {
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
-        verify(flinkContext, times(1)).listRunningJobs(eq(flinkAddress))
-        verify(flinkContext, times(1)).getJobMetrics(eq(flinkAddress), eq("1"), any())
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
+        verify(flinkClient, times(1)).listRunningJobs(eq(flinkAddress))
+        verify(flinkClient, times(1)).getJobMetrics(eq(flinkAddress), eq("1"), any())
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         val metrics = Gson().fromJson(result.output, JobStats::class.java)

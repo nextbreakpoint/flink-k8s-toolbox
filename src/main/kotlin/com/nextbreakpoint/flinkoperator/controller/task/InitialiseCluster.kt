@@ -4,10 +4,10 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 
 class InitialiseCluster : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
@@ -32,10 +32,10 @@ class InitialiseCluster : Task {
             )
         }
 
-        val jobManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.jobManager)
-        val taskManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.taskManager)
-        val runtimeDigest = CustomResources.computeDigest(context.flinkCluster.spec?.runtime)
-        val bootstrapDigest = CustomResources.computeDigest(context.flinkCluster.spec?.bootstrap)
+        val jobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
+        val taskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
+        val runtimeDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.runtime)
+        val bootstrapDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.bootstrap)
 
         Status.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
         Status.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
@@ -51,7 +51,7 @@ class InitialiseCluster : Task {
         val savepointPath = context.flinkCluster.spec?.operator?.savepointPath
         Status.setSavepointPath(context.flinkCluster, savepointPath)
 
-        val labelSelector = CustomResources.makeLabelSelector(context.clusterId)
+        val labelSelector = ClusterResource.makeLabelSelector(context.clusterId)
         Status.setLabelSelector(context.flinkCluster, labelSelector)
 
         return Result(

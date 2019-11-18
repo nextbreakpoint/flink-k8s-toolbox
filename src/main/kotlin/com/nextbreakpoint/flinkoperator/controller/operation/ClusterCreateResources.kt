@@ -4,24 +4,24 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import org.apache.log4j.Logger
 
-class ClusterCreateResources(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<ClusterResources, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterCreateResources(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<ClusterResources, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(ClusterCreateResources::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
-            val services = kubernetesContext.listJobManagerServices(clusterId)
+            val services = kubeClient.listJobManagerServices(clusterId)
 
-            val jobmanagerStatefulSets = kubernetesContext.listJobManagerStatefulSets(clusterId)
+            val jobmanagerStatefulSets = kubeClient.listJobManagerStatefulSets(clusterId)
 
-            val taskmanagerStatefulSets = kubernetesContext.listTaskManagerStatefulSets(clusterId)
+            val taskmanagerStatefulSets = kubeClient.listTaskManagerStatefulSets(clusterId)
 
             if (services.items.isNotEmpty() || jobmanagerStatefulSets.items.isNotEmpty() || taskmanagerStatefulSets.items.isNotEmpty()) {
                 throw RuntimeException("Previous resources already exist")
@@ -29,15 +29,15 @@ class ClusterCreateResources(flinkOptions: FlinkOptions, flinkContext: FlinkCont
 
             logger.info("Creating resources of cluster ${clusterId.name}...")
 
-            val jobmanagerServiceOut = kubernetesContext.createJobManagerService(clusterId, params)
+            val jobmanagerServiceOut = kubeClient.createJobManagerService(clusterId, params)
 
             logger.info("Service created ${jobmanagerServiceOut.metadata.name}")
 
-            val jobmanagerStatefulSetOut = kubernetesContext.createJobManagerStatefulSet(clusterId, params)
+            val jobmanagerStatefulSetOut = kubeClient.createJobManagerStatefulSet(clusterId, params)
 
             logger.info("JobManager created ${jobmanagerStatefulSetOut.metadata.name}")
 
-            val taskmanagerStatefulSetOut = kubernetesContext.createTaskManagerStatefulSet(clusterId, params)
+            val taskmanagerStatefulSetOut = kubeClient.createTaskManagerStatefulSet(clusterId, params)
 
             logger.info("TaskManager created ${taskmanagerStatefulSetOut.metadata.name}")
 

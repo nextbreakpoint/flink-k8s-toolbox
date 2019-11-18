@@ -9,7 +9,6 @@ import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;

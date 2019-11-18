@@ -8,6 +8,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
+import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 import com.nextbreakpoint.flinkoperator.common.model.ConnectionConfig
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
@@ -15,8 +16,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import org.apache.log4j.Logger
 import java.io.File
 import java.nio.file.Files
@@ -447,7 +447,7 @@ class Main(private val factory: CommandFactory) {
                 truststorePath = truststorePath,
                 truststoreSecret = truststoreSecret
             )
-            KubernetesContext.configure(kubeConfig)
+            KubeClient.configure(kubeConfig)
             factory.createRunOperatorCommand().run(config)
         }
     }
@@ -464,7 +464,7 @@ class Main(private val factory: CommandFactory) {
             val params = BootstrapOptions(
                 jarPath = jarPath
             )
-            KubernetesContext.configure(kubeConfig)
+            KubeClient.configure(kubeConfig)
             val flinkOptions = FlinkOptions(
                 hostname = flinkHostname,
                 portForward = portForward,

@@ -3,12 +3,12 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
+import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
@@ -26,10 +26,10 @@ class ClusterScaleTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
-    private val flinkContext = mock(FlinkContext::class.java)
-    private val kubernetesContext = mock(KubernetesContext::class.java)
+    private val flinkClient = mock(FlinkClient::class.java)
+    private val kubeClient = mock(KubeClient::class.java)
     private val operatorCache = mock(Cache::class.java)
-    private val command = ClusterScale(flinkOptions, flinkContext, kubernetesContext, operatorCache)
+    private val command = ClusterScale(flinkOptions, flinkClient, kubeClient, operatorCache)
 
     @BeforeEach
     fun configure() {
@@ -44,8 +44,8 @@ class ClusterScaleTest {
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, ClusterScaling(taskManagers = 4, taskSlots = 2))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
@@ -57,8 +57,8 @@ class ClusterScaleTest {
         Status.setTaskStatus(cluster, TaskStatus.Awaiting)
         val result = command.execute(clusterId, ClusterScaling(taskManagers = 4, taskSlots = 2))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -75,8 +75,8 @@ class ClusterScaleTest {
         Status.resetTasks(cluster, listOf(ClusterTask.ClusterHalted))
         val result = command.execute(clusterId, ClusterScaling(taskManagers = 4, taskSlots = 2))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -92,8 +92,8 @@ class ClusterScaleTest {
         cluster.spec.bootstrap = null
         val result = command.execute(clusterId, ClusterScaling(taskManagers = 4, taskSlots = 2))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -110,8 +110,8 @@ class ClusterScaleTest {
         cluster.spec.bootstrap = null
         val result = command.execute(clusterId, ClusterScaling(taskManagers = 0, taskSlots = 2))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -129,8 +129,8 @@ class ClusterScaleTest {
     fun `should return expected result when job is defined and cluster is running`() {
         val result = command.execute(clusterId, ClusterScaling(taskManagers = 4, taskSlots = 2))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -152,8 +152,8 @@ class ClusterScaleTest {
     fun `should return expected result when job is defined and cluster is running and no task managers`() {
         val result = command.execute(clusterId, ClusterScaling(taskManagers = 0, taskSlots = 2))
         verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)

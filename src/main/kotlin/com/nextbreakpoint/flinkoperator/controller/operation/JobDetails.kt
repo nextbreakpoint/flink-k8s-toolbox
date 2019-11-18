@@ -5,21 +5,21 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class JobDetails(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<Void?, String>(flinkOptions, flinkContext, kubernetesContext) {
+class JobDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, String>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobDetails::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val runningJobs = flinkContext.listRunningJobs(address)
+            val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.isEmpty()) {
                 logger.error("There is no running job in cluster ${clusterId.name}")
@@ -39,7 +39,7 @@ class JobDetails(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kuberne
                 )
             }
 
-            val details = flinkContext.getJobDetails(address, runningJobs.first())
+            val details = flinkClient.getJobDetails(address, runningJobs.first())
 
             return Result(
                 ResultStatus.SUCCESS,

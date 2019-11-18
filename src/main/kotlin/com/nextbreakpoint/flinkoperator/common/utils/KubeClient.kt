@@ -40,8 +40,8 @@ import java.io.FileInputStream
 import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 
-object KubernetesContext {
-    private val logger = Logger.getLogger(KubernetesContext::class.simpleName)
+object KubeClient {
+    private val logger = Logger.getLogger(KubeClient::class.simpleName)
 
     private val objectApi = CustomObjectsApi()
     private val batchApi = BatchV1Api()
@@ -54,15 +54,15 @@ object KubernetesContext {
     private val appsApiWatch = AppsV1Api()
 
     fun configure(kubeConfig: String?) {
-        Configuration.setDefaultApiClient(createKubernetesClient(kubeConfig, 10000))
+        Configuration.setDefaultApiClient(createKubernetesApiClient(kubeConfig, 10000))
         objectApi.apiClient = Configuration.getDefaultApiClient()
         batchApi.apiClient = Configuration.getDefaultApiClient()
         coreApi.apiClient = Configuration.getDefaultApiClient()
         appsApi.apiClient = Configuration.getDefaultApiClient()
-        objectApiWatch.apiClient = createKubernetesClient(kubeConfig, 0)
-        batchApiWatch.apiClient = createKubernetesClient(kubeConfig, 0)
-        coreApiWatch.apiClient = createKubernetesClient(kubeConfig, 0)
-        appsApiWatch.apiClient = createKubernetesClient(kubeConfig, 0)
+        objectApiWatch.apiClient = createKubernetesApiClient(kubeConfig, 0)
+        batchApiWatch.apiClient = createKubernetesApiClient(kubeConfig, 0)
+        coreApiWatch.apiClient = createKubernetesApiClient(kubeConfig, 0)
+        appsApiWatch.apiClient = createKubernetesApiClient(kubeConfig, 0)
     }
 
     fun findFlinkAddress(flinkOptions: FlinkOptions, namespace: String, clusterName: String): FlinkAddress {
@@ -114,7 +114,7 @@ object KubernetesContext {
                 }
 
                 body.source().use { source ->
-                    val flinkCluster = CustomResources.parseV1FlinkCluster(source.readUtf8Line())
+                    val flinkCluster = ClusterResource.parseV1FlinkCluster(source.readUtf8Line())
 
                     val clusterId = flinkCluster.metadata.uid
 
@@ -380,7 +380,7 @@ object KubernetesContext {
             }
 
             return body.source().use { source ->
-                CustomResources.parseV1FlinkClusterList(source.readUtf8Line()).items
+                ClusterResource.parseV1FlinkClusterList(source.readUtf8Line()).items
             }
         }
     }
@@ -403,7 +403,7 @@ object KubernetesContext {
             }
 
             return body.source().use { source ->
-                CustomResources.parseV1FlinkCluster(source.readUtf8Line())
+                ClusterResource.parseV1FlinkCluster(source.readUtf8Line())
             }
         }
     }
@@ -1343,7 +1343,7 @@ object KubernetesContext {
         }
     }
 
-    private fun createKubernetesClient(kubeConfig: String?, timeout: Long): ApiClient? {
+    private fun createKubernetesApiClient(kubeConfig: String?, timeout: Long): ApiClient? {
         val client = if (kubeConfig?.isNotBlank() == true) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
         client.httpClient.setConnectTimeout(timeout, TimeUnit.MILLISECONDS)
         client.httpClient.setWriteTimeout(timeout, TimeUnit.MILLISECONDS)

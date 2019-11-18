@@ -1,5 +1,6 @@
 package com.nextbreakpoint.flinkoperator.cli
 
+import com.nextbreakpoint.flinkoperator.cli.command.Bootstrap
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterCreate
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterDelete
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterScale
@@ -14,7 +15,6 @@ import com.nextbreakpoint.flinkoperator.cli.command.SavepointTrigger
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagerMetrics
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagersList
-import com.nextbreakpoint.flinkoperator.cli.command.Bootstrap
 
 object DefaultCommandFactory : CommandFactory {
     override fun createRunOperatorCommand() = LaunchOperator()

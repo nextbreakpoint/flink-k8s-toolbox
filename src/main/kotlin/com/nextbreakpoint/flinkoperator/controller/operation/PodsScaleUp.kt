@@ -4,24 +4,24 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import org.apache.log4j.Logger
 
-class PodsRestart(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : Operation<ClusterResources, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class PodsScaleUp(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<ClusterResources, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(PodsRestart::class.simpleName)
+        private val logger = Logger.getLogger(PodsScaleUp::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
             logger.info("Restarting pods of cluster ${clusterId.name}...")
 
-            kubernetesContext.restartJobManagerStatefulSets(clusterId, params)
+            kubeClient.restartJobManagerStatefulSets(clusterId, params)
 
-            kubernetesContext.restartTaskManagerStatefulSets(clusterId, params)
+            kubeClient.restartTaskManagerStatefulSets(clusterId, params)
 
             return Result(
                 ResultStatus.SUCCESS,

@@ -3,8 +3,8 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import org.assertj.core.api.Assertions.assertThat
@@ -15,24 +15,24 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class PodsTerminateTest {
+class PodsScaleDownTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
-    private val flinkContext = mock(FlinkContext::class.java)
-    private val kubernetesContext = mock(KubernetesContext::class.java)
-    private val command = PodsTerminate(flinkOptions, flinkContext, kubernetesContext)
+    private val flinkClient = mock(FlinkClient::class.java)
+    private val kubeClient = mock(KubeClient::class.java)
+    private val command = PodsScaleDown(flinkOptions, flinkClient, kubeClient)
 
     @BeforeEach
     fun configure() {
     }
 
     @Test
-    fun `should fail when kubernetesContext throws exception`() {
-        given(kubernetesContext.terminateStatefulSets(eq(clusterId))).thenThrow(RuntimeException::class.java)
+    fun `should fail when kubeClient throws exception`() {
+        given(kubeClient.terminateStatefulSets(eq(clusterId))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).terminateStatefulSets(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).terminateStatefulSets(eq(clusterId))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
@@ -41,9 +41,9 @@ class PodsTerminateTest {
     @Test
     fun `should return expected result`() {
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).terminateStatefulSets(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).terminateStatefulSets(eq(clusterId))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
