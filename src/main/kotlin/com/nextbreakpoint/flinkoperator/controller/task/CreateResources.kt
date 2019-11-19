@@ -40,13 +40,7 @@ class CreateResources : Task {
             return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} already created")
         }
 
-        val clusterResources = ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
-            context.flinkCluster.metadata.namespace,
-            context.clusterId.uuid,
-            "flink-operator",
-            context.flinkCluster
-        ).build()
+        val clusterResources = createClusterResources(context.clusterId, context.flinkCluster)
 
         val createResponse = context.controller.createClusterResources(context.clusterId, clusterResources)
 

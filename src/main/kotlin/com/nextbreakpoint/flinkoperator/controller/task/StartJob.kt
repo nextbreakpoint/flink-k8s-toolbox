@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
@@ -26,9 +25,9 @@ class StartJob : Task {
             return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} already started")
         }
 
-        val runJarResponse = context.controller.startJob(context.clusterId, context.flinkCluster)
+        val startJobResponse = context.controller.startJob(context.clusterId, context.flinkCluster)
 
-        if (runJarResponse.isCompleted()) {
+        if (startJobResponse.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Starting job of cluster ${context.flinkCluster.metadata.name}...")
         }
 
