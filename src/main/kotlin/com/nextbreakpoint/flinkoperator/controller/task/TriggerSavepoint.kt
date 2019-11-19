@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.controller.core.Configuration
 import com.nextbreakpoint.flinkoperator.controller.core.Status
@@ -23,9 +22,9 @@ class TriggerSavepoint : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val prevSavepointRequest = Status.getSavepointRequest(context.flinkCluster)
+        val savepointRequest = Status.getSavepointRequest(context.flinkCluster)
 
-        if (prevSavepointRequest != null) {
+        if (savepointRequest != null) {
             return taskCompletedWithOutput(context.flinkCluster, "Savepoint of cluster ${context.flinkCluster.metadata.name} is already in progress...")
         }
 
@@ -33,15 +32,19 @@ class TriggerSavepoint : Task {
             targetPath = Configuration.getSavepointTargetPath(context.flinkCluster)
         )
 
-        val savepointRequest = context.controller.triggerSavepoint(context.clusterId, options)
+        val response = context.controller.triggerSavepoint(context.clusterId, options)
 
-        if (savepointRequest.isCompleted() && savepointRequest.output != null) {
-            Status.setSavepointRequest(context.flinkCluster, savepointRequest.output)
-
-            return taskCompletedWithOutput(context.flinkCluster, "Creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
+        if (!response.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
+        if (response.output == null) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
+        }
+
+        Status.setSavepointRequest(context.flinkCluster, response.output)
+
+        return taskCompletedWithOutput(context.flinkCluster, "Creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -61,15 +64,13 @@ class TriggerSavepoint : Task {
 
         val completedSavepoint = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
 
-        if (completedSavepoint.isCompleted()) {
-            if (Configuration.getSavepointPath(context.flinkCluster) != completedSavepoint.output) {
-                Status.setSavepointPath(context.flinkCluster, completedSavepoint.output)
-            }
-
-            return taskCompletedWithOutput(context.flinkCluster, "Savepoint of cluster ${context.flinkCluster.metadata.name} created in $seconds seconds")
+        if (!completedSavepoint.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for completion of savepoint of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Wait for completion of savepoint of cluster ${context.flinkCluster.metadata.name}...")
+        Status.setSavepointPath(context.flinkCluster, completedSavepoint.output)
+
+        return taskCompletedWithOutput(context.flinkCluster, "Savepoint of cluster ${context.flinkCluster.metadata.name} created in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

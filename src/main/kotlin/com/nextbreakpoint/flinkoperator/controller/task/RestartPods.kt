@@ -19,13 +19,7 @@ class RestartPods : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val clusterResources = ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
-            context.flinkCluster.metadata.namespace,
-            context.clusterId.uuid,
-            "flink-operator",
-            context.flinkCluster
-        ).build()
+        val clusterResources = createClusterResources(context.clusterId, context.flinkCluster)
 
         val response = context.controller.restartPods(context.clusterId, clusterResources)
 

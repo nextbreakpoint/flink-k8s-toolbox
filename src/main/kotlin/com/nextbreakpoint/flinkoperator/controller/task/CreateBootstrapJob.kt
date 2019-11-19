@@ -1,12 +1,9 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 
 class CreateBootstrapJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
@@ -22,13 +19,7 @@ class CreateBootstrapJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to upload JAR file to cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val clusterResources = ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
-            context.flinkCluster.metadata.namespace,
-            context.clusterId.uuid,
-            "flink-operator",
-            context.flinkCluster
-        ).build()
+        val clusterResources = createClusterResources(context.clusterId, context.flinkCluster)
 
         val removeJarResponse = context.controller.removeJar(context.clusterId)
 
