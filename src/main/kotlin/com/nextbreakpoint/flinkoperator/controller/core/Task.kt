@@ -6,6 +6,8 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
+import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
+import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesValidator
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 
 interface Task {
@@ -32,5 +34,43 @@ interface Task {
         return ClusterResourcesBuilder(
             DefaultClusterResourcesFactory, clusterId.namespace, clusterId.uuid, "flink-operator", cluster
         ).build()
+    }
+
+    fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: CachedResources): ClusterResourcesStatus {
+        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
+        val jobmnagerService = resources.jobmanagerServices.get(clusterId)
+        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
+        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
+
+        val actualResources = ClusterResources(
+            bootstrapJob = bootstrapJob,
+            jobmanagerService = jobmnagerService,
+            jobmanagerStatefulSet = jobmanagerStatefulSet,
+            taskmanagerStatefulSet = taskmanagerStatefulSet
+        )
+
+        return ClusterResourcesValidator().evaluate(clusterId, cluster, actualResources)
+    }
+
+    fun resourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
+        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
+        val jobmnagerService = resources.jobmanagerServices.get(clusterId)
+        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
+        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
+        val jobmanagerPersistentVolumeClaim = resources.jobmanagerPersistentVolumeClaims.get(clusterId)
+        val taskmanagerPersistentVolumeClaim = resources.taskmanagerPersistentVolumeClaims.get(clusterId)
+
+        return bootstrapJob == null &&
+                jobmnagerService == null &&
+                jobmanagerStatefulSet == null &&
+                taskmanagerStatefulSet == null &&
+                jobmanagerPersistentVolumeClaim == null &&
+                taskmanagerPersistentVolumeClaim == null
+    }
+
+    fun bootstrapResourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
+        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
+
+        return bootstrapJob == null
     }
 }
