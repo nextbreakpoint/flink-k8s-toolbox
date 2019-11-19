@@ -1,9 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
@@ -36,7 +33,7 @@ class DeleteBootstrapJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to delete bootstrap job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        if (resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
+        if (bootstrapResourcesHaveBeenRemoved(context.clusterId, context.resources)) {
             return taskCompletedWithOutput(context.flinkCluster, "Bootstrap job of cluster ${context.flinkCluster.metadata.name} removed in $seconds seconds")
         }
 
@@ -49,11 +46,5 @@ class DeleteBootstrapJob : Task {
 
     override fun onFailed(context: TaskContext): Result<String> {
         return taskAwaitingWithOutput(context.flinkCluster, "")
-    }
-
-    private fun resourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
-        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
-
-        return bootstrapJob == null
     }
 }

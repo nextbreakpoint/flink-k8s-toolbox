@@ -1,22 +1,14 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesValidator
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 
 class ReplaceResources : Task {
-    private val validator = ClusterResourcesValidator()
-
     override fun onExecuting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
@@ -102,21 +94,5 @@ class ReplaceResources : Task {
 
     override fun onFailed(context: TaskContext): Result<String> {
         return taskAwaitingWithOutput(context.flinkCluster, "")
-    }
-
-    private fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: CachedResources): ClusterResourcesStatus {
-        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
-        val jobmnagerService = resources.jobmanagerServices.get(clusterId)
-        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
-        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
-
-        val actualResources = ClusterResources(
-            bootstrapJob = bootstrapJob,
-            jobmanagerService = jobmnagerService,
-            jobmanagerStatefulSet = jobmanagerStatefulSet,
-            taskmanagerStatefulSet = taskmanagerStatefulSet
-        )
-
-        return validator.evaluate(clusterId, cluster, actualResources)
     }
 }

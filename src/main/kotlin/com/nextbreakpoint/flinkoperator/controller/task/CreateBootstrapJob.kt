@@ -7,7 +7,7 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class CreateBootstrapJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        if (context.flinkCluster.spec?.bootstrap == null) {
+        if (!isBootstrapJobDefined(context.flinkCluster)) {
             return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
         }
 
@@ -37,6 +37,10 @@ class CreateBootstrapJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
+        if (!isBootstrapJobDefined(context.flinkCluster)) {
+            return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
+        }
+
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         val seconds = elapsedTime / 1000
