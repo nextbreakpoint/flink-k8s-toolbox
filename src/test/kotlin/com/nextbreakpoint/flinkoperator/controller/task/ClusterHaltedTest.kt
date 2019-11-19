@@ -77,6 +77,7 @@ class ClusterHaltedTest {
     fun `onAwaiting should return expected result`() {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -794,7 +795,7 @@ class ClusterHaltedTest {
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEqualTo("")
+        assertThat(result.output).isEqualTo("[name=test] ")
         assertThat(actionTimestamp).isNotEqualTo(Annotations.getActionTimestamp(cluster))
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.NONE)
     }
@@ -802,6 +803,7 @@ class ClusterHaltedTest {
     @Test
     fun `onFailed should return expected result`() {
         val result = task.onFailed(context)
+        verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)

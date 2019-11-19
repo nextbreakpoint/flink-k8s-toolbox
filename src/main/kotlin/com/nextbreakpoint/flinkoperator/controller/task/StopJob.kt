@@ -9,81 +9,55 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 class StopJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
         if (context.flinkCluster.spec?.bootstrap == null) {
-            return Result(
-                ResultStatus.FAILED,
-                "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
         }
 
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
+        val seconds = elapsedTime / 1000
+
         if (elapsedTime > Timeout.STOPPING_JOB_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
         val response = context.controller.isJobStopped(context.clusterId)
 
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Job of cluster ${context.flinkCluster.metadata.name} already stopped"
-            )
+        if (response.isCompleted()) {
+            return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} already stopped")
         }
 
         val stopJobResponse = context.controller.stopJob(context.clusterId)
 
-        if (stopJobResponse.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Stopping job of cluster ${context.flinkCluster.metadata.name}..."
-            )
+        if (stopJobResponse.isCompleted()) {
+            return taskCompletedWithOutput(context.flinkCluster, "Stopping job of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Retry stopping job of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "Retry stopping job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
+        val seconds = elapsedTime / 1000
+
         if (elapsedTime > Timeout.STOPPING_JOB_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
         val response = context.controller.isJobStopped(context.clusterId)
 
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Job of cluster ${context.flinkCluster.metadata.name} stopped in ${elapsedTime / 1000} seconds"
-            )
+        if (response.isCompleted()) {
+            return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} stopped in $seconds seconds")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Wait for termination of job of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 }

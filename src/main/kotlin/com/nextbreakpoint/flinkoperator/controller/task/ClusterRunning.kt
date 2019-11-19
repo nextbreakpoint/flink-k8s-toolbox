@@ -36,17 +36,11 @@ class ClusterRunning : Task {
 
         Status.updateSavepointTimestamp(context.flinkCluster)
 
-        return Result(
-            ResultStatus.SUCCESS,
-            "Status of cluster ${context.clusterId.name} has been updated"
-        )
+        return taskCompletedWithOutput(context.flinkCluster, "Status of cluster ${context.clusterId.name} has been updated")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.SUCCESS,
-            "Cluster ${context.clusterId.name} is running..."
-        )
+        return taskCompletedWithOutput(context.flinkCluster, "Cluster ${context.clusterId.name} is running...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
@@ -61,22 +55,16 @@ class ClusterRunning : Task {
             val deleteResources = Annotations.isDeleteResources(context.flinkCluster)
             val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = deleteResources)
             val result = context.controller.stopCluster(context.clusterId, options)
-            if (result.status == ResultStatus.SUCCESS) {
+            if (result.isCompleted()) {
                 Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-                return Result(
-                    ResultStatus.AWAIT,
-                    ""
-                )
+                return taskAwaitingWithOutput(context.flinkCluster, "")
             }
         } else {
             Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
         }
 
         if (jobManagerDigest == null || taskManagerDigest == null || flinkImageDigest == null || flinkJobDigest == null) {
-            return Result(
-                ResultStatus.FAILED,
-                "Missing required annotations in cluster ${context.clusterId.name}"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Missing required annotations in cluster ${context.clusterId.name}")
         } else {
             val actualJobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
             val actualTaskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
@@ -144,10 +132,7 @@ class ClusterRunning : Task {
                             )
                         }
 
-                        return Result(
-                            ResultStatus.AWAIT,
-                            ""
-                        )
+                        return taskAwaitingWithOutput(context.flinkCluster, "")
                     }
                     else -> {
                         logger.warn("Cluster ${context.clusterId.name} requires a restart, but current status prevents from restarting the cluster")
@@ -178,10 +163,7 @@ class ClusterRunning : Task {
                             )
                         )
 
-                        return Result(
-                            ResultStatus.AWAIT,
-                            ""
-                        )
+                        return taskAwaitingWithOutput(context.flinkCluster, "")
                     }
                     else -> {
                         logger.warn("Cluster ${context.clusterId.name} requires to restart the job, but current status prevents from restarting the job")
@@ -198,22 +180,19 @@ class ClusterRunning : Task {
 
         val nextTask = Status.getNextOperatorTask(context.flinkCluster)
 
-        if (context.flinkCluster.spec?.bootstrap != null && elapsedTime > 10000) {
+        if (isBootstrapJobDefined(context.flinkCluster) && elapsedTime > 10000) {
             val attempts = Status.getTaskAttempts(context.flinkCluster)
 
             val clusterRunning = context.controller.isClusterRunning(context.clusterId)
 
-            if (clusterRunning.status != ResultStatus.SUCCESS) {
+            if (!clusterRunning.isCompleted()) {
                 logger.warn("Cluster ${context.clusterId.name} doesn't have a running job...")
                 Status.setTaskAttempts(context.flinkCluster, attempts + 1)
 
                 if (nextTask == null && attempts >= 3) {
                     Status.setTaskAttempts(context.flinkCluster, 0)
 
-                    return Result(
-                        ResultStatus.FAILED,
-                        ""
-                    )
+                    return taskFailedWithOutput(context.flinkCluster, "")
                 }
             } else {
                 if (attempts > 0) {
@@ -232,10 +211,7 @@ class ClusterRunning : Task {
                         )
                     )
 
-                    return Result(
-                        ResultStatus.AWAIT,
-                        ""
-                    )
+                    return taskAwaitingWithOutput(context.flinkCluster, "")
                 }
             }
         }
@@ -256,10 +232,7 @@ class ClusterRunning : Task {
                     )
                 )
 
-                return Result(
-                    ResultStatus.AWAIT,
-                    ""
-                )
+                return taskAwaitingWithOutput(context.flinkCluster, "")
             }
         }
 
@@ -273,25 +246,16 @@ class ClusterRunning : Task {
             if (actualTaskManagers != desiredTaskManagers || currentTaskManagers != desiredTaskManagers) {
                 val clusterScaling = ClusterScaling(taskManagers = desiredTaskManagers, taskSlots = currentTaskSlots)
                 val result = context.controller.scaleCluster(context.clusterId, clusterScaling)
-                if (result.status == ResultStatus.SUCCESS) {
-                    return Result(
-                        ResultStatus.AWAIT,
-                        ""
-                    )
+                if (result.isCompleted()) {
+                    return taskAwaitingWithOutput(context.flinkCluster, "")
                 }
             }
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 }

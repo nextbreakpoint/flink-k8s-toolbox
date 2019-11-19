@@ -144,6 +144,19 @@ class CancelJobTest {
     }
 
     @Test
+    fun `onAwaiting should return expected result when job is not defined`() {
+        val timestamp = Status.getOperatorTimestamp(cluster)
+        cluster.spec.bootstrap = null
+        val result = task.onAwaiting(context)
+        verify(context, atLeastOnce()).flinkCluster
+        verifyNoMoreInteractions(context)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.output).isNotBlank()
+        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
+    }
+
+    @Test
     fun `onAwaiting should return expected result when operation times out`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(controller.currentTimeMillis()).thenReturn(time + Timeout.CANCELLING_JOB_TIMEOUT + 1)
@@ -260,6 +273,7 @@ class CancelJobTest {
     @Test
     fun `onIdle should return expected result`() {
         val result = task.onIdle(context)
+        verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -269,6 +283,7 @@ class CancelJobTest {
     @Test
     fun `onFailed should return expected result`() {
         val result = task.onFailed(context)
+        verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
