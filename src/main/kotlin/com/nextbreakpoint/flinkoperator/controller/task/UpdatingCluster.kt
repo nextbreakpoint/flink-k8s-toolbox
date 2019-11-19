@@ -12,30 +12,18 @@ class UpdatingCluster : Task {
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Updating)
         Status.setTaskAttempts(context.flinkCluster, 0)
 
-        return Result(
-            ResultStatus.SUCCESS,
-            "Status of cluster ${context.clusterId.name} has been updated"
-        )
+        return taskCompletedWithOutput(context.flinkCluster, "Status of cluster ${context.clusterId.name} has been updated")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.SUCCESS,
-            "Cluster ${context.clusterId.name} is updating..."
-        )
+        return taskCompletedWithOutput(context.flinkCluster, "Cluster ${context.clusterId.name} is updating...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 }

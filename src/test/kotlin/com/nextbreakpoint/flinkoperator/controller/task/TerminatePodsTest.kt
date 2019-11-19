@@ -172,6 +172,7 @@ class TerminatePodsTest {
     @Test
     fun `onIdle should return expected result`() {
         val result = task.onIdle(context)
+        verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -181,6 +182,7 @@ class TerminatePodsTest {
     @Test
     fun `onFailed should return expected result`() {
         val result = task.onFailed(context)
+        verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)

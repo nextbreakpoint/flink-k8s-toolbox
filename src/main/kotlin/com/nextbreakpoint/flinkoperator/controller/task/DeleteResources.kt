@@ -12,63 +12,43 @@ class DeleteResources : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
+        val seconds = elapsedTime / 1000
+
         if (elapsedTime > Timeout.DELETING_CLUSTER_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to delete resources of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Failed to delete resources of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
         val response = context.controller.deleteClusterResources(context.clusterId)
 
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Deleting resources of cluster ${context.flinkCluster.metadata.name}..."
-            )
+        if (response.isCompleted()) {
+            return taskCompletedWithOutput(context.flinkCluster, "Deleting resources of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Retry deleting resources of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "Retry deleting resources of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
+        val seconds = elapsedTime / 1000
+
         if (elapsedTime > Timeout.DELETING_CLUSTER_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to delete resources of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Failed to delete resources of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
         if (resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} removed in ${elapsedTime / 1000} seconds"
-            )
+            return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} removed in $seconds seconds")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Wait for deletion of resources of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "Wait for deletion of resources of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 
     private fun resourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {

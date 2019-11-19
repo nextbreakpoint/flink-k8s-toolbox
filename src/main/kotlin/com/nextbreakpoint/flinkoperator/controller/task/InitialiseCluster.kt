@@ -54,30 +54,18 @@ class InitialiseCluster : Task {
         val labelSelector = ClusterResource.makeLabelSelector(context.clusterId)
         Status.setLabelSelector(context.flinkCluster, labelSelector)
 
-        return Result(
-            ResultStatus.SUCCESS,
-            "Status of cluster ${context.clusterId.name} has been updated"
-        )
+        return taskCompletedWithOutput(context.flinkCluster, "Status of cluster ${context.clusterId.name} has been updated")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.SUCCESS,
-            "Cluster ${context.clusterId.name} initialized"
-        )
+        return taskCompletedWithOutput(context.flinkCluster, "Cluster ${context.clusterId.name} initialized")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 }

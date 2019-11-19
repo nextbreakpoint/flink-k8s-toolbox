@@ -12,28 +12,21 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 class TriggerSavepoint : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
         if (context.flinkCluster.spec?.bootstrap == null) {
-            return Result(
-                ResultStatus.FAILED,
-                "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
         }
 
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
+        val seconds = elapsedTime / 1000
+
         if (elapsedTime > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
         val prevSavepointRequest = Status.getSavepointRequest(context.flinkCluster)
 
         if (prevSavepointRequest != null) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Savepoint of cluster ${context.flinkCluster.metadata.name} is already in progress..."
-            )
+            return taskCompletedWithOutput(context.flinkCluster, "Savepoint of cluster ${context.flinkCluster.metadata.name} is already in progress...")
         }
 
         val options = SavepointOptions(
@@ -42,70 +35,48 @@ class TriggerSavepoint : Task {
 
         val savepointRequest = context.controller.triggerSavepoint(context.clusterId, options)
 
-        if (savepointRequest.status == ResultStatus.SUCCESS && savepointRequest.output != null) {
+        if (savepointRequest.isCompleted() && savepointRequest.output != null) {
             Status.setSavepointRequest(context.flinkCluster, savepointRequest.output)
 
-            return Result(
-                ResultStatus.SUCCESS,
-                "Creating savepoint of cluster ${context.flinkCluster.metadata.name}..."
-            )
+            return taskCompletedWithOutput(context.flinkCluster, "Creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Retry creating savepoint of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
+        val seconds = elapsedTime / 1000
+
         if (elapsedTime > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
         val savepointRequest = Status.getSavepointRequest(context.flinkCluster)
 
         if (savepointRequest == null) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+            return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
         val completedSavepoint = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
 
-        if (completedSavepoint.status == ResultStatus.SUCCESS) {
+        if (completedSavepoint.isCompleted()) {
             if (Configuration.getSavepointPath(context.flinkCluster) != completedSavepoint.output) {
                 Status.setSavepointPath(context.flinkCluster, completedSavepoint.output)
             }
 
-            return Result(
-                ResultStatus.SUCCESS,
-                "Savepoint of cluster ${context.flinkCluster.metadata.name} created in ${elapsedTime / 1000} seconds"
-            )
+            return taskCompletedWithOutput(context.flinkCluster, "Savepoint of cluster ${context.flinkCluster.metadata.name} created in $seconds seconds")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Wait for completion of savepoint of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "Wait for completion of savepoint of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return taskAwaitingWithOutput(context.flinkCluster, "")
     }
 }
