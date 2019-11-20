@@ -28,7 +28,7 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
             val operatorStatus = Status.getCurrentTaskStatus(flinkCluster)
 
             if (operatorStatus != TaskStatus.Idle) {
-                logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -43,7 +43,7 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
             val statusList = tryScalingCluster(flinkCluster, params)
 
             if (statusList.isEmpty()) {
-                logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -66,7 +66,7 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                 statusList
             )
         } catch (e : Exception) {
-            logger.error("Can't change tasks sequence of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't change tasks sequence", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -37,7 +37,6 @@ class EraseSavepointTest {
     @Test
     fun `onExecuting should return expected result`() {
         val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -48,7 +47,6 @@ class EraseSavepointTest {
     @Test
     fun `onExecuting should update savepoint path`() {
         val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -59,7 +57,6 @@ class EraseSavepointTest {
     @Test
     fun `onAwaiting should return expected result`() {
         val result = task.onAwaiting(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()

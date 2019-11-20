@@ -20,18 +20,18 @@ class BootstrapCreateJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
             val jobs = kubeClient.listBootstrapJobs(clusterId)
 
             if (jobs.items.isEmpty()) {
-                logger.info("Creating bootstrap Job of cluster ${clusterId.name}...")
+                logger.info("[name=${clusterId.name}] Creating bootstrap job...")
 
                 val jobOut = kubeClient.createBootstrapJob(clusterId, params)
 
-                logger.info("Bootstrap job of cluster ${clusterId.name} created with name ${jobOut.metadata.name}")
+                logger.info("[name=${clusterId.name}] Bootstrap job created with name ${jobOut.metadata.name}")
 
                 return Result(
                     ResultStatus.SUCCESS,
                     null
                 )
             } else {
-                logger.warn("Bootstrap job of cluster ${clusterId.name} already exists")
+                logger.warn("[name=${clusterId.name}] Bootstrap job already exists")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -39,7 +39,7 @@ class BootstrapCreateJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 )
             }
         } catch (e : Exception) {
-            logger.error("Can't create bootstrap job of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't create bootstrap job", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -34,11 +34,11 @@ class ClusterRunning : Task {
 
         Status.updateSavepointTimestamp(context.flinkCluster)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Status of cluster ${context.clusterId.name} has been updated")
+        return taskCompletedWithOutput(context.flinkCluster, "Status has been updated")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return taskCompletedWithOutput(context.flinkCluster, "Cluster ${context.clusterId.name} is running...")
+        return taskCompletedWithOutput(context.flinkCluster, "Cluster is running...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
@@ -55,14 +55,14 @@ class ClusterRunning : Task {
             val result = context.controller.stopCluster(context.clusterId, options)
             if (result.isCompleted()) {
                 Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-                return taskAwaitingWithOutput(context.flinkCluster, "")
+                return taskAwaitingWithOutput(context.flinkCluster, "Stopping cluster...")
             }
         } else {
             Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
         }
 
         if (jobManagerDigest == null || taskManagerDigest == null || flinkImageDigest == null || flinkJobDigest == null) {
-            return taskFailedWithOutput(context.flinkCluster, "Missing required annotations in cluster ${context.clusterId.name}")
+            return taskFailedWithOutput(context.flinkCluster, "Missing required digests")
         } else {
             val actualJobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
             val actualTaskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
@@ -88,14 +88,12 @@ class ClusterRunning : Task {
             }
 
             if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
-                logger.info("Detected changes in: ${changes.joinToString(separator = ",")}")
+                logger.info("[name=${context.flinkCluster.metadata.name}] Detected changes in: ${changes.joinToString(separator = ",")}")
 
                 val clusterStatus = Status.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {
                     ClusterStatus.Running -> {
-                        logger.info("Cluster ${context.clusterId.name} requires a restart")
-
                         Status.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
                         Status.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
                         Status.setRuntimeDigest(context.flinkCluster, actualRuntimeDigest)
@@ -130,21 +128,19 @@ class ClusterRunning : Task {
                             )
                         }
 
-                        return taskAwaitingWithOutput(context.flinkCluster, "")
+                        return taskAwaitingWithOutput(context.flinkCluster, "Cluster requires a restart")
                     }
                     else -> {
-                        logger.warn("Cluster ${context.clusterId.name} requires a restart, but current status prevents from restarting the cluster")
+                        logger.warn("[name=${context.flinkCluster.metadata.name}] Cluster requires a restart, but current status prevents from restarting the cluster")
                     }
                 }
             } else if (changes.contains("BOOTSTRAP")) {
-                logger.info("Detected changes in: ${changes.joinToString(separator = ",")}")
+                logger.info("[name=${context.flinkCluster.metadata.name}] Detected changes in: ${changes.joinToString(separator = ",")}")
 
                 val clusterStatus = Status.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {
                     ClusterStatus.Running -> {
-                        logger.info("Cluster ${context.clusterId.name} requires to restart the job")
-
                         Status.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
                         Status.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
                         Status.setRuntimeDigest(context.flinkCluster, actualRuntimeDigest)
@@ -161,10 +157,10 @@ class ClusterRunning : Task {
                             )
                         )
 
-                        return taskAwaitingWithOutput(context.flinkCluster, "")
+                        return taskAwaitingWithOutput(context.flinkCluster, "Cluster requires to restart the job")
                     }
                     else -> {
-                        logger.warn("Cluster ${context.clusterId.name} requires to restart the job, but current status prevents from restarting the job")
+                        logger.warn("[name=${context.flinkCluster.metadata.name}] Cluster requires to restart the job, but current status prevents from restarting the job")
                     }
                 }
             } else {
@@ -184,13 +180,13 @@ class ClusterRunning : Task {
             val clusterRunning = context.controller.isClusterRunning(context.clusterId)
 
             if (!clusterRunning.isCompleted()) {
-                logger.warn("Cluster ${context.clusterId.name} doesn't have a running job...")
+                logger.warn("[name=${context.flinkCluster.metadata.name}] Cluster doesn't have a running job...")
                 Status.setTaskAttempts(context.flinkCluster, attempts + 1)
 
                 if (nextTask == null && attempts >= 3) {
                     Status.setTaskAttempts(context.flinkCluster, 0)
 
-                    return taskFailedWithOutput(context.flinkCluster, "")
+                    return taskFailedWithOutput(context.flinkCluster, "Cluster doesn't have a running job")
                 }
             } else {
                 if (attempts > 0) {
@@ -198,8 +194,6 @@ class ClusterRunning : Task {
                 }
 
                 if (clusterRunning.output) {
-                    logger.info("Job finished. Suspending cluster ${context.clusterId.name}...")
-
                     Status.appendTasks(context.flinkCluster,
                         listOf(
                             ClusterTask.StoppingCluster,
@@ -209,7 +203,7 @@ class ClusterRunning : Task {
                         )
                     )
 
-                    return taskAwaitingWithOutput(context.flinkCluster, "")
+                    return taskAwaitingWithOutput(context.flinkCluster, "Job finished. Suspending cluster...")
                 }
             }
         }
@@ -230,7 +224,7 @@ class ClusterRunning : Task {
                     )
                 )
 
-                return taskAwaitingWithOutput(context.flinkCluster, "")
+                return taskAwaitingWithOutput(context.flinkCluster, "Creating savepoint...")
             }
         }
 
@@ -245,12 +239,12 @@ class ClusterRunning : Task {
                 val clusterScaling = ClusterScaling(taskManagers = desiredTaskManagers, taskSlots = currentTaskSlots)
                 val result = context.controller.scaleCluster(context.clusterId, clusterScaling)
                 if (result.isCompleted()) {
-                    return taskAwaitingWithOutput(context.flinkCluster, "")
+                    return taskAwaitingWithOutput(context.flinkCluster, "Rescaling cluster...")
                 }
             }
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Cluster running")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

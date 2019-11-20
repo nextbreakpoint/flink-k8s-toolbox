@@ -16,16 +16,16 @@ class StopJob : Task {
         val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
 
         if (jobStoppedResponse.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} already stopped")
+            return taskCompletedWithOutput(context.flinkCluster, "Job already stopped")
         }
 
         val stopJobResponse = context.controller.stopJob(context.clusterId)
 
         if (!stopJobResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry stopping job of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry stopping job...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Stopping job of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Stopping job...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -38,10 +38,10 @@ class StopJob : Task {
         val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
 
         if (!jobStoppedResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of job of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of job...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} stopped in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Job stopped in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

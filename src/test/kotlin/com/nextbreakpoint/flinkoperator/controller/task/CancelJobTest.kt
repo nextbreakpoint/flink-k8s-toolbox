@@ -88,7 +88,7 @@ class CancelJobTest {
         verify(controller, atLeastOnce()).cancelJob(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }

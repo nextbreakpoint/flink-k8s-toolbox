@@ -23,7 +23,7 @@ class TaskManagersSetReplicas(flinkOptions: FlinkOptions, flinkClient: FlinkClie
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't set replicas of task managers of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't set replicas of task managers", e)
 
             return Result(
                 ResultStatus.FAILED,

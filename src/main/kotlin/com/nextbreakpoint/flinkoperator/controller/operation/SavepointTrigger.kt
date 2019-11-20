@@ -23,11 +23,11 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
             val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.size > 1) {
-                logger.warn("There are multiple jobs running in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] There are multiple jobs running")
             }
 
             if (runningJobs.size != 1) {
-                logger.warn("Can't find a running job in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Can't find a running job")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -38,7 +38,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
             val checkpointingStatistics = flinkClient.getCheckpointingStatistics(address, runningJobs)
 
             if (checkpointingStatistics.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
-                logger.warn("Savepoint in progress for job in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Savepoint in progress for job")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -58,7 +58,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
                 }.first()
             )
         } catch (e : Exception) {
-            logger.error("Can't trigger savepoint for job of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't trigger savepoint for job", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -26,7 +26,7 @@ class TaskManagersList(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
                 Gson().toJson(overview.taskmanagers)
             )
         } catch (e : Exception) {
-            logger.error("Can't get list of TaskManagers of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get list of TaskManagers", e)
 
             return Result(
                 ResultStatus.FAILED,

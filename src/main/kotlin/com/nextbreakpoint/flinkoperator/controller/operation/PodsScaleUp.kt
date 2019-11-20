@@ -17,7 +17,7 @@ class PodsScaleUp(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
 
     override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
-            logger.info("Restarting pods of cluster ${clusterId.name}...")
+            logger.info("[name=${clusterId.name}] Restarting pods...")
 
             kubeClient.restartJobManagerStatefulSets(clusterId, params)
 
@@ -28,7 +28,7 @@ class PodsScaleUp(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't restart pods of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't restart pods", e)
 
             return Result(
                 ResultStatus.FAILED,

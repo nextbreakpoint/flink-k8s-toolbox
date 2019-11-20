@@ -27,26 +27,26 @@ class ClusterCreateResources(flinkOptions: FlinkOptions, flinkClient: FlinkClien
                 throw RuntimeException("Previous resources already exist")
             }
 
-            logger.info("Creating resources of cluster ${clusterId.name}...")
+            logger.info("[name=${clusterId.name}] Creating resources...")
 
             val jobmanagerServiceOut = kubeClient.createJobManagerService(clusterId, params)
 
-            logger.info("Service created ${jobmanagerServiceOut.metadata.name}")
+            logger.info("[name=${clusterId.name}] Service created ${jobmanagerServiceOut.metadata.name}")
 
             val jobmanagerStatefulSetOut = kubeClient.createJobManagerStatefulSet(clusterId, params)
 
-            logger.info("JobManager created ${jobmanagerStatefulSetOut.metadata.name}")
+            logger.info("[name=${clusterId.name}] JobManager created ${jobmanagerStatefulSetOut.metadata.name}")
 
             val taskmanagerStatefulSetOut = kubeClient.createTaskManagerStatefulSet(clusterId, params)
 
-            logger.info("TaskManager created ${taskmanagerStatefulSetOut.metadata.name}")
+            logger.info("[name=${clusterId.name}] TaskManager created ${taskmanagerStatefulSetOut.metadata.name}")
 
             return Result(
                 ResultStatus.SUCCESS,
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't create resources of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't create resources", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -16,16 +16,16 @@ class StartJob : Task {
         val jobStartedResponse = context.controller.isJobStarted(context.clusterId)
 
         if (jobStartedResponse.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} already started")
+            return taskCompletedWithOutput(context.flinkCluster, "Job already started")
         }
 
         val startJobResponse = context.controller.startJob(context.clusterId, context.flinkCluster)
 
         if (!startJobResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry starting job of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry starting job...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Starting job of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Starting job...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -38,10 +38,10 @@ class StartJob : Task {
         val jobStartedResponse = context.controller.isJobStarted(context.clusterId)
 
         if (!jobStartedResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of job of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of job...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} started in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Job started in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

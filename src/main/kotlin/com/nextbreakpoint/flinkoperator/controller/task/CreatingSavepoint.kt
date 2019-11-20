@@ -11,11 +11,11 @@ class CreatingSavepoint : Task {
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Checkpointing)
         Status.setTaskAttempts(context.flinkCluster, 0)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Status of cluster ${context.clusterId.name} has been updated")
+        return taskCompletedWithOutput(context.flinkCluster, "Status has been updated")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return taskCompletedWithOutput(context.flinkCluster, "Cluster ${context.clusterId.name} is checkpointing...")
+        return taskCompletedWithOutput(context.flinkCluster, "Cluster is checkpointing...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

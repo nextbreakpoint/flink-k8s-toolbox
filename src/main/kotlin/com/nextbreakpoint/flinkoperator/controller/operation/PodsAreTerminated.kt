@@ -39,7 +39,7 @@ class PodsAreTerminated(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't get pods of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get pods", e)
 
             return Result(
                 ResultStatus.FAILED,

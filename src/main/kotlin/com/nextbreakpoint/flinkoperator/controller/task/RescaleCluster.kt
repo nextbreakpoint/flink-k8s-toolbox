@@ -5,13 +5,8 @@ import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
-import org.apache.log4j.Logger
 
 class RescaleCluster : Task {
-    companion object {
-        private val logger = Logger.getLogger(RescaleCluster::class.simpleName)
-    }
-
     override fun onExecuting(context: TaskContext): Result<String> {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
@@ -24,10 +19,10 @@ class RescaleCluster : Task {
         val result = context.controller.setTaskManagersReplicas(context.clusterId, desiredTaskManagers)
 
         if (!result.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Can't rescale task managers of cluster ${context.clusterId.name}")
+            return taskAwaitingWithOutput(context.flinkCluster, "Can't rescale task managers")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Task managers of cluster ${context.clusterId.name} have been rescaled")
+        return taskCompletedWithOutput(context.flinkCluster, "Task managers have been rescaled")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -40,16 +35,16 @@ class RescaleCluster : Task {
         val result = context.controller.getTaskManagersReplicas(context.clusterId)
 
         if (!result.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Task managers of cluster ${context.clusterId.name} have not been scaled yet...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Task managers have not been scaled yet...")
         }
 
         val desiredTaskManagers = Status.getTaskManagers(context.flinkCluster)
 
         if (desiredTaskManagers != result.output) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Task managers of cluster ${context.clusterId.name} have not been scaled yet...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Task managers have not been scaled yet...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Task managers of cluster ${context.clusterId.name} have been scaled")
+        return taskCompletedWithOutput(context.flinkCluster, "Task managers have been scaled")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

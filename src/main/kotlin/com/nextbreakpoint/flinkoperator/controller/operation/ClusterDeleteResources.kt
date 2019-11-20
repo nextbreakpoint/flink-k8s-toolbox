@@ -16,7 +16,7 @@ class ClusterDeleteResources(flinkOptions: FlinkOptions, flinkClient: FlinkClien
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {
-            logger.info("Deleting resources of cluster ${clusterId.name}...")
+            logger.info("[name=${clusterId.name}] Deleting resources...")
 
             kubeClient.deleteBootstrapJobs(clusterId)
 
@@ -31,7 +31,7 @@ class ClusterDeleteResources(flinkOptions: FlinkOptions, flinkClient: FlinkClien
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't delete resources of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't delete resources", e)
 
             return Result(
                 ResultStatus.FAILED,

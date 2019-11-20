@@ -25,7 +25,7 @@ class JobScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't rescale job of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't rescale job", e)
 
             return Result(
                 ResultStatus.FAILED,

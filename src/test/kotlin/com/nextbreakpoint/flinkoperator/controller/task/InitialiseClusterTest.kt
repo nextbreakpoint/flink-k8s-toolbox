@@ -107,7 +107,6 @@ class InitialiseClusterTest {
     @Test
     fun `onAwaiting should return expected result`() {
         val result = task.onAwaiting(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
