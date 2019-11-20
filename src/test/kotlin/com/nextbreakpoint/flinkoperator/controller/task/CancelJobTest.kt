@@ -58,7 +58,6 @@ class CancelJobTest {
     @Test
     fun `onExecuting should return expected result when job has been stopped already`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
@@ -66,7 +65,6 @@ class CancelJobTest {
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, atLeastOnce()).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -78,7 +76,6 @@ class CancelJobTest {
     @Test
     fun `onExecuting should return expected result when savepoint request can't be created`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
@@ -87,7 +84,6 @@ class CancelJobTest {
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, atLeastOnce()).isJobStopped(eq(clusterId))
         verify(controller, atLeastOnce()).cancelJob(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -100,7 +96,6 @@ class CancelJobTest {
     @Test
     fun `onExecuting should return expected result when savepoint request has been created`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, SavepointRequest(jobId = "1", triggerId = "100")))
         val result = task.onExecuting(context)
@@ -109,7 +104,6 @@ class CancelJobTest {
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, atLeastOnce()).isJobStopped(eq(clusterId))
         verify(controller, atLeastOnce()).cancelJob(eq(clusterId), any())
         verifyNoMoreInteractions(controller)

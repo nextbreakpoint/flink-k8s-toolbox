@@ -11,7 +11,7 @@ class CreateResources : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_CLUSTER_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to create resources of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
@@ -42,7 +42,7 @@ class CreateResources : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_CLUSTER_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to create resources of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val clusterScale = ClusterScaling(

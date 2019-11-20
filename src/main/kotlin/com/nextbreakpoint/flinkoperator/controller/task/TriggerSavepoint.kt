@@ -13,7 +13,7 @@ class TriggerSavepoint : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val jobRunningResponse = context.controller.isJobRunning(context.clusterId)
@@ -47,7 +47,7 @@ class TriggerSavepoint : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val savepointRequest = Status.getSavepointRequest(context.flinkCluster)

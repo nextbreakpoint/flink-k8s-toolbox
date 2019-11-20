@@ -11,7 +11,7 @@ class RestartPods : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val resources = createClusterResources(context.clusterId, context.flinkCluster)
@@ -29,7 +29,7 @@ class RestartPods : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val clusterScaling = ClusterScaling(

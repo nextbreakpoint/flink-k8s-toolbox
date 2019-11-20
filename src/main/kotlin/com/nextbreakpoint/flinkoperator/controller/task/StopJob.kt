@@ -10,7 +10,7 @@ class StopJob : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.STOPPING_JOB_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
@@ -32,7 +32,7 @@ class StopJob : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.STOPPING_JOB_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)

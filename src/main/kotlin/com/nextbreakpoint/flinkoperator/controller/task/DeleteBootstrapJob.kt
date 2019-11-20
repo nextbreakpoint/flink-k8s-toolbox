@@ -10,7 +10,7 @@ class DeleteBootstrapJob : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.DELETING_CLUSTER_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to delete bootstrap job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val response = context.controller.deleteBootstrapJob(context.clusterId)
@@ -26,7 +26,7 @@ class DeleteBootstrapJob : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.DELETING_CLUSTER_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to delete bootstrap job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         if (!bootstrapResourcesHaveBeenRemoved(context.clusterId, context.resources)) {
