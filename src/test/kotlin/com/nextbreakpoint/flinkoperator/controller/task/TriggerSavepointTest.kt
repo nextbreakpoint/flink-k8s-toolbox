@@ -41,17 +41,6 @@ class TriggerSavepointTest {
     }
 
     @Test
-    fun `onExecuting should return expected result when job is not defined`() {
-        cluster.spec.bootstrap = null
-        val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotBlank()
-    }
-
-    @Test
     fun `onExecuting should return expected result when operation times out`() {
         given(controller.currentTimeMillis()).thenReturn(time + Timeout.CREATING_SAVEPOINT_TIMEOUT + 1)
         val result = task.onExecuting(context)
@@ -67,22 +56,8 @@ class TriggerSavepointTest {
     }
 
     @Test
-    fun `onExecuting should return expected result when savepoint request has been created already`() {
-        Status.setSavepointRequest(cluster, SavepointRequest(jobId = "1", triggerId = "100"))
-        val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
-        verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verifyNoMoreInteractions(controller)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(result.output).isNotBlank()
-    }
-
-    @Test
     fun `onExecuting should return expected result when a savepoint is already in progress`() {
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.triggerSavepoint(eq(clusterId), any())).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
@@ -91,6 +66,7 @@ class TriggerSavepointTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
+        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, times(1)).triggerSavepoint(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -100,6 +76,7 @@ class TriggerSavepointTest {
 
     @Test
     fun `onExecuting should return expected result when savepoint request can't be created`() {
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.triggerSavepoint(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
@@ -108,6 +85,7 @@ class TriggerSavepointTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
+        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, times(1)).triggerSavepoint(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -118,6 +96,7 @@ class TriggerSavepointTest {
     @Test
     fun `onExecuting should return expected result when savepoint request has been created`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.triggerSavepoint(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, savepointRequest))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
@@ -126,6 +105,7 @@ class TriggerSavepointTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, times(1)).currentTimeMillis()
+        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, times(1)).triggerSavepoint(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -136,6 +116,7 @@ class TriggerSavepointTest {
     @Test
     fun `onExecuting should set savepoint request when savepoint request has been created`() {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.triggerSavepoint(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, savepointRequest))
         val result = task.onExecuting(context)
         assertThat(result).isNotNull()

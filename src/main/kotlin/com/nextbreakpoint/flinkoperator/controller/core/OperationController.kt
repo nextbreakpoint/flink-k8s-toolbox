@@ -34,6 +34,7 @@ import com.nextbreakpoint.flinkoperator.controller.operation.JarRemove
 import com.nextbreakpoint.flinkoperator.controller.operation.JobCancel
 import com.nextbreakpoint.flinkoperator.controller.operation.JobHasStarted
 import com.nextbreakpoint.flinkoperator.controller.operation.JobHasStopped
+import com.nextbreakpoint.flinkoperator.controller.operation.JobIsRunning
 import com.nextbreakpoint.flinkoperator.controller.operation.JobStart
 import com.nextbreakpoint.flinkoperator.controller.operation.JobStop
 import com.nextbreakpoint.flinkoperator.controller.operation.PodsAreTerminated
@@ -155,6 +156,9 @@ class OperationController(
 
     fun isJobStopped(clusterId: ClusterId): Result<Void?> =
         JobHasStopped(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
+
+    fun isJobRunning(clusterId: ClusterId): Result<Void?> =
+        JobIsRunning(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
     fun setTaskManagersReplicas(clusterId: ClusterId, taskManagers: Int) : Result<Void?> =
         TaskManagersSetReplicas(flinkOptions, flinkClient, kubeClient).execute(clusterId, taskManagers)

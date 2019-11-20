@@ -16,15 +16,15 @@ class RestartPods : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val clusterResources = createClusterResources(context.clusterId, context.flinkCluster)
+        val resources = createClusterResources(context.clusterId, context.flinkCluster)
 
-        val response = context.controller.restartPods(context.clusterId, clusterResources)
+        val response = context.controller.restartPods(context.clusterId, resources)
 
-        if (response.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Restarting pods of cluster ${context.flinkCluster.metadata.name}...")
+        if (!response.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry restarting pods of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Retry restarting pods of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Restarting pods of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -43,11 +43,11 @@ class RestartPods : Task {
 
         val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
 
-        if (response.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} restarted in $seconds seconds")
+        if (!response.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of pods of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of pods of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} restarted in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

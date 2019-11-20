@@ -5,8 +5,6 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 
 class ReplaceResources : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
@@ -33,13 +31,7 @@ class ReplaceResources : Task {
 
         val currentResources = context.controller.cache.getResources()
 
-        val clusterResources = ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
-            context.flinkCluster.metadata.namespace,
-            context.clusterId.uuid,
-            "flink-operator",
-            context.flinkCluster
-        ).build()
+        val resources = createClusterResources(context.clusterId, context.flinkCluster)
 
 //        val jobmanagerService = currentResources.jobmanagerServices[context.clusterId]
 //        clusterResources.jobmanagerService?.apiVersion = jobmanagerService?.apiVersion
@@ -47,22 +39,22 @@ class ReplaceResources : Task {
 //        clusterResources.jobmanagerService?.metadata = jobmanagerService?.metadata
 
         val jobmanagerStatefulset = currentResources.jobmanagerStatefulSets[context.clusterId]
-        clusterResources.jobmanagerStatefulSet?.apiVersion = jobmanagerStatefulset?.apiVersion
-        clusterResources.jobmanagerStatefulSet?.kind = jobmanagerStatefulset?.kind
-        clusterResources.jobmanagerStatefulSet?.metadata = jobmanagerStatefulset?.metadata
+        resources.jobmanagerStatefulSet?.apiVersion = jobmanagerStatefulset?.apiVersion
+        resources.jobmanagerStatefulSet?.kind = jobmanagerStatefulset?.kind
+        resources.jobmanagerStatefulSet?.metadata = jobmanagerStatefulset?.metadata
 
         val taskmanagerStatefulset = currentResources.taskmanagerStatefulSets[context.clusterId]
-        clusterResources.taskmanagerStatefulSet?.apiVersion = taskmanagerStatefulset?.apiVersion
-        clusterResources.taskmanagerStatefulSet?.kind = taskmanagerStatefulset?.kind
-        clusterResources.taskmanagerStatefulSet?.metadata = taskmanagerStatefulset?.metadata
+        resources.taskmanagerStatefulSet?.apiVersion = taskmanagerStatefulset?.apiVersion
+        resources.taskmanagerStatefulSet?.kind = taskmanagerStatefulset?.kind
+        resources.taskmanagerStatefulSet?.metadata = taskmanagerStatefulset?.metadata
 
-        val replaceResponse = context.controller.replaceClusterResources(context.clusterId, clusterResources)
+        val replaceResourcesResponse = context.controller.replaceClusterResources(context.clusterId, resources)
 
-        if (replaceResponse.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Replacing resources of cluster ${context.flinkCluster.metadata.name}...")
+        if (!replaceResourcesResponse.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry replacing resources of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Retry replacing resources of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Replacing resources of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -81,11 +73,11 @@ class ReplaceResources : Task {
 
         val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
 
-        if (response.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} replaced in $seconds seconds")
+        if (!response.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} replaced in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

@@ -37,17 +37,6 @@ class StartJobTest {
     }
 
     @Test
-    fun `onExecuting should return expected result when job is not defined`() {
-        cluster.spec.bootstrap = null
-        val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotBlank()
-    }
-
-    @Test
     fun `onExecuting should return expected result when operation times out`() {
         given(controller.currentTimeMillis()).thenReturn(time + Timeout.STARTING_JOB_TIMEOUT + 1)
         val result = task.onExecuting(context)

@@ -17,11 +17,11 @@ class DeleteBootstrapJob : Task {
 
         val response = context.controller.deleteBootstrapJob(context.clusterId)
 
-        if (response.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Deleting bootstrap job of cluster ${context.flinkCluster.metadata.name}...")
+        if (!response.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry deleting bootstrap job of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Retry deleting bootstrap job of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Deleting bootstrap job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -33,11 +33,11 @@ class DeleteBootstrapJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to delete bootstrap job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        if (bootstrapResourcesHaveBeenRemoved(context.clusterId, context.resources)) {
-            return taskCompletedWithOutput(context.flinkCluster, "Bootstrap job of cluster ${context.flinkCluster.metadata.name} removed in $seconds seconds")
+        if (!bootstrapResourcesHaveBeenRemoved(context.clusterId, context.resources)) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for deletion of bootstrap job of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Wait for deletion of bootstrap job of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Bootstrap job of cluster ${context.flinkCluster.metadata.name} removed in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
