@@ -16,10 +16,10 @@ class TerminatePods : Task {
         val response = context.controller.terminatePods(context.clusterId)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry terminating pods of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry terminating pods...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Terminating pods of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Terminating pods...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -32,10 +32,10 @@ class TerminatePods : Task {
         val response = context.controller.arePodsTerminated(context.clusterId)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of pods of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of pods...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} terminated in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources terminated in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

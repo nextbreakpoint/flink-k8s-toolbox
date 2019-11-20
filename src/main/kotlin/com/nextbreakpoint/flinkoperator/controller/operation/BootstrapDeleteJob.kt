@@ -16,7 +16,7 @@ class BootstrapDeleteJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {
-            logger.info("Deleting bootstrap job of cluster ${clusterId.name}...")
+            logger.info("[name=${clusterId.name}] Deleting bootstrap job...")
 
             kubeClient.deleteBootstrapJobs(clusterId)
 
@@ -27,7 +27,7 @@ class BootstrapDeleteJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't delete bootstrap job of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't delete bootstrap job", e)
 
             return Result(
                 ResultStatus.FAILED,

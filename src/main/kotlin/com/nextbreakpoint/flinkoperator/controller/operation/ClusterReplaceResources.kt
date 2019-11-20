@@ -25,28 +25,28 @@ class ClusterReplaceResources(flinkOptions: FlinkOptions, flinkClient: FlinkClie
                 throw RuntimeException("Previous resources don't exist")
             }
 
-            logger.info("Replacing resources of cluster ${clusterId.name}...")
+            logger.info("[name=${clusterId.name}] Replacing resources...")
 
             kubeClient.deleteServices(clusterId)
 
             val jobmanagerServiceOut = kubeClient.createJobManagerService(clusterId, params)
 
-            logger.info("Service replaced ${jobmanagerServiceOut.metadata.name}")
+            logger.info("[name=${clusterId.name}] Service replaced ${jobmanagerServiceOut.metadata.name}")
 
             val jobmanagerStatefulSetOut = kubeClient.replaceJobManagerStatefulSet(clusterId, params)
 
-            logger.info("JobManager replaced ${jobmanagerStatefulSetOut.metadata.name}")
+            logger.info("[name=${clusterId.name}] JobManager replaced ${jobmanagerStatefulSetOut.metadata.name}")
 
             val taskmanagerStatefulSetOut = kubeClient.replaceTaskManagerStatefulSet(clusterId, params)
 
-            logger.info("TaskManager replaced ${taskmanagerStatefulSetOut.metadata.name}")
+            logger.info("[name=${clusterId.name}] TaskManager replaced ${taskmanagerStatefulSetOut.metadata.name}")
 
             return Result(
                 ResultStatus.SUCCESS,
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't replace resources of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't replace resources", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -71,7 +71,6 @@ class ClusterRunningTest {
     fun `onExecuting should return expected result`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
         val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -86,7 +85,6 @@ class ClusterRunningTest {
     @Test
     fun `onAwaiting should return expected result`() {
         val result = task.onAwaiting(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -102,7 +100,6 @@ class ClusterRunningTest {
         Status.setTaskManagerDigest(cluster, "123")
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -118,7 +115,6 @@ class ClusterRunningTest {
         Status.setJobManagerDigest(cluster, "123")
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -134,7 +130,6 @@ class ClusterRunningTest {
         Status.setTaskManagerDigest(cluster, "123")
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -150,7 +145,6 @@ class ClusterRunningTest {
         Status.setTaskManagerDigest(cluster, "123")
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -180,7 +174,6 @@ class ClusterRunningTest {
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).operatorTimestamp
@@ -200,7 +193,6 @@ class ClusterRunningTest {
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).operatorTimestamp
@@ -222,7 +214,6 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).clusterId
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -259,7 +250,6 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).clusterId
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -290,7 +280,6 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).clusterId
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -327,7 +316,6 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).clusterId
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -358,7 +346,6 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).clusterId
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -395,7 +382,6 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).clusterId
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -425,7 +411,6 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).clusterId
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)

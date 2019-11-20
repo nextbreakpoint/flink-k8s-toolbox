@@ -23,7 +23,7 @@ class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
             val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.isEmpty()) {
-                logger.info("Can't find a running job in cluster ${clusterId.name}")
+                logger.info("[name=${clusterId.name}] Can't find a running job")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -32,7 +32,7 @@ class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
             }
 
             if (runningJobs.size > 1) {
-                logger.warn("There are multiple jobs running in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] There are multiple jobs running")
             }
 
             val metrics = flinkClient.getJobMetrics(address, runningJobs.first(),
@@ -62,7 +62,7 @@ class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
                 Gson().toJson(metricsResponse)
             )
         } catch (e : Exception) {
-            logger.error("Can't get metrics of job of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get metrics of job", e)
 
             return Result(
                 ResultStatus.FAILED,

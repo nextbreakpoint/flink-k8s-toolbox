@@ -32,7 +32,7 @@ class JobIsRunning(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                 )
             }
         } catch (e : Exception) {
-            logger.warn("Can't get overview of cluster ${clusterId.name}")
+            logger.warn("[name=${clusterId.name}] Can't get overview")
 
             return Result(
                 ResultStatus.FAILED,

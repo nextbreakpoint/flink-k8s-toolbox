@@ -16,10 +16,10 @@ class DeleteResources : Task {
         val response = context.controller.deleteClusterResources(context.clusterId)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry deleting resources of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry deleting resources...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Deleting resources of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Deleting resources...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -30,10 +30,10 @@ class DeleteResources : Task {
         }
 
         if (!resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for deletion of resources of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for deletion of resources...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} removed in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources removed in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

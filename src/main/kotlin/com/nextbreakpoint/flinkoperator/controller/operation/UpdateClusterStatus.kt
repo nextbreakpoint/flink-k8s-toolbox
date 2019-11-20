@@ -50,7 +50,7 @@ class UpdateClusterStatus(
                 return initialise(clusterId, context)
             }
         } catch (e : Exception) {
-            logger.error("An error occurred while updating cluster ${clusterId.name}", e)
+            logger.error("Error occurred while updating cluster ${clusterId.name}", e)
 
             return Result(
                 ResultStatus.FAILED,
@@ -70,7 +70,7 @@ class UpdateClusterStatus(
 
         controller.updateStatus(clusterId, context.flinkCluster)
 
-        logger.info("Initialising cluster ${clusterId.name}...")
+        logger.debug("Initialising cluster ${clusterId.name}...")
 
         return Result(
             ResultStatus.SUCCESS,
@@ -86,7 +86,7 @@ class UpdateClusterStatus(
 
         val currentTask = Status.getCurrentTask(context.flinkCluster)
 
-        logger.info("Cluster ${clusterId.name}, status ${taskStatus}, task ${currentTask.name}")
+//        logger.info("Cluster ${clusterId.name}, status ${taskStatus}, task ${currentTask.name}")
 
         val taskHandler = getOperatorTaskOrThrow(currentTask)
 
@@ -242,5 +242,5 @@ class UpdateClusterStatus(
     }
 
     private fun getOperatorTaskOrThrow(clusterTask: ClusterTask) =
-        controller.taskHandlers.get(clusterTask) ?: throw RuntimeException("Unsupported task $clusterTask")
+        controller.taskHandlers[clusterTask] ?: throw RuntimeException("Implementation not found for task $clusterTask")
 }

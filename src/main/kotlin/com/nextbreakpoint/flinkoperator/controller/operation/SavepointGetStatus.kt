@@ -33,7 +33,7 @@ class SavepointGetStatus(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
             val savepointPaths = flinkClient.getLatestSavepointPaths(address, requests)
 
             if (savepointPaths.isEmpty()) {
-                logger.error("Can't find any savepoint in cluster ${clusterId.name}")
+                logger.error("[name=${clusterId.name}] Can't find any savepoint")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -46,7 +46,7 @@ class SavepointGetStatus(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 savepointPaths.values.first()
             )
         } catch (e : Exception) {
-            logger.error("Can't get savepoint status of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get savepoint status", e)
 
             return Result(
                 ResultStatus.FAILED,

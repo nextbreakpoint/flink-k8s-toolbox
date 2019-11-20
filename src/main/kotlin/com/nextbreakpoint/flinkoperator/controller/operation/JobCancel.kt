@@ -23,7 +23,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
             val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.size != 1) {
-                logger.warn("Expected exactly one job running in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Expected exactly one job running in cluster ${clusterId.name}")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -34,7 +34,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
             val inprogressCheckpoints = flinkClient.getCheckpointingStatistics(address, runningJobs)
 
             if (inprogressCheckpoints.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
-                logger.warn("Savepoint already in progress in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Savepoint already in progress in cluster ${clusterId.name}")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -43,13 +43,13 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
             }
 
             val requests = runningJobs.map {
-                logger.info("Cancelling job $it of cluster ${clusterId.name}...")
+                logger.info("[name=${clusterId.name}] Cancelling job $it...")
 
                 val response = flinkClient.createSavepoint(address, it, params.targetPath)
 
                 it to response.requestId
             }.onEach {
-                logger.info("Created savepoint request ${it.second} for job ${it.first} of cluster ${clusterId.name}")
+                logger.info("[name=${clusterId.name}] Created savepoint request ${it.second} for job ${it.first}")
             }.toMap()
 
             return Result(
@@ -62,7 +62,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
                 }.first()
             )
         } catch (e : Exception) {
-            logger.error("Can't trigger savepoint for job of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't trigger savepoint for job", e)
 
             return Result(
                 ResultStatus.FAILED,

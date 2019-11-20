@@ -32,7 +32,7 @@ class RequestClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, 
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't annotate cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't start cluster", e)
 
             return Result(
                 ResultStatus.FAILED,

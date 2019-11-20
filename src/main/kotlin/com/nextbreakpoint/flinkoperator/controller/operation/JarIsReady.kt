@@ -32,7 +32,7 @@ class JarIsReady(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
                 )
             }
         } catch (e : Exception) {
-            logger.error("Can't get JAR files of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get JAR files", e)
 
             return Result(
                 ResultStatus.FAILED,

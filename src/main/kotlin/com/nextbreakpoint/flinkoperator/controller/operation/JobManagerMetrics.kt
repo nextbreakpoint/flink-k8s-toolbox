@@ -59,7 +59,7 @@ class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
                 Gson().toJson(metricsResponse)
             )
         } catch (e : Exception) {
-            logger.error("Can't get metrics of JobManager of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get metrics of JobManager", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -24,7 +24,7 @@ class ReplaceResources : Task {
         val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
 
         if (!context.haveClusterResourcesDiverged(clusterStatus) && response.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} already replaced")
+            return taskCompletedWithOutput(context.flinkCluster, "Resources already replaced")
         }
 
         val currentResources = context.controller.cache.getResources()
@@ -49,10 +49,10 @@ class ReplaceResources : Task {
         val replaceResourcesResponse = context.controller.replaceClusterResources(context.clusterId, resources)
 
         if (!replaceResourcesResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry replacing resources of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry replacing resources...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Replacing resources of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Replacing resources...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -70,10 +70,10 @@ class ReplaceResources : Task {
         val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of cluster ${context.flinkCluster.metadata.name}...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} replaced in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources replaced in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

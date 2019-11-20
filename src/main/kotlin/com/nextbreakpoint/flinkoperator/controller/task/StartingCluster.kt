@@ -11,7 +11,7 @@ class StartingCluster : Task {
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
         Status.setTaskAttempts(context.flinkCluster, 0)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Status of cluster ${context.clusterId.name} has been updated")
+        return taskCompletedWithOutput(context.flinkCluster, "Status has been updated")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {

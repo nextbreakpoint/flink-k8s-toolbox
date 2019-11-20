@@ -29,7 +29,7 @@ class CancelJob : Task {
         val cancelJobResponse = context.controller.cancelJob(context.clusterId, options)
 
         if (!cancelJobResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry cancelling job...")
+            return taskFailedWithOutput(context.flinkCluster, "Retry cancelling job...")
         }
 
         val savepointRequest = cancelJobResponse.output

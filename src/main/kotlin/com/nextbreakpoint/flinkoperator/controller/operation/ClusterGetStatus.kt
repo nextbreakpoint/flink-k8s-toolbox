@@ -42,7 +42,7 @@ class ClusterGetStatus(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
                 result
             )
         } catch (e : Exception) {
-            logger.error("Can't get annotations of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get annotations", e)
 
             return Result(
                 ResultStatus.FAILED,

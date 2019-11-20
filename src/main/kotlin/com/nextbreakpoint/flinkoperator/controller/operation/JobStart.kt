@@ -33,7 +33,7 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
             val jarFile = files.maxBy { it.uploaded }
 
             if (jarFile == null) {
-                logger.warn("Can't find any JAR file in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Can't find any JAR file")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -51,7 +51,7 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
                 null
             )
         } catch (e : Exception) {
-            logger.warn("Can't get JAR files of cluster ${clusterId.name}")
+            logger.warn("[name=${clusterId.name}] Can't get JAR files")
 
             return Result(
                 ResultStatus.FAILED,

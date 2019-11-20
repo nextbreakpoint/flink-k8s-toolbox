@@ -23,7 +23,7 @@ class TaskManagersGetReplicas(flinkOptions: FlinkOptions, flinkClient: FlinkClie
                 replicas
             )
         } catch (e : Exception) {
-            logger.error("Can't get replicas of task managers of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get replicas of task managers", e)
 
             return Result(
                 ResultStatus.FAILED,

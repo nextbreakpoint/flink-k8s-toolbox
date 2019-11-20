@@ -9,11 +9,11 @@ class EraseSavepoint : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
         Status.setSavepointPath(context.flinkCluster, null)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Erasing savepoint of cluster ${context.clusterId.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Erasing savepoint...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return taskCompletedWithOutput(context.flinkCluster, "Savepoint of cluster ${context.clusterId.name} erased")
+        return taskCompletedWithOutput(context.flinkCluster, "Savepoint erased")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

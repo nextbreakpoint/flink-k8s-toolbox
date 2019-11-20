@@ -29,7 +29,7 @@ class JarRemove(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't remove JAR files of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't remove JAR files", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -16,7 +16,7 @@ class SavepointUpdate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
 
     override fun execute(clusterId: ClusterId, params: String): Result<Void?> {
         try {
-            logger.info("Updating savepoint of cluster ${clusterId.name}...")
+            logger.info("[name=${clusterId.name}] Updating savepoint...")
 
             kubeClient.updateSavepointPath(clusterId, params)
 
@@ -25,7 +25,7 @@ class SavepointUpdate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't update savepoint of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't update savepoint", e)
 
             return Result(
                 ResultStatus.FAILED,

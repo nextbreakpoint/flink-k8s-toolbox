@@ -24,7 +24,7 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
             if (flinkCluster.spec?.bootstrap == null) {
-                logger.info("Job not defined for cluster ${clusterId.name}")
+                logger.info("[name=${clusterId.name}] Job not defined for cluster ${clusterId.name}")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -35,7 +35,7 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
             val operatorStatus = Status.getCurrentTaskStatus(flinkCluster)
 
             if (operatorStatus != TaskStatus.Idle) {
-                logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -50,7 +50,7 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
             val clusterStatus = Status.getClusterStatus(flinkCluster)
 
             if (clusterStatus != ClusterStatus.Running) {
-                logger.warn("Can't change tasks sequence of cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -75,7 +75,7 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
                 statusList
             )
         } catch (e : Exception) {
-            logger.error("Can't change tasks sequence of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't change tasks sequence", e)
 
             return Result(
                 ResultStatus.FAILED,
