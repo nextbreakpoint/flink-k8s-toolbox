@@ -10,7 +10,7 @@ class TerminatePods : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to terminate pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val response = context.controller.terminatePods(context.clusterId)
@@ -26,7 +26,7 @@ class TerminatePods : Task {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to terminate pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
+            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val response = context.controller.arePodsTerminated(context.clusterId)
