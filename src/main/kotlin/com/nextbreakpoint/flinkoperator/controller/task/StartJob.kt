@@ -7,10 +7,6 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class StartJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        if (!isBootstrapJobDefined(context.flinkCluster)) {
-            return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
-        }
-
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         val seconds = elapsedTime / 1000
@@ -27,18 +23,14 @@ class StartJob : Task {
 
         val startJobResponse = context.controller.startJob(context.clusterId, context.flinkCluster)
 
-        if (startJobResponse.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Starting job of cluster ${context.flinkCluster.metadata.name}...")
+        if (!startJobResponse.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry starting job of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Retry starting job of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Starting job of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        if (!isBootstrapJobDefined(context.flinkCluster)) {
-            return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
-        }
-
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         val seconds = elapsedTime / 1000
@@ -49,11 +41,11 @@ class StartJob : Task {
 
         val response = context.controller.isJobStarted(context.clusterId)
 
-        if (response.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} started in $seconds seconds")
+        if (!response.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of job of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of job of cluster ${context.flinkCluster.metadata.name}...")
+        return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} started in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

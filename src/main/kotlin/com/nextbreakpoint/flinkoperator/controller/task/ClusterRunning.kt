@@ -22,7 +22,6 @@ class ClusterRunning : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Running)
         Status.setTaskAttempts(context.flinkCluster, 0)
-        Status.appendTasks(context.flinkCluster, listOf())
 
         val taskManagers = context.flinkCluster.spec?.taskManagers ?: 0
         val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1

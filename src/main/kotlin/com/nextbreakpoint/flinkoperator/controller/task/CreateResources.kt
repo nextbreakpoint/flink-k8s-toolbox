@@ -29,11 +29,11 @@ class CreateResources : Task {
             return taskCompletedWithOutput(context.flinkCluster, "Resources of cluster ${context.flinkCluster.metadata.name} already created")
         }
 
-        val clusterResources = createClusterResources(context.clusterId, context.flinkCluster)
+        val resources = createClusterResources(context.clusterId, context.flinkCluster)
 
-        val createResponse = context.controller.createClusterResources(context.clusterId, clusterResources)
+        val createResourcesResponse = context.controller.createClusterResources(context.clusterId, resources)
 
-        if (createResponse.isCompleted()) {
+        if (createResourcesResponse.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Creating resources of cluster ${context.flinkCluster.metadata.name}...")
         }
 

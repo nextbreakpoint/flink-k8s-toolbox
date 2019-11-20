@@ -10,10 +10,6 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class TriggerSavepoint : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        if (!isBootstrapJobDefined(context.flinkCluster)) {
-            return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
-        }
-
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         val seconds = elapsedTime / 1000
@@ -22,10 +18,10 @@ class TriggerSavepoint : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val savepointRequest = Status.getSavepointRequest(context.flinkCluster)
+        val jobRunningResponse = context.controller.isJobRunning(context.clusterId)
 
-        if (savepointRequest != null) {
-            return taskCompletedWithOutput(context.flinkCluster, "Savepoint of cluster ${context.flinkCluster.metadata.name} is already in progress...")
+        if (!jobRunningResponse.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint...")
         }
 
         val options = SavepointOptions(
@@ -38,20 +34,18 @@ class TriggerSavepoint : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        if (response.output == null) {
+        val savepointRequest = response.output
+
+        if (savepointRequest == null) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        Status.setSavepointRequest(context.flinkCluster, response.output)
+        Status.setSavepointRequest(context.flinkCluster, savepointRequest)
 
         return taskCompletedWithOutput(context.flinkCluster, "Creating savepoint of cluster ${context.flinkCluster.metadata.name}...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        if (!isBootstrapJobDefined(context.flinkCluster)) {
-            return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
-        }
-
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         val seconds = elapsedTime / 1000

@@ -10,7 +10,6 @@ class TerminateCluster : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Terminated)
         Status.setTaskAttempts(context.flinkCluster, 0)
-        Status.appendTasks(context.flinkCluster, listOf())
 
         return taskCompletedWithOutput(context.flinkCluster, "Status of cluster ${context.clusterId.name} has been updated")
     }

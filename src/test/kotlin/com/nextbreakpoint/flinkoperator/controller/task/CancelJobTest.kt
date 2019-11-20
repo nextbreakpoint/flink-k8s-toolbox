@@ -40,19 +40,6 @@ class CancelJobTest {
     }
 
     @Test
-    fun `onExecuting should return expected result when job is not defined`() {
-        val timestamp = Status.getOperatorTimestamp(cluster)
-        cluster.spec.bootstrap = null
-        val result = task.onExecuting(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
-    }
-
-    @Test
     fun `onExecuting should return expected result when operation times out`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(controller.currentTimeMillis()).thenReturn(time + Timeout.CANCELLING_JOB_TIMEOUT + 1)
@@ -72,6 +59,7 @@ class CancelJobTest {
     @Test
     fun `onExecuting should return expected result when job has been stopped already`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
@@ -80,6 +68,7 @@ class CancelJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, atLeastOnce()).currentTimeMillis()
+        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, atLeastOnce()).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -91,6 +80,7 @@ class CancelJobTest {
     @Test
     fun `onExecuting should return expected result when savepoint request can't be created`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
@@ -100,6 +90,7 @@ class CancelJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, atLeastOnce()).currentTimeMillis()
+        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, atLeastOnce()).isJobStopped(eq(clusterId))
         verify(controller, atLeastOnce()).cancelJob(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -112,6 +103,7 @@ class CancelJobTest {
     @Test
     fun `onExecuting should return expected result when savepoint request has been created`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, SavepointRequest(jobId = "1", triggerId = "100")))
         val result = task.onExecuting(context)
@@ -121,6 +113,7 @@ class CancelJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, atLeastOnce()).currentTimeMillis()
+        verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, atLeastOnce()).isJobStopped(eq(clusterId))
         verify(controller, atLeastOnce()).cancelJob(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -134,6 +127,7 @@ class CancelJobTest {
     fun `onExecuting should set savepoint request when savepoint request has been created`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         given(controller.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, savepointRequest))
         val result = task.onExecuting(context)
@@ -141,19 +135,6 @@ class CancelJobTest {
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(Status.getSavepointRequest(cluster)).isEqualTo(savepointRequest)
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
-    }
-
-    @Test
-    fun `onAwaiting should return expected result when job is not defined`() {
-        val timestamp = Status.getOperatorTimestamp(cluster)
-        cluster.spec.bootstrap = null
-        val result = task.onAwaiting(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotBlank()
-        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
 
     @Test
@@ -195,6 +176,7 @@ class CancelJobTest {
         Status.setSavepointRequest(cluster, savepointRequest)
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(controller.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.AWAIT, ""))
+        given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -203,6 +185,7 @@ class CancelJobTest {
         verifyNoMoreInteractions(context)
         verify(controller, atLeastOnce()).currentTimeMillis()
         verify(controller, atLeastOnce()).getSavepointStatus(eq(clusterId), eq(savepointRequest))
+        verify(controller, atLeastOnce()).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -261,7 +244,6 @@ class CancelJobTest {
         verify(context, atLeastOnce()).controller
         verifyNoMoreInteractions(context)
         verify(controller, atLeastOnce()).currentTimeMillis()
-        verify(controller, atLeastOnce()).getSavepointStatus(eq(clusterId), eq(savepointRequest))
         verify(controller, atLeastOnce()).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()

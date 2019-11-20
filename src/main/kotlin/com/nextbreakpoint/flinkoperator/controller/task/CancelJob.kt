@@ -10,10 +10,6 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class CancelJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        if (!isBootstrapJobDefined(context.flinkCluster)) {
-            return taskFailedWithOutput(context.flinkCluster, "Bootstrap job not defined")
-        }
-
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         val seconds = elapsedTime / 1000
@@ -22,9 +18,15 @@ class CancelJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to cancel job after $seconds seconds")
         }
 
-        val response = context.controller.isJobStopped(context.clusterId)
+        val jobRunningResponse = context.controller.isJobRunning(context.clusterId)
 
-        if (response.isCompleted()) {
+        if (!jobRunningResponse.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry cancelling job...")
+        }
+
+        val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
+
+        if (jobStoppedResponse.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Job is already stopped!")
         }
 
@@ -50,10 +52,6 @@ class CancelJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        if (!isBootstrapJobDefined(context.flinkCluster)) {
-            return taskFailedWithOutput(context.flinkCluster, "Bootstrap job not defined")
-        }
-
         val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
 
         val seconds = elapsedTime / 1000
@@ -68,21 +66,19 @@ class CancelJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to cancel job after $seconds seconds")
         }
 
-        val statusResponse = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
-
-        if (statusResponse.isCompleted()) {
-            Status.setSavepointPath(context.flinkCluster, statusResponse.output)
-        }
-
-        if (statusResponse.isAwaiting()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for savepoint...")
-        }
-
         val response = context.controller.isJobStopped(context.clusterId)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for job...")
         }
+
+        val statusResponse = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
+
+        if (!statusResponse.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for savepoint...")
+        }
+
+        Status.setSavepointPath(context.flinkCluster, statusResponse.output)
 
         return taskCompletedWithOutput(context.flinkCluster, "Job stopped after $seconds seconds")
     }
