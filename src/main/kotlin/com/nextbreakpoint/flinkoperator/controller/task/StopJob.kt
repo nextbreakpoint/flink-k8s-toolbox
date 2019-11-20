@@ -7,11 +7,9 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class StopJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = secondsSinceLastUpdate(context)
 
-        val seconds = elapsedTime / 1000
-
-        if (elapsedTime > Timeout.STOPPING_JOB_TIMEOUT) {
+        if (seconds > Timeout.STOPPING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
@@ -31,11 +29,9 @@ class StopJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = secondsSinceLastUpdate(context)
 
-        val seconds = elapsedTime / 1000
-
-        if (elapsedTime > Timeout.STOPPING_JOB_TIMEOUT) {
+        if (seconds > Timeout.STOPPING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 

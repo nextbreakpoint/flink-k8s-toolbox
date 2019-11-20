@@ -42,7 +42,7 @@ class CancelJobTest {
     @Test
     fun `onExecuting should return expected result when operation times out`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.currentTimeMillis()).thenReturn(time + Timeout.CANCELLING_JOB_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.CANCELLING_JOB_TIMEOUT + 1) * 1000)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -140,7 +140,7 @@ class CancelJobTest {
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.currentTimeMillis()).thenReturn(time + Timeout.CANCELLING_JOB_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.CANCELLING_JOB_TIMEOUT + 1) * 1000)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp

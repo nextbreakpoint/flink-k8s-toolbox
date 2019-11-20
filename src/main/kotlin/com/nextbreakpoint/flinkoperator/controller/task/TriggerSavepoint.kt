@@ -10,11 +10,9 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class TriggerSavepoint : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = secondsSinceLastUpdate(context)
 
-        val seconds = elapsedTime / 1000
-
-        if (elapsedTime > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
+        if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
@@ -46,11 +44,9 @@ class TriggerSavepoint : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = secondsSinceLastUpdate(context)
 
-        val seconds = elapsedTime / 1000
-
-        if (elapsedTime > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
+        if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 

@@ -73,4 +73,6 @@ interface Task {
 
         return bootstrapJob == null
     }
+
+    fun secondsSinceLastUpdate(context: TaskContext) = (context.controller.currentTimeMillis() - context.operatorTimestamp) / 1000
 }
