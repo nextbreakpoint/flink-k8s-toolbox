@@ -7,15 +7,15 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class StartJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.STARTING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to start job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val response = context.controller.isJobStarted(context.clusterId)
+        val jobStartedResponse = context.controller.isJobStarted(context.clusterId)
 
-        if (response.isCompleted()) {
+        if (jobStartedResponse.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} already started")
         }
 
@@ -29,15 +29,15 @@ class StartJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.STARTING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to start job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val response = context.controller.isJobStarted(context.clusterId)
+        val jobStartedResponse = context.controller.isJobStarted(context.clusterId)
 
-        if (!response.isCompleted()) {
+        if (!jobStartedResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of job of cluster ${context.flinkCluster.metadata.name}...")
         }
 

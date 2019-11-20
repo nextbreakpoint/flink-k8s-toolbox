@@ -7,7 +7,7 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class TerminatePods : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to terminate pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
@@ -23,7 +23,7 @@ class TerminatePods : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to terminate pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")

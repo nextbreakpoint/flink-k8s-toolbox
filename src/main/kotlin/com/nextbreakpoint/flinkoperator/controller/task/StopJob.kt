@@ -7,15 +7,15 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class StopJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.STOPPING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val response = context.controller.isJobStopped(context.clusterId)
+        val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
 
-        if (response.isCompleted()) {
+        if (jobStoppedResponse.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Job of cluster ${context.flinkCluster.metadata.name} already stopped")
         }
 
@@ -29,15 +29,15 @@ class StopJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.STOPPING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to stop job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val response = context.controller.isJobStopped(context.clusterId)
+        val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
 
-        if (!response.isCompleted()) {
+        if (!jobStoppedResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of job of cluster ${context.flinkCluster.metadata.name}...")
         }
 

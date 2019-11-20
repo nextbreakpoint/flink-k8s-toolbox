@@ -13,7 +13,7 @@ class RescaleCluster : Task {
     }
 
     override fun onExecuting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.RESCALING_CLUSTER_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to rescale task managers of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
@@ -31,7 +31,7 @@ class RescaleCluster : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.RESCALING_CLUSTER_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to scale task managers of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")

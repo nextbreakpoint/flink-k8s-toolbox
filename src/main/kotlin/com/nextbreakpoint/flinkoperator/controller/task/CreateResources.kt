@@ -8,7 +8,7 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class CreateResources : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_CLUSTER_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create resources of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
@@ -39,7 +39,7 @@ class CreateResources : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_CLUSTER_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create resources of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
