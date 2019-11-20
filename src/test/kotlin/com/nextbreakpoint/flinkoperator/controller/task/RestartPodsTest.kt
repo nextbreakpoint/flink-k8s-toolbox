@@ -45,7 +45,7 @@ class RestartPodsTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + Timeout.TERMINATING_RESOURCES_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.TERMINATING_RESOURCES_TIMEOUT + 1) * 1000)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -96,7 +96,7 @@ class RestartPodsTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + Timeout.TERMINATING_RESOURCES_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.TERMINATING_RESOURCES_TIMEOUT + 1) * 1000)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp

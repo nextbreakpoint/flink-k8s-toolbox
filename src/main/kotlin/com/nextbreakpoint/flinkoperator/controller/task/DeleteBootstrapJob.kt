@@ -7,11 +7,9 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class DeleteBootstrapJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = secondsSinceLastUpdate(context)
 
-        val seconds = elapsedTime / 1000
-
-        if (elapsedTime > Timeout.DELETING_CLUSTER_TIMEOUT) {
+        if (seconds > Timeout.DELETING_CLUSTER_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to delete bootstrap job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
@@ -25,11 +23,9 @@ class DeleteBootstrapJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = secondsSinceLastUpdate(context)
 
-        val seconds = elapsedTime / 1000
-
-        if (elapsedTime > Timeout.DELETING_CLUSTER_TIMEOUT) {
+        if (seconds > Timeout.DELETING_CLUSTER_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to delete bootstrap job of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 

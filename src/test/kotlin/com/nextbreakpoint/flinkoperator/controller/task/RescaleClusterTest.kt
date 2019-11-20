@@ -43,7 +43,7 @@ class RescaleClusterTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + Timeout.RESCALING_CLUSTER_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.RESCALING_CLUSTER_TIMEOUT + 1) * 1000)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp
@@ -92,7 +92,7 @@ class RescaleClusterTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + Timeout.RESCALING_CLUSTER_TIMEOUT + 1)
+        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.RESCALING_CLUSTER_TIMEOUT + 1) * 1000)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).operatorTimestamp

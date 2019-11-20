@@ -10,11 +10,9 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class CancelJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = secondsSinceLastUpdate(context)
 
-        val seconds = elapsedTime / 1000
-
-        if (elapsedTime > Timeout.CANCELLING_JOB_TIMEOUT) {
+        if (seconds > Timeout.CANCELLING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to cancel job after $seconds seconds")
         }
 
@@ -52,11 +50,9 @@ class CancelJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = secondsSinceLastUpdate(context)
 
-        val seconds = elapsedTime / 1000
-
-        if (elapsedTime > Timeout.CANCELLING_JOB_TIMEOUT) {
+        if (seconds > Timeout.CANCELLING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to cancel job after $seconds seconds")
         }
 
