@@ -38,17 +38,16 @@ class TriggerSavepointTest {
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
     }
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.CREATING_SAVEPOINT_TIMEOUT + 1) * 1000)
+       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.CREATING_SAVEPOINT_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
@@ -62,10 +61,9 @@ class TriggerSavepointTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, times(1)).triggerSavepoint(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -81,10 +79,9 @@ class TriggerSavepointTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, times(1)).triggerSavepoint(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -101,10 +98,9 @@ class TriggerSavepointTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, atLeastOnce()).isJobRunning(eq(clusterId))
         verify(controller, times(1)).triggerSavepoint(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -126,13 +122,11 @@ class TriggerSavepointTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.CREATING_SAVEPOINT_TIMEOUT + 1) * 1000)
+       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.CREATING_SAVEPOINT_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
@@ -143,10 +137,8 @@ class TriggerSavepointTest {
     fun `onAwaiting should return expected result when savepoint request is missing`() {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
@@ -161,10 +153,9 @@ class TriggerSavepointTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).getSavepointStatus(eq(clusterId), eq(savepointRequest))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -180,10 +171,9 @@ class TriggerSavepointTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).getSavepointStatus(eq(clusterId), eq(savepointRequest))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -210,10 +200,9 @@ class TriggerSavepointTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).getSavepointStatus(eq(clusterId), eq(savepointRequest))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()

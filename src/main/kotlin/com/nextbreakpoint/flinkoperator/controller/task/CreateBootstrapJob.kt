@@ -11,7 +11,7 @@ class CreateBootstrapJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Cluster ${context.flinkCluster.metadata.name} doesn't have a job")
         }
 
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.BOOTSTRAPPING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to upload JAR file to cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
@@ -25,9 +25,9 @@ class CreateBootstrapJob : Task {
 
         val resources = createClusterResources(context.clusterId, context.flinkCluster)
 
-        val createJobResponse = context.controller.createBootstrapJob(context.clusterId, resources)
+        val createBootstrapJobResponse = context.controller.createBootstrapJob(context.clusterId, resources)
 
-        if (!createJobResponse.isCompleted()) {
+        if (!createBootstrapJobResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry uploading JAR file to cluster ${context.flinkCluster.metadata.name}...")
         }
 
@@ -35,7 +35,7 @@ class CreateBootstrapJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.BOOTSTRAPPING_JOB_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "JAR file has not been uploaded to cluster ${context.flinkCluster.metadata.name} after $seconds seconds")

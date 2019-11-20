@@ -39,19 +39,18 @@ class CreateResourcesTest {
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
         Status.setTaskManagers(cluster, 1)
         Status.setTaskSlots(cluster, 1)
     }
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.CREATING_CLUSTER_TIMEOUT + 1) * 1000)
+       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.CREATING_CLUSTER_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
@@ -66,12 +65,11 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).haveClusterResourcesDiverged(any())
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -88,12 +86,11 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).haveClusterResourcesDiverged(any())
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verify(controller, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -111,12 +108,11 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).haveClusterResourcesDiverged(any())
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verify(controller, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -134,12 +130,11 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).haveClusterResourcesDiverged(any())
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verify(controller, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
@@ -150,13 +145,11 @@ class CreateResourcesTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.CREATING_CLUSTER_TIMEOUT + 1) * 1000)
+       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.CREATING_CLUSTER_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
@@ -171,10 +164,9 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -190,10 +182,9 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -209,10 +200,9 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -228,10 +218,9 @@ class CreateResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()

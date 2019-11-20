@@ -36,4 +36,6 @@ class TaskContext(
 
         return false
     }
+
+    fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - operatorTimestamp) / 1000
 }

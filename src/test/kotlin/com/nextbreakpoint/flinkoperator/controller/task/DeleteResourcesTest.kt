@@ -35,17 +35,16 @@ class DeleteResourcesTest {
         given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
     }
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.DELETING_CLUSTER_TIMEOUT + 1) * 1000)
+       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.DELETING_CLUSTER_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
@@ -58,10 +57,9 @@ class DeleteResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).deleteClusterResources(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -75,10 +73,9 @@ class DeleteResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).deleteClusterResources(eq(clusterId))
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
@@ -88,13 +85,11 @@ class DeleteResourcesTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-        given(controller.currentTimeMillis()).thenReturn(time + (Timeout.DELETING_CLUSTER_TIMEOUT + 1) * 1000)
+       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.DELETING_CLUSTER_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
@@ -107,11 +102,9 @@ class DeleteResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -125,11 +118,9 @@ class DeleteResourcesTest {
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)

@@ -8,7 +8,7 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class RestartPods : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
@@ -26,7 +26,7 @@ class RestartPods : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")

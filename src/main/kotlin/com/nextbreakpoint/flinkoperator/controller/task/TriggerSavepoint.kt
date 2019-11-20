@@ -10,7 +10,7 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class TriggerSavepoint : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
@@ -44,7 +44,7 @@ class TriggerSavepoint : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        val seconds = secondsSinceLastUpdate(context)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
@@ -56,13 +56,19 @@ class TriggerSavepoint : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint of cluster ${context.flinkCluster.metadata.name} after $seconds seconds")
         }
 
-        val completedSavepoint = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
+        val savepointStatusResponse = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
 
-        if (!completedSavepoint.isCompleted()) {
+        if (!savepointStatusResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for completion of savepoint of cluster ${context.flinkCluster.metadata.name}...")
         }
 
-        Status.setSavepointPath(context.flinkCluster, completedSavepoint.output)
+        val savepointPath = savepointStatusResponse.output
+
+        if (savepointPath == null) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for completion of savepoint of cluster ${context.flinkCluster.metadata.name}...")
+        }
+
+        Status.setSavepointPath(context.flinkCluster, savepointPath)
 
         return taskCompletedWithOutput(context.flinkCluster, "Savepoint of cluster ${context.flinkCluster.metadata.name} created in $seconds seconds")
     }
