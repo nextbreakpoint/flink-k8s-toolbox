@@ -16,7 +16,7 @@ class CancelJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
+        val jobStoppedResponse = context.isJobStopped(context.clusterId)
 
         if (jobStoppedResponse.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Job is already stopped!")
@@ -26,7 +26,7 @@ class CancelJob : Task {
             targetPath = Configuration.getSavepointTargetPath(context.flinkCluster)
         )
 
-        val cancelJobResponse = context.controller.cancelJob(context.clusterId, options)
+        val cancelJobResponse = context.cancelJob(context.clusterId, options)
 
         if (!cancelJobResponse.isCompleted()) {
             return taskFailedWithOutput(context.flinkCluster, "Retry cancelling job...")
@@ -56,13 +56,13 @@ class CancelJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Missing savepoint request")
         }
 
-        val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
+        val jobStoppedResponse = context.isJobStopped(context.clusterId)
 
         if (!jobStoppedResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait until job is stopped...")
         }
 
-        val savepointStatusResponse = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
+        val savepointStatusResponse = context.getSavepointStatus(context.clusterId, savepointRequest)
 
         if (!savepointStatusResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait until savepoint is completed...")

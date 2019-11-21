@@ -90,7 +90,7 @@ object KubeClient {
                     jobmanagerHost = it
                 }
             } else {
-                throw RuntimeException("Node not found")
+                throw NotFoundException("Node not found")
             }
         }
 
@@ -110,7 +110,7 @@ object KubeClient {
             response.body().use { body ->
                 if (!response.isSuccessful) {
                     body.source().use { source -> logger.error(source.readUtf8Line()) }
-                    throw RuntimeException("Can't fetch custom object $clusterName")
+                    throw NotFoundException("Can't fetch custom object $clusterName")
                 }
 
                 body.source().use { source ->
@@ -158,7 +158,7 @@ object KubeClient {
                             jobmanagerHost = service.spec.clusterIP
                         }
                     } else {
-                        throw RuntimeException("JobManager service not found (name=$clusterName, id=$clusterId)")
+                        throw NotFoundException("JobManager service not found (name=$clusterName, id=$clusterId)")
                     }
 
                     val pods = coreApi.listNamespacedPod(
@@ -178,7 +178,7 @@ object KubeClient {
 
                         logger.debug("Found JobManager pod ${pod.metadata.name}")
                     } else {
-                        throw RuntimeException("JobManager pod not found (name=$clusterName, id=$clusterId)")
+                        throw NotFoundException("JobManager pod not found (name=$clusterName, id=$clusterId)")
                     }
                 }
             }
