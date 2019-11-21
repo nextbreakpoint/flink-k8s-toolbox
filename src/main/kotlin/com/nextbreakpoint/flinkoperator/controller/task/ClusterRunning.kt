@@ -52,7 +52,7 @@ class ClusterRunning : Task {
             val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
             val deleteResources = Annotations.isDeleteResources(context.flinkCluster)
             val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = deleteResources)
-            val result = context.controller.stopCluster(context.clusterId, options)
+            val result = context.stopCluster(context.clusterId, options)
             if (result.isCompleted()) {
                 Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
                 return taskAwaitingWithOutput(context.flinkCluster, "Stopping cluster...")
@@ -168,16 +168,14 @@ class ClusterRunning : Task {
             }
         }
 
-        val now = context.controller.currentTimeMillis()
-
-        val elapsedTime = now - context.operatorTimestamp
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
         val nextTask = Status.getNextOperatorTask(context.flinkCluster)
 
-        if (isBootstrapJobDefined(context.flinkCluster) && elapsedTime > 10000) {
+        if (isBootstrapJobDefined(context.flinkCluster) && seconds > 10) {
             val attempts = Status.getTaskAttempts(context.flinkCluster)
 
-            val clusterRunning = context.controller.isClusterRunning(context.clusterId)
+            val clusterRunning = context.isClusterRunning(context.clusterId)
 
             if (!clusterRunning.isCompleted()) {
                 logger.warn("[name=${context.flinkCluster.metadata.name}] Cluster doesn't have a running job...")
@@ -211,11 +209,9 @@ class ClusterRunning : Task {
         if (context.flinkCluster.spec.bootstrap != null && nextTask == null) {
             val savepointMode = Configuration.getSavepointMode(context.flinkCluster)
 
-            val lastSavepointsTimestamp = Status.getSavepointTimestamp(context.flinkCluster)
-
             val savepointIntervalInSeconds = Configuration.getSavepointInterval(context.flinkCluster)
 
-            if (savepointMode.toUpperCase() == "AUTOMATIC" && now - lastSavepointsTimestamp > savepointIntervalInSeconds * 1000L) {
+            if (savepointMode.toUpperCase() == "AUTOMATIC" && context.timeSinceLastSavepointInSeconds() > savepointIntervalInSeconds) {
                 Status.appendTasks(context.flinkCluster,
                     listOf(
                         ClusterTask.CreatingSavepoint,
@@ -228,7 +224,7 @@ class ClusterRunning : Task {
             }
         }
 
-        if (elapsedTime > 5000) {
+        if (seconds > 5) {
             val taskmanagerStatefulset = context.resources.taskmanagerStatefulSets[context.clusterId]
             val actualTaskManagers = taskmanagerStatefulset?.status?.replicas ?: 0
             val desiredTaskManagers = context.flinkCluster.spec?.taskManagers ?: 1
@@ -237,7 +233,7 @@ class ClusterRunning : Task {
 
             if (actualTaskManagers != desiredTaskManagers || currentTaskManagers != desiredTaskManagers) {
                 val clusterScaling = ClusterScaling(taskManagers = desiredTaskManagers, taskSlots = currentTaskSlots)
-                val result = context.controller.scaleCluster(context.clusterId, clusterScaling)
+                val result = context.scaleCluster(context.clusterId, clusterScaling)
                 if (result.isCompleted()) {
                     return taskAwaitingWithOutput(context.flinkCluster, "Rescaling cluster...")
                 }

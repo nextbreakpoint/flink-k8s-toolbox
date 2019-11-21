@@ -13,7 +13,7 @@ class TerminatePods : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.controller.terminatePods(context.clusterId)
+        val response = context.terminatePods(context.clusterId)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry terminating pods...")
@@ -29,7 +29,7 @@ class TerminatePods : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.controller.arePodsTerminated(context.clusterId)
+        val response = context.arePodsTerminated(context.clusterId)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of pods...")

@@ -13,13 +13,13 @@ class StartJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val jobStartedResponse = context.controller.isJobStarted(context.clusterId)
+        val jobStartedResponse = context.isJobStarted(context.clusterId)
 
         if (jobStartedResponse.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Job already started")
         }
 
-        val startJobResponse = context.controller.startJob(context.clusterId, context.flinkCluster)
+        val startJobResponse = context.startJob(context.clusterId, context.flinkCluster)
 
         if (!startJobResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry starting job...")
@@ -35,7 +35,7 @@ class StartJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val jobStartedResponse = context.controller.isJobStarted(context.clusterId)
+        val jobStartedResponse = context.isJobStarted(context.clusterId)
 
         if (!jobStartedResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of job...")

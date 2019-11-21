@@ -16,7 +16,7 @@ class TriggerSavepoint : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val jobRunningResponse = context.controller.isJobRunning(context.clusterId)
+        val jobRunningResponse = context.isJobRunning(context.clusterId)
 
         if (!jobRunningResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint...")
@@ -26,7 +26,7 @@ class TriggerSavepoint : Task {
             targetPath = Configuration.getSavepointTargetPath(context.flinkCluster)
         )
 
-        val response = context.controller.triggerSavepoint(context.clusterId, options)
+        val response = context.triggerSavepoint(context.clusterId, options)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint...")
@@ -56,7 +56,7 @@ class TriggerSavepoint : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint after $seconds seconds")
         }
 
-        val savepointStatusResponse = context.controller.getSavepointStatus(context.clusterId, savepointRequest)
+        val savepointStatusResponse = context.getSavepointStatus(context.clusterId, savepointRequest)
 
         if (!savepointStatusResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for completion of savepoint...")

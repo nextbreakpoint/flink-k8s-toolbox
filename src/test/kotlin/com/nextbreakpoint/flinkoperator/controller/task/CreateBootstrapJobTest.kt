@@ -24,14 +24,12 @@ class CreateBootstrapJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(TaskContext::class.java)
-    private val resources = mock(CachedResources::class.java)
     private val task = CreateBootstrapJob()
 
     @BeforeEach
     fun configure() {
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
-        given(context.resources).thenReturn(resources)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
     }
 
@@ -48,7 +46,7 @@ class CreateBootstrapJobTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.BOOTSTRAPPING_JOB_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.BOOTSTRAPPING_JOB_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
@@ -122,7 +120,7 @@ class CreateBootstrapJobTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.BOOTSTRAPPING_JOB_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.BOOTSTRAPPING_JOB_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()

@@ -13,7 +13,7 @@ class DeleteResources : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.controller.deleteClusterResources(context.clusterId)
+        val response = context.deleteClusterResources(context.clusterId)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry deleting resources...")

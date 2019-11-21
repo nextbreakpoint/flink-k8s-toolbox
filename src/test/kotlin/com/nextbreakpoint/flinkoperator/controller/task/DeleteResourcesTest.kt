@@ -23,16 +23,10 @@ class DeleteResourcesTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(TaskContext::class.java)
-    private val controller = mock(OperationController::class.java)
-    private val resources = mock(CachedResources::class.java)
-    private val time = System.currentTimeMillis()
     private val task = DeleteResources()
 
     @BeforeEach
     fun configure() {
-        given(context.operatorTimestamp).thenReturn(time)
-        given(context.controller).thenReturn(controller)
-        given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
@@ -40,12 +34,11 @@ class DeleteResourcesTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.DELETING_CLUSTER_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.DELETING_CLUSTER_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
@@ -53,15 +46,13 @@ class DeleteResourcesTest {
 
     @Test
     fun `onExecuting should return expected result when resources can't be deleted`() {
-        given(controller.deleteClusterResources(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.deleteClusterResources(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).deleteClusterResources(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).deleteClusterResources(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -69,15 +60,13 @@ class DeleteResourcesTest {
 
     @Test
     fun `onExecuting should return expected result when resources have been deleted`() {
-        given(controller.deleteClusterResources(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.deleteClusterResources(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).deleteClusterResources(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).deleteClusterResources(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
@@ -85,12 +74,11 @@ class DeleteResourcesTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.DELETING_CLUSTER_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.DELETING_CLUSTER_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
@@ -105,7 +93,6 @@ class DeleteResourcesTest {
         verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -121,7 +108,6 @@ class DeleteResourcesTest {
         verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()

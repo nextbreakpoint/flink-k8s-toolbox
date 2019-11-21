@@ -13,13 +13,13 @@ class StopJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
+        val jobStoppedResponse = context.isJobStopped(context.clusterId)
 
         if (jobStoppedResponse.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Job already stopped")
         }
 
-        val stopJobResponse = context.controller.stopJob(context.clusterId)
+        val stopJobResponse = context.stopJob(context.clusterId)
 
         if (!stopJobResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry stopping job...")
@@ -35,7 +35,7 @@ class StopJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val jobStoppedResponse = context.controller.isJobStopped(context.clusterId)
+        val jobStoppedResponse = context.isJobStopped(context.clusterId)
 
         if (!jobStoppedResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of job...")

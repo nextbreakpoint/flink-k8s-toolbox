@@ -46,7 +46,9 @@ class TaskContext(
         return false
     }
 
-    fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - operatorTimestamp) / 1000
+    fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - Status.getOperatorTimestamp(flinkCluster)) / 1000L
+
+    fun timeSinceLastSavepointInSeconds() = (controller.currentTimeMillis() - Status.getSavepointTimestamp(flinkCluster)) / 1000L
 
     fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
         controller.requestStartCluster(clusterId, options)
