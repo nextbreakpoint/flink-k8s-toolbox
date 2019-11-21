@@ -21,7 +21,7 @@ class CreateResources : Task {
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
+        val response = context.isClusterReady(context.clusterId, clusterScaling)
 
         if (!context.haveClusterResourcesDiverged(clusterStatus) && response.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Resources already created")
@@ -29,7 +29,7 @@ class CreateResources : Task {
 
         val resources = createClusterResources(context.clusterId, context.flinkCluster)
 
-        val createResourcesResponse = context.controller.createClusterResources(context.clusterId, resources)
+        val createResourcesResponse = context.createClusterResources(context.clusterId, resources)
 
         if (!createResourcesResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry creating resources...")
@@ -50,7 +50,7 @@ class CreateResources : Task {
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        val response = context.controller.isClusterReady(context.clusterId, clusterScale)
+        val response = context.isClusterReady(context.clusterId, clusterScale)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation...")

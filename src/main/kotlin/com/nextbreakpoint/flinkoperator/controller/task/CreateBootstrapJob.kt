@@ -17,7 +17,7 @@ class CreateBootstrapJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val removeJarResponse = context.controller.removeJar(context.clusterId)
+        val removeJarResponse = context.removeJar(context.clusterId)
 
         if (!removeJarResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry removing old JAR files...")
@@ -25,7 +25,7 @@ class CreateBootstrapJob : Task {
 
         val resources = createClusterResources(context.clusterId, context.flinkCluster)
 
-        val createBootstrapJobResponse = context.controller.createBootstrapJob(context.clusterId, resources)
+        val createBootstrapJobResponse = context.createBootstrapJob(context.clusterId, resources)
 
         if (!createBootstrapJobResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry creating bootstrap job...")
@@ -41,7 +41,7 @@ class CreateBootstrapJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.controller.isJarReady(context.clusterId)
+        val response = context.isJarReady(context.clusterId)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait until JAR file is uploaded...")

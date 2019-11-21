@@ -23,18 +23,14 @@ class DeleteBootstrapJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(TaskContext::class.java)
-    private val controller = mock(OperationController::class.java)
     private val resources = mock(CachedResources::class.java)
-    private val time = System.currentTimeMillis()
     private val task = DeleteBootstrapJob()
 
     @BeforeEach
     fun configure() {
-        given(context.operatorTimestamp).thenReturn(time)
-        given(context.controller).thenReturn(controller)
-        given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
+        given(context.resources).thenReturn(resources)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
     }
 
@@ -45,7 +41,6 @@ class DeleteBootstrapJobTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
@@ -53,15 +48,13 @@ class DeleteBootstrapJobTest {
 
     @Test
     fun `onExecuting should return expected result when job can't be deleted`() {
-        given(controller.deleteBootstrapJob(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.deleteBootstrapJob(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).deleteBootstrapJob(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).deleteBootstrapJob(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -69,15 +62,13 @@ class DeleteBootstrapJobTest {
 
     @Test
     fun `onExecuting should return expected result when job has been deleted`() {
-        given(controller.deleteBootstrapJob(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.deleteBootstrapJob(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).deleteBootstrapJob(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).deleteBootstrapJob(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
@@ -90,7 +81,6 @@ class DeleteBootstrapJobTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
@@ -105,7 +95,6 @@ class DeleteBootstrapJobTest {
         verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -121,7 +110,6 @@ class DeleteBootstrapJobTest {
         verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
