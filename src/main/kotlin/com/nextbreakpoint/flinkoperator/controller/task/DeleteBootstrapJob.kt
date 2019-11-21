@@ -13,7 +13,7 @@ class DeleteBootstrapJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.controller.deleteBootstrapJob(context.clusterId)
+        val response = context.deleteBootstrapJob(context.clusterId)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry deleting bootstrap job...")

@@ -21,13 +21,13 @@ class ReplaceResources : Task {
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
+        val response = context.isClusterReady(context.clusterId, clusterScaling)
 
         if (!context.haveClusterResourcesDiverged(clusterStatus) && response.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Resources already replaced")
         }
 
-        val currentResources = context.controller.cache.getResources()
+        val cachedResources = context.resources
 
         val resources = createClusterResources(context.clusterId, context.flinkCluster)
 
@@ -36,17 +36,17 @@ class ReplaceResources : Task {
 //        clusterResources.jobmanagerService?.kind = jobmanagerService?.kind
 //        clusterResources.jobmanagerService?.metadata = jobmanagerService?.metadata
 
-        val jobmanagerStatefulset = currentResources.jobmanagerStatefulSets[context.clusterId]
+        val jobmanagerStatefulset = cachedResources.jobmanagerStatefulSets[context.clusterId]
         resources.jobmanagerStatefulSet?.apiVersion = jobmanagerStatefulset?.apiVersion
         resources.jobmanagerStatefulSet?.kind = jobmanagerStatefulset?.kind
         resources.jobmanagerStatefulSet?.metadata = jobmanagerStatefulset?.metadata
 
-        val taskmanagerStatefulset = currentResources.taskmanagerStatefulSets[context.clusterId]
+        val taskmanagerStatefulset = cachedResources.taskmanagerStatefulSets[context.clusterId]
         resources.taskmanagerStatefulSet?.apiVersion = taskmanagerStatefulset?.apiVersion
         resources.taskmanagerStatefulSet?.kind = taskmanagerStatefulset?.kind
         resources.taskmanagerStatefulSet?.metadata = taskmanagerStatefulset?.metadata
 
-        val replaceResourcesResponse = context.controller.replaceClusterResources(context.clusterId, resources)
+        val replaceResourcesResponse = context.replaceClusterResources(context.clusterId, resources)
 
         if (!replaceResourcesResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry replacing resources...")
@@ -67,7 +67,7 @@ class ReplaceResources : Task {
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
+        val response = context.isClusterReady(context.clusterId, clusterScaling)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation...")

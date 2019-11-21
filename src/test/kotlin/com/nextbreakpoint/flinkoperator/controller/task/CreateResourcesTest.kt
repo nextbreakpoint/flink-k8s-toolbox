@@ -26,19 +26,15 @@ class CreateResourcesTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(TaskContext::class.java)
-    private val controller = mock(OperationController::class.java)
     private val resources = mock(CachedResources::class.java)
     private val clusterScaling = ClusterScaling(taskManagers = 1, taskSlots = 1)
-    private val time = System.currentTimeMillis()
     private val task = CreateResources()
 
     @BeforeEach
     fun configure() {
-        given(context.operatorTimestamp).thenReturn(time)
-        given(context.controller).thenReturn(controller)
-        given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
+        given(context.resources).thenReturn(resources)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
         Status.setTaskManagers(cluster, 1)
         Status.setTaskSlots(cluster, 1)
@@ -51,7 +47,6 @@ class CreateResourcesTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
@@ -61,17 +56,15 @@ class CreateResourcesTest {
     fun `onExecuting should return expected result when resources have been already created and cluster is ready`() {
         val resources = TestFactory.createResourcesWithoutJob(clusterId.uuid, cluster)
         given(context.resources).thenReturn(resources)
-        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).haveClusterResourcesDiverged(any())
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
@@ -81,19 +74,17 @@ class CreateResourcesTest {
     fun `onExecuting should return expected result when resources have not been created yet`() {
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
         given(context.resources).thenReturn(resources)
-        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.createClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.createClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).haveClusterResourcesDiverged(any())
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verify(context, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verify(controller, times(1)).createClusterResources(eq(clusterId), any())
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -103,19 +94,17 @@ class CreateResourcesTest {
     fun `onExecuting should return expected result when resources can't be created`() {
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
         given(context.resources).thenReturn(resources)
-        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.createClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.createClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).haveClusterResourcesDiverged(any())
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verify(context, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verify(controller, times(1)).createClusterResources(eq(clusterId), any())
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -125,19 +114,17 @@ class CreateResourcesTest {
     fun `onExecuting should return expected result when resources have been created`() {
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
         given(context.resources).thenReturn(resources)
-        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.createClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.createClusterResources(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).haveClusterResourcesDiverged(any())
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verify(context, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verify(controller, times(1)).createClusterResources(eq(clusterId), any())
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
@@ -150,7 +137,6 @@ class CreateResourcesTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
@@ -160,15 +146,13 @@ class CreateResourcesTest {
     fun `onAwaiting should return expected result when resources are not ready`() {
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
         given(context.resources).thenReturn(resources)
-        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -178,15 +162,13 @@ class CreateResourcesTest {
     fun `onAwaiting should return expected result when cluster is not ready yet`() {
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
         given(context.resources).thenReturn(resources)
-        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -196,15 +178,13 @@ class CreateResourcesTest {
     fun `onAwaiting should return expected result when cluster has failed`() {
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
         given(context.resources).thenReturn(resources)
-        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -214,15 +194,13 @@ class CreateResourcesTest {
     fun `onAwaiting should return expected result when cluster is ready`() {
         val resources = TestFactory.createResources(clusterId.uuid, cluster)
         given(context.resources).thenReturn(resources)
-        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
