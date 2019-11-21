@@ -31,11 +31,11 @@ class CreateResources : Task {
 
         val createResourcesResponse = context.controller.createClusterResources(context.clusterId, resources)
 
-        if (createResourcesResponse.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Creating resources...")
+        if (!createResourcesResponse.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry creating resources...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Retry creating resources...")
+        return taskCompletedWithOutput(context.flinkCluster, "Creating resources...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -52,11 +52,11 @@ class CreateResources : Task {
 
         val response = context.controller.isClusterReady(context.clusterId, clusterScale)
 
-        if (response.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Resources created in $seconds seconds")
+        if (!response.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation...")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources created in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

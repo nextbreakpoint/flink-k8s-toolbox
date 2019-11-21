@@ -625,7 +625,7 @@ class ClusterRunningTest {
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEqualTo("[name=test] ")
+        assertThat(result.output).isEqualTo("[name=test] Stopping cluster...")
         assertThat(actionTimestamp).isNotEqualTo(Annotations.getActionTimestamp(cluster))
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.NONE)
     }
@@ -652,7 +652,7 @@ class ClusterRunningTest {
         verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEqualTo("[name=test] ")
+        assertThat(result.output).isEqualTo("[name=test] Rescaling cluster...")
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
 

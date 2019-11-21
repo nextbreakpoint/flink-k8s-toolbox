@@ -2,7 +2,52 @@ package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
+import com.nextbreakpoint.flinkoperator.common.model.Result
+import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
+import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
+import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
+import com.nextbreakpoint.flinkoperator.common.model.StartOptions
+import com.nextbreakpoint.flinkoperator.common.model.StopOptions
+import com.nextbreakpoint.flinkoperator.controller.operation.BootstrapCreateJob
+import com.nextbreakpoint.flinkoperator.controller.operation.BootstrapDeleteJob
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCheckpointing
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCreateResources
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterDeleteResources
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterGetStatus
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsReady
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsRunning
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsSuspended
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsTerminated
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterReplaceResources
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterScale
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStart
+import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStop
+import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterCreate
+import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterDelete
+import com.nextbreakpoint.flinkoperator.controller.operation.JarIsReady
+import com.nextbreakpoint.flinkoperator.controller.operation.JarRemove
+import com.nextbreakpoint.flinkoperator.controller.operation.JobCancel
+import com.nextbreakpoint.flinkoperator.controller.operation.JobHasStarted
+import com.nextbreakpoint.flinkoperator.controller.operation.JobHasStopped
+import com.nextbreakpoint.flinkoperator.controller.operation.JobIsRunning
+import com.nextbreakpoint.flinkoperator.controller.operation.JobStart
+import com.nextbreakpoint.flinkoperator.controller.operation.JobStop
+import com.nextbreakpoint.flinkoperator.controller.operation.PodsAreTerminated
+import com.nextbreakpoint.flinkoperator.controller.operation.PodsScaleDown
+import com.nextbreakpoint.flinkoperator.controller.operation.PodsScaleUp
+import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterScale
+import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStart
+import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStop
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetStatus
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointUpdate
+import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetReplicas
+import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersSetReplicas
+import com.nextbreakpoint.flinkoperator.controller.operation.UpdateClusterStatus
+import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
 
 class TaskContext(
@@ -38,4 +83,120 @@ class TaskContext(
     }
 
     fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - operatorTimestamp) / 1000
+
+    fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
+        controller.requestStartCluster(clusterId, options)
+
+    fun requestStopCluster(clusterId: ClusterId, options: StopOptions) : Result<Void?> =
+        controller.requestStopCluster(clusterId, options)
+
+    fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
+        controller.requestScaleCluster(clusterId, options)
+
+    fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<ClusterTask>> =
+        controller.startCluster(clusterId, options)
+
+    fun stopCluster(clusterId: ClusterId, options: StopOptions) : Result<List<ClusterTask>> =
+        controller.stopCluster(clusterId, options)
+
+    fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling) : Result<List<ClusterTask>> =
+        controller.scaleCluster(clusterId, clusterScaling)
+
+    fun createSavepoint(clusterId: ClusterId) : Result<List<ClusterTask>> =
+        controller.createSavepoint(clusterId)
+
+    fun getClusterStatus(clusterId: ClusterId) : Result<Map<String, String>> =
+        controller.getClusterStatus(clusterId)
+
+    fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : Result<Void?> =
+        controller.createFlinkCluster(clusterId, flinkCluster)
+
+    fun deleteFlinkCluster(clusterId: ClusterId) : Result<Void?> =
+        controller.deleteFlinkCluster(clusterId)
+
+    fun updateClusterStatus(clusterId: ClusterId) : Result<Void?> =
+        controller.updateClusterStatus(clusterId)
+
+    fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
+        controller.createClusterResources(clusterId, clusterResources)
+
+    fun deleteClusterResources(clusterId: ClusterId) : Result<Void?> =
+        controller.deleteClusterResources(clusterId)
+
+    fun replaceClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
+        controller.replaceClusterResources(clusterId, clusterResources)
+
+    fun removeJar(clusterId: ClusterId) : Result<Void?> =
+        controller.removeJar(clusterId)
+
+    fun isJarReady(clusterId: ClusterId) : Result<Void?> =
+        controller.isJarReady(clusterId)
+
+    fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
+        controller.updateSavepoint(clusterId, savepointPath)
+
+    fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest?> =
+        controller.triggerSavepoint(clusterId, options)
+
+    fun getSavepointStatus(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
+        controller.getSavepointStatus(clusterId, savepointRequest)
+
+    fun createBootstrapJob(clusterId: ClusterId, clusterResources: ClusterResources): Result<Void?> =
+        controller.createBootstrapJob(clusterId, clusterResources)
+
+    fun deleteBootstrapJob(clusterId: ClusterId) : Result<Void?> =
+        controller.deleteBootstrapJob(clusterId)
+
+    fun terminatePods(clusterId: ClusterId) : Result<Void?> =
+        controller.terminatePods(clusterId)
+
+    fun restartPods(clusterId: ClusterId, clusterResources: ClusterResources): Result<Void?> =
+        controller.restartPods(clusterId, clusterResources)
+
+    fun arePodsTerminated(clusterId: ClusterId): Result<Void?> =
+        controller.arePodsTerminated(clusterId)
+
+    fun startJob(clusterId: ClusterId, cluster: V1FlinkCluster) : Result<Void?> =
+        controller.startJob(clusterId, cluster)
+
+    fun stopJob(clusterId: ClusterId): Result<Void?> =
+        controller.stopJob(clusterId)
+
+    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest?> =
+        controller.cancelJob(clusterId, options)
+
+    fun isClusterReady(clusterId: ClusterId, options: ClusterScaling): Result<Void?> =
+        controller.isClusterReady(clusterId, options)
+
+    fun isClusterRunning(clusterId: ClusterId): Result<Boolean> =
+        controller.isClusterRunning(clusterId)
+
+    fun isClusterSuspended(clusterId: ClusterId): Result<Void?> =
+        controller.isClusterSuspended(clusterId)
+
+    fun isClusterTerminated(clusterId: ClusterId): Result<Void?> =
+        controller.isClusterTerminated(clusterId)
+
+    fun isJobStarted(clusterId: ClusterId): Result<Void?> =
+        controller.isJobStarted(clusterId)
+
+    fun isJobStopped(clusterId: ClusterId): Result<Void?> =
+        controller.isJobStopped(clusterId)
+
+    fun isJobRunning(clusterId: ClusterId): Result<Void?> =
+        controller.isJobRunning(clusterId)
+
+    fun setTaskManagersReplicas(clusterId: ClusterId, taskManagers: Int) : Result<Void?> =
+        controller.setTaskManagersReplicas(clusterId, taskManagers)
+
+    fun getTaskManagersReplicas(clusterId: ClusterId) : Result<Int> =
+        controller.getTaskManagersReplicas(clusterId)
+
+    fun updateStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
+        controller.updateStatus(clusterId, flinkCluster)
+    }
+
+    fun updateAnnotations(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
+        controller.updateAnnotations(clusterId, flinkCluster)
+    }
 }
