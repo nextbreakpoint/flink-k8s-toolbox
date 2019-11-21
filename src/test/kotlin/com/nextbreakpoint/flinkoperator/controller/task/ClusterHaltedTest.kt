@@ -40,6 +40,7 @@ class ClusterHaltedTest {
         given(context.clusterId).thenReturn(clusterId)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0L)
         given(context.timeSinceLastSavepointInSeconds()).thenReturn(0L)
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         val actualBootstrapDigest = ClusterResource.computeDigest(cluster.spec?.bootstrap)
         val actualRuntimeDigest = ClusterResource.computeDigest(cluster.spec?.runtime)
         val actualJobManagerDigest = ClusterResource.computeDigest(cluster.spec?.jobManager)
@@ -78,72 +79,13 @@ class ClusterHaltedTest {
     }
 
     @Test
-    fun `onIdle should fail when job manager digest is missing`() {
-        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
-        Status.setBootstrapDigest(cluster, "123")
-        Status.setRuntimeDigest(cluster, "123")
-        Status.setTaskManagerDigest(cluster, "123")
-        given(context.flinkCluster).thenReturn(cluster)
-        val result = task.onIdle(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotNull()
-    }
-
-    @Test
-    fun `onIdle should fail when task manager digest is missing`() {
-        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
-        Status.setBootstrapDigest(cluster, "123")
-        Status.setRuntimeDigest(cluster, "123")
-        Status.setJobManagerDigest(cluster, "123")
-        given(context.flinkCluster).thenReturn(cluster)
-        val result = task.onIdle(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotNull()
-    }
-
-    @Test
-    fun `onIdle should fail when flink job digest is missing`() {
-        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
-        Status.setRuntimeDigest(cluster, "123")
-        Status.setJobManagerDigest(cluster, "123")
-        Status.setTaskManagerDigest(cluster, "123")
-        given(context.flinkCluster).thenReturn(cluster)
-        val result = task.onIdle(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotNull()
-    }
-
-    @Test
-    fun `onIdle should fail when flink image digest is missing`() {
-        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
-        Status.setBootstrapDigest(cluster, "123")
-        Status.setJobManagerDigest(cluster, "123")
-        Status.setTaskManagerDigest(cluster, "123")
-        given(context.flinkCluster).thenReturn(cluster)
-        val result = task.onIdle(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNotNull()
-    }
-
-    @Test
     fun `onIdle should do nothing when cluster status is suspended and digests didn't changed`() {
         Status.setClusterStatus(cluster, ClusterStatus.Suspended)
         val timestamp = Status.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
+        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -156,8 +98,9 @@ class ClusterHaltedTest {
         Status.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = Status.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
+        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -172,8 +115,9 @@ class ClusterHaltedTest {
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
+        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -188,8 +132,9 @@ class ClusterHaltedTest {
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
+        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -600,8 +545,9 @@ class ClusterHaltedTest {
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(10)
         val result = task.onIdle(context)
+        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -614,11 +560,9 @@ class ClusterHaltedTest {
         Status.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
-        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -632,11 +576,9 @@ class ClusterHaltedTest {
         Status.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, true))
-        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -654,11 +596,9 @@ class ClusterHaltedTest {
         cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
@@ -670,30 +610,6 @@ class ClusterHaltedTest {
     }
 
     @Test
-    fun `onIdle should increment attempts after 10 seconds when cluster status is failed but cluster is ready`() {
-        Status.setClusterStatus(cluster, ClusterStatus.Failed)
-        val timestamp = Status.getOperatorTimestamp(cluster)
-        Status.setTaskAttempts(cluster, 2)
-        cluster.spec.operator.jobRestartPolicy = "ALWAYS"
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
-        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
-        val result = task.onIdle(context)
-        verify(context, atLeastOnce()).clusterId
-        verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).isClusterRunning(eq(clusterId))
-        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isNotNull()
-        assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
-        assertThat(Status.getTaskAttempts(cluster)).isEqualTo(3)
-        assertThat(Status.getNextOperatorTask(cluster)).isNull()
-    }
-
-    @Test
     fun `onIdle should restart job when cluster status is failed but cluster is ready after 3 attempts`() {
         Status.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = Status.getOperatorTimestamp(cluster)
@@ -701,11 +617,9 @@ class ClusterHaltedTest {
         cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
