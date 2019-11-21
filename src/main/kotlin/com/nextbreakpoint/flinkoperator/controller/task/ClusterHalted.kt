@@ -39,7 +39,7 @@ class ClusterHalted : Task {
         if (manualAction == ManualAction.START) {
             val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
             val options = StartOptions(withoutSavepoint = withoutSavepoint)
-            val result = context.controller.startCluster(context.clusterId, options)
+            val result = context.startCluster(context.clusterId, options)
             if (result.isCompleted()) {
                 Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
                 return taskAwaitingWithOutput(context.flinkCluster, "Starting cluster...")
@@ -154,9 +154,9 @@ class ClusterHalted : Task {
                 // nothing changed
             }
 
-            val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+            val seconds = context.timeSinceLastUpdateInSeconds()
 
-            if (isBootstrapJobDefined(context.flinkCluster) && elapsedTime > 10000) {
+            if (isBootstrapJobDefined(context.flinkCluster) && seconds > 10) {
                 val clusterStatus = Status.getClusterStatus(context.flinkCluster)
 
                 when (clusterStatus) {
@@ -165,7 +165,7 @@ class ClusterHalted : Task {
 
                         val attempts = Status.getTaskAttempts(context.flinkCluster)
 
-                        val clusterRunning = context.controller.isClusterRunning(context.clusterId)
+                        val clusterRunning = context.isClusterRunning(context.clusterId)
 
                         if (clusterRunning.isCompleted()) {
                             Status.appendTasks(
@@ -184,7 +184,7 @@ class ClusterHalted : Task {
                                     taskSlots = context.flinkCluster.status.taskSlots
                                 )
 
-                                val clusterReady = context.controller.isClusterReady(context.clusterId, clusterScaling)
+                                val clusterReady = context.isClusterReady(context.clusterId, clusterScaling)
 
                                 if (clusterReady.isCompleted()) {
                                     logger.info("[name=${context.flinkCluster.metadata.name}] Cluster seems to be ready...")

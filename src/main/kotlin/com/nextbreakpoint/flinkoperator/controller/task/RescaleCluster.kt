@@ -16,7 +16,7 @@ class RescaleCluster : Task {
 
         val desiredTaskManagers = Status.getTaskManagers(context.flinkCluster)
 
-        val result = context.controller.setTaskManagersReplicas(context.clusterId, desiredTaskManagers)
+        val result = context.setTaskManagersReplicas(context.clusterId, desiredTaskManagers)
 
         if (!result.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Can't rescale task managers")
@@ -32,7 +32,7 @@ class RescaleCluster : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val result = context.controller.getTaskManagersReplicas(context.clusterId)
+        val result = context.getTaskManagersReplicas(context.clusterId)
 
         if (!result.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Task managers have not been scaled yet...")

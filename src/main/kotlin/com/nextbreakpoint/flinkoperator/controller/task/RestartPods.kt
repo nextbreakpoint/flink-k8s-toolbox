@@ -16,7 +16,7 @@ class RestartPods : Task {
 
         val resources = createClusterResources(context.clusterId, context.flinkCluster)
 
-        val response = context.controller.restartPods(context.clusterId, resources)
+        val response = context.restartPods(context.clusterId, resources)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry restarting pods...")
@@ -37,7 +37,7 @@ class RestartPods : Task {
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        val response = context.controller.isClusterReady(context.clusterId, clusterScaling)
+        val response = context.isClusterReady(context.clusterId, clusterScaling)
 
         if (!response.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of pods...")

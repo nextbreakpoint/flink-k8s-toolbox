@@ -23,14 +23,12 @@ class DeleteBootstrapJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(TaskContext::class.java)
-    private val resources = mock(CachedResources::class.java)
     private val task = DeleteBootstrapJob()
 
     @BeforeEach
     fun configure() {
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
-        given(context.resources).thenReturn(resources)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
     }
 

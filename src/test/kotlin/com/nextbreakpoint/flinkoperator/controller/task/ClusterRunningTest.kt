@@ -32,19 +32,16 @@ class ClusterRunningTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(TaskContext::class.java)
-    private val controller = mock(OperationController::class.java)
     private val resources = mock(CachedResources::class.java)
-    private val time = System.currentTimeMillis()
     private val task = ClusterRunning()
 
     @BeforeEach
     fun configure() {
-        given(context.actionTimestamp).thenReturn(0L)
-        given(context.operatorTimestamp).thenReturn(time)
-        given(context.controller).thenReturn(controller)
-        given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
+        given(context.resources).thenReturn(resources)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(0L)
+        given(context.timeSinceLastSavepointInSeconds()).thenReturn(0L)
         val actualBootstrapDigest = ClusterResource.computeDigest(cluster.spec?.bootstrap)
         val actualRuntimeDigest = ClusterResource.computeDigest(cluster.spec?.runtime)
         val actualJobManagerDigest = ClusterResource.computeDigest(cluster.spec?.jobManager)
@@ -157,9 +154,9 @@ class ClusterRunningTest {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         val timestamp = Status.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -175,11 +172,9 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
@@ -194,11 +189,9 @@ class ClusterRunningTest {
         given(context.flinkCluster).thenReturn(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).operatorTimestamp
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
@@ -433,20 +426,17 @@ class ClusterRunningTest {
     @Test
     fun `onIdle should do nothing for at least 10 seconds`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        Status.updateSavepointTimestamp(cluster)
         Status.setTaskAttempts(cluster, 3)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
-        given(controller.currentTimeMillis()).thenReturn(time + 10000)
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(10)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).resources
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
@@ -456,21 +446,18 @@ class ClusterRunningTest {
     @Test
     fun `onIdle should update attempts if cluster is running`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        Status.updateSavepointTimestamp(cluster)
         Status.setTaskAttempts(cluster, 2)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
-        given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterRunning(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
@@ -481,21 +468,18 @@ class ClusterRunningTest {
     @Test
     fun `onIdle should increment attempts after 10 seconds when cluster is not running`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        Status.updateSavepointTimestamp(cluster)
         Status.setTaskAttempts(cluster, 2)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
-        given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).resources
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterRunning(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
@@ -506,20 +490,16 @@ class ClusterRunningTest {
     @Test
     fun `onIdle should change status when cluster is not running after 3 attempts`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        Status.updateSavepointTimestamp(cluster)
         Status.setTaskAttempts(cluster, 3)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
-        given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterRunning(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotNull()
@@ -529,19 +509,13 @@ class ClusterRunningTest {
     @Test
     fun `onIdle should create checkpoint when savepoint mode is automatic and last savepoint is older than savepoint interval`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        Status.updateSavepointTimestamp(cluster)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
-        given(controller.currentTimeMillis()).thenReturn(timestamp + 60000 + 1)
+        given(context.timeSinceLastSavepointInSeconds()).thenReturn(61)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterRunning(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
@@ -557,21 +531,13 @@ class ClusterRunningTest {
     @Test
     fun `onIdle should not create checkpoint when savepoint mode is manual and last savepoint is older than savepoint interval`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        Status.updateSavepointTimestamp(cluster)
         cluster.spec.operator.savepointMode = "MANUAL"
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
-        given(controller.currentTimeMillis()).thenReturn(timestamp + 60000 + 1)
+        given(context.timeSinceLastSavepointInSeconds()).thenReturn(61)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
-        verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).resources
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterRunning(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
@@ -581,19 +547,15 @@ class ClusterRunningTest {
     @Test
     fun `onIdle should suspend cluster when job is finished`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        Status.updateSavepointTimestamp(cluster)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, true))
-        given(controller.currentTimeMillis()).thenReturn(time + 10000 + 1)
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, true))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(11)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).isClusterRunning(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotNull()
@@ -613,16 +575,14 @@ class ClusterRunningTest {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         Annotations.setManualAction(cluster, ManualAction.STOP)
         val tasks = listOf(ClusterTask.CancelJob, ClusterTask.ClusterHalted)
-        given(controller.stopCluster(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, tasks))
+        given(context.stopCluster(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, tasks))
         val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).clusterId
-        verifyNoMoreInteractions(context)
+        verify(context, atLeastOnce()).flinkCluster
         val options = StopOptions(withoutSavepoint = false, deleteResources = false)
-        verify(controller, times(1)).stopCluster(eq(clusterId), eq(options))
-        verifyNoMoreInteractions(controller)
+        verify(context, times(1)).stopCluster(eq(clusterId), eq(options))
+        verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isEqualTo("[name=test] Stopping cluster...")
@@ -636,20 +596,18 @@ class ClusterRunningTest {
         Status.setSavepointPath(context.flinkCluster, "/tmp/000")
         cluster.spec.taskManagers = 4
         val tasks = listOf(ClusterTask.CancelJob, ClusterTask.ReplaceResources, ClusterTask.ClusterRunning)
-        given(controller.scaleCluster(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, tasks))
+        given(context.scaleCluster(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, tasks))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(controller.currentTimeMillis()).thenReturn(time + 5000 + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(6)
         val result = task.onIdle(context)
-        verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
-        verify(context, atLeastOnce()).operatorTimestamp
         verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).resources
-        verifyNoMoreInteractions(context)
         val clusterScaling = ClusterScaling(taskManagers = 4, taskSlots = 1)
-        verify(controller, times(1)).currentTimeMillis()
-        verify(controller, times(1)).scaleCluster(eq(clusterId), eq(clusterScaling))
-        verifyNoMoreInteractions(controller)
+        verify(context, times(1)).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).scaleCluster(eq(clusterId), eq(clusterScaling))
+        verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isEqualTo("[name=test] Rescaling cluster...")

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
@@ -22,16 +23,10 @@ class StopJobTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val context = mock(TaskContext::class.java)
-    private val controller = mock(OperationController::class.java)
-    private val resources = mock(CachedResources::class.java)
-    private val time = System.currentTimeMillis()
     private val task = StopJob()
 
     @BeforeEach
     fun configure() {
-        given(context.operatorTimestamp).thenReturn(time)
-        given(context.controller).thenReturn(controller)
-        given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
@@ -39,7 +34,7 @@ class StopJobTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.STOPPING_JOB_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.STOPPING_JOB_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
@@ -51,12 +46,12 @@ class StopJobTest {
 
     @Test
     fun `onExecuting should return expected result when job has been stopped already`() {
-        given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -65,13 +60,14 @@ class StopJobTest {
 
     @Test
     fun `onExecuting should return expected result when job has not been stopped already`() {
-        given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.stopJob(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.stopJob(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJobStopped(eq(clusterId))
+        verify(context, times(1)).stopJob(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -80,13 +76,14 @@ class StopJobTest {
 
     @Test
     fun `onExecuting should return expected result when job can't be stopped`() {
-        given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.stopJob(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.stopJob(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJobStopped(eq(clusterId))
+        verify(context, times(1)).stopJob(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -95,13 +92,14 @@ class StopJobTest {
 
     @Test
     fun `onExecuting should return expected result when job has been stopped`() {
-        given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(controller.stopJob(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.stopJob(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJobStopped(eq(clusterId))
+        verify(context, times(1)).stopJob(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -110,7 +108,7 @@ class StopJobTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.STOPPING_JOB_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.STOPPING_JOB_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
@@ -122,12 +120,12 @@ class StopJobTest {
 
     @Test
     fun `onAwaiting should return expected result when job has been stopped`() {
-        given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -136,12 +134,12 @@ class StopJobTest {
 
     @Test
     fun `onAwaiting should return expected result when job has not been stopped yet`() {
-        given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -150,12 +148,12 @@ class StopJobTest {
 
     @Test
     fun `onAwaiting should return expected result when job can't be stopped`() {
-        given(controller.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)

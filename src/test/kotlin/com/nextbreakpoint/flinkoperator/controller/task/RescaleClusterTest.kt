@@ -25,16 +25,10 @@ class RescaleClusterTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink", taskManagers = 4)
     private val context = mock(TaskContext::class.java)
-    private val controller = mock(OperationController::class.java)
-    private val resources = mock(CachedResources::class.java)
-    private val time = System.currentTimeMillis()
     private val task = RescaleCluster()
 
     @BeforeEach
     fun configure() {
-        given(context.operatorTimestamp).thenReturn(time)
-        given(context.controller).thenReturn(controller)
-        given(context.resources).thenReturn(resources)
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
@@ -44,12 +38,11 @@ class RescaleClusterTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.RESCALING_CLUSTER_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.RESCALING_CLUSTER_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
@@ -57,15 +50,13 @@ class RescaleClusterTest {
 
     @Test
     fun `onExecuting should return expected result when task managers can't be scaled`() {
-        given(controller.setTaskManagersReplicas(eq(clusterId), Mockito.eq(4))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.setTaskManagersReplicas(eq(clusterId), Mockito.eq(4))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).setTaskManagersReplicas(eq(clusterId), Mockito.eq(4))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).setTaskManagersReplicas(eq(clusterId), Mockito.eq(4))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -73,15 +64,13 @@ class RescaleClusterTest {
 
     @Test
     fun `onExecuting should return expected result when task managers have been scaled`() {
-        given(controller.setTaskManagersReplicas(eq(clusterId), Mockito.eq(4))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.setTaskManagersReplicas(eq(clusterId), Mockito.eq(4))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).setTaskManagersReplicas(eq(clusterId), Mockito.eq(4))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).setTaskManagersReplicas(eq(clusterId), Mockito.eq(4))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
@@ -89,12 +78,11 @@ class RescaleClusterTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.RESCALING_CLUSTER_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.RESCALING_CLUSTER_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNotBlank()
@@ -102,15 +90,13 @@ class RescaleClusterTest {
 
     @Test
     fun `onAwaiting should return expected result when resources are not ready`() {
-        given(controller.getTaskManagersReplicas(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, 0))
+        given(context.getTaskManagersReplicas(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, 0))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).getTaskManagersReplicas(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).getTaskManagersReplicas(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -118,15 +104,13 @@ class RescaleClusterTest {
 
     @Test
     fun `onAwaiting should return expected result when can't get current replicas`() {
-        given(controller.getTaskManagersReplicas(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, 0))
+        given(context.getTaskManagersReplicas(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, 0))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).getTaskManagersReplicas(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).getTaskManagersReplicas(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -134,15 +118,13 @@ class RescaleClusterTest {
 
     @Test
     fun `onAwaiting should return expected result when not all resources are ready`() {
-        given(controller.getTaskManagersReplicas(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, 2))
+        given(context.getTaskManagersReplicas(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, 2))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).getTaskManagersReplicas(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).getTaskManagersReplicas(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNotBlank()
@@ -150,15 +132,13 @@ class RescaleClusterTest {
 
     @Test
     fun `onAwaiting should return expected result when resources are ready`() {
-        given(controller.getTaskManagersReplicas(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, 4))
+        given(context.getTaskManagersReplicas(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, 4))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).controller
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).getTaskManagersReplicas(eq(clusterId))
         verifyNoMoreInteractions(context)
-        verify(controller, times(1)).getTaskManagersReplicas(eq(clusterId))
-        verifyNoMoreInteractions(controller)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()

@@ -42,7 +42,7 @@ class CreateResourcesTest {
 
     @Test
     fun `onExecuting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.CREATING_CLUSTER_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.CREATING_CLUSTER_TIMEOUT + 1)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
@@ -132,7 +132,7 @@ class CreateResourcesTest {
 
     @Test
     fun `onAwaiting should return expected result when operation times out`() {
-       given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.CREATING_CLUSTER_TIMEOUT + 1)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(Timeout.CREATING_CLUSTER_TIMEOUT + 1)
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
