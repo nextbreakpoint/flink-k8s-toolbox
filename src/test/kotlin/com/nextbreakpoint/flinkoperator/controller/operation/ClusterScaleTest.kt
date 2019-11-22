@@ -62,11 +62,7 @@ class ClusterScaleTest {
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).containsExactlyElementsOf(
-            listOf(
-                ClusterTask.ClusterRunning
-            )
-        )
+        assertThat(result.output).isEmpty()
     }
 
     @Test
@@ -80,11 +76,7 @@ class ClusterScaleTest {
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).containsExactlyElementsOf(
-            listOf(
-                ClusterTask.ClusterHalted
-            )
-        )
+        assertThat(result.output).isEmpty()
     }
 
     @Test

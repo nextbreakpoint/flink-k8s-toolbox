@@ -64,9 +64,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).containsExactlyElementsOf(listOf(
-            ClusterTask.ClusterHalted
-        ))
+        assertThat(result.output).isEmpty()
     }
 
     @Test
@@ -137,9 +135,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).containsExactlyElementsOf(listOf(
-            ClusterTask.ClusterHalted
-        ))
+        assertThat(result.output).isEmpty()
     }
 
     @Test
@@ -218,9 +214,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).containsExactlyElementsOf(listOf(
-            ClusterTask.ClusterHalted
-        ))
+        assertThat(result.output).isEmpty()
     }
 
     @Test
@@ -296,8 +290,6 @@ class ClusterStartTest {
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).containsExactlyElementsOf(listOf(
-            ClusterTask.ClusterHalted
-        ))
+        assertThat(result.output).isEmpty()
     }
 }
