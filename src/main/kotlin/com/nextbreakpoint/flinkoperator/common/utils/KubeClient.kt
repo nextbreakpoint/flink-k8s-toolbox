@@ -648,7 +648,7 @@ object KubeClient {
 
         services.items.forEach { service ->
             try {
-                logger.info("Removing Service ${service.metadata.name}...")
+                logger.debug("Removing Service ${service.metadata.name}...")
 
                 val status = coreApi.deleteNamespacedService(
                     service.metadata.name,
@@ -663,7 +663,7 @@ object KubeClient {
 
                 logger.debug("Response status: ${status.reason}")
 
-                status.details.causes.forEach { logger.info(it.message) }
+//                status.details.causes.forEach { logger.debug(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -687,7 +687,7 @@ object KubeClient {
 
         statefulSets.items.forEach { statefulSet ->
             try {
-                logger.info("Removing StatefulSet ${statefulSet.metadata.name}...")
+                logger.debug("Removing StatefulSet ${statefulSet.metadata.name}...")
 
                 val status = appsApi.deleteNamespacedStatefulSet(
                     statefulSet.metadata.name,
@@ -702,7 +702,7 @@ object KubeClient {
 
                 logger.debug("Response status: ${status.reason}")
 
-                status.details.causes.forEach { logger.info(it.message) }
+//                status.details.causes.forEach { logger.debug(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -726,7 +726,7 @@ object KubeClient {
 
         volumeClaims.items.forEach { volumeClaim ->
             try {
-                logger.info("Removing Persistent Volume Claim ${volumeClaim.metadata.name}...")
+                logger.debug("Removing Persistent Volume Claim ${volumeClaim.metadata.name}...")
 
                 val status = coreApi.deleteNamespacedPersistentVolumeClaim(
                     volumeClaim.metadata.name,
@@ -741,7 +741,7 @@ object KubeClient {
 
                 logger.debug("Response status: ${status.reason}")
 
-                status.details.causes.forEach { logger.info(it.message) }
+//                status.details.causes.forEach { logger.debug(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -765,7 +765,7 @@ object KubeClient {
 
         jobs.items.forEach { job ->
             try {
-                logger.info("Removing Job ${job.metadata.name}...")
+                logger.debug("Removing Job ${job.metadata.name}...")
 
                 val status = batchApi.deleteNamespacedJob(
                     job.metadata.name,
@@ -780,7 +780,7 @@ object KubeClient {
 
                 logger.debug("Response status: ${status.reason}")
 
-                status.details.causes.forEach { logger.info(it.message) }
+//                status.details.causes.forEach { logger.debug(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -809,7 +809,7 @@ object KubeClient {
 
         response.body().use { body ->
             if (response.isSuccessful) {
-                logger.info("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
+                logger.debug("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
             } else {
                 body.source().use { source -> logger.error(source.readUtf8Line()) }
                 logger.error("Can't update savepoint of cluster ${clusterId.name}")
@@ -926,7 +926,7 @@ object KubeClient {
 
         statefulSets.items.forEach { statefulSet ->
             try {
-                logger.info("Scaling StatefulSet ${statefulSet.metadata.name}...")
+                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
 
                 val patch = listOf(
                     mapOf<String, Any?>(
@@ -950,7 +950,7 @@ object KubeClient {
 
                 response.body().use { body ->
                     if (response.isSuccessful) {
-                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
                     } else {
                         body.source().use { source -> logger.error(source.readUtf8Line()) }
                         logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
@@ -980,7 +980,7 @@ object KubeClient {
 
         statefulSets.items.forEach { statefulSet ->
             try {
-                logger.info("Scaling StatefulSet ${statefulSet.metadata.name}...")
+                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
 
                 val patch = listOf(
                     mapOf<String, Any?>(
@@ -1004,7 +1004,7 @@ object KubeClient {
 
                 response.body().use { body ->
                     if (response.isSuccessful) {
-                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
                     } else {
                         body.source().use { source -> logger.error(source.readUtf8Line()) }
                         logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
@@ -1031,7 +1031,7 @@ object KubeClient {
 
         statefulSets.items.forEach { statefulSet ->
             try {
-                logger.info("Scaling StatefulSet ${statefulSet.metadata.name}...")
+                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
 
                 val patch = listOf(
                     mapOf<String, Any?>(
@@ -1055,7 +1055,7 @@ object KubeClient {
 
                 response.body().use { body ->
                     if (response.isSuccessful) {
-                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
                     } else {
                         body.source().use { source -> logger.error(source.readUtf8Line()) }
                         logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
@@ -1084,7 +1084,7 @@ object KubeClient {
 
         pods.items.forEach { pod ->
             try {
-                logger.info("Removing Job ${pod.metadata.name}...")
+                logger.debug("Removing Job ${pod.metadata.name}...")
 
                 val status = coreApi.deleteNamespacedPod(
                     pod.metadata.name,
@@ -1099,7 +1099,7 @@ object KubeClient {
 
                 logger.debug("Response status: ${status.reason}")
 
-                status.details.causes.forEach { logger.info(it.message) }
+//                status.details.causes.forEach { logger.debug(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -1126,7 +1126,7 @@ object KubeClient {
 
         jobs.items.forEach { job ->
             try {
-                logger.info("Removing Job ${job.metadata.name}...")
+                logger.debug("Removing Job ${job.metadata.name}...")
 
                 val status = batchApi.deleteNamespacedJob(
                     job.metadata.name,
@@ -1141,7 +1141,7 @@ object KubeClient {
 
                 logger.debug("Response status: ${status.reason}")
 
-                status.details.causes.forEach { logger.info(it.message) }
+//                status.details.causes.forEach { logger.debug(it.message) }
             } catch (e: Exception) {
                 // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
             }
@@ -1193,7 +1193,7 @@ object KubeClient {
 
         statefulSets.items.forEach { statefulSet ->
             try {
-                logger.info("Scaling StatefulSet ${statefulSet.metadata.name}...")
+                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
 
                 val patch = listOf(
                     mapOf<String, Any?>(
@@ -1217,7 +1217,7 @@ object KubeClient {
 
                 response.body().use { body ->
                     if (response.isSuccessful) {
-                        logger.info("StatefulSet ${statefulSet.metadata.name} scaled")
+                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
                     } else {
                         body.source().use { source -> logger.error(source.readUtf8Line()) }
                         logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")

@@ -21,7 +21,7 @@ class JobHasStarted(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCl
             val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.isEmpty()) {
-                logger.info("[name=${clusterId.name}] Can't find a running job in cluster ${clusterId.name}")
+                logger.debug("[name=${clusterId.name}] Can't find a running job")
 
                 return Result(
                     ResultStatus.AWAIT,
@@ -30,7 +30,7 @@ class JobHasStarted(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCl
             }
 
             if (runningJobs.size > 1) {
-                logger.warn("[name=${clusterId.name}] There are multiple jobs running in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] There are multiple jobs running")
             }
 
             return Result(
@@ -38,7 +38,7 @@ class JobHasStarted(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCl
                 null
             )
         } catch (e : Exception) {
-            logger.warn("[name=${clusterId.name}] Can't get list of jobs for cluster ${clusterId.name}")
+            logger.warn("[name=${clusterId.name}] Can't get list of jobs")
 
             return Result(
                 ResultStatus.FAILED,

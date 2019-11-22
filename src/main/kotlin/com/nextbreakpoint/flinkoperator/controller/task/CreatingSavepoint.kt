@@ -19,7 +19,7 @@ class CreatingSavepoint : Task {
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Cluster status changed")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

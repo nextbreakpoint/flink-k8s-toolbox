@@ -413,7 +413,7 @@ class OperatorVerticle : AbstractVerticle() {
         val serverOptions = HttpServerOptions()
 
         if (jksKeyStorePath != null && jksTrustStorePath != null) {
-            logger.info("Enabling HTTPS with required client auth")
+            logger.info("HTTPS with client authentication is enabled")
 
             serverOptions
                 .setSsl(true)

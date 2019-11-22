@@ -16,7 +16,7 @@ class PodsScaleDown(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCl
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
         try {
-            logger.info("[name=${clusterId.name}] Terminating pods...")
+            logger.debug("[name=${clusterId.name}] Terminating pods...")
 
             kubeClient.terminateStatefulSets(clusterId)
 
