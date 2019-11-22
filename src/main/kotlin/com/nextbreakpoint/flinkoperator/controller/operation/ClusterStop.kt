@@ -32,11 +32,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
 
                 return Result(
                     ResultStatus.AWAIT,
-                    listOf(
-                        Status.getCurrentTask(
-                            flinkCluster
-                        )
-                    )
+                    listOf()
                 )
             }
 
@@ -47,11 +43,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
 
                 return Result(
                     ResultStatus.AWAIT,
-                    listOf(
-                        Status.getCurrentTask(
-                            flinkCluster
-                        )
-                    )
+                    listOf()
                 )
             }
 

@@ -32,11 +32,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
 
                 return Result(
                     ResultStatus.AWAIT,
-                    listOf(
-                        Status.getCurrentTask(
-                            flinkCluster
-                        )
-                    )
+                    listOf()
                 )
             }
 
@@ -47,11 +43,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
 
                 return Result(
                     ResultStatus.AWAIT,
-                    listOf(
-                        Status.getCurrentTask(
-                            flinkCluster
-                        )
-                    )
+                    listOf()
                 )
             }
 
