@@ -60,7 +60,7 @@ class CreateResources : Task {
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Resources created")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

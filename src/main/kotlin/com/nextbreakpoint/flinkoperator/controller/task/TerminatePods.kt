@@ -39,7 +39,7 @@ class TerminatePods : Task {
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Pods terminated")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

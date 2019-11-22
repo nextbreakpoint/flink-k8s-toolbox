@@ -44,10 +44,10 @@ class UpdateClusterStatus(
                 operatorTimestamp, actionTimestamp, clusterId, flinkCluster, resources, controller
             )
 
-            if (Status.hasCurrentTask(flinkCluster)) {
-                return update(clusterId, context)
+            return if (Status.hasCurrentTask(flinkCluster)) {
+                update(clusterId, context)
             } else {
-                return initialise(clusterId, context)
+                initialise(clusterId, context)
             }
         } catch (e : Exception) {
             logger.error("Error occurred while updating cluster ${clusterId.name}", e)
@@ -227,10 +227,7 @@ class UpdateClusterStatus(
                 Status.resetTasks(context.flinkCluster, listOf(ClusterTask.ClusterHalted))
                 Status.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
                 Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-                Result(
-                    ResultStatus.FAILED,
-                    "Task failed"
-                )
+                Result(ResultStatus.FAILED, "Task failed")
             }
         }
     }

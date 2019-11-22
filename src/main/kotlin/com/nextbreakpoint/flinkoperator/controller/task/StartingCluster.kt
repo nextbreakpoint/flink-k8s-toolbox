@@ -15,11 +15,11 @@ class StartingCluster : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return taskCompletedWithOutput(context.flinkCluster, "Cluster ${context.clusterId.name} is starting...")
+        return taskCompletedWithOutput(context.flinkCluster, "Starting cluster...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Cluster status changed")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

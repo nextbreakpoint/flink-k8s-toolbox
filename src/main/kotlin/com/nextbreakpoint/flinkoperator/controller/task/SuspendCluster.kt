@@ -15,11 +15,11 @@ class SuspendCluster : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return taskCompletedWithOutput(context.flinkCluster, "Cluster ${context.clusterId.name} is suspended")
+        return taskCompletedWithOutput(context.flinkCluster, "Cluster is suspended")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Cluster status changed")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

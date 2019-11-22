@@ -60,7 +60,7 @@ class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 Gson().toJson(metricsResponse)
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't get metrics of TaskManager", e)
+            logger.error("[name=${clusterId.name}] Can't get metrics of task manager $params", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -22,7 +22,7 @@ class RescaleCluster : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Can't rescale task managers")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Task managers have been rescaled")
+        return taskCompletedWithOutput(context.flinkCluster, "Rescaling task managers...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
@@ -44,11 +44,11 @@ class RescaleCluster : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Task managers have not been scaled yet...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Task managers have been scaled")
+        return taskCompletedWithOutput(context.flinkCluster, "Task managers have been rescaled")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Cluster rescaled")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

@@ -48,39 +48,34 @@ class ClusterRunning : Task {
             Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
         }
 
-        if (manualAction == ManualAction.STOP) {
-            logger.info("[name=${context.flinkCluster.metadata.name}] User stopped the cluster...")
-
-            if (isClusterStopping(context)) {
-                Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-                return taskAwaitingWithOutput(context.flinkCluster, "Stopping cluster...")
-            }
+        if (isStoppingCluster(context)) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Stopping cluster...")
         }
 
-        if (isResourceChanged(context)) {
+        if (isUpdatingCluster(context)) {
             return taskAwaitingWithOutput(context.flinkCluster, "Resource changed. Restarting...")
         }
 
-        if (isJobFinished(context)) {
+        if (isTerminatingJob(context)) {
             return taskAwaitingWithOutput(context.flinkCluster, "Job finished. Stopping...")
         }
 
-        if (isClusterFailing(context)) {
+        if (isClusterNotRunning(context)) {
             return taskFailedWithOutput(context.flinkCluster, "Cluster failure...")
         }
 
-        if (shouldCreateSavepoint(context)) {
+        if (isCreatingSavepoint(context)) {
             return taskAwaitingWithOutput(context.flinkCluster, "Creating savepoint...")
         }
 
-        if (shouldRescaleCluster(context)) {
+        if (isRescalingCluster(context)) {
             return taskAwaitingWithOutput(context.flinkCluster, "Rescaling cluster...")
         }
 
         return taskAwaitingWithOutput(context.flinkCluster, "Cluster running")
     }
 
-    private fun shouldRescaleCluster(context: TaskContext): Boolean {
+    private fun isRescalingCluster(context: TaskContext): Boolean {
         val taskmanagerStatefulset = context.resources.taskmanagerStatefulSets[context.clusterId]
         val actualTaskManagers = taskmanagerStatefulset?.status?.replicas ?: 0
         val desiredTaskManagers = context.flinkCluster.spec?.taskManagers ?: 1
@@ -97,7 +92,7 @@ class ClusterRunning : Task {
         return result.isCompleted()
     }
 
-    private fun shouldCreateSavepoint(context: TaskContext): Boolean {
+    private fun isCreatingSavepoint(context: TaskContext): Boolean {
         val nextTask = Status.getNextOperatorTask(context.flinkCluster)
 
         if (nextTask != null) {
@@ -132,7 +127,7 @@ class ClusterRunning : Task {
         return false
     }
 
-    private fun isClusterFailing(context: TaskContext): Boolean {
+    private fun isClusterNotRunning(context: TaskContext): Boolean {
         if (!isBootstrapJobDefined(context.flinkCluster)) {
             return false
         }
@@ -175,7 +170,7 @@ class ClusterRunning : Task {
         return true
     }
 
-    private fun isJobFinished(context: TaskContext): Boolean {
+    private fun isTerminatingJob(context: TaskContext): Boolean {
         if (!isBootstrapJobDefined(context.flinkCluster)) {
             return false
         }
@@ -212,7 +207,7 @@ class ClusterRunning : Task {
         return true
     }
 
-    private fun isResourceChanged(context: TaskContext): Boolean {
+    private fun isUpdatingCluster(context: TaskContext): Boolean {
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Running) {
             return false
         }
@@ -319,7 +314,14 @@ class ClusterRunning : Task {
         Status.setBootstrapDigest(context.flinkCluster, actualBootstrapDigest)
     }
 
-    private fun isClusterStopping(context: TaskContext): Boolean {
+    private fun isStoppingCluster(context: TaskContext): Boolean {
+        val manualAction = Annotations.getManualAction(context.flinkCluster)
+
+        if (manualAction != ManualAction.STOP) {
+            return false
+        }
+
+        logger.info("[name=${context.flinkCluster.metadata.name}] User stopped the cluster...")
         val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
         val deleteResources = Annotations.isDeleteResources(context.flinkCluster)
         val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = deleteResources)

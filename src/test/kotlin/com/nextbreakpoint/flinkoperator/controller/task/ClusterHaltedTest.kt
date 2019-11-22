@@ -652,8 +652,8 @@ class ClusterHaltedTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isEqualTo("[name=test] Starting cluster...")
-        assertThat(actionTimestamp).isNotEqualTo(Annotations.getActionTimestamp(cluster))
-        assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.NONE)
+        assertThat(actionTimestamp).isEqualTo(Annotations.getActionTimestamp(cluster))
+        assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
     }
 
     @Test

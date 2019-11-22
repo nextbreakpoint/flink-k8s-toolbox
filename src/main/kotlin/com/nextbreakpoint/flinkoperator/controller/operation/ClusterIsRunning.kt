@@ -32,7 +32,7 @@ class ClusterIsRunning(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
                 )
             }
         } catch (e : Exception) {
-            logger.warn("[name=${clusterId.name}] Can't get overview")
+            logger.debug("[name=${clusterId.name}] Can't get overview")
 
             return Result(
                 ResultStatus.FAILED,

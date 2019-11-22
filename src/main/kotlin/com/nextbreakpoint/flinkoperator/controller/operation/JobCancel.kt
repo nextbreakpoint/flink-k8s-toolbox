@@ -23,7 +23,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
             val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.size != 1) {
-                logger.warn("[name=${clusterId.name}] Expected exactly one job running in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Expected exactly one job running")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -34,7 +34,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
             val inprogressCheckpoints = flinkClient.getCheckpointingStatistics(address, runningJobs)
 
             if (inprogressCheckpoints.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
-                logger.warn("[name=${clusterId.name}] Savepoint already in progress in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Savepoint already in progress")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -62,7 +62,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
                 }.first()
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't trigger savepoint for job", e)
+            logger.error("[name=${clusterId.name}] Can't trigger savepoint", e)
 
             return Result(
                 ResultStatus.FAILED,

@@ -24,7 +24,7 @@ class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
             if (flinkCluster.spec?.bootstrap == null) {
-                logger.info("[name=${clusterId.name}] Job not defined for cluster ${clusterId.name}")
+                logger.info("[name=${clusterId.name}] Job not defined")
 
                 return Result(
                     ResultStatus.FAILED,

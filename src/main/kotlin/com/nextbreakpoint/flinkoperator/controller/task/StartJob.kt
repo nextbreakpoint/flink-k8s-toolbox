@@ -45,7 +45,7 @@ class StartJob : Task {
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Job started")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

@@ -27,7 +27,7 @@ class TaskManagerDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 Gson().toJson(details)
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't get details of TaskManager", e)
+            logger.error("[name=${clusterId.name}] Can't get details of task manager $params", e)
 
             return Result(
                 ResultStatus.FAILED,

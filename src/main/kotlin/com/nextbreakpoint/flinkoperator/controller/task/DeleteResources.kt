@@ -37,7 +37,7 @@ class DeleteResources : Task {
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Resources deleted")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

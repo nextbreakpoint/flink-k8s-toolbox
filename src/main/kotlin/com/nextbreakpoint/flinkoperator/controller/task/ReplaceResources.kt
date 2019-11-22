@@ -77,7 +77,7 @@ class ReplaceResources : Task {
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+        return taskAwaitingWithOutput(context.flinkCluster, "Resources replaced")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

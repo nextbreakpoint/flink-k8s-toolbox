@@ -26,14 +26,14 @@ class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
             val response = kubeClient.createFlinkCluster(flinkCluster)
 
             if (response.statusCode == 201) {
-                logger.info("[name=${clusterId.name}] Custom object created ${flinkCluster.metadata.name}")
+                logger.info("[name=${clusterId.name}] Custom object created")
 
                 return Result(
                     ResultStatus.SUCCESS,
                     null
                 )
             } else {
-                logger.error("[name=${clusterId.name}] Can't create custom object ${flinkCluster.metadata.name}")
+                logger.error("[name=${clusterId.name}] Can't create custom object")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -41,7 +41,7 @@ class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 )
             }
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't create cluster resource ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't create cluster resource", e)
 
             return Result(
                 ResultStatus.FAILED,

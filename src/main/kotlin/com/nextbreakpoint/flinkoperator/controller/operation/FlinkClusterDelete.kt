@@ -19,14 +19,14 @@ class FlinkClusterDelete(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
             val response = kubeClient.deleteFlinkCluster(clusterId)
 
             if (response.statusCode == 200) {
-                logger.info("[name=${clusterId.name}] Custom object deleted ${clusterId.name}")
+                logger.info("[name=${clusterId.name}] Custom object deleted")
 
                 return Result(
                     ResultStatus.SUCCESS,
                     null
                 )
             } else {
-                logger.error("[name=${clusterId.name}] Can't delete custom object ${clusterId.name}")
+                logger.error("[name=${clusterId.name}] Can't delete custom object")
 
                 return Result(
                     ResultStatus.FAILED,
@@ -34,7 +34,7 @@ class FlinkClusterDelete(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 )
             }
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't delete cluster resource ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't delete cluster resource", e)
 
             return Result(
                 ResultStatus.FAILED,

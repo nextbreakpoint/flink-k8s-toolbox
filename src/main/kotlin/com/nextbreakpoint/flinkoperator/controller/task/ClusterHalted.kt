@@ -36,16 +36,11 @@ class ClusterHalted : Task {
             Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
         }
 
-        if (manualAction == ManualAction.START) {
-            logger.info("[name=${context.flinkCluster.metadata.name}] User started the cluster...")
-
-            if (isClusterStarting(context)) {
-                Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-                return taskAwaitingWithOutput(context.flinkCluster, "Starting cluster...")
-            }
+        if (isStartingCluster(context)) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Starting cluster...")
         }
 
-        if (isResourceChanged(context)) {
+        if (isUpdatingCluster(context)) {
             return taskAwaitingWithOutput(context.flinkCluster, "Resource changed. Restarting...")
         }
 
@@ -53,14 +48,14 @@ class ClusterHalted : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Cluster is running...")
         }
 
-        if (isJobRestarting(context)) {
+        if (isRestartingJob(context)) {
             return taskAwaitingWithOutput(context.flinkCluster, "Restarting job...")
         }
 
         return taskAwaitingWithOutput(context.flinkCluster, "Cluster halted")
     }
 
-    private fun isJobRestarting(context: TaskContext): Boolean {
+    private fun isRestartingJob(context: TaskContext): Boolean {
         if (!isBootstrapJobDefined(context.flinkCluster)) {
             return false
         }
@@ -135,7 +130,7 @@ class ClusterHalted : Task {
         return false
     }
 
-    private fun isResourceChanged(context: TaskContext): Boolean {
+    private fun isUpdatingCluster(context: TaskContext): Boolean {
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Failed && Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Suspended) {
             return false
         }
@@ -241,7 +236,14 @@ class ClusterHalted : Task {
         Status.setBootstrapDigest(context.flinkCluster, actualBootstrapDigest)
     }
 
-    private fun isClusterStarting(context: TaskContext): Boolean {
+    private fun isStartingCluster(context: TaskContext): Boolean {
+        val manualAction = Annotations.getManualAction(context.flinkCluster)
+
+        if (manualAction != ManualAction.START) {
+            return false
+        }
+
+        logger.info("[name=${context.flinkCluster.metadata.name}] User started the cluster...")
         val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
         val options = StartOptions(withoutSavepoint = withoutSavepoint)
         val result = context.startCluster(context.clusterId, options)
