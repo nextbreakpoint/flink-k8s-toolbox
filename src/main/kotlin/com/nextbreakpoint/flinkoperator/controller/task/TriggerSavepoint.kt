@@ -62,7 +62,7 @@ class TriggerSavepoint : Task {
 
         Status.setSavepointPath(context.flinkCluster, savepointPath)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Savepoint created in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Savepoint created after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

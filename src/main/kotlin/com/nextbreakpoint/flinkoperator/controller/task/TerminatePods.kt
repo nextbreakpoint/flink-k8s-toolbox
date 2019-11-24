@@ -35,7 +35,7 @@ class TerminatePods : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Terminating pods...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Resources terminated in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources terminated after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

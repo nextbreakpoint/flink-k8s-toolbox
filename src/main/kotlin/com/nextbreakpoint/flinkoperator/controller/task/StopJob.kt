@@ -41,7 +41,7 @@ class StopJob : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Stopping job...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Job stopped in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Job stopped after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

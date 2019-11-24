@@ -33,7 +33,7 @@ class DeleteBootstrapJob : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Deleting bootstrap job...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Bootstrap job removed in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Bootstrap job removed after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

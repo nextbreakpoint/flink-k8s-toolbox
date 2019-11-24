@@ -49,7 +49,7 @@ class StartJob : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Starting job...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Job started in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Job started after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
