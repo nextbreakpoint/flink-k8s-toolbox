@@ -38,7 +38,7 @@ class StopJob : Task {
         val jobStoppedResponse = context.isJobStopped(context.clusterId)
 
         if (!jobStoppedResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Waiting for job...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Stopping job...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Job stopped in $seconds seconds")

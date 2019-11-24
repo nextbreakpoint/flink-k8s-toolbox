@@ -20,13 +20,34 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
 
             val address = KubeClient.findFlinkAddress(flinkOptions, namespace, clusterName)
 
-            val result = FlinkClient.uploadJarCall(address, File(args.jarPath))
+            val uploadResult = FlinkClient.uploadJarCall(address, File(args.jarPath))
 
-            if (result.status == JarUploadResponseBody.StatusEnum.SUCCESS) {
-                logger.info("File ${args.jarPath} uploaded to ${result.filename}")
-            } else {
+            if (uploadResult.status != JarUploadResponseBody.StatusEnum.SUCCESS) {
                 throw Exception("Failed to upload file ${args.jarPath}")
             }
+
+            logger.info("File ${args.jarPath} uploaded to ${uploadResult.filename}")
+
+            val files = FlinkClient.listJars(address)
+
+            val jarFile = files.maxBy { it.uploaded } ?: throw Exception("Can't find any JAR file")
+
+            val savepointPath = args.savepointPath
+            val parallelism = args.parallelism
+            val className = args.className
+            val arguments = args.arguments
+
+            logger.info("Main class is $className")
+
+            logger.info("Running job with parallelism $parallelism")
+
+            if (savepointPath != null) {
+                logger.info("Resuming from savepoint $parallelism")
+            }
+
+            FlinkClient.runJar(address, jarFile, className, parallelism, savepointPath, arguments)
+
+            logger.info("Job started")
         } catch (e: Exception) {
             throw RuntimeException(e)
         }

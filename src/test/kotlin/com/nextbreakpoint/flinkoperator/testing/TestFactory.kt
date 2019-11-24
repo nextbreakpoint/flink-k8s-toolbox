@@ -367,6 +367,6 @@ object TestFactory {
 
     fun createBootstrapJob(uid: String, cluster: V1FlinkCluster): V1Job {
         val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
-        return DefaultBootstrapJobFactory.createBootstrapJob(clusterId, "flink-operator", cluster.spec.bootstrap)
+        return DefaultBootstrapJobFactory.createBootstrapJob(clusterId, "flink-operator", cluster.spec.bootstrap, "/tmp/000", 1)
     }
 }

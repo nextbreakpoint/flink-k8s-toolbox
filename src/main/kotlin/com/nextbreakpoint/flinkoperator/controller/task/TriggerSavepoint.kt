@@ -34,10 +34,6 @@ class TriggerSavepoint : Task {
 
         val savepointRequest = response.output
 
-        if (savepointRequest == null) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint...")
-        }
-
         Status.setSavepointRequest(context.flinkCluster, savepointRequest)
 
         return taskCompletedWithOutput(context.flinkCluster, "Creating savepoint...")
@@ -56,17 +52,13 @@ class TriggerSavepoint : Task {
             return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint after $seconds seconds")
         }
 
-        val savepointStatusResponse = context.getSavepointStatus(context.clusterId, savepointRequest)
+        val savepointStatusResponse = context.getLatestSavepoint(context.clusterId, savepointRequest)
 
         if (!savepointStatusResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for savepoint...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Creating savepoint...")
         }
 
         val savepointPath = savepointStatusResponse.output
-
-        if (savepointPath == null) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for savepoint...")
-        }
 
         Status.setSavepointPath(context.flinkCluster, savepointPath)
 

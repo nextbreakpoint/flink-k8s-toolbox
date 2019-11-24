@@ -22,7 +22,9 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
     override fun createBootstrapJob(
         clusterId: ClusterId,
         clusterOwner: String,
-        bootstrap: V1BootstrapSpec
+        bootstrap: V1BootstrapSpec,
+        savepointPath: String?,
+        parallelism: Int
     ): V1Job {
         if (bootstrap.image == null) {
             throw RuntimeException("image is required")
@@ -51,7 +53,11 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
 
         val arguments =
             createBootstrapArguments(
-                clusterId.namespace, clusterId.name, bootstrap.jarPath
+                clusterId.namespace,
+                clusterId.name,
+                bootstrap,
+                savepointPath,
+                parallelism
             )
 
         val jobSelector = V1LabelSelector().matchLabels(jobLabels)
@@ -151,19 +157,31 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
     private fun createBootstrapArguments(
         namespace: String,
         clusterName: String,
-        jarPath: String
+        bootstrap: V1BootstrapSpec,
+        savepointPath: String?,
+        parallelism: Int
     ): List<String> {
         val arguments = mutableListOf<String>()
 
         arguments.addAll(
             listOf(
                 "bootstrap",
-                "upload",
+                "run",
                 "--namespace=$namespace",
                 "--cluster-name=$clusterName",
-                "--jar-path=$jarPath"
+                "--jar-path=${bootstrap.jarPath}",
+                "--class-name=${bootstrap.className}",
+                "--parallelism=$parallelism"
             )
         )
+
+        if (savepointPath != null && savepointPath != "") {
+            arguments.add("--savepoint-path=$savepointPath")
+        }
+
+        bootstrap.arguments.forEach {
+            arguments.add("--argument=$it")
+        }
 
         return arguments.toList()
     }

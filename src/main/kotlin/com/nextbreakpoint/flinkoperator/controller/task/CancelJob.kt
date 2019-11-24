@@ -19,7 +19,7 @@ class CancelJob : Task {
         val jobStoppedResponse = context.isJobStopped(context.clusterId)
 
         if (jobStoppedResponse.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Job is already stopped!")
+            return taskCompletedWithOutput(context.flinkCluster, "Job already stopped")
         }
 
         val options = SavepointOptions(
@@ -33,10 +33,6 @@ class CancelJob : Task {
         }
 
         val savepointRequest = cancelJobResponse.output
-
-        if (savepointRequest == null) {
-            return taskFailedWithOutput(context.flinkCluster, "Error while cancelling job")
-        }
 
         Status.setSavepointRequest(context.flinkCluster, savepointRequest)
 
@@ -53,22 +49,24 @@ class CancelJob : Task {
         val savepointRequest = Status.getSavepointRequest(context.flinkCluster)
 
         if (savepointRequest == null) {
-            return taskFailedWithOutput(context.flinkCluster, "Missing savepoint request")
+            return taskCompletedWithOutput(context.flinkCluster, "Missing savepoint request")
         }
 
         val jobStoppedResponse = context.isJobStopped(context.clusterId)
 
         if (!jobStoppedResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait until job is stopped...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Cancelling job...")
         }
 
-        val savepointStatusResponse = context.getSavepointStatus(context.clusterId, savepointRequest)
+        val lastestSavepointResponse = context.getLatestSavepoint(context.clusterId, savepointRequest)
 
-        if (!savepointStatusResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait until savepoint is completed...")
+        if (!lastestSavepointResponse.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Savepoint not created yet...")
         }
 
-        Status.setSavepointPath(context.flinkCluster, savepointStatusResponse.output)
+        val savepointPath = lastestSavepointResponse.output
+
+        Status.setSavepointPath(context.flinkCluster, savepointPath)
 
         return taskCompletedWithOutput(context.flinkCluster, "Job stopped in $seconds seconds")
     }

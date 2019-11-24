@@ -3,19 +3,14 @@ package com.nextbreakpoint.flinkoperator.controller.core
 import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesValidator
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 import io.kubernetes.client.models.V1Job
@@ -44,12 +39,22 @@ interface Task {
 
     fun makeClusterResources(clusterId: ClusterId, cluster: V1FlinkCluster): ClusterResources {
         return ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory, clusterId.namespace, clusterId.uuid, "flink-operator", cluster
+            DefaultClusterResourcesFactory,
+            clusterId.namespace,
+            clusterId.uuid,
+            "flink-operator",
+            cluster
         ).build()
     }
 
-    fun makeBootstrapJob(clusterId: ClusterId, bootstrap: V1BootstrapSpec): V1Job {
-        return DefaultBootstrapJobFactory.createBootstrapJob(clusterId, "flink-operator", bootstrap)
+    fun makeBootstrapJob(clusterId: ClusterId, cluster: V1FlinkCluster): V1Job {
+        return DefaultBootstrapJobFactory.createBootstrapJob(
+            clusterId,
+            "flink-operator",
+            cluster.status.bootstrap,
+            cluster.status.savepointPath,
+            cluster.status.jobParallelism
+        )
     }
 
     fun resourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
@@ -74,16 +79,16 @@ interface Task {
         return bootstrapJob == null
     }
 
-    fun computeChanges(context: TaskContext): MutableList<String> {
-        val jobManagerDigest = Status.getJobManagerDigest(context.flinkCluster)
-        val taskManagerDigest = Status.getTaskManagerDigest(context.flinkCluster)
-        val flinkImageDigest = Status.getRuntimeDigest(context.flinkCluster)
-        val flinkJobDigest = Status.getBootstrapDigest(context.flinkCluster)
+    fun computeChanges(flinkCluster: V1FlinkCluster): MutableList<String> {
+        val jobManagerDigest = Status.getJobManagerDigest(flinkCluster)
+        val taskManagerDigest = Status.getTaskManagerDigest(flinkCluster)
+        val flinkImageDigest = Status.getRuntimeDigest(flinkCluster)
+        val flinkJobDigest = Status.getBootstrapDigest(flinkCluster)
 
-        val actualJobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
-        val actualTaskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
-        val actualRuntimeDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.runtime)
-        val actualBootstrapDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.bootstrap)
+        val actualJobManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.jobManager)
+        val actualTaskManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.taskManager)
+        val actualRuntimeDigest = ClusterResource.computeDigest(flinkCluster.spec?.runtime)
+        val actualBootstrapDigest = ClusterResource.computeDigest(flinkCluster.spec?.bootstrap)
 
         val changes = mutableListOf<String>()
 
@@ -106,16 +111,21 @@ interface Task {
         return changes
     }
 
-    fun updateDigests(context: TaskContext) {
-        val actualJobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
-        val actualTaskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
-        val actualRuntimeDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.runtime)
-        val actualBootstrapDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.bootstrap)
+    fun updateDigests(flinkCluster: V1FlinkCluster) {
+        val actualJobManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.jobManager)
+        val actualTaskManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.taskManager)
+        val actualRuntimeDigest = ClusterResource.computeDigest(flinkCluster.spec?.runtime)
+        val actualBootstrapDigest = ClusterResource.computeDigest(flinkCluster.spec?.bootstrap)
 
-        Status.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
-        Status.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
-        Status.setRuntimeDigest(context.flinkCluster, actualRuntimeDigest)
-        Status.setBootstrapDigest(context.flinkCluster, actualBootstrapDigest)
+        Status.setJobManagerDigest(flinkCluster, actualJobManagerDigest)
+        Status.setTaskManagerDigest(flinkCluster, actualTaskManagerDigest)
+        Status.setRuntimeDigest(flinkCluster, actualRuntimeDigest)
+        Status.setBootstrapDigest(flinkCluster, actualBootstrapDigest)
+    }
+
+    fun updateBootstrap(flinkCluster: V1FlinkCluster) {
+        val bootstrap = flinkCluster.spec?.bootstrap
+        Status.setBootstrap(flinkCluster, bootstrap)
     }
 
     fun isStartingCluster(context: TaskContext): Boolean {

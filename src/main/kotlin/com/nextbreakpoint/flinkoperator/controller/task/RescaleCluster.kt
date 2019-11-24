@@ -19,7 +19,7 @@ class RescaleCluster : Task {
         val result = context.setTaskManagersReplicas(context.clusterId, desiredTaskManagers)
 
         if (!result.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Can't rescale task managers")
+            return taskAwaitingWithOutput(context.flinkCluster, "Retry rescaling task managers...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Rescaling task managers...")
@@ -35,16 +35,16 @@ class RescaleCluster : Task {
         val result = context.getTaskManagersReplicas(context.clusterId)
 
         if (!result.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Task managers have not been scaled yet...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Rescaling task managers...")
         }
 
         val desiredTaskManagers = Status.getTaskManagers(context.flinkCluster)
 
         if (desiredTaskManagers != result.output) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Task managers have not been scaled yet...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Rescaling task managers...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Task managers have been rescaled")
+        return taskCompletedWithOutput(context.flinkCluster, "Task managers rescaled")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

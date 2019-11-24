@@ -32,7 +32,7 @@ class TerminatePods : Task {
         val response = context.arePodsTerminated(context.clusterId)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for termination of pods...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Terminating pods...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Resources terminated in $seconds seconds")

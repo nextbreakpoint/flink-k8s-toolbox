@@ -8,6 +8,8 @@ interface BootstrapJobFactory {
     fun createBootstrapJob(
         clusterId: ClusterId,
         clusterOwner: String,
-        bootstrap: V1BootstrapSpec
+        bootstrap: V1BootstrapSpec,
+        savepointPath: String?,
+        parallelism: Int
     ): V1Job
 }

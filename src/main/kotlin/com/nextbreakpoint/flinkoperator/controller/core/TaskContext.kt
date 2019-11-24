@@ -90,11 +90,11 @@ class TaskContext(
 //    fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
 //        controller.updateSavepoint(clusterId, savepointPath)
 
-    fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest?> =
+    fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest> =
         controller.triggerSavepoint(clusterId, options)
 
-    fun getSavepointStatus(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
-        controller.getSavepointStatus(clusterId, savepointRequest)
+    fun getLatestSavepoint(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
+        controller.getLatestSavepoint(clusterId, savepointRequest)
 
     fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): Result<Void?> =
         controller.createBootstrapJob(clusterId, bootstrapJob)
@@ -117,7 +117,7 @@ class TaskContext(
     fun stopJob(clusterId: ClusterId): Result<Void?> =
         controller.stopJob(clusterId)
 
-    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest?> =
+    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest> =
         controller.cancelJob(clusterId, options)
 
     fun isClusterReady(clusterId: ClusterId, options: ClusterScaling): Result<Void?> =

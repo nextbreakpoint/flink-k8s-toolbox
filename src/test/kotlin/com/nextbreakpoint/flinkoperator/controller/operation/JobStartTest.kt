@@ -122,7 +122,14 @@ class JobStartTest {
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verify(flinkClient, times(1)).listJars(eq(flinkAddress))
-        verify(flinkClient, times(1)).runJar(eq(flinkAddress), eq(file2), any(), Mockito.eq(1), eq(null))
+        verify(flinkClient, times(1)).runJar(
+            eq(flinkAddress),
+            eq(file2),
+            any(),
+            Mockito.eq(1),
+            eq(""),
+            any()
+        )
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -148,7 +155,14 @@ class JobStartTest {
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verify(flinkClient, times(1)).listJars(eq(flinkAddress))
-        verify(flinkClient, times(1)).runJar(eq(flinkAddress), eq(file2), any(), Mockito.eq(1), eq("/tmp/000"))
+        verify(flinkClient, times(1)).runJar(
+            eq(flinkAddress),
+            eq(file2),
+            any(),
+            Mockito.eq(1),
+            eq("/tmp/000"),
+            any()
+        )
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()

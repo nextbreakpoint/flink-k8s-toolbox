@@ -10,7 +10,7 @@ class DefaultBootstrapJobFactoryTest {
 
     @Test
     fun `should create bootstrap job when submitting job`() {
-        val job = DefaultBootstrapJobFactory.createBootstrapJob(ClusterId(namespace = "flink", name = "test", uuid = "xxx"),"myself", cluster.spec.bootstrap)
+        val job = DefaultBootstrapJobFactory.createBootstrapJob(ClusterId(namespace = "flink", name = "test", uuid = "xxx"),"myself", cluster.spec.bootstrap, "tmp/001", 4)
 
         assertThat(job).isNotNull()
 
@@ -42,12 +42,17 @@ class DefaultBootstrapJobFactoryTest {
         val container = podSpec?.containers?.get(0)
         assertThat(container?.ports).isNull()
         assertThat(container?.imagePullPolicy).isEqualTo("IfNotPresent")
-        assertThat(container?.args).hasSize(5)
+        assertThat(container?.args).hasSize(10)
         assertThat(container?.args?.get(0)).isEqualTo("bootstrap")
-        assertThat(container?.args?.get(1)).isEqualTo("upload")
+        assertThat(container?.args?.get(1)).isEqualTo("run")
         assertThat(container?.args?.get(2)).isEqualTo("--namespace=flink")
         assertThat(container?.args?.get(3)).isEqualTo("--cluster-name=${cluster.metadata.name}")
         assertThat(container?.args?.get(4)).isEqualTo("--jar-path=${cluster.spec?.bootstrap?.jarPath}")
+        assertThat(container?.args?.get(5)).isEqualTo("--class-name=${cluster.spec?.bootstrap?.className}")
+        assertThat(container?.args?.get(6)).isEqualTo("--parallelism=4")
+        assertThat(container?.args?.get(7)).isEqualTo("--savepoint-path=tmp/001")
+        assertThat(container?.args?.get(8)).isEqualTo("--argument=--BUCKET_BASE_PATH")
+        assertThat(container?.args?.get(9)).isEqualTo("--argument=file:///var/tmp")
         assertThat(container?.env).hasSize(2)
         assertThat(container?.env?.get(0)?.name).isEqualTo("POD_NAME")
         assertThat(container?.env?.get(1)?.name).isEqualTo("POD_NAMESPACE")

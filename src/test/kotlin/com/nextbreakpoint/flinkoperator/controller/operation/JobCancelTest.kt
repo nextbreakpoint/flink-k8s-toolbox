@@ -52,7 +52,7 @@ class JobCancelTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
     @Test
@@ -65,7 +65,7 @@ class JobCancelTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
     @Test
@@ -82,7 +82,7 @@ class JobCancelTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
     @Test

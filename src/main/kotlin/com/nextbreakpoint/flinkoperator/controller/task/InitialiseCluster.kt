@@ -13,36 +13,15 @@ class InitialiseCluster : Task {
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
         Status.setTaskAttempts(context.flinkCluster, 0)
 
-        val bootstrap = context.flinkCluster.spec?.bootstrap
-        Status.setBootstrap(context.flinkCluster, bootstrap)
+        updateBootstrap(context.flinkCluster)
 
-        if (bootstrap != null) {
-            Status.appendTasks(context.flinkCluster,
-                listOf(
-                    ClusterTask.CreateResources,
-                    ClusterTask.CreateBootstrapJob,
-                    ClusterTask.StartJob,
-                    ClusterTask.ClusterRunning
-                )
+        Status.appendTasks(context.flinkCluster,
+            listOf(
+                ClusterTask.CreateResources,
+                ClusterTask.CreateBootstrapJob,
+                ClusterTask.ClusterRunning
             )
-        } else {
-            Status.appendTasks(context.flinkCluster,
-                listOf(
-                    ClusterTask.CreateResources,
-                    ClusterTask.ClusterRunning
-                )
-            )
-        }
-
-        val jobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
-        val taskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
-        val runtimeDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.runtime)
-        val bootstrapDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.bootstrap)
-
-        Status.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
-        Status.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
-        Status.setRuntimeDigest(context.flinkCluster, runtimeDigest)
-        Status.setBootstrapDigest(context.flinkCluster, bootstrapDigest)
+        )
 
         val taskManagers = context.flinkCluster.spec?.taskManagers ?: 0
         val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1

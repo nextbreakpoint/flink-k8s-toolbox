@@ -176,10 +176,6 @@ All the possible tasks which the operator can execute to transition from one sta
 
   Create secondary resources and wait until resources reach expected status.
 
-- **REPLACE RESOURCES**
-
-  Modify secondary resources and wait until resources reach expected status.
-
 - **DELETE RESOURCES**
 
   Delete secondary resources and wait until resources reach expected status.
@@ -875,17 +871,17 @@ Execute the command:
 
 You will be asked to provide a Task Manager id which you can get from the list of Task Managers.   
 
-### How to upload a JAR file
+### How to upload a JAR file and start a job
 
 Flink jobs must be packaged in a regular JAR file and uploaded to the JobManager.
 
 Upload a JAR file using the command:
 
-    java -jar flink-k8s-toolbox-1.2.1-beta.jar bootstrap upload --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar flink-k8s-toolbox-1.2.1-beta.jar bootstrap run --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 When running outside Kubernetes use the command:
 
-    java -jar flink-k8s-toolbox-1.2.1-beta.jar bootstrap upload --kube-config=/your-kube-config --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar flink-k8s-toolbox-1.2.1-beta.jar bootstrap run --kube-config=/your-kube-config --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 ### How to run the Operator for testing
 

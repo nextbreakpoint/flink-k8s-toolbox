@@ -66,7 +66,7 @@ class CancelJobTest {
     fun `onExecuting should return expected result when savepoint request can't be created`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
-        given(context.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.cancelJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, SavepointRequest("", "")))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -133,7 +133,7 @@ class CancelJobTest {
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -143,13 +143,13 @@ class CancelJobTest {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
         Status.setSavepointRequest(cluster, savepointRequest)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.AWAIT, ""))
+        given(context.getLatestSavepoint(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.AWAIT, ""))
         given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
-        verify(context, atLeastOnce()).getSavepointStatus(eq(clusterId), eq(savepointRequest))
+        verify(context, atLeastOnce()).getLatestSavepoint(eq(clusterId), eq(savepointRequest))
         verify(context, atLeastOnce()).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -163,13 +163,13 @@ class CancelJobTest {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
         Status.setSavepointRequest(cluster, savepointRequest)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.SUCCESS, "/tmp/000"))
+        given(context.getLatestSavepoint(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.SUCCESS, "/tmp/000"))
         given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
-        verify(context, atLeastOnce()).getSavepointStatus(eq(clusterId), eq(savepointRequest))
+        verify(context, atLeastOnce()).getLatestSavepoint(eq(clusterId), eq(savepointRequest))
         verify(context, atLeastOnce()).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -183,7 +183,7 @@ class CancelJobTest {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
         Status.setSavepointRequest(cluster, savepointRequest)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.SUCCESS, "/tmp/000"))
+        given(context.getLatestSavepoint(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.SUCCESS, "/tmp/000"))
         given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
         val result = task.onAwaiting(context)
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
@@ -197,7 +197,7 @@ class CancelJobTest {
         val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
         Status.setSavepointRequest(cluster, savepointRequest)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.getSavepointStatus(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.FAILED, ""))
+        given(context.getLatestSavepoint(eq(clusterId), eq(savepointRequest))).thenReturn(Result(ResultStatus.FAILED, ""))
         given(context.isJobStopped(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId

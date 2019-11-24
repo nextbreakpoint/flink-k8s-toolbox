@@ -15,7 +15,7 @@ class CreatingSavepoint : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
-        return taskCompletedWithOutput(context.flinkCluster, "Cluster is checkpointing...")
+        return taskCompletedWithOutput(context.flinkCluster, "Creating savepoint...")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
