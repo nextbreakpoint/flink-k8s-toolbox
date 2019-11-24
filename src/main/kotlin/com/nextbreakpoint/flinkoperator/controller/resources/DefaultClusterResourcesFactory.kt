@@ -2,7 +2,6 @@ package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import io.kubernetes.client.custom.IntOrString
-import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1Affinity
 import io.kubernetes.client.models.V1ContainerBuilder
 import io.kubernetes.client.models.V1ContainerPort
@@ -12,11 +11,9 @@ import io.kubernetes.client.models.V1LabelSelector
 import io.kubernetes.client.models.V1LocalObjectReference
 import io.kubernetes.client.models.V1ObjectFieldSelector
 import io.kubernetes.client.models.V1ObjectMeta
-import io.kubernetes.client.models.V1PodAffinity
 import io.kubernetes.client.models.V1PodAffinityTerm
 import io.kubernetes.client.models.V1PodAntiAffinity
 import io.kubernetes.client.models.V1PodSpecBuilder
-import io.kubernetes.client.models.V1ResourceRequirements
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1ServiceBuilder
 import io.kubernetes.client.models.V1ServicePort
@@ -412,21 +409,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             )
         )
 
-    private fun createBootstrapJobAffinity(
-        jobSelector: V1LabelSelector?
-    ): V1Affinity = V1Affinity()
-        .podAffinity(
-            V1PodAffinity().preferredDuringSchedulingIgnoredDuringExecution(
-                listOf(
-                    V1WeightedPodAffinityTerm().weight(100).podAffinityTerm(
-                        V1PodAffinityTerm()
-                            .topologyKey("kubernetes.io/hostname")
-                            .labelSelector(jobSelector)
-                    )
-                )
-            )
-        )
-
     private fun createObjectMeta(name: String, labels: Map<String, String>) = V1ObjectMeta().name(name).labels(labels)
 
     private fun createEnvVarFromField(name: String, fieldPath: String) =
@@ -435,20 +417,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         )
 
     private fun createEnvVar(name: String, value: String) = V1EnvVar().name(name).value(value)
-
-    private fun createBootstrapJobResourceRequirements() = V1ResourceRequirements()
-        .limits(
-            mapOf(
-                "cpu" to Quantity("1"),
-                "memory" to Quantity("512Mi")
-            )
-        )
-        .requests(
-            mapOf(
-                "cpu" to Quantity("0.2"),
-                "memory" to Quantity("256Mi")
-            )
-        )
 
     private fun createServicePort(port: Int, name: String) = V1ServicePort()
         .protocol("TCP")
@@ -460,32 +428,4 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         .protocol("TCP")
         .containerPort(port)
         .name(name)
-
-    private fun createObjectReferenceListOrNull(referenceName: String?): List<V1LocalObjectReference>? {
-        return if (referenceName != null) {
-            listOf(
-                V1LocalObjectReference().name(referenceName)
-            )
-        } else null
-    }
-
-    private fun createBootstrapArguments(
-        namespace: String,
-        clusterName: String,
-        jarPath: String
-    ): List<String> {
-        val arguments = mutableListOf<String>()
-
-        arguments.addAll(
-            listOf(
-                "bootstrap",
-                "upload",
-                "--namespace=$namespace",
-                "--cluster-name=$clusterName",
-                "--jar-path=$jarPath"
-            )
-        )
-
-        return arguments.toList()
-    }
 }

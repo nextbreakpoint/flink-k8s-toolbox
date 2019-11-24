@@ -25,17 +25,6 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            val operatorStatus = Status.getCurrentTaskStatus(flinkCluster)
-
-            if (operatorStatus != TaskStatus.Idle) {
-                logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
-
-                return Result(
-                    ResultStatus.AWAIT,
-                    listOf()
-                )
-            }
-
             val statusList = tryStoppingCluster(flinkCluster, params)
 
             if (statusList.isEmpty()) {
@@ -87,6 +76,22 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                             ClusterTask.ClusterHalted
                         )
                     }
+                ClusterStatus.Suspended ->
+                    listOf(
+                        ClusterTask.StoppingCluster,
+                        ClusterTask.TerminatePods,
+                        ClusterTask.DeleteResources,
+                        ClusterTask.TerminatedCluster,
+                        ClusterTask.ClusterHalted
+                    )
+                ClusterStatus.Failed ->
+                    listOf(
+                        ClusterTask.StoppingCluster,
+                        ClusterTask.TerminatePods,
+                        ClusterTask.DeleteResources,
+                        ClusterTask.TerminatedCluster,
+                        ClusterTask.ClusterHalted
+                    )
                 else -> listOf()
             }
         } else {

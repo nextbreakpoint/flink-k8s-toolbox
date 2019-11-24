@@ -19,7 +19,7 @@ class TriggerSavepoint : Task {
         val jobRunningResponse = context.isJobRunning(context.clusterId)
 
         if (!jobRunningResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint...")
+            return taskFailedWithOutput(context.flinkCluster, "Job not running!")
         }
 
         val options = SavepointOptions(

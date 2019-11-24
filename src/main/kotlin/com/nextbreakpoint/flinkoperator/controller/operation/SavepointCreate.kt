@@ -23,30 +23,6 @@ class SavepointCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            if (flinkCluster.spec?.bootstrap == null) {
-                logger.info("[name=${clusterId.name}] Job not defined")
-
-                return Result(
-                    ResultStatus.FAILED,
-                    listOf()
-                )
-            }
-
-            val operatorStatus = Status.getCurrentTaskStatus(flinkCluster)
-
-            if (operatorStatus != TaskStatus.Idle) {
-                logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
-
-                return Result(
-                    ResultStatus.AWAIT,
-                    listOf(
-                        Status.getCurrentTask(
-                            flinkCluster
-                        )
-                    )
-                )
-            }
-
             val clusterStatus = Status.getClusterStatus(flinkCluster)
 
             if (clusterStatus != ClusterStatus.Running) {
@@ -54,11 +30,7 @@ class SavepointCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
 
                 return Result(
                     ResultStatus.AWAIT,
-                    listOf(
-                        Status.getCurrentTask(
-                            flinkCluster
-                        )
-                    )
+                    listOf()
                 )
             }
 

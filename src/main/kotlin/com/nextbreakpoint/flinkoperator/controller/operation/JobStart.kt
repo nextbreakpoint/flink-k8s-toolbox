@@ -21,9 +21,15 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
 
             val overview = flinkClient.getOverview(address)
 
+            if (overview.jobsRunning > 1) {
+                logger.warn("[name=${clusterId.name}] There are multiple jobs running")
+            }
+
             if (overview.jobsRunning > 0) {
+                logger.warn("[name=${clusterId.name}] Job already running!")
+
                 return Result(
-                    ResultStatus.FAILED,
+                    ResultStatus.SUCCESS,
                     null
                 )
             }
@@ -47,12 +53,14 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
             val actualSavepointPath = if (savepointPath == "") null else savepointPath
             flinkClient.runJar(address, jarFile, params.spec.bootstrap, parallelism, actualSavepointPath)
 
+            logger.debug("[name=${clusterId.name}] Job started")
+
             return Result(
                 ResultStatus.SUCCESS,
                 null
             )
         } catch (e : Exception) {
-            logger.warn("[name=${clusterId.name}] Can't get JAR files")
+            logger.warn("[name=${clusterId.name}] Can't start job")
 
             return Result(
                 ResultStatus.FAILED,

@@ -4,14 +4,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
@@ -364,7 +362,6 @@ class UpdateClusterStatusTest {
         verify(controller, atLeastOnce()).cache
         verify(controller, times(1)).taskHandlers
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
-        verify(controller, times(1)).updateAnnotations(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onFailed(any())
         verifyNoMoreInteractions(handler)
@@ -378,6 +375,5 @@ class UpdateClusterStatusTest {
         assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.ClusterHalted)
         assertThat(Status.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Executing)
         assertThat(Status.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Failed)
-        assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.NONE)
     }
 }

@@ -53,19 +53,6 @@ class ClusterScaleTest {
     }
 
     @Test
-    fun `should return expected result when operator is not idle`() {
-        Status.setTaskStatus(cluster, TaskStatus.Awaiting)
-        val result = command.execute(clusterId, ClusterScaling(taskManagers = 4, taskSlots = 2))
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEmpty()
-    }
-
-    @Test
     fun `should return expected result when operator is idle but cluster is not running`() {
         Status.setClusterStatus(cluster, ClusterStatus.Suspended)
         Status.resetTasks(cluster, listOf(ClusterTask.ClusterHalted))

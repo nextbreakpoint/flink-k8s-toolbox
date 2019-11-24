@@ -53,21 +53,6 @@ class ClusterStartTest {
     }
 
     @Test
-    fun `should return expected result when job is not defined and cluster is terminated but operator is not idle`() {
-        cluster.spec.bootstrap = null
-        Status.setTaskStatus(cluster, TaskStatus.Awaiting)
-        Status.setClusterStatus(cluster, ClusterStatus.Terminated)
-        val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEmpty()
-    }
-
-    @Test
     fun `should return expected result when job is not defined and cluster is terminated and savepoint is enabled`() {
         cluster.spec.bootstrap = null
         Status.setClusterStatus(cluster, ClusterStatus.Terminated)

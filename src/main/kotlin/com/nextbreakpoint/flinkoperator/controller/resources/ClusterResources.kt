@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
-import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
@@ -12,13 +11,6 @@ data class ClusterResources(
     fun withJobManagerService(jobmanagerService: V1Service?) =
         ClusterResources(
             jobmanagerService = jobmanagerService,
-            jobmanagerStatefulSet = this.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = this.taskmanagerStatefulSet
-        )
-
-    fun withBootstrapJob(bootstrapJob: V1Job?) =
-        ClusterResources(
-            jobmanagerService = this.jobmanagerService,
             jobmanagerStatefulSet = this.jobmanagerStatefulSet,
             taskmanagerStatefulSet = this.taskmanagerStatefulSet
         )

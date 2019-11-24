@@ -53,35 +53,6 @@ class ClusterStopTest {
     }
 
     @Test
-    fun `should return expected result when operator is not idle`() {
-        cluster.spec.bootstrap = null
-        Status.setTaskStatus(cluster, TaskStatus.Awaiting)
-        Status.setClusterStatus(cluster, ClusterStatus.Running)
-        val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = true))
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEmpty()
-    }
-
-    @Test
-    fun `should return expected result when operator status is not running and resources are not deleted`() {
-        Status.setTaskStatus(cluster, TaskStatus.Idle)
-        Status.setClusterStatus(cluster, ClusterStatus.Stopping)
-        val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = false))
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEmpty()
-    }
-
-    @Test
     fun `should return expected result when cluster is running, job is not defined and resources must be deleted`() {
         cluster.spec.bootstrap = null
         Status.setClusterStatus(cluster, ClusterStatus.Running)
@@ -130,8 +101,34 @@ class ClusterStopTest {
         verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEmpty()
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.output).containsExactlyElementsOf(listOf(
+            ClusterTask.StoppingCluster,
+            ClusterTask.TerminatePods,
+            ClusterTask.DeleteResources,
+            ClusterTask.TerminatedCluster,
+            ClusterTask.ClusterHalted
+        ))
+    }
+
+    @Test
+    fun `should return expected result when cluster is failed and job is not defined`() {
+        cluster.spec.bootstrap = null
+        Status.setClusterStatus(cluster, ClusterStatus.Failed)
+        val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = false))
+        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        verifyNoMoreInteractions(operatorCache)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.output).containsExactlyElementsOf(listOf(
+            ClusterTask.StoppingCluster,
+            ClusterTask.TerminatePods,
+            ClusterTask.DeleteResources,
+            ClusterTask.TerminatedCluster,
+            ClusterTask.ClusterHalted
+        ))
     }
 
     @Test
