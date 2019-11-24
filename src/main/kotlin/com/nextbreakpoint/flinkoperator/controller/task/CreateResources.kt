@@ -2,6 +2,7 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.Result
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
@@ -33,6 +34,9 @@ class CreateResources : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry creating resources...")
         }
 
+        updateDigests(context.flinkCluster)
+        updateBootstrap(context.flinkCluster)
+
         return taskCompletedWithOutput(context.flinkCluster, "Creating resources...")
     }
 
@@ -51,7 +55,7 @@ class CreateResources : Task {
         val response = context.isClusterReady(context.clusterId, clusterScale)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for resources...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Creating resources...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Resources created in $seconds seconds")

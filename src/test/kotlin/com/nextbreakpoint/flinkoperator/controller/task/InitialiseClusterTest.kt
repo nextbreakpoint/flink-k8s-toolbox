@@ -77,8 +77,6 @@ class InitialiseClusterTest {
         Status.selectNextTask(cluster)
         assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.CreateBootstrapJob)
         Status.selectNextTask(cluster)
-        assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.StartJob)
-        Status.selectNextTask(cluster)
         assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.ClusterRunning)
     }
 
@@ -92,6 +90,8 @@ class InitialiseClusterTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.CreateResources)
+        Status.selectNextTask(cluster)
+        assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.CreateBootstrapJob)
         Status.selectNextTask(cluster)
         assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.ClusterRunning)
     }

@@ -10,9 +10,9 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class SavepointGetStatus(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<SavepointRequest, String>(flinkOptions, flinkClient, kubeClient) {
+class SavepointGetLatest(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<SavepointRequest, String>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(SavepointGetStatus::class.simpleName)
+        private val logger = Logger.getLogger(SavepointGetLatest::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: SavepointRequest): Result<String> {

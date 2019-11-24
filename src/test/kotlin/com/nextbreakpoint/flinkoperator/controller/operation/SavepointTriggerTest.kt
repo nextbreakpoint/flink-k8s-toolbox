@@ -46,7 +46,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
     @Test
@@ -59,7 +59,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
     @Test
@@ -76,7 +76,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
     @Test

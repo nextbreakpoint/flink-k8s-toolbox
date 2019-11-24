@@ -208,12 +208,10 @@ class ClusterRunning : Task {
             return false
         }
 
-        val changes = computeChanges(context)
+        val changes = computeChanges(context.flinkCluster)
 
         if (changes.isNotEmpty()) {
             logger.info("[name=${context.flinkCluster.metadata.name}] Detected changes: ${changes.joinToString(separator = ",")}")
-
-            updateDigests(context)
         }
 
         if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
@@ -225,12 +223,9 @@ class ClusterRunning : Task {
                         ClusterTask.StoppingCluster,
                         ClusterTask.CancelJob,
                         ClusterTask.TerminatePods,
-//                        ClusterTask.DeleteResources,
                         ClusterTask.StartingCluster,
                         ClusterTask.CreateResources,
-//                        ClusterTask.DeleteBootstrapJob,
                         ClusterTask.CreateBootstrapJob,
-                        ClusterTask.StartJob,
                         ClusterTask.ClusterRunning
                     )
                 )
@@ -242,25 +237,18 @@ class ClusterRunning : Task {
                         ClusterTask.UpdatingCluster,
                         ClusterTask.CancelJob,
                         ClusterTask.CreateResources,
-//                        ClusterTask.DeleteBootstrapJob,
                         ClusterTask.CreateBootstrapJob,
-                        ClusterTask.StartJob,
                         ClusterTask.ClusterRunning
                     )
                 )
             }
         } else if (changes.contains("BOOTSTRAP")) {
-            val bootstrap = context.flinkCluster.spec?.bootstrap
-            Status.setBootstrap(context.flinkCluster, bootstrap)
-
             Status.appendTasks(
                 context.flinkCluster,
                 listOf(
                     ClusterTask.UpdatingCluster,
                     ClusterTask.CancelJob,
-//                    ClusterTask.DeleteBootstrapJob,
                     ClusterTask.CreateBootstrapJob,
-                    ClusterTask.StartJob,
                     ClusterTask.ClusterRunning
                 )
             )

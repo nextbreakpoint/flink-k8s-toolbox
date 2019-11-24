@@ -4,6 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.options.required
@@ -475,17 +476,25 @@ class Main(private val factory: CommandFactory) {
         }
     }
 
-    class BootstrapCommand(private val factory: CommandFactory): CliktCommand(name="upload", help="Upload a JAR file") {
+    class BootstrapCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Upload a JAR file and start a job") {
         private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of kuke config")
         private val namespace: String by option(help="The namespace of the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val jarPath: String by option(help="The path of the JAR file to upload").required()
+        private val className: String by option(help="The name of the class to execute").required()
+        private val parallelism: Int by option(help="The default parallelism of the job").int().default(1)
+        private val savepointPath: String? by option(help="The path of a valid savepoint")
+        private val argument: List<String> by option(help="One or more job's argument").multiple()
 
         override fun run() {
             val params = BootstrapOptions(
-                jarPath = jarPath
+                jarPath = jarPath,
+                className = className,
+                parallelism = parallelism,
+                savepointPath = savepointPath,
+                arguments = argument
             )
             KubeClient.configure(kubeConfig)
             val flinkOptions = FlinkOptions(

@@ -75,7 +75,6 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                     listOf(
                         ClusterTask.StoppingCluster,
                         ClusterTask.TerminatePods,
-//                        ClusterTask.DeleteResources,
                         ClusterTask.StartingCluster,
                         ClusterTask.CreateResources,
                         ClusterTask.ClusterRunning
@@ -88,20 +87,16 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                     if (params.withoutSavepoint) {
                         listOf(
                             ClusterTask.StartingCluster,
-                            ClusterTask.CreateResources,
-//                            ClusterTask.DeleteBootstrapJob,
-                            ClusterTask.CreateBootstrapJob,
                             ClusterTask.EraseSavepoint,
-                            ClusterTask.StartJob,
+                            ClusterTask.CreateResources,
+                            ClusterTask.CreateBootstrapJob,
                             ClusterTask.ClusterRunning
                         )
                     } else {
                         listOf(
                             ClusterTask.StartingCluster,
                             ClusterTask.CreateResources,
-//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.CreateBootstrapJob,
-                            ClusterTask.StartJob,
                             ClusterTask.ClusterRunning
                         )
                     }
@@ -109,20 +104,16 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                     if (params.withoutSavepoint) {
                         listOf(
                             ClusterTask.StartingCluster,
-                            ClusterTask.RestartPods,
-//                            ClusterTask.DeleteBootstrapJob,
-                            ClusterTask.CreateBootstrapJob,
                             ClusterTask.EraseSavepoint,
-                            ClusterTask.StartJob,
+                            ClusterTask.RestartPods,
+                            ClusterTask.CreateBootstrapJob,
                             ClusterTask.ClusterRunning
                         )
                     } else {
                         listOf(
                             ClusterTask.StartingCluster,
                             ClusterTask.RestartPods,
-//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.CreateBootstrapJob,
-                            ClusterTask.StartJob,
                             ClusterTask.ClusterRunning
                         )
                     }
@@ -130,26 +121,20 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                     if (params.withoutSavepoint) {
                         listOf(
                             ClusterTask.StoppingCluster,
-//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.TerminatePods,
-//                            ClusterTask.DeleteResources,
                             ClusterTask.StartingCluster,
+                            ClusterTask.EraseSavepoint,
                             ClusterTask.CreateResources,
                             ClusterTask.CreateBootstrapJob,
-                            ClusterTask.EraseSavepoint,
-                            ClusterTask.StartJob,
                             ClusterTask.ClusterRunning
                         )
                     } else {
                         listOf(
                             ClusterTask.StoppingCluster,
-//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.TerminatePods,
-//                            ClusterTask.DeleteResources,
                             ClusterTask.StartingCluster,
                             ClusterTask.CreateResources,
                             ClusterTask.CreateBootstrapJob,
-                            ClusterTask.StartJob,
                             ClusterTask.ClusterRunning
                         )
                     }

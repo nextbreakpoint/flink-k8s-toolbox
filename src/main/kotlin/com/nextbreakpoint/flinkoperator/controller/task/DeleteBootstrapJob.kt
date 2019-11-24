@@ -30,7 +30,7 @@ class DeleteBootstrapJob : Task {
         }
 
         if (!bootstrapResourcesHaveBeenRemoved(context.clusterId, context.resources)) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for deletion of bootstrap job...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Deleting bootstrap job...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Bootstrap job removed in $seconds seconds")

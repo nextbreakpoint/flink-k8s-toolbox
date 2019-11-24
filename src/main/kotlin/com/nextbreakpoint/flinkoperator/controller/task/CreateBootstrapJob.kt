@@ -8,7 +8,7 @@ import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 class CreateBootstrapJob : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
         if (!isBootstrapJobDefined(context.flinkCluster)) {
-            return taskFailedWithOutput(context.flinkCluster, "Bootstrap job not defined")
+            return taskCompletedWithOutput(context.flinkCluster, "Bootstrap job not defined")
         }
 
         val seconds = context.timeSinceLastUpdateInSeconds()
@@ -23,7 +23,7 @@ class CreateBootstrapJob : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry removing old JAR files...")
         }
 
-        val bootstrapJob = makeBootstrapJob(context.clusterId, context.flinkCluster.status.bootstrap)
+        val bootstrapJob = makeBootstrapJob(context.clusterId, context.flinkCluster)
 
         val createBootstrapJobResponse = context.createBootstrapJob(context.clusterId, bootstrapJob)
 
@@ -35,6 +35,10 @@ class CreateBootstrapJob : Task {
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
+        if (!isBootstrapJobDefined(context.flinkCluster)) {
+            return taskCompletedWithOutput(context.flinkCluster, "Bootstrap job not defined")
+        }
+
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.BOOTSTRAPPING_JOB_TIMEOUT) {
@@ -44,13 +48,17 @@ class CreateBootstrapJob : Task {
         val response = context.isJarReady(context.clusterId)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait until JAR file is uploaded...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Waiting for JAR file...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "JAR file uploaded in $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
+        if (!isBootstrapJobDefined(context.flinkCluster)) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Bootstrap job not defined")
+        }
+
         return taskAwaitingWithOutput(context.flinkCluster, "Bootstrap job completed")
     }
 }

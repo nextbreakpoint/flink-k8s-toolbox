@@ -30,7 +30,7 @@ class DeleteResources : Task {
         }
 
         if (!resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for resources...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Deleting resources...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Resources removed in $seconds seconds")

@@ -32,6 +32,8 @@ class CreateBootstrapJobTest {
         given(context.clusterId).thenReturn(clusterId)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
         Status.setBootstrap(cluster, cluster.spec.bootstrap)
+        Status.setJobParallelism(cluster, 1)
+        Status.setSavepointPath(cluster, "")
     }
 
     @Test
@@ -41,7 +43,7 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNotBlank()
     }
 

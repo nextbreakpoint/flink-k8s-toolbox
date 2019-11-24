@@ -11,12 +11,12 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<SavepointOptions, SavepointRequest?>(flinkOptions, flinkClient, kubeClient) {
+class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<SavepointOptions, SavepointRequest>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(SavepointTrigger::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: SavepointOptions): Result<SavepointRequest?> {
+    override fun execute(clusterId: ClusterId, params: SavepointOptions): Result<SavepointRequest> {
         try {
             val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
@@ -31,7 +31,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
 
                 return Result(
                     ResultStatus.FAILED,
-                    null
+                    SavepointRequest("", "")
                 )
             }
 
@@ -42,7 +42,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
 
                 return Result(
                     ResultStatus.AWAIT,
-                    null
+                    SavepointRequest("", "")
                 )
             }
 
@@ -62,7 +62,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
 
             return Result(
                 ResultStatus.FAILED,
-                null
+                SavepointRequest("", "")
             )
         }
     }

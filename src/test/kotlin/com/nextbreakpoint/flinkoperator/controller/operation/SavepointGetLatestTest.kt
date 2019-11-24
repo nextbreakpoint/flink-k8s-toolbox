@@ -17,13 +17,13 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class SavepointGetStatusTest {
+class SavepointGetLatestTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
     private val flinkAddress = FlinkAddress(host = "localhost", port = 8080)
-    private val command = SavepointGetStatus(flinkOptions, flinkClient, kubeClient)
+    private val command = SavepointGetLatest(flinkOptions, flinkClient, kubeClient)
     private val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
 
     @BeforeEach

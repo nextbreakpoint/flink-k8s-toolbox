@@ -43,7 +43,7 @@ import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStart
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStop
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointCreate
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointForget
-import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetStatus
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetLatest
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetReplicas
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersSetReplicas
@@ -106,11 +106,11 @@ class OperationController(
     fun isJarReady(clusterId: ClusterId) : Result<Void?> =
         JarIsReady(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest?> =
+    fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest> =
         SavepointTrigger(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
-    fun getSavepointStatus(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
-        SavepointGetStatus(flinkOptions, flinkClient, kubeClient).execute(clusterId, savepointRequest)
+    fun getLatestSavepoint(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
+        SavepointGetLatest(flinkOptions, flinkClient, kubeClient).execute(clusterId, savepointRequest)
 
     fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): Result<Void?> =
         BootstrapCreateJob(flinkOptions, flinkClient, kubeClient).execute(clusterId, bootstrapJob)
@@ -133,7 +133,7 @@ class OperationController(
     fun stopJob(clusterId: ClusterId): Result<Void?> =
         JobStop(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest?> =
+    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest> =
         JobCancel(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
     fun isClusterReady(clusterId: ClusterId, options: ClusterScaling): Result<Void?> =
