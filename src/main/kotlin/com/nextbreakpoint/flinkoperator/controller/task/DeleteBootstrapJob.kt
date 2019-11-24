@@ -39,8 +39,4 @@ class DeleteBootstrapJob : Task {
     override fun onIdle(context: TaskContext): Result<String> {
         return taskAwaitingWithOutput(context.flinkCluster, "Bootstrap job deleted")
     }
-
-    override fun onFailed(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
-    }
 }

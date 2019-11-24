@@ -50,8 +50,4 @@ class RescaleCluster : Task {
     override fun onIdle(context: TaskContext): Result<String> {
         return taskAwaitingWithOutput(context.flinkCluster, "Cluster rescaled")
     }
-
-    override fun onFailed(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
-    }
 }

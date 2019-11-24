@@ -53,8 +53,4 @@ class CreateBootstrapJob : Task {
     override fun onIdle(context: TaskContext): Result<String> {
         return taskAwaitingWithOutput(context.flinkCluster, "Bootstrap job completed")
     }
-
-    override fun onFailed(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
-    }
 }

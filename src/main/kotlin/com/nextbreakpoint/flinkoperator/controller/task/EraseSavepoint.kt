@@ -19,8 +19,4 @@ class EraseSavepoint : Task {
     override fun onIdle(context: TaskContext): Result<String> {
         return taskAwaitingWithOutput(context.flinkCluster, "Nothing to do")
     }
-
-    override fun onFailed(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
-    }
 }
