@@ -22,7 +22,7 @@ class ClusterDeleteResources(flinkOptions: FlinkOptions, flinkClient: FlinkClien
 
             kubeClient.deleteStatefulSets(clusterId)
 
-            kubeClient.deleteServices(clusterId)
+            kubeClient.deleteJobManagerServices(clusterId)
 
             kubeClient.deletePersistentVolumeClaims(clusterId)
 

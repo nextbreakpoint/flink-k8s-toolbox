@@ -38,6 +38,8 @@ public class V1FlinkClusterStatus {
     private Long savepointTimestamp;
     @SerializedName("digest")
     private V1ResourceDigest digest;
+    @SerializedName("bootstrap")
+    private V1BootstrapSpec bootstrap;
 
     public String getLabelSelector() {
         return labelSelector;
@@ -167,6 +169,14 @@ public class V1FlinkClusterStatus {
         this.digest = digest;
     }
 
+    public V1BootstrapSpec getBootstrap() {
+        return bootstrap;
+    }
+
+    public void setBootstrap(V1BootstrapSpec bootstrap) {
+        this.bootstrap = bootstrap;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -187,12 +197,13 @@ public class V1FlinkClusterStatus {
                 Objects.equals(getSavepointJobId(), that.getSavepointJobId()) &&
                 Objects.equals(getSavepointTriggerId(), that.getSavepointTriggerId()) &&
                 Objects.equals(getSavepointTimestamp(), that.getSavepointTimestamp()) &&
-                Objects.equals(getDigest(), that.getDigest());
+                Objects.equals(getDigest(), that.getDigest()) &&
+                Objects.equals(getBootstrap(), that.getBootstrap());
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigest());
+        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigest(), getBootstrap());
         result = 31 * result + Arrays.hashCode(getTasks());
         return result;
     }
@@ -216,6 +227,7 @@ public class V1FlinkClusterStatus {
                 ", savepointTriggerId='" + savepointTriggerId + '\'' +
                 ", savepointTimestamp=" + savepointTimestamp +
                 ", digest=" + digest +
+                ", bootstrap=" + bootstrap +
                 '}';
     }
 }

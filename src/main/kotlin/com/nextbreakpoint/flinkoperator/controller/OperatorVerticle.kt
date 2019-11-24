@@ -34,7 +34,6 @@ import com.nextbreakpoint.flinkoperator.controller.task.DeleteBootstrapJob
 import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
 import com.nextbreakpoint.flinkoperator.controller.task.EraseSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.InitialiseCluster
-import com.nextbreakpoint.flinkoperator.controller.task.ReplaceResources
 import com.nextbreakpoint.flinkoperator.controller.task.RescaleCluster
 import com.nextbreakpoint.flinkoperator.controller.task.RestartPods
 import com.nextbreakpoint.flinkoperator.controller.task.StartJob
@@ -101,7 +100,6 @@ class OperatorVerticle : AbstractVerticle() {
             ClusterTask.EraseSavepoint to EraseSavepoint(),
             ClusterTask.CreateResources to CreateResources(),
             ClusterTask.DeleteResources to DeleteResources(),
-            ClusterTask.ReplaceResources to ReplaceResources(),
             ClusterTask.TerminatePods to TerminatePods(),
             ClusterTask.RestartPods to RestartPods(),
             ClusterTask.DeleteBootstrapJob to DeleteBootstrapJob(),
@@ -209,12 +207,23 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/savepoint", BiFunction { ctx, ns -> gson.toJson(
+            handleRequest(routingContext, namespace, "/cluster/savepoint/trigger", BiFunction { ctx, ns -> gson.toJson(
                 com.nextbreakpoint.flinkoperator.controller.core.Message(
                     cache.getClusterId(
                         ns,
                         ctx.pathParam("name")
                     ), ctx.bodyAsString
+                )
+            ) })
+        }
+
+        mainRouter.delete("/cluster/:name/savepoint").handler { routingContext ->
+            handleRequest(routingContext, namespace, "/cluster/savepoint/forget", BiFunction { ctx, ns -> gson.toJson(
+                com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    cache.getClusterId(
+                        ns,
+                        ctx.pathParam("name")
+                    ), "{}"
                 )
             ) })
         }
@@ -303,12 +312,17 @@ class OperatorVerticle : AbstractVerticle() {
                 gson.toJson(controller.createFlinkCluster(ClusterId(it.metadata.namespace, it.metadata.name, ""), it)) })
         }
 
-        vertx.eventBus().consumer<String>("/cluster/savepoint") { message ->
+        vertx.eventBus().consumer<String>("/cluster/savepoint/trigger") { message ->
             handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
                 gson.toJson(controller.createSavepoint(it.clusterId))
             })
         }
 
+        vertx.eventBus().consumer<String>("/cluster/savepoint/forget") { message ->
+            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
+                gson.toJson(controller.forgetSavepoint(it.clusterId))
+            })
+        }
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/change") { message ->
             handleEvent<V1FlinkCluster>(message, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterChanged(it) })

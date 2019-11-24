@@ -86,7 +86,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                     listOf(
                         ClusterTask.StoppingCluster,
                         ClusterTask.TerminatePods,
-                        ClusterTask.DeleteResources,
+//                        ClusterTask.DeleteResources,
                         ClusterTask.StartingCluster,
                         ClusterTask.CreateResources,
                         ClusterTask.ClusterRunning
@@ -100,7 +100,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                         listOf(
                             ClusterTask.StartingCluster,
                             ClusterTask.CreateResources,
-                            ClusterTask.DeleteBootstrapJob,
+//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.CreateBootstrapJob,
                             ClusterTask.EraseSavepoint,
                             ClusterTask.StartJob,
@@ -110,7 +110,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                         listOf(
                             ClusterTask.StartingCluster,
                             ClusterTask.CreateResources,
-                            ClusterTask.DeleteBootstrapJob,
+//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.CreateBootstrapJob,
                             ClusterTask.StartJob,
                             ClusterTask.ClusterRunning
@@ -121,7 +121,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                         listOf(
                             ClusterTask.StartingCluster,
                             ClusterTask.RestartPods,
-                            ClusterTask.DeleteBootstrapJob,
+//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.CreateBootstrapJob,
                             ClusterTask.EraseSavepoint,
                             ClusterTask.StartJob,
@@ -131,7 +131,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                         listOf(
                             ClusterTask.StartingCluster,
                             ClusterTask.RestartPods,
-                            ClusterTask.DeleteBootstrapJob,
+//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.CreateBootstrapJob,
                             ClusterTask.StartJob,
                             ClusterTask.ClusterRunning
@@ -141,9 +141,9 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                     if (params.withoutSavepoint) {
                         listOf(
                             ClusterTask.StoppingCluster,
-                            ClusterTask.DeleteBootstrapJob,
+//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.TerminatePods,
-                            ClusterTask.DeleteResources,
+//                            ClusterTask.DeleteResources,
                             ClusterTask.StartingCluster,
                             ClusterTask.CreateResources,
                             ClusterTask.CreateBootstrapJob,
@@ -154,9 +154,9 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                     } else {
                         listOf(
                             ClusterTask.StoppingCluster,
-                            ClusterTask.DeleteBootstrapJob,
+//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.TerminatePods,
-                            ClusterTask.DeleteResources,
+//                            ClusterTask.DeleteResources,
                             ClusterTask.StartingCluster,
                             ClusterTask.CreateResources,
                             ClusterTask.CreateBootstrapJob,

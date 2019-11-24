@@ -44,7 +44,8 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
             val savepointPath = params.status.savepointPath
             val parallelism = params.status.jobParallelism
 
-            flinkClient.runJar(address, jarFile, params.spec.bootstrap, parallelism, savepointPath)
+            val actualSavepointPath = if (savepointPath == "") null else savepointPath
+            flinkClient.runJar(address, jarFile, params.spec.bootstrap, parallelism, actualSavepointPath)
 
             return Result(
                 ResultStatus.SUCCESS,

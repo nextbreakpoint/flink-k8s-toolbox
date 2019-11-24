@@ -631,7 +631,7 @@ object KubeClient {
         }
     }
 
-    fun deleteServices(clusterId: ClusterId) {
+    fun deleteJobManagerServices(clusterId: ClusterId) {
         val services = coreApi.listNamespacedService(
             clusterId.namespace,
             null,
@@ -860,7 +860,7 @@ object KubeClient {
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
             null,
             null,
             5,
@@ -868,10 +868,21 @@ object KubeClient {
         )
     }
 
-    fun createBootstrapJob(clusterId: ClusterId, params: ClusterResources): V1Job {
+    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): V1Job {
         return batchApi.createNamespacedJob(
             clusterId.namespace,
-            params.bootstrapJob,
+            bootstrapJob,
+            null,
+            null,
+            null
+        )
+    }
+
+    fun replaceBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): V1Job {
+        return batchApi.replaceNamespacedJob(
+            "flink-bootstrap-${clusterId.name}",
+            clusterId.namespace,
+            bootstrapJob,
             null,
             null,
             null

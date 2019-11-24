@@ -14,7 +14,7 @@ class RestartPods : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val resources = createClusterResources(context.clusterId, context.flinkCluster)
+        val resources = makeClusterResources(context.clusterId, context.flinkCluster)
 
         val response = context.restartPods(context.clusterId, resources)
 
@@ -40,7 +40,7 @@ class RestartPods : Task {
         val response = context.isClusterReady(context.clusterId, clusterScaling)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of pods...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Waiting for pods...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Resources restarted in $seconds seconds")

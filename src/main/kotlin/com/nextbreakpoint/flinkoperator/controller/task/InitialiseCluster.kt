@@ -13,7 +13,10 @@ class InitialiseCluster : Task {
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
         Status.setTaskAttempts(context.flinkCluster, 0)
 
-        if (isBootstrapJobDefined(context.flinkCluster)) {
+        val bootstrap = context.flinkCluster.spec?.bootstrap
+        Status.setBootstrap(context.flinkCluster, bootstrap)
+
+        if (bootstrap != null) {
             Status.appendTasks(context.flinkCluster,
                 listOf(
                     ClusterTask.CreateResources,

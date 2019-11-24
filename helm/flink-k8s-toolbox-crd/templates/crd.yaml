@@ -8378,7 +8378,6 @@ spec:
                   - EraseSavepoint
                   - CreateResources
                   - DeleteResources
-                  - ReplaceResources
                   - CreateBootstrapJob
                   - DeleteBootstrapJob
                   - TerminatePods
@@ -8430,6 +8429,38 @@ spec:
                   type: string
                 taskManager:
                   type: string
+            bootstrap:
+              type: object
+              nullable: true
+              properties:
+                pullSecrets:
+                  type: string
+                  nullable: false
+                pullPolicy:
+                  type: string
+                  nullable: false
+                  enum:
+                    - Never
+                    - Always
+                    - IfNotPresent
+                image:
+                  type: string
+                  nullable: false
+                className:
+                  type: string
+                  nullable: false
+                jarPath:
+                  type: string
+                  nullable: false
+                arguments:
+                  type: array
+                  nullable: true
+                  items:
+                    type: string
+              required:
+                - image
+                - className
+                - jarPath
           required:
             - timestamp
             - tasks

@@ -99,7 +99,7 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                             ClusterTask.CancelJob,
                             ClusterTask.RescaleCluster,
                             ClusterTask.StartingCluster,
-                            ClusterTask.DeleteBootstrapJob,
+//                            ClusterTask.DeleteBootstrapJob,
                             ClusterTask.CreateBootstrapJob,
                             ClusterTask.StartJob,
                             ClusterTask.ClusterRunning

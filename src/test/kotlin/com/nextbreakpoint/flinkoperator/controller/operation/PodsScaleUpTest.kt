@@ -29,7 +29,6 @@ class PodsScaleUpTest {
     private val v1Service = V1ServiceBuilder().withNewMetadata().withName("test").endMetadata().build()
     private val v1StatefulSet = V1StatefulSetBuilder().withNewMetadata().withName("test").endMetadata().build()
     private val resources = ClusterResources(
-        bootstrapJob = v1Job,
         jobmanagerService = v1Service,
         jobmanagerStatefulSet = v1StatefulSet,
         taskmanagerStatefulSet = v1StatefulSet

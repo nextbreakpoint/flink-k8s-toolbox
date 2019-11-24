@@ -4,13 +4,10 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1Affinity
-import io.kubernetes.client.models.V1Container
 import io.kubernetes.client.models.V1ContainerBuilder
 import io.kubernetes.client.models.V1ContainerPort
 import io.kubernetes.client.models.V1EnvVar
 import io.kubernetes.client.models.V1EnvVarSource
-import io.kubernetes.client.models.V1Job
-import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1LabelSelector
 import io.kubernetes.client.models.V1LocalObjectReference
 import io.kubernetes.client.models.V1ObjectFieldSelector
@@ -82,102 +79,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withType(flinkCluster.spec.jobManager?.serviceMode ?: "ClusterIP")
             .endSpec()
             .build()
-    }
-
-    override fun createBootstrapJob(
-        namespace: String,
-        clusterId: String,
-        clusterOwner: String,
-        flinkCluster: V1FlinkCluster
-    ): V1Job? {
-        if (flinkCluster.spec.bootstrap == null) {
-            return null
-        }
-
-        if (flinkCluster.metadata.name == null) {
-            throw RuntimeException("name is required")
-        }
-
-        if (flinkCluster.spec.bootstrap.image == null) {
-            throw RuntimeException("image is required")
-        }
-
-        if (flinkCluster.spec.bootstrap.jarPath == null) {
-            throw RuntimeException("jarPath is required")
-        }
-
-        val jobLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("name", flinkCluster.metadata.name),
-            Pair("uid", clusterId),
-            Pair("component", "flink")
-        )
-
-        val podNameEnvVar =
-            createEnvVarFromField(
-                "POD_NAME", "metadata.name"
-            )
-
-        val podNamespaceEnvVar =
-            createEnvVarFromField(
-                "POD_NAMESPACE", "metadata.namespace"
-            )
-
-        val arguments =
-            createBootstrapArguments(
-                namespace, flinkCluster.metadata.name, flinkCluster.spec.bootstrap.jarPath
-            )
-
-        val jobSelector = V1LabelSelector().matchLabels(jobLabels)
-
-        val jobAffinity =
-            createBootstrapJobAffinity(
-                jobSelector
-            )
-
-        val pullSecrets =
-            createObjectReferenceListOrNull(
-                flinkCluster.spec.bootstrap?.pullSecrets
-            )
-
-        val jobPodSpec = V1PodSpecBuilder()
-            .addToContainers(V1Container())
-            .editFirstContainer()
-            .withName("flink-bootstrap")
-            .withImage(flinkCluster.spec.bootstrap.image)
-            .withImagePullPolicy(flinkCluster.spec.bootstrap?.pullPolicy ?: "Always")
-            .withArgs(arguments)
-            .addToEnv(podNameEnvVar)
-            .addToEnv(podNamespaceEnvVar)
-            .withResources(createBootstrapJobResourceRequirements())
-            .endContainer()
-            .withServiceAccountName(flinkCluster.spec.bootstrap?.serviceAccount ?: "default")
-            .withImagePullSecrets(pullSecrets)
-            .withRestartPolicy("OnFailure")
-            .withAffinity(jobAffinity)
-            .build()
-
-        val job = V1JobBuilder()
-            .editOrNewMetadata()
-            .withName("flink-bootstrap-${flinkCluster.metadata.name}")
-            .withLabels(jobLabels)
-            .endMetadata()
-            .editOrNewSpec()
-            .withCompletions(1)
-            .withParallelism(1)
-            .withBackoffLimit(3)
-            .withTtlSecondsAfterFinished(30)
-            .editOrNewTemplate()
-            .editOrNewMetadata()
-            .withName("flink-bootstrap-${flinkCluster.metadata.name}")
-            .withLabels(jobLabels)
-            .endMetadata()
-            .withSpec(jobPodSpec)
-            .endTemplate()
-            .endSpec()
-            .build()
-
-        return job
     }
 
     override fun createJobManagerStatefulSet(

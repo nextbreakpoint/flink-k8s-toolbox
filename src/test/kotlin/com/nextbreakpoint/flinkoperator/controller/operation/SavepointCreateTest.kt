@@ -21,14 +21,14 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class ClusterCheckpointingTest {
+class SavepointCreateTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
     private val operatorCache = mock(Cache::class.java)
-    private val command = ClusterCheckpointing(flinkOptions, flinkClient, kubeClient, operatorCache)
+    private val command = SavepointCreate(flinkOptions, flinkClient, kubeClient, operatorCache)
 
     @BeforeEach
     fun configure() {

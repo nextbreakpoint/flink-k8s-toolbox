@@ -34,7 +34,6 @@ class ClusterResourcesValidatorTest {
 
         printStatus(actualStatus)
 
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.VALID)
         assertThat(actualStatus.jobmanagerService.first).isEqualTo(ResourceStatus.VALID)
         assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.VALID)
         assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.VALID)
@@ -49,17 +48,6 @@ class ClusterResourcesValidatorTest {
         printStatus(actualStatus)
 
         assertThat(actualStatus.jobmanagerService.first).isEqualTo(ResourceStatus.MISSING)
-    }
-
-    @Test
-    fun `should return missing resource when the bootstrap job is not present`() {
-        val expectedResources = createTestClusterResources(cluster).withBootstrapJob(null)
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.MISSING)
     }
 
     @Test
@@ -509,167 +497,11 @@ class ClusterResourcesValidatorTest {
     }
 
     private fun printStatus(clusterResourcesStatus: ClusterResourcesStatus) {
-        clusterResourcesStatus.bootstrapJob.second.forEach { println("bootstrapJob job: ${it}") }
-
         clusterResourcesStatus.jobmanagerService.second.forEach { println("jobmanager service: ${it}") }
 
         clusterResourcesStatus.jobmanagerStatefulSet.second.forEach { println("jobmanager statefulset: ${it}") }
 
         clusterResourcesStatus.taskmanagerStatefulSet.second.forEach { println("taskmanager statefulset: ${it}") }
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected labels`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.metadata?.labels = mapOf()
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(3)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected service account`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.serviceAccountName = "xxx"
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected pull secrets`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.imagePullSecrets = listOf()
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected pull secrets name`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.imagePullSecrets?.get(0)?.name = "xxx"
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have containers`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.containers = listOf()
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected container image`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.image = "xxx"
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected container pull policy`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.imagePullPolicy = "xxx"
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected container arguments`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf()
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected job argument`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("xxx", "bootstrap")
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected job arguments`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("bootstrap", "xxx")
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(1)
-    }
-
-    @Test
-    fun `should return divergent resource when the bootstrap job does not have the expected job jar arguments`() {
-        val expectedResources = createTestClusterResources(cluster)
-
-        expectedResources.bootstrapJob?.spec?.template?.spec?.containers?.get(0)?.args = listOf("bootstrap", "upload")
-
-        val actualStatus = statusEvaluator.evaluate(identity, cluster, expectedResources)
-
-        printStatus(actualStatus)
-
-        assertThat(actualStatus.bootstrapJob.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.bootstrapJob.second).hasSize(3)
     }
 
     private fun createLabels(
@@ -701,7 +533,6 @@ class ClusterResourcesValidatorTest {
         ).build()
 
         return ClusterResources(
-            bootstrapJob = targetResources.bootstrapJob,
             jobmanagerService = targetResources.jobmanagerService,
             jobmanagerStatefulSet = targetResources.jobmanagerStatefulSet,
             taskmanagerStatefulSet = targetResources.taskmanagerStatefulSet

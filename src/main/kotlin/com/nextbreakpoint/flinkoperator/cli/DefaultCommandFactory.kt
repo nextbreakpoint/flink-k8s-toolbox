@@ -11,6 +11,7 @@ import com.nextbreakpoint.flinkoperator.cli.command.JobDetails
 import com.nextbreakpoint.flinkoperator.cli.command.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.cli.command.JobMetrics
 import com.nextbreakpoint.flinkoperator.cli.command.LaunchOperator
+import com.nextbreakpoint.flinkoperator.cli.command.SavepointForget
 import com.nextbreakpoint.flinkoperator.cli.command.SavepointTrigger
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagerMetrics
@@ -34,6 +35,8 @@ object DefaultCommandFactory : CommandFactory {
     override fun createGetClusterStatusCommand() = ClusterStatus()
 
     override fun createTriggerSavepointCommand() = SavepointTrigger()
+
+    override fun createForgetSavepointCommand() = SavepointForget()
 
     override fun createGetJobDetailsCommand() = JobDetails()
 

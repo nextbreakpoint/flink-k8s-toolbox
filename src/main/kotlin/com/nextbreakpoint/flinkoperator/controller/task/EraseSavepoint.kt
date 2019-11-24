@@ -7,9 +7,9 @@ import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 
 class EraseSavepoint : Task {
     override fun onExecuting(context: TaskContext): Result<String> {
-        Status.setSavepointPath(context.flinkCluster, null)
+        Status.setSavepointPath(context.flinkCluster, "")
 
-        return taskCompletedWithOutput(context.flinkCluster, "Erasing savepoint...")
+        return taskCompletedWithOutput(context.flinkCluster, "Erasing savepoint from bootstrap...")
     }
 
     override fun onAwaiting(context: TaskContext): Result<String> {
