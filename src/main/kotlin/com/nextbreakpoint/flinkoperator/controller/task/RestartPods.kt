@@ -49,8 +49,4 @@ class RestartPods : Task {
     override fun onIdle(context: TaskContext): Result<String> {
         return taskAwaitingWithOutput(context.flinkCluster, "Pods restarted")
     }
-
-    override fun onFailed(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
-    }
 }

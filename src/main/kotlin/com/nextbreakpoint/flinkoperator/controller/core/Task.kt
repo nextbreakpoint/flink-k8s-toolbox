@@ -3,11 +3,14 @@ package com.nextbreakpoint.flinkoperator.controller.core
 import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
+import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
@@ -24,7 +27,9 @@ interface Task {
 
     fun onIdle(context: TaskContext): Result<String>
 
-    fun onFailed(context: TaskContext): Result<String>
+    fun onFailed(context: TaskContext): Result<String> {
+        return taskAwaitingWithOutput(context.flinkCluster, "")
+    }
 
     fun isBootstrapJobDefined(cluster: V1FlinkCluster) = cluster.status?.bootstrap != null
 

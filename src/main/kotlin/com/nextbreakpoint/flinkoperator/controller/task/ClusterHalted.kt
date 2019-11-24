@@ -199,8 +199,4 @@ class ClusterHalted : Task {
 
         return changes.isNotEmpty()
     }
-
-    override fun onFailed(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
-    }
 }

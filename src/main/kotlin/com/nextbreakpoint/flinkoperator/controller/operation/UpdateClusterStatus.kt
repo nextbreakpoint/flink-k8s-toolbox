@@ -33,8 +33,6 @@ class UpdateClusterStatus(
 
             val resources = controller.cache.getResources()
 
-            logOperatorAnnotations(flinkCluster)
-
             val operatorTimestamp = Status.getOperatorTimestamp(flinkCluster)
 
             val actionTimestamp = Annotations.getActionTimestamp(flinkCluster)
@@ -44,9 +42,9 @@ class UpdateClusterStatus(
             )
 
             return if (Status.hasCurrentTask(flinkCluster)) {
-                update(clusterId, context)
+                updatedClusterStatus(clusterId, context)
             } else {
-                initialise(clusterId, context)
+                prepareClusterStatus(clusterId, context)
             }
         } catch (e : Exception) {
             logger.error("Error occurred while updating cluster ${clusterId.name}", e)
@@ -58,10 +56,12 @@ class UpdateClusterStatus(
         }
     }
 
-    private fun initialise(
+    private fun prepareClusterStatus(
         clusterId: ClusterId,
         context: TaskContext
     ): Result<Void?> {
+        logger.debug("Initialising cluster ${clusterId.name}...")
+
         Status.appendTasks(context.flinkCluster, listOf(ClusterTask.InitialiseCluster))
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Unknown)
         Status.setTaskAttempts(context.flinkCluster, 0)
@@ -69,27 +69,25 @@ class UpdateClusterStatus(
 
         controller.updateStatus(clusterId, context.flinkCluster)
 
-        logger.debug("Initialising cluster ${clusterId.name}...")
-
         return Result(
             ResultStatus.SUCCESS,
             null
         )
     }
 
-    private fun update(
+    private fun updatedClusterStatus(
         clusterId: ClusterId,
         context: TaskContext
     ): Result<Void?> {
+        logger.debug("Updating cluster ${clusterId.name}...")
+
         val taskStatus = Status.getCurrentTaskStatus(context.flinkCluster)
 
         val currentTask = Status.getCurrentTask(context.flinkCluster)
 
-//        logger.info("Cluster ${clusterId.name}, status ${taskStatus}, task ${currentTask.name}")
-
         val taskHandler = getOperatorTaskOrThrow(currentTask)
 
-        val taskResult = updateTask(context, taskStatus, taskHandler)
+        val taskResult = invokeTaskAndUpdateStatus(context, taskStatus, taskHandler)
 
         val statefulSet = context.resources.taskmanagerStatefulSets[context.clusterId]
 
@@ -106,10 +104,6 @@ class UpdateClusterStatus(
         if (actionTimestamp != context.actionTimestamp) {
             controller.updateAnnotations(clusterId, context.flinkCluster)
         }
-
-//        if (Status.getSavepointPath(context.flinkCluster) != context.flinkCluster.status?.savepointPath) {
-//            controller.updateSavepoint(clusterId, Status.getSavepointPath(context.flinkCluster) ?: "")
-//        }
 
         return when {
             taskResult.status == ResultStatus.SUCCESS -> {
@@ -150,7 +144,7 @@ class UpdateClusterStatus(
         }
     }
 
-    private fun updateTask(
+    private fun invokeTaskAndUpdateStatus(
         context: TaskContext,
         taskStatus: TaskStatus,
         task: Task
@@ -228,12 +222,6 @@ class UpdateClusterStatus(
                 Result(ResultStatus.FAILED, "Task failed")
             }
         }
-    }
-
-    private fun logOperatorAnnotations(flinkCluster: V1FlinkCluster) {
-        logger.debug("Cluster ${flinkCluster.metadata.name}")
-        val annotations = flinkCluster.metadata.annotations ?: mapOf<String, String>()
-        annotations.forEach { (key, value) -> logger.debug("$key = $value") }
     }
 
     private fun getOperatorTaskOrThrow(clusterTask: ClusterTask) =
