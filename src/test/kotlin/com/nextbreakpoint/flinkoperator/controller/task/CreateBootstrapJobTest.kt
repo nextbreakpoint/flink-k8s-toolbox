@@ -164,14 +164,50 @@ class CreateBootstrapJobTest {
     }
 
     @Test
-    fun `onAwaiting should return expected result when jar is ready`() {
+    fun `onAwaiting should return expected result when jar is ready but job is not started`() {
         given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
         given(context.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).isJarReady(eq(clusterId))
+        verify(context, times(1)).isJobStarted(eq(clusterId))
+        verifyNoMoreInteractions(context)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.output).isNotBlank()
+    }
+
+    @Test
+    fun `onAwaiting should return expected result when jar is ready but can't get job status`() {
+        given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
+        given(context.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        val result = task.onAwaiting(context)
+        verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJarReady(eq(clusterId))
+        verify(context, times(1)).isJobStarted(eq(clusterId))
+        verifyNoMoreInteractions(context)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.output).isNotBlank()
+    }
+
+    @Test
+    fun `onAwaiting should return expected result when jar is ready and job is started`() {
+        given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
+        given(context.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        val result = task.onAwaiting(context)
+        verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isJarReady(eq(clusterId))
+        verify(context, times(1)).isJobStarted(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)

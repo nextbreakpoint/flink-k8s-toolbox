@@ -27,7 +27,7 @@ class ClusterRunning : Task {
         Status.setTaskSlots(context.flinkCluster, taskSlots)
         Status.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
 
-        Status.updateSavepointTimestamp(context.flinkCluster)
+        Status.resetSavepointRequest(context.flinkCluster)
 
         return taskCompletedWithOutput(context.flinkCluster, "Status has been updated")
     }
@@ -107,7 +107,7 @@ class ClusterRunning : Task {
 
         val savepointIntervalInSeconds = Configuration.getSavepointInterval(context.flinkCluster)
 
-        if (context.timeSinceLastSavepointInSeconds() > savepointIntervalInSeconds) {
+        if (context.timeSinceLastSavepointRequestInSeconds() > savepointIntervalInSeconds) {
             Status.appendTasks(
                 context.flinkCluster,
                 listOf(

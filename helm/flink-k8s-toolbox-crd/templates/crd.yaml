@@ -8356,7 +8356,7 @@ spec:
             totalTaskSlots:
               type: integer
             timestamp:
-              type: integer
+              type: string
               nullable: false
             tasks:
               type: array
@@ -8417,7 +8417,7 @@ spec:
             savepointTriggerId:
               type: string
             savepointTimestamp:
-              type: integer
+              type: string
             digest:
               type: object
               properties:
@@ -8488,7 +8488,7 @@ spec:
     - name: TASK-MANAGERS
       type: integer
       JSONPath: .status.taskManagers
-    - name: TASK-MANAGER-TASK-SLOTS
+    - name: TASK-SLOTS
       type: integer
       JSONPath: .status.taskSlots
     - name: ACTIVE-TASK-MANAGERS
@@ -8506,9 +8506,15 @@ spec:
     - name: SERVICE-MODE
       type: string
       JSONPath: .spec.jobManager.serviceMode
+    - name: SAVEPOINT-MODE
+      type: string
+      JSONPath: .spec.operator.savepointMode
     - name: SAVEPOINT-PATH
       type: string
       JSONPath: .status.savepointPath
+    - name: SAVEPOINT-AGE
+      type: date
+      JSONPath: .status.savepointTimestamp
     - name: AGE
       type: date
       JSONPath: .metadata.creationTimestamp

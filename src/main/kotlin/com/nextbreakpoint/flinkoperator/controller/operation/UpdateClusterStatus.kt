@@ -33,12 +33,8 @@ class UpdateClusterStatus(
 
             val resources = controller.cache.getResources()
 
-            val operatorTimestamp = Status.getOperatorTimestamp(flinkCluster)
-
-            val actionTimestamp = Annotations.getActionTimestamp(flinkCluster)
-
             val context = TaskContext(
-                operatorTimestamp, actionTimestamp, clusterId, flinkCluster, resources, controller
+                clusterId, flinkCluster, resources, controller
             )
 
             return if (Status.hasCurrentTask(flinkCluster)) {
@@ -81,6 +77,10 @@ class UpdateClusterStatus(
     ): Result<Void?> {
         logger.debug("Updating cluster ${clusterId.name}...")
 
+        val operatorTimestamp = Status.getOperatorTimestamp(context.flinkCluster)
+
+        val actionTimestamp = Annotations.getActionTimestamp(context.flinkCluster)
+
         val taskStatus = Status.getCurrentTaskStatus(context.flinkCluster)
 
         val currentTask = Status.getCurrentTask(context.flinkCluster)
@@ -93,15 +93,15 @@ class UpdateClusterStatus(
 
         updateStatusTaskManagers(context.flinkCluster, statefulSet)
 
-        val operatorTimestamp = Status.getOperatorTimestamp(context.flinkCluster)
+        val newOperatorTimestamp = Status.getOperatorTimestamp(context.flinkCluster)
 
-        if (operatorTimestamp != context.operatorTimestamp) {
+        if (operatorTimestamp != newOperatorTimestamp) {
             controller.updateStatus(clusterId, context.flinkCluster)
         }
 
-        val actionTimestamp = Annotations.getActionTimestamp(context.flinkCluster)
+        val newActionTimestamp = Annotations.getActionTimestamp(context.flinkCluster)
 
-        if (actionTimestamp != context.actionTimestamp) {
+        if (actionTimestamp != newActionTimestamp) {
             controller.updateAnnotations(clusterId, context.flinkCluster)
         }
 

@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller
 
-import com.google.gson.GsonBuilder
-import com.nextbreakpoint.flinkoperator.common.crd.DateTimeSerializer
+import io.kubernetes.client.JSON
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.handler.LoggerFormat
 import io.vertx.rxjava.core.AbstractVerticle
@@ -13,7 +12,6 @@ import io.vertx.rxjava.ext.web.handler.LoggerHandler
 import io.vertx.rxjava.ext.web.handler.TimeoutHandler
 import io.vertx.rxjava.micrometer.PrometheusScrapingHandler
 import org.apache.log4j.Logger
-import org.joda.time.DateTime
 import rx.Completable
 import rx.Single
 import java.util.Properties
@@ -23,7 +21,7 @@ class MonitoringVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(MonitoringVerticle::class.simpleName)
 
-        private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
+        private val gson = JSON().gson//GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
     }
 
     override fun rxStart(): Completable {

@@ -52,17 +52,17 @@ class InitialiseClusterTest {
     }
 
     @Test
-    fun `onExecuting should set resource digests`() {
+    fun `onExecuting should not set resource digests`() {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        assertThat(Status.getBootstrapDigest(cluster)).isNotNull()
-        assertThat(Status.getRuntimeDigest(cluster)).isNotNull()
-        assertThat(Status.getJobManagerDigest(cluster)).isNotNull()
-        assertThat(Status.getTaskManagerDigest(cluster)).isNotNull()
+        assertThat(Status.getBootstrapDigest(cluster)).isNull()
+        assertThat(Status.getRuntimeDigest(cluster)).isNull()
+        assertThat(Status.getJobManagerDigest(cluster)).isNull()
+        assertThat(Status.getTaskManagerDigest(cluster)).isNull()
     }
 
     @Test

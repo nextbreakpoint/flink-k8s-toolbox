@@ -20,6 +20,7 @@ import com.nextbreakpoint.flinkclient.model.TriggerResponse
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.Metric
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
+import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -28,6 +29,8 @@ object FlinkClient {
     private val logger = Logger.getLogger(FlinkClient::class.simpleName)
 
     private const val TIMEOUT = 20000L
+
+    private val gson = JSON().gson
 
     fun getOverview(address: FlinkAddress): ClusterOverviewWithVersion {
         try {
@@ -63,7 +66,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), JarListInfo::class.java).files
+                    return gson.fromJson(source.readUtf8Line(), JarListInfo::class.java).files
                 }
             }
         } catch (e : CallException) {
@@ -105,7 +108,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    val jobsOverview = Gson().fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
+                    val jobsOverview = gson.fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
 
                     return jobsOverview.jobs.filter {
                         jobIdWithStatus -> jobIdWithStatus.status == JobIdWithStatus.StatusEnum.RUNNING
@@ -133,7 +136,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    val jobsOverview = Gson().fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
+                    val jobsOverview = gson.fromJson(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
 
                     return jobsOverview.jobs
                 }
@@ -199,7 +202,7 @@ object FlinkClient {
                     }
 
                     it.first to body.source().use { source ->
-                        Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
+                        gson.fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
                     }
                 }
             }.toMap()
@@ -224,7 +227,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), TriggerResponse::class.java)
+                    return gson.fromJson(source.readUtf8Line(), TriggerResponse::class.java)
                 }
             }
         } catch (e : CallException) {
@@ -246,7 +249,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), JobDetailsInfo::class.java)
+                    return gson.fromJson(source.readUtf8Line(), JobDetailsInfo::class.java)
                 }
             }
         } catch (e : CallException) {
@@ -268,7 +271,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                    return gson.fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
                 }
             }
         } catch (e : CallException) {
@@ -290,7 +293,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                    return gson.fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
                 }
             }
         } catch (e : CallException) {
@@ -312,7 +315,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
+                    return gson.fromJson(source.readUtf8Line(), object : TypeToken<List<Metric>>() {}.type)
                 }
             }
         } catch (e : CallException) {
@@ -334,7 +337,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<TaskManagerDetailsInfo>() {}.type)
+                    return gson.fromJson(source.readUtf8Line(), object : TypeToken<TaskManagerDetailsInfo>() {}.type)
                 }
             }
         } catch (e : CallException) {
@@ -376,7 +379,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<TaskManagersInfo>() {}.type)
+                    return gson.fromJson(source.readUtf8Line(), object : TypeToken<TaskManagersInfo>() {}.type)
                 }
             }
         } catch (e : CallException) {
@@ -401,7 +404,7 @@ object FlinkClient {
                     }
 
                     val asynchronousOperationResult = body.source().use { source ->
-                        Gson().fromJson(source.readUtf8Line(), AsynchronousOperationResult::class.java)
+                        gson.fromJson(source.readUtf8Line(), AsynchronousOperationResult::class.java)
                     }
 
                     if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
@@ -435,7 +438,7 @@ object FlinkClient {
                     }
 
                     val checkpointingStatistics = body.source().use { source ->
-                        Gson().fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
+                        gson.fromJson(source.readUtf8Line(), CheckpointingStatistics::class.java)
                     }
 
                     val savepoint = checkpointingStatistics.latest?.savepoint
@@ -473,7 +476,7 @@ object FlinkClient {
                     }
 
                     it.first to body.source().use { source ->
-                        Gson().fromJson(source.readUtf8Line(), TriggerResponse::class.java)
+                        gson.fromJson(source.readUtf8Line(), TriggerResponse::class.java)
                     }
                 }
             }.map {
@@ -498,7 +501,7 @@ object FlinkClient {
                 }
 
                 body.source().use { source ->
-                    return Gson().fromJson(source.readUtf8Line(), object : TypeToken<JarUploadResponseBody>() {}.type)
+                    return gson.fromJson(source.readUtf8Line(), object : TypeToken<JarUploadResponseBody>() {}.type)
                 }
             }
         } catch (e : CallException) {

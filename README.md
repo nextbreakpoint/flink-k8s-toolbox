@@ -20,6 +20,7 @@ Main features:
 
 - Automatic creation of Job Manager and Task Managers using StatefulSets
 - Automatic creation of service for accessing Job Manager
+- Support for bare cluster or single job cluster
 - Support for init containers and side containers for Job Manager and Task Managers
 - Support for mounted volumes and persistent volumes claims
 - Support for environment variables, including variables from config map
@@ -40,6 +41,7 @@ Main features:
 - Automatic creation of savepoint before stopping cluster or job  
 - Automatic recovery from latest savepoint when restarting job  
 - Resource status and printer columns
+- Readiness and Liveness probes for JobManager
 - CLI interface for operations and monitoring   
 - Internal metrics compatible with Prometheus  
 
@@ -546,8 +548,8 @@ List custom objects of type FlinkCluster with command:
 
 The command should produce an output like:
 
-    NAME   CLUSTER-STATUS   TASK-STATUS   TASK             TASK-MANAGERS   TASK-MANAGER-TASK-SLOTS   ACTIVE-TASK-MANAGERS   TOTAL-TASK-SLOTS   JOB-PARALLELISM   JOB-RESTART   SERVICE-MODE   SAVEPOINT-PATH                                       AGE
-    test   Running          Idle          ClusterRunning   1               1                         0                      0                  1                 Always        NodePort       file:/var/savepoints/savepoint-214fad-2cc80e9eca80   9m38s
+    NAME   CLUSTER-STATUS   TASK-STATUS   TASK             TASK-MANAGERS   TASK-SLOTS   ACTIVE-TASK-MANAGERS   TOTAL-TASK-SLOTS   JOB-PARALLELISM   JOB-RESTART   SERVICE-MODE   SAVEPOINT-MODE   SAVEPOINT-PATH                                       SAVEPOINT-AGE   AGE
+    test   Running          Idle          ClusterRunning   1               1            1                      1                  1                 Always        NodePort       Manual           file:/var/savepoints/savepoint-e0e430-7a6d1c33dee3   42s             3m55s
 
 ## Build Flink Operator from source code
 

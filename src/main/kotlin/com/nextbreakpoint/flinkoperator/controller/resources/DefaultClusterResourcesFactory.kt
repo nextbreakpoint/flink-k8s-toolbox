@@ -7,6 +7,7 @@ import io.kubernetes.client.models.V1ContainerBuilder
 import io.kubernetes.client.models.V1ContainerPort
 import io.kubernetes.client.models.V1EnvVar
 import io.kubernetes.client.models.V1EnvVarSource
+import io.kubernetes.client.models.V1HTTPGetAction
 import io.kubernetes.client.models.V1LabelSelector
 import io.kubernetes.client.models.V1LocalObjectReference
 import io.kubernetes.client.models.V1ObjectFieldSelector
@@ -14,12 +15,14 @@ import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PodAffinityTerm
 import io.kubernetes.client.models.V1PodAntiAffinity
 import io.kubernetes.client.models.V1PodSpecBuilder
+import io.kubernetes.client.models.V1Probe
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1ServiceBuilder
 import io.kubernetes.client.models.V1ServicePort
 import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.models.V1StatefulSetBuilder
 import io.kubernetes.client.models.V1StatefulSetUpdateStrategy
+import io.kubernetes.client.models.V1TCPSocketAction
 import io.kubernetes.client.models.V1WeightedPodAffinityTerm
 
 object DefaultClusterResourcesFactory : ClusterResourcesFactory {
@@ -185,6 +188,30 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withEnv(jobmanagerVariables)
             .withEnvFrom(flinkCluster.spec.jobManager?.environmentFrom)
             .withResources(flinkCluster.spec.jobManager?.resources)
+            .withLivenessProbe(
+                V1Probe()
+                    .httpGet(V1HTTPGetAction().port(IntOrString(8081)).path("/overview"))
+                    .initialDelaySeconds(30)
+                    .periodSeconds(10)
+            )
+            .withLivenessProbe(
+                V1Probe()
+                    .tcpSocket(V1TCPSocketAction().port(IntOrString(6123)))
+                    .initialDelaySeconds(30)
+                    .periodSeconds(10)
+            )
+            .withReadinessProbe(
+                V1Probe()
+                    .httpGet(V1HTTPGetAction().port(IntOrString(8081)).path("/overview"))
+                    .initialDelaySeconds(15)
+                    .periodSeconds(5)
+            )
+            .withReadinessProbe(
+                V1Probe()
+                    .tcpSocket(V1TCPSocketAction().port(IntOrString(6123)))
+                    .initialDelaySeconds(15)
+                    .periodSeconds(5)
+            )
             .build()
 
         val jobmanagerPullSecrets = if (flinkCluster.spec.runtime?.pullSecrets != null) {
