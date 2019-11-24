@@ -6,7 +6,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
@@ -23,42 +22,14 @@ class SavepointForget(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            if (flinkCluster.spec?.bootstrap == null) {
-                logger.info("[name=${clusterId.name}] Job not defined")
-
-                return Result(
-                    ResultStatus.FAILED,
-                    listOf()
-                )
-            }
-
-            val operatorStatus = Status.getCurrentTaskStatus(flinkCluster)
-
-            if (operatorStatus != TaskStatus.Idle) {
-                logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
-
-                return Result(
-                    ResultStatus.AWAIT,
-                    listOf(
-                        Status.getCurrentTask(
-                            flinkCluster
-                        )
-                    )
-                )
-            }
-
             val clusterStatus = Status.getClusterStatus(flinkCluster)
 
-            if (clusterStatus != ClusterStatus.Suspended && clusterStatus != ClusterStatus.Terminated) {
+            if (clusterStatus != ClusterStatus.Suspended && clusterStatus != ClusterStatus.Terminated && clusterStatus != ClusterStatus.Failed) {
                 logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
 
                 return Result(
                     ResultStatus.AWAIT,
-                    listOf(
-                        Status.getCurrentTask(
-                            flinkCluster
-                        )
-                    )
+                    listOf()
                 )
             }
 

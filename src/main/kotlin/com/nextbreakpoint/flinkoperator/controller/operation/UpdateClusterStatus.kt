@@ -4,7 +4,6 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
@@ -226,7 +225,6 @@ class UpdateClusterStatus(
                 Status.setClusterStatus(context.flinkCluster, ClusterStatus.Failed)
                 Status.resetTasks(context.flinkCluster, listOf(ClusterTask.ClusterHalted))
                 Status.setTaskStatus(context.flinkCluster, TaskStatus.Executing)
-                Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
                 Result(ResultStatus.FAILED, "Task failed")
             }
         }

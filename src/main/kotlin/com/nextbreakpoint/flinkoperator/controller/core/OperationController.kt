@@ -45,7 +45,6 @@ import com.nextbreakpoint.flinkoperator.controller.operation.SavepointCreate
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointForget
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetStatus
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
-import com.nextbreakpoint.flinkoperator.controller.operation.SavepointUpdate
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetReplicas
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersSetReplicas
 import com.nextbreakpoint.flinkoperator.controller.operation.UpdateClusterStatus
@@ -106,9 +105,6 @@ class OperationController(
 
     fun isJarReady(clusterId: ClusterId) : Result<Void?> =
         JarIsReady(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
-
-    fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
-        SavepointUpdate(flinkOptions, flinkClient, kubeClient).execute(clusterId, savepointPath)
 
     fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest?> =
         SavepointTrigger(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)

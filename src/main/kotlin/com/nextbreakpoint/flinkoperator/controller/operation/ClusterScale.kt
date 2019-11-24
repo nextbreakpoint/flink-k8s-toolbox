@@ -25,17 +25,6 @@ class ClusterScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
         try {
             val flinkCluster = cache.getFlinkCluster(clusterId)
 
-            val operatorStatus = Status.getCurrentTaskStatus(flinkCluster)
-
-            if (operatorStatus != TaskStatus.Idle) {
-                logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
-
-                return Result(
-                    ResultStatus.AWAIT,
-                    listOf()
-                )
-            }
-
             val statusList = tryScalingCluster(flinkCluster, params)
 
             if (statusList.isEmpty()) {

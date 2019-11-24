@@ -20,7 +20,7 @@ class JobIsRunning(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
 
             val overview = flinkClient.getOverview(address)
 
-            if (overview.slotsTotal > 0 && overview.taskmanagers > 0 && overview.jobsRunning == 1) {
+            if (overview.slotsTotal > 0 && overview.taskmanagers > 0 && overview.jobsRunning >= 1) {
                 return Result(
                     ResultStatus.SUCCESS,
                     null

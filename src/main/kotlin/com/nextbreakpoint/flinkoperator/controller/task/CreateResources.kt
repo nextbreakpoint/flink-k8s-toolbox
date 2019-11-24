@@ -14,8 +14,6 @@ class CreateResources : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
-
         val clusterScaling = ClusterScaling(
             taskManagers = context.flinkCluster.status.taskManagers,
             taskSlots = context.flinkCluster.status.taskSlots
@@ -23,7 +21,7 @@ class CreateResources : Task {
 
         val response = context.isClusterReady(context.clusterId, clusterScaling)
 
-        if (!context.haveClusterResourcesDiverged(clusterStatus) && response.isCompleted()) {
+        if (response.isCompleted()) {
             return taskCompletedWithOutput(context.flinkCluster, "Resources already created")
         }
 

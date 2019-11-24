@@ -59,9 +59,7 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).haveClusterResourcesDiverged(any())
         verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -78,9 +76,7 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).haveClusterResourcesDiverged(any())
         verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verify(context, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(context)
@@ -98,9 +94,7 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).haveClusterResourcesDiverged(any())
         verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verify(context, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(context)
@@ -118,9 +112,7 @@ class CreateResourcesTest {
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, atLeastOnce()).resources
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).haveClusterResourcesDiverged(any())
         verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verify(context, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(context)

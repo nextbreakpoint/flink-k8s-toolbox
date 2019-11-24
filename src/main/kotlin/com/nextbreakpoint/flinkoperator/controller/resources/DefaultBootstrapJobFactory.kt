@@ -57,7 +57,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
         val jobSelector = V1LabelSelector().matchLabels(jobLabels)
 
         val jobAffinity =
-            createBootstrapJobAffinity(
+            createAffinity(
                 jobSelector
             )
 
@@ -75,7 +75,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
             .withArgs(arguments)
             .addToEnv(podNameEnvVar)
             .addToEnv(podNamespaceEnvVar)
-            .withResources(createBootstrapJobResourceRequirements())
+            .withResources(createResourceRequirements())
             .endContainer()
             .withServiceAccountName(bootstrap?.serviceAccount ?: "default")
             .withImagePullSecrets(pullSecrets)
@@ -106,7 +106,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
         return job
     }
 
-    private fun createBootstrapJobAffinity(
+    private fun createAffinity(
         jobSelector: V1LabelSelector?
     ): V1Affinity = V1Affinity()
         .podAffinity(
@@ -126,7 +126,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
             V1EnvVarSource().fieldRef(V1ObjectFieldSelector().fieldPath(fieldPath))
         )
 
-    private fun createBootstrapJobResourceRequirements() = V1ResourceRequirements()
+    private fun createResourceRequirements() = V1ResourceRequirements()
         .limits(
             mapOf(
                 "cpu" to Quantity("1"),

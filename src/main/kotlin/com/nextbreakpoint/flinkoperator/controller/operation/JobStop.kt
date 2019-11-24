@@ -25,7 +25,7 @@ class JobStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: 
             }
 
             if (runningJobs.isEmpty()) {
-                logger.warn("[name=${clusterId.name}] There is no running job")
+                logger.warn("[name=${clusterId.name}] Job already stopped!")
 
                 return Result(
                     ResultStatus.SUCCESS,
@@ -44,7 +44,7 @@ class JobStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: 
                 )
             }
 
-            logger.info("[name=${clusterId.name}] Job has been stopped")
+            logger.debug("[name=${clusterId.name}] Job stopped")
 
             return Result(
                 ResultStatus.SUCCESS,

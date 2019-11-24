@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -21,20 +22,20 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class SavepointCreateTest {
+class SavepointForgetTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
     private val operatorCache = mock(Cache::class.java)
-    private val command = SavepointCreate(flinkOptions, flinkClient, kubeClient, operatorCache)
+    private val command = SavepointForget(flinkOptions, flinkClient, kubeClient, operatorCache)
 
     @BeforeEach
     fun configure() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         Status.setTaskStatus(cluster, TaskStatus.Idle)
-        Status.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
+        Status.appendTasks(cluster, listOf(ClusterTask.ClusterHalted))
         given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
     }
 
@@ -52,31 +53,44 @@ class SavepointCreateTest {
     }
 
     @Test
-    fun `should return expected result when cluster is not running`() {
-        Status.setClusterStatus(cluster, ClusterStatus.Starting)
+    fun `should forget savepoint when status is failed`() {
+        Status.setClusterStatus(cluster, ClusterStatus.Failed)
         val result = command.execute(clusterId, null)
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isEmpty()
-    }
-
-    @Test
-    fun `should return expected result when cluster is running`() {
-        val result = command.execute(clusterId, null)
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).containsExactlyElementsOf(listOf(
-            ClusterTask.CreatingSavepoint,
-            ClusterTask.TriggerSavepoint,
-            ClusterTask.ClusterRunning
+            ClusterTask.EraseSavepoint,
+            ClusterTask.ClusterHalted
+        ))
+    }
+
+    @Test
+    fun `should forget savepoint when status is suspended`() {
+        Status.setClusterStatus(cluster, ClusterStatus.Suspended)
+        val result = command.execute(clusterId, null)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.output).containsExactlyElementsOf(listOf(
+            ClusterTask.EraseSavepoint,
+            ClusterTask.ClusterHalted
+        ))
+    }
+
+    @Test
+    fun `should forget savepoint when status is terminated`() {
+        Status.setClusterStatus(cluster, ClusterStatus.Terminated)
+        val result = command.execute(clusterId, null)
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.output).containsExactlyElementsOf(listOf(
+            ClusterTask.EraseSavepoint,
+            ClusterTask.ClusterHalted
         ))
     }
 }

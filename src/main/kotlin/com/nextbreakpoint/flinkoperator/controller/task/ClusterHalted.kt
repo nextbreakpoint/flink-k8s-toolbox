@@ -5,8 +5,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.StartOptions
-import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.Configuration
 import com.nextbreakpoint.flinkoperator.controller.core.Status
@@ -32,12 +30,18 @@ class ClusterHalted : Task {
     override fun onIdle(context: TaskContext): Result<String> {
         val manualAction = Annotations.getManualAction(context.flinkCluster)
 
-        if (manualAction != ManualAction.START) {
+        if (manualAction != ManualAction.START && manualAction != ManualAction.STOP) {
             Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
         }
 
         if (isStartingCluster(context)) {
+            Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
             return taskAwaitingWithOutput(context.flinkCluster, "Starting cluster...")
+        }
+
+        if (isStoppingCluster(context)) {
+            Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
+            return taskAwaitingWithOutput(context.flinkCluster, "Stopping cluster...")
         }
 
         if (isUpdatingCluster(context)) {
@@ -131,7 +135,7 @@ class ClusterHalted : Task {
     }
 
     private fun isUpdatingCluster(context: TaskContext): Boolean {
-        if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Failed && Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Suspended) {
+        if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Failed) {
             return false
         }
 
@@ -177,10 +181,14 @@ class ClusterHalted : Task {
                 )
             }
         } else if (changes.contains("BOOTSTRAP")) {
+            val bootstrap = context.flinkCluster.spec?.bootstrap
+            Status.setBootstrap(context.flinkCluster, bootstrap)
+
             Status.appendTasks(
                 context.flinkCluster,
                 listOf(
                     ClusterTask.UpdatingCluster,
+                    ClusterTask.CreateResources,
 //                    ClusterTask.DeleteBootstrapJob,
                     ClusterTask.CreateBootstrapJob,
                     ClusterTask.StartJob,
@@ -190,64 +198,6 @@ class ClusterHalted : Task {
         }
 
         return changes.isNotEmpty()
-    }
-
-    private fun computeChanges(context: TaskContext): MutableList<String> {
-        val jobManagerDigest = Status.getJobManagerDigest(context.flinkCluster)
-        val taskManagerDigest = Status.getTaskManagerDigest(context.flinkCluster)
-        val flinkImageDigest = Status.getRuntimeDigest(context.flinkCluster)
-        val flinkJobDigest = Status.getBootstrapDigest(context.flinkCluster)
-
-        val actualJobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
-        val actualTaskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
-        val actualRuntimeDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.runtime)
-        val actualBootstrapDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.bootstrap)
-
-        val changes = mutableListOf<String>()
-
-        if (jobManagerDigest != actualJobManagerDigest) {
-            changes.add("JOB_MANAGER")
-        }
-
-        if (taskManagerDigest != actualTaskManagerDigest) {
-            changes.add("TASK_MANAGER")
-        }
-
-        if (flinkImageDigest != actualRuntimeDigest) {
-            changes.add("RUNTIME")
-        }
-
-        if (flinkJobDigest != actualBootstrapDigest) {
-            changes.add("BOOTSTRAP")
-        }
-
-        return changes
-    }
-
-    private fun updateDigests(context: TaskContext) {
-        val actualJobManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.jobManager)
-        val actualTaskManagerDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.taskManager)
-        val actualRuntimeDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.runtime)
-        val actualBootstrapDigest = ClusterResource.computeDigest(context.flinkCluster.spec?.bootstrap)
-
-        Status.setJobManagerDigest(context.flinkCluster, actualJobManagerDigest)
-        Status.setTaskManagerDigest(context.flinkCluster, actualTaskManagerDigest)
-        Status.setRuntimeDigest(context.flinkCluster, actualRuntimeDigest)
-        Status.setBootstrapDigest(context.flinkCluster, actualBootstrapDigest)
-    }
-
-    private fun isStartingCluster(context: TaskContext): Boolean {
-        val manualAction = Annotations.getManualAction(context.flinkCluster)
-
-        if (manualAction != ManualAction.START) {
-            return false
-        }
-
-        logger.info("[name=${context.flinkCluster.metadata.name}] User started the cluster...")
-        val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
-        val options = StartOptions(withoutSavepoint = withoutSavepoint)
-        val result = context.startCluster(context.clusterId, options)
-        return result.isCompleted()
     }
 
     override fun onFailed(context: TaskContext): Result<String> {
