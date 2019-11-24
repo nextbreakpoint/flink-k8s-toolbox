@@ -51,7 +51,7 @@ class CreateBootstrapJob : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Waiting for JAR file...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "JAR file uploaded in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "JAR file uploaded after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

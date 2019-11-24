@@ -43,7 +43,7 @@ class RestartPods : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Restarting pods...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Resources restarted in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources restarted after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

@@ -58,7 +58,7 @@ class CreateResources : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Creating resources...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Resources created in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Resources created after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {

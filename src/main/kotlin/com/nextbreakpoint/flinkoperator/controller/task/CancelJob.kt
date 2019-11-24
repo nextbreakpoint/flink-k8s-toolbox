@@ -68,7 +68,7 @@ class CancelJob : Task {
 
         Status.setSavepointPath(context.flinkCluster, savepointPath)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Job stopped in $seconds seconds")
+        return taskCompletedWithOutput(context.flinkCluster, "Job stopped after $seconds seconds")
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
