@@ -132,7 +132,7 @@ class ClusterScaleTest {
                 ClusterTask.CancelJob,
                 ClusterTask.RescaleCluster,
                 ClusterTask.StartingCluster,
-                ClusterTask.DeleteBootstrapJob,
+//                ClusterTask.DeleteBootstrapJob,
                 ClusterTask.CreateBootstrapJob,
                 ClusterTask.StartJob,
                 ClusterTask.ClusterRunning

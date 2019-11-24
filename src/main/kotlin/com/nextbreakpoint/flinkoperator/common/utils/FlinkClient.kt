@@ -38,7 +38,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't get cluster overview - $address")
+                    throw CallException("[$address] Can't get cluster overview")
                 }
 
                 body.source().use { source ->
@@ -60,7 +60,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't list JARs - $address")
+                    throw CallException("[$address] Can't list JARs")
                 }
 
                 body.source().use { source ->
@@ -83,7 +83,7 @@ object FlinkClient {
 
                 response.body().use { body ->
                     if (!response.isSuccessful) {
-                        throw CallException("Can't remove JAR - $address")
+                        throw CallException("[$address] Can't remove JAR")
                     }
                 }
             }
@@ -102,7 +102,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't get jobs - $address")
+                    throw CallException("[$address] Can't get jobs")
                 }
 
                 body.source().use { source ->
@@ -130,7 +130,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't get jobs - $address")
+                    throw CallException("[$address] Can't get jobs")
                 }
 
                 body.source().use { source ->
@@ -164,11 +164,11 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't run JAR - $address")
+                    throw CallException("[$address] Can't run JAR")
                 }
 
                 body.source().use { source ->
-                    logger.debug("Job started: ${source.readUtf8Line()}")
+                    logger.debug("[$address] Job started: ${source.readUtf8Line()}")
                 }
             }
         } catch (e : CallException) {
@@ -189,7 +189,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        throw CallException("Can't get checkpointing statistics - $address")
+                        throw CallException("[$address] Can't get checkpointing statistics")
                     }
 
                     it.first to body.source().use { source ->
@@ -214,7 +214,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't request savepoint - $address")
+                    throw CallException("[$address] Can't request savepoint")
                 }
 
                 body.source().use { source ->
@@ -236,7 +236,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't fetch job details - $address")
+                    throw CallException("[$address] Can't fetch job details")
                 }
 
                 body.source().use { source ->
@@ -258,7 +258,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't fetch job metrics - $address")
+                    throw CallException("[$address] Can't fetch job metrics")
                 }
 
                 body.source().use { source ->
@@ -280,7 +280,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't fetch job manager metrics - $address")
+                    throw CallException("[$address] Can't fetch job manager metrics")
                 }
 
                 body.source().use { source ->
@@ -302,7 +302,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't fetch task manager metrics - $address")
+                    throw CallException("[$address] Can't fetch task manager metrics")
                 }
 
                 body.source().use { source ->
@@ -324,7 +324,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't fetch task manager details - $address")
+                    throw CallException("[$address] Can't fetch task manager details")
                 }
 
                 body.source().use { source ->
@@ -347,7 +347,7 @@ object FlinkClient {
 
                 response.body().use { body ->
                     if (!response.isSuccessful) {
-                        logger.warn("Can't cancel job $it - $address");
+                        logger.warn("[$address] Can't cancel job $it");
                     }
                 }
             }
@@ -366,7 +366,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't fetch task managers overview - $address")
+                    throw CallException("[$address] Can't fetch task managers overview")
                 }
 
                 body.source().use { source ->
@@ -391,7 +391,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.error("Can't get savepoint status for job ${it.first} - $address")
+                        logger.error("[$address] Can't get savepoint status for job ${it.first}")
                     }
 
                     val asynchronousOperationResult = body.source().use { source ->
@@ -399,7 +399,7 @@ object FlinkClient {
                     }
 
                     if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
-                        logger.info("Savepoint still in progress for job ${it.first} - $address")
+                        logger.info("[$address] Savepoint still in progress for job ${it.first}")
                     }
 
                     it.first to asynchronousOperationResult.status.id
@@ -425,7 +425,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.error("Can't get checkpointing statistics for job ${it.first} - $address")
+                        logger.error("[$address] Can't get checkpointing statistics for job ${it.first}")
                     }
 
                     val checkpointingStatistics = body.source().use { source ->
@@ -435,7 +435,7 @@ object FlinkClient {
                     val savepoint = checkpointingStatistics.latest?.savepoint
 
                     if (savepoint == null) {
-                        logger.error("Savepoint not found for job ${it.first} - $address")
+                        logger.error("[$address] Savepoint not found for job ${it.first}")
                     }
 
                     val externalPathOrEmpty = savepoint?.externalPath ?: ""
@@ -463,7 +463,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.warn("Can't request savepoint for job $it - $address")
+                        logger.warn("[$address] Can't request savepoint for job $it")
                     }
 
                     it.first to body.source().use { source ->
@@ -473,7 +473,7 @@ object FlinkClient {
             }.map {
                 it.first to it.second.requestId
             }.onEach {
-                logger.info("Created savepoint request ${it.second} for job ${it.first} - $address")
+                logger.info("[$address] Created savepoint request ${it.second} for job ${it.first}")
             }.toMap()
         } catch (e : Exception) {
             throw RuntimeException(e)
@@ -488,7 +488,7 @@ object FlinkClient {
 
             response.body().use { body ->
                 if (!response.isSuccessful) {
-                    throw CallException("Can't upload JAR - $address")
+                    throw CallException("[$address] Can't upload JAR")
                 }
 
                 body.source().use { source ->

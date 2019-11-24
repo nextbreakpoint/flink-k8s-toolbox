@@ -104,7 +104,7 @@ class ClusterHalted : Task {
 
         Status.appendTasks(
             context.flinkCluster, listOf(
-                ClusterTask.DeleteBootstrapJob,
+//                ClusterTask.DeleteBootstrapJob,
                 ClusterTask.CreateBootstrapJob,
                 ClusterTask.StartJob,
                 ClusterTask.ClusterRunning
@@ -152,10 +152,10 @@ class ClusterHalted : Task {
                     listOf(
                         ClusterTask.StoppingCluster,
                         ClusterTask.TerminatePods,
-                        ClusterTask.DeleteResources,
+//                        ClusterTask.DeleteResources,
                         ClusterTask.StartingCluster,
                         ClusterTask.CreateResources,
-                        ClusterTask.DeleteBootstrapJob,
+//                        ClusterTask.DeleteBootstrapJob,
                         ClusterTask.CreateBootstrapJob,
                         ClusterTask.StartJob,
                         ClusterTask.ClusterRunning
@@ -168,8 +168,8 @@ class ClusterHalted : Task {
                     context.flinkCluster,
                     listOf(
                         ClusterTask.UpdatingCluster,
-                        ClusterTask.ReplaceResources,
-                        ClusterTask.DeleteBootstrapJob,
+                        ClusterTask.CreateResources,
+//                        ClusterTask.DeleteBootstrapJob,
                         ClusterTask.CreateBootstrapJob,
                         ClusterTask.StartJob,
                         ClusterTask.ClusterRunning
@@ -181,7 +181,7 @@ class ClusterHalted : Task {
                 context.flinkCluster,
                 listOf(
                     ClusterTask.UpdatingCluster,
-                    ClusterTask.DeleteBootstrapJob,
+//                    ClusterTask.DeleteBootstrapJob,
                     ClusterTask.CreateBootstrapJob,
                     ClusterTask.StartJob,
                     ClusterTask.ClusterRunning

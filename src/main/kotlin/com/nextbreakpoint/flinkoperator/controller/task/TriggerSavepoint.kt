@@ -59,13 +59,13 @@ class TriggerSavepoint : Task {
         val savepointStatusResponse = context.getSavepointStatus(context.clusterId, savepointRequest)
 
         if (!savepointStatusResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for completion of savepoint...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for savepoint...")
         }
 
         val savepointPath = savepointStatusResponse.output
 
         if (savepointPath == null) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for completion of savepoint...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for savepoint...")
         }
 
         Status.setSavepointPath(context.flinkCluster, savepointPath)

@@ -8,11 +8,11 @@ import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
+import io.kubernetes.client.models.V1Job
 
 class TaskContext(
     val operatorTimestamp: Long,
@@ -38,26 +38,18 @@ class TaskContext(
         return false
     }
 
-    fun hasBootstrapJobDiverged(clusterResourcesStatus: ClusterResourcesStatus): Boolean {
-        if (clusterResourcesStatus.bootstrapJob.first != ResourceStatus.VALID) {
-            return true
-        }
-
-        return false
-    }
-
     fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - Status.getOperatorTimestamp(flinkCluster)) / 1000L
 
     fun timeSinceLastSavepointInSeconds() = (controller.currentTimeMillis() - Status.getSavepointTimestamp(flinkCluster)) / 1000L
 
-    fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
-        controller.requestStartCluster(clusterId, options)
-
-    fun requestStopCluster(clusterId: ClusterId, options: StopOptions) : Result<Void?> =
-        controller.requestStopCluster(clusterId, options)
-
-    fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
-        controller.requestScaleCluster(clusterId, options)
+//    fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
+//        controller.requestStartCluster(clusterId, options)
+//
+//    fun requestStopCluster(clusterId: ClusterId, options: StopOptions) : Result<Void?> =
+//        controller.requestStopCluster(clusterId, options)
+//
+//    fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
+//        controller.requestScaleCluster(clusterId, options)
 
     fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<ClusterTask>> =
         controller.startCluster(clusterId, options)
@@ -68,20 +60,20 @@ class TaskContext(
     fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling) : Result<List<ClusterTask>> =
         controller.scaleCluster(clusterId, clusterScaling)
 
-    fun createSavepoint(clusterId: ClusterId) : Result<List<ClusterTask>> =
-        controller.createSavepoint(clusterId)
+//    fun createSavepoint(clusterId: ClusterId) : Result<List<ClusterTask>> =
+//        controller.createSavepoint(clusterId)
 
     fun getClusterStatus(clusterId: ClusterId) : Result<Map<String, String>> =
         controller.getClusterStatus(clusterId)
 
-    fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : Result<Void?> =
-        controller.createFlinkCluster(clusterId, flinkCluster)
-
-    fun deleteFlinkCluster(clusterId: ClusterId) : Result<Void?> =
-        controller.deleteFlinkCluster(clusterId)
-
-    fun updateClusterStatus(clusterId: ClusterId) : Result<Void?> =
-        controller.updateClusterStatus(clusterId)
+//    fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : Result<Void?> =
+//        controller.createFlinkCluster(clusterId, flinkCluster)
+//
+//    fun deleteFlinkCluster(clusterId: ClusterId) : Result<Void?> =
+//        controller.deleteFlinkCluster(clusterId)
+//
+//    fun updateClusterStatus(clusterId: ClusterId) : Result<Void?> =
+//        controller.updateClusterStatus(clusterId)
 
     fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
         controller.createClusterResources(clusterId, clusterResources)
@@ -89,17 +81,14 @@ class TaskContext(
     fun deleteClusterResources(clusterId: ClusterId) : Result<Void?> =
         controller.deleteClusterResources(clusterId)
 
-    fun replaceClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
-        controller.replaceClusterResources(clusterId, clusterResources)
-
     fun removeJar(clusterId: ClusterId) : Result<Void?> =
         controller.removeJar(clusterId)
 
     fun isJarReady(clusterId: ClusterId) : Result<Void?> =
         controller.isJarReady(clusterId)
 
-    fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
-        controller.updateSavepoint(clusterId, savepointPath)
+//    fun updateSavepoint(clusterId: ClusterId, savepointPath: String): Result<Void?> =
+//        controller.updateSavepoint(clusterId, savepointPath)
 
     fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest?> =
         controller.triggerSavepoint(clusterId, options)
@@ -107,8 +96,8 @@ class TaskContext(
     fun getSavepointStatus(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
         controller.getSavepointStatus(clusterId, savepointRequest)
 
-    fun createBootstrapJob(clusterId: ClusterId, clusterResources: ClusterResources): Result<Void?> =
-        controller.createBootstrapJob(clusterId, clusterResources)
+    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): Result<Void?> =
+        controller.createBootstrapJob(clusterId, bootstrapJob)
 
     fun deleteBootstrapJob(clusterId: ClusterId) : Result<Void?> =
         controller.deleteBootstrapJob(clusterId)
@@ -158,11 +147,11 @@ class TaskContext(
     fun getTaskManagersReplicas(clusterId: ClusterId) : Result<Int> =
         controller.getTaskManagersReplicas(clusterId)
 
-    fun updateStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
-        controller.updateStatus(clusterId, flinkCluster)
-    }
-
-    fun updateAnnotations(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
-        controller.updateAnnotations(clusterId, flinkCluster)
-    }
+//    fun updateStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
+//        controller.updateStatus(clusterId, flinkCluster)
+//    }
+//
+//    fun updateAnnotations(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
+//        controller.updateAnnotations(clusterId, flinkCluster)
+//    }
 }

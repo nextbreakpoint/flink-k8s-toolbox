@@ -43,7 +43,7 @@ class ClusterDeleteResourcesTest {
         val result = command.execute(clusterId, null)
         verify(kubeClient, times(1)).deleteBootstrapJobs(eq(clusterId))
         verify(kubeClient, times(1)).deleteStatefulSets(eq(clusterId))
-        verify(kubeClient, times(1)).deleteServices(eq(clusterId))
+        verify(kubeClient, times(1)).deleteJobManagerServices(eq(clusterId))
         verify(kubeClient, times(1)).deletePersistentVolumeClaims(eq(clusterId))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)

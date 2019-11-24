@@ -14,9 +14,9 @@ import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import org.apache.log4j.Logger
 
-class ClusterCheckpointing(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val cache: Cache) : Operation<Void?, List<ClusterTask>>(flinkOptions, flinkClient, kubeClient) {
+class SavepointCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val cache: Cache) : Operation<Void?, List<ClusterTask>>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(ClusterCheckpointing::class.simpleName)
+        private val logger = Logger.getLogger(SavepointCreate::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<List<ClusterTask>> {

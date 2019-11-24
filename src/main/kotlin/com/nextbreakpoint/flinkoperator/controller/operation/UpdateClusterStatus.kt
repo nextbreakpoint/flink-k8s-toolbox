@@ -108,9 +108,9 @@ class UpdateClusterStatus(
             controller.updateAnnotations(clusterId, context.flinkCluster)
         }
 
-        if (Status.getSavepointPath(context.flinkCluster) != context.flinkCluster.spec.operator.savepointPath) {
-            controller.updateSavepoint(clusterId, Status.getSavepointPath(context.flinkCluster) ?: "")
-        }
+//        if (Status.getSavepointPath(context.flinkCluster) != context.flinkCluster.status?.savepointPath) {
+//            controller.updateSavepoint(clusterId, Status.getSavepointPath(context.flinkCluster) ?: "")
+//        }
 
         return when {
             taskResult.status == ResultStatus.SUCCESS -> {

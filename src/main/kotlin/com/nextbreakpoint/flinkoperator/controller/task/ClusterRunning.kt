@@ -29,9 +29,6 @@ class ClusterRunning : Task {
         Status.setTaskSlots(context.flinkCluster, taskSlots)
         Status.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
 
-        val savepointPath = context.flinkCluster.spec?.operator?.savepointPath
-        Status.setSavepointPath(context.flinkCluster, savepointPath)
-
         Status.updateSavepointTimestamp(context.flinkCluster)
 
         return taskCompletedWithOutput(context.flinkCluster, "Status has been updated")
@@ -229,10 +226,10 @@ class ClusterRunning : Task {
                         ClusterTask.StoppingCluster,
                         ClusterTask.CancelJob,
                         ClusterTask.TerminatePods,
-                        ClusterTask.DeleteResources,
+//                        ClusterTask.DeleteResources,
                         ClusterTask.StartingCluster,
                         ClusterTask.CreateResources,
-                        ClusterTask.DeleteBootstrapJob,
+//                        ClusterTask.DeleteBootstrapJob,
                         ClusterTask.CreateBootstrapJob,
                         ClusterTask.StartJob,
                         ClusterTask.ClusterRunning
@@ -245,8 +242,8 @@ class ClusterRunning : Task {
                     listOf(
                         ClusterTask.UpdatingCluster,
                         ClusterTask.CancelJob,
-                        ClusterTask.ReplaceResources,
-                        ClusterTask.DeleteBootstrapJob,
+                        ClusterTask.CreateResources,
+//                        ClusterTask.DeleteBootstrapJob,
                         ClusterTask.CreateBootstrapJob,
                         ClusterTask.StartJob,
                         ClusterTask.ClusterRunning
@@ -259,7 +256,7 @@ class ClusterRunning : Task {
                 listOf(
                     ClusterTask.UpdatingCluster,
                     ClusterTask.CancelJob,
-                    ClusterTask.DeleteBootstrapJob,
+//                    ClusterTask.DeleteBootstrapJob,
                     ClusterTask.CreateBootstrapJob,
                     ClusterTask.StartJob,
                     ClusterTask.ClusterRunning

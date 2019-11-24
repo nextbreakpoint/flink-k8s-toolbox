@@ -9,11 +9,8 @@ import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
-import io.kubernetes.client.models.V1JobBuilder
-import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1ServiceBuilder
 import io.kubernetes.client.models.V1ServiceList
-import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.models.V1StatefulSetBuilder
 import io.kubernetes.client.models.V1StatefulSetList
 import org.assertj.core.api.Assertions.assertThat
@@ -30,11 +27,9 @@ class ClusterCreateResourcesTest {
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
     private val command = ClusterCreateResources(flinkOptions, flinkClient, kubeClient)
-    private val v1Job = V1JobBuilder().withNewMetadata().withName("test").endMetadata().build()
     private val v1Service = V1ServiceBuilder().withNewMetadata().withName("test").endMetadata().build()
     private val v1StatefulSet = V1StatefulSetBuilder().withNewMetadata().withName("test").endMetadata().build()
     private val resources = ClusterResources(
-        bootstrapJob = v1Job,
         jobmanagerService = v1Service,
         jobmanagerStatefulSet = v1StatefulSet,
         taskmanagerStatefulSet = v1StatefulSet
@@ -48,47 +43,60 @@ class ClusterCreateResourcesTest {
         given(kubeClient.createJobManagerService(eq(clusterId), any())).thenReturn(v1Service)
         given(kubeClient.createJobManagerStatefulSet(eq(clusterId), any())).thenReturn(v1StatefulSet)
         given(kubeClient.createTaskManagerStatefulSet(eq(clusterId), any())).thenReturn(v1StatefulSet)
+        given(kubeClient.replaceJobManagerService(eq(clusterId), any())).thenReturn(v1Service)
+        given(kubeClient.replaceJobManagerStatefulSet(eq(clusterId), any())).thenReturn(v1StatefulSet)
+        given(kubeClient.replaceTaskManagerStatefulSet(eq(clusterId), any())).thenReturn(v1StatefulSet)
     }
 
     @Test
-    fun `should fail when job manager service already exists`() {
-        given(kubeClient.listJobManagerServices(eq(clusterId))).thenReturn(V1ServiceList().addItemsItem(mock(V1Service::class.java)))
+    fun `should replace job manager when service already exists`() {
+        given(kubeClient.listJobManagerServices(eq(clusterId))).thenReturn(V1ServiceList().addItemsItem(resources.jobmanagerService))
         val result = command.execute(clusterId, resources)
         verify(kubeClient, times(1)).listJobManagerServices(eq(clusterId))
         verify(kubeClient, times(1)).listJobManagerStatefulSets(eq(clusterId))
         verify(kubeClient, times(1)).listTaskManagerStatefulSets(eq(clusterId))
+        verify(kubeClient, times(1)).deleteJobManagerServices(eq(clusterId))
+        verify(kubeClient, times(1)).createJobManagerService(eq(clusterId), any())
+        verify(kubeClient, times(1)).createJobManagerStatefulSet(eq(clusterId), eq(resources))
+        verify(kubeClient, times(1)).createTaskManagerStatefulSet(eq(clusterId), eq(resources))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
     }
 
     @Test
-    fun `should fail when job manager statefulset already exists`() {
-        given(kubeClient.listJobManagerStatefulSets(eq(clusterId))).thenReturn(V1StatefulSetList().addItemsItem(mock(V1StatefulSet::class.java)))
+    fun `should replace job manager when statefulset already exists`() {
+        given(kubeClient.listJobManagerStatefulSets(eq(clusterId))).thenReturn(V1StatefulSetList().addItemsItem(resources.jobmanagerStatefulSet))
         val result = command.execute(clusterId, resources)
         verify(kubeClient, times(1)).listJobManagerServices(eq(clusterId))
         verify(kubeClient, times(1)).listJobManagerStatefulSets(eq(clusterId))
         verify(kubeClient, times(1)).listTaskManagerStatefulSets(eq(clusterId))
+        verify(kubeClient, times(1)).createJobManagerService(eq(clusterId), any())
+        verify(kubeClient, times(1)).replaceJobManagerStatefulSet(eq(clusterId), any())
+        verify(kubeClient, times(1)).createTaskManagerStatefulSet(eq(clusterId), eq(resources))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
     }
 
     @Test
-    fun `should fail when task manager statefulset already exists`() {
-        given(kubeClient.listTaskManagerStatefulSets(eq(clusterId))).thenReturn(V1StatefulSetList().addItemsItem(mock(V1StatefulSet::class.java)))
+    fun `should replace task manager when statefulset already exists`() {
+        given(kubeClient.listTaskManagerStatefulSets(eq(clusterId))).thenReturn(V1StatefulSetList().addItemsItem(resources.taskmanagerStatefulSet))
         val result = command.execute(clusterId, resources)
         verify(kubeClient, times(1)).listJobManagerServices(eq(clusterId))
         verify(kubeClient, times(1)).listJobManagerStatefulSets(eq(clusterId))
         verify(kubeClient, times(1)).listTaskManagerStatefulSets(eq(clusterId))
+        verify(kubeClient, times(1)).createJobManagerService(eq(clusterId), any())
+        verify(kubeClient, times(1)).createJobManagerStatefulSet(eq(clusterId), eq(resources))
+        verify(kubeClient, times(1)).replaceTaskManagerStatefulSet(eq(clusterId), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
     }
 

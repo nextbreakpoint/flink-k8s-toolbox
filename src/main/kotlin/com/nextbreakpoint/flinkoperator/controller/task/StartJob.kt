@@ -38,7 +38,7 @@ class StartJob : Task {
         val jobStartedResponse = context.isJobStarted(context.clusterId)
 
         if (!jobStartedResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation of job...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Waiting for job...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Job started in $seconds seconds")

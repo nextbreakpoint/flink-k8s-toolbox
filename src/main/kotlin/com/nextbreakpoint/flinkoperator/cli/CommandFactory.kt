@@ -26,6 +26,8 @@ interface CommandFactory {
 
     fun createTriggerSavepointCommand(): RemoteCommandNoArgs
 
+    fun createForgetSavepointCommand(): RemoteCommandNoArgs
+
     fun createGetJobDetailsCommand() : RemoteCommandNoArgs
 
     fun createGetJobMetricsCommand() : RemoteCommandNoArgs

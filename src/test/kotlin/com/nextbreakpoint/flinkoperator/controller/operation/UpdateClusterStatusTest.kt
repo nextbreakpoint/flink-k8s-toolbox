@@ -380,32 +380,4 @@ class UpdateClusterStatusTest {
         assertThat(Status.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Failed)
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.NONE)
     }
-
-    @Test
-    fun `should update cluster resource when savepoint path is changed`() {
-        cluster.spec.operator.savepointPath = "file://tmp/000"
-        given(handler.onIdle(any())).thenReturn(Result(status = ResultStatus.SUCCESS, output = ""))
-        Status.setTaskStatus(cluster, TaskStatus.Idle)
-        Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
-        val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
-        verify(controller, times(1)).updateSavepoint(eq(clusterId), any())
-        verifyNoMoreInteractions(controller)
-        verify(handler, times(1)).onIdle(any())
-        verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
-        assertThat(result.output).isNull()
-        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
-        assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.InitialiseCluster)
-        assertThat(Status.getCurrentTaskStatus(cluster)).isEqualTo(TaskStatus.Idle)
-        assertThat(Status.getClusterStatus(cluster)).isEqualTo(ClusterStatus.Running)
-    }
 }

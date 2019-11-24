@@ -23,9 +23,9 @@ class CreateBootstrapJob : Task {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry removing old JAR files...")
         }
 
-        val resources = createClusterResources(context.clusterId, context.flinkCluster)
+        val bootstrapJob = makeBootstrapJob(context.clusterId, context.flinkCluster.status.bootstrap)
 
-        val createBootstrapJobResponse = context.createBootstrapJob(context.clusterId, resources)
+        val createBootstrapJobResponse = context.createBootstrapJob(context.clusterId, bootstrapJob)
 
         if (!createBootstrapJobResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Retry creating bootstrap job...")
@@ -51,7 +51,7 @@ class CreateBootstrapJob : Task {
     }
 
     override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "Bootstrap job created")
+        return taskAwaitingWithOutput(context.flinkCluster, "Bootstrap job completed")
     }
 
     override fun onFailed(context: TaskContext): Result<String> {

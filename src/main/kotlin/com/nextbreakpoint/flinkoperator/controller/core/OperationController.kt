@@ -15,7 +15,6 @@ import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.operation.BootstrapCreateJob
 import com.nextbreakpoint.flinkoperator.controller.operation.BootstrapDeleteJob
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCheckpointing
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCreateResources
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterDeleteResources
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterGetStatus
@@ -23,7 +22,6 @@ import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsReady
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsRunning
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsSuspended
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsTerminated
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterReplaceResources
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterScale
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStart
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStop
@@ -43,6 +41,8 @@ import com.nextbreakpoint.flinkoperator.controller.operation.PodsScaleUp
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterScale
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStart
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStop
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointCreate
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointForget
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetStatus
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointUpdate
@@ -50,6 +50,7 @@ import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetRepl
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersSetReplicas
 import com.nextbreakpoint.flinkoperator.controller.operation.UpdateClusterStatus
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
+import io.kubernetes.client.models.V1Job
 
 class OperationController(
     val flinkOptions: FlinkOptions,
@@ -77,7 +78,10 @@ class OperationController(
         ClusterScale(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, clusterScaling)
 
     fun createSavepoint(clusterId: ClusterId) : Result<List<ClusterTask>> =
-        ClusterCheckpointing(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, null)
+        SavepointCreate(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, null)
+
+    fun forgetSavepoint(clusterId: ClusterId) : Result<List<ClusterTask>> =
+        SavepointForget(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, null)
 
     fun getClusterStatus(clusterId: ClusterId) : Result<Map<String, String>> =
         ClusterGetStatus(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, null)
@@ -97,9 +101,6 @@ class OperationController(
     fun deleteClusterResources(clusterId: ClusterId) : Result<Void?> =
         ClusterDeleteResources(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun replaceClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
-        ClusterReplaceResources(flinkOptions, flinkClient, kubeClient).execute(clusterId, clusterResources)
-
     fun removeJar(clusterId: ClusterId) : Result<Void?> =
         JarRemove(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
@@ -115,8 +116,8 @@ class OperationController(
     fun getSavepointStatus(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
         SavepointGetStatus(flinkOptions, flinkClient, kubeClient).execute(clusterId, savepointRequest)
 
-    fun createBootstrapJob(clusterId: ClusterId, clusterResources: ClusterResources): Result<Void?> =
-        BootstrapCreateJob(flinkOptions, flinkClient, kubeClient).execute(clusterId, clusterResources)
+    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): Result<Void?> =
+        BootstrapCreateJob(flinkOptions, flinkClient, kubeClient).execute(clusterId, bootstrapJob)
 
     fun deleteBootstrapJob(clusterId: ClusterId) : Result<Void?> =
         BootstrapDeleteJob(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)

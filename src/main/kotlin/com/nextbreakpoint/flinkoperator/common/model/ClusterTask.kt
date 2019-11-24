@@ -15,7 +15,6 @@ enum class ClusterTask {
     EraseSavepoint,
     CreateResources,
     DeleteResources,
-    ReplaceResources,
     CreateBootstrapJob,
     DeleteBootstrapJob,
     TerminatePods,

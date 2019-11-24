@@ -27,7 +27,7 @@ class CreateResources : Task {
             return taskCompletedWithOutput(context.flinkCluster, "Resources already created")
         }
 
-        val resources = createClusterResources(context.clusterId, context.flinkCluster)
+        val resources = makeClusterResources(context.clusterId, context.flinkCluster)
 
         val createResourcesResponse = context.createClusterResources(context.clusterId, resources)
 
@@ -53,7 +53,7 @@ class CreateResources : Task {
         val response = context.isClusterReady(context.clusterId, clusterScale)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Wait for creation...")
+            return taskAwaitingWithOutput(context.flinkCluster, "Wait for resources...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "Resources created in $seconds seconds")

@@ -17,29 +17,53 @@ class ClusterCreateResources(flinkOptions: FlinkOptions, flinkClient: FlinkClien
 
     override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
         try {
+            logger.info("[name=${clusterId.name}] Creating resources...")
+
             val services = kubeClient.listJobManagerServices(clusterId)
 
             val jobmanagerStatefulSets = kubeClient.listJobManagerStatefulSets(clusterId)
 
             val taskmanagerStatefulSets = kubeClient.listTaskManagerStatefulSets(clusterId)
 
-            if (services.items.isNotEmpty() || jobmanagerStatefulSets.items.isNotEmpty() || taskmanagerStatefulSets.items.isNotEmpty()) {
-                throw RuntimeException("Previous resources already exist")
+            if (services.items.isNotEmpty()) {
+                kubeClient.deleteJobManagerServices(clusterId)
+
+                val jobmanagerServiceOut = kubeClient.createJobManagerService(clusterId, params)
+
+                logger.info("[name=${clusterId.name}] Service recreated: ${jobmanagerServiceOut.metadata.name}")
+            } else {
+                val jobmanagerServiceOut = kubeClient.createJobManagerService(clusterId, params)
+
+                logger.info("[name=${clusterId.name}] Service created: ${jobmanagerServiceOut.metadata.name}")
             }
 
-            logger.info("[name=${clusterId.name}] Creating resources...")
+            if (jobmanagerStatefulSets.items.isNotEmpty()) {
+                params.jobmanagerStatefulSet?.apiVersion = jobmanagerStatefulSets.items.first()?.apiVersion
+                params.jobmanagerStatefulSet?.kind = jobmanagerStatefulSets.items.first()?.kind
+                params.jobmanagerStatefulSet?.metadata = jobmanagerStatefulSets.items.first()?.metadata
 
-            val jobmanagerServiceOut = kubeClient.createJobManagerService(clusterId, params)
+                val jobmanagerStatefulSetOut = kubeClient.replaceJobManagerStatefulSet(clusterId, params)
 
-            logger.info("[name=${clusterId.name}] Service created ${jobmanagerServiceOut.metadata.name}")
+                logger.info("[name=${clusterId.name}] JobManager replaced: ${jobmanagerStatefulSetOut.metadata.name}")
+            } else {
+                val jobmanagerStatefulSetOut = kubeClient.createJobManagerStatefulSet(clusterId, params)
 
-            val jobmanagerStatefulSetOut = kubeClient.createJobManagerStatefulSet(clusterId, params)
+                logger.info("[name=${clusterId.name}] JobManager created: ${jobmanagerStatefulSetOut.metadata.name}")
+            }
 
-            logger.info("[name=${clusterId.name}] JobManager created ${jobmanagerStatefulSetOut.metadata.name}")
+            if (taskmanagerStatefulSets.items.isNotEmpty()) {
+                params.taskmanagerStatefulSet?.apiVersion = taskmanagerStatefulSets.items.first()?.apiVersion
+                params.taskmanagerStatefulSet?.kind = taskmanagerStatefulSets.items.first()?.kind
+                params.taskmanagerStatefulSet?.metadata = taskmanagerStatefulSets.items.first()?.metadata
 
-            val taskmanagerStatefulSetOut = kubeClient.createTaskManagerStatefulSet(clusterId, params)
+                val taskmanagerStatefulSetOut = kubeClient.replaceTaskManagerStatefulSet(clusterId, params)
 
-            logger.info("[name=${clusterId.name}] TaskManager created ${taskmanagerStatefulSetOut.metadata.name}")
+                logger.info("[name=${clusterId.name}] TaskManager replaced: ${taskmanagerStatefulSetOut.metadata.name}")
+            } else {
+                val taskmanagerStatefulSetOut = kubeClient.createTaskManagerStatefulSet(clusterId, params)
+
+                logger.info("[name=${clusterId.name}] TaskManager created: ${taskmanagerStatefulSetOut.metadata.name}")
+            }
 
             return Result(
                 ResultStatus.SUCCESS,

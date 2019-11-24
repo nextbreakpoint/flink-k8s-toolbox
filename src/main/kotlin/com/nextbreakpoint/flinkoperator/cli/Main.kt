@@ -57,7 +57,8 @@ class Main(private val factory: CommandFactory) {
                 ScaleClusterCommand(factory)
             ),
             Savepoint().subcommands(
-                TriggerSavepointCommand(factory)
+                TriggerSavepointCommand(factory),
+                ForgetSavepointCommand(factory)
             ),
             Bootstrap().subcommands(
                 BootstrapCommand(factory)
@@ -273,6 +274,28 @@ class Main(private val factory: CommandFactory) {
 
         override fun run() {
             factory.createTriggerSavepointCommand().run(
+                ConnectionConfig(
+                    host,
+                    port,
+                    keystorePath,
+                    keystoreSecret,
+                    truststorePath,
+                    truststoreSecret
+                ), clusterName)
+        }
+    }
+
+    class ForgetSavepointCommand(private val factory: CommandFactory): CliktCommand(name="forget", help="Forget savepoint reference") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+
+        override fun run() {
+            factory.createForgetSavepointCommand().run(
                 ConnectionConfig(
                     host,
                     port,

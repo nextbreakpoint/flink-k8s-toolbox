@@ -7,7 +7,9 @@ import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
+import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
+import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PersistentVolumeClaimBuilder
@@ -318,8 +320,9 @@ object TestFactory {
     fun createResources(uid: String, cluster: V1FlinkCluster): CachedResources {
         val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
         val resources = createClusterResources(uid, cluster)
+        val bootstrapJob = createBootstrapJob(uid, cluster)
         return CachedResources(
-            mapOf(clusterId to (resources.bootstrapJob ?: throw RuntimeException())),
+            mapOf(clusterId to bootstrapJob),
             mapOf(clusterId to (resources.jobmanagerService ?: throw RuntimeException())),
             mapOf(clusterId to (resources.jobmanagerStatefulSet ?: throw RuntimeException())),
             mapOf(clusterId to (resources.taskmanagerStatefulSet ?: throw RuntimeException())),
@@ -360,5 +363,10 @@ object TestFactory {
             "flink-operator",
             cluster
         ).build()
+    }
+
+    fun createBootstrapJob(uid: String, cluster: V1FlinkCluster): V1Job {
+        val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
+        return DefaultBootstrapJobFactory.createBootstrapJob(clusterId, "flink-operator", cluster.spec.bootstrap)
     }
 }
