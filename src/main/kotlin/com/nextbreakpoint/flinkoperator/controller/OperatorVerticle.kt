@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller
 
-import com.google.gson.GsonBuilder
-import com.nextbreakpoint.flinkoperator.common.crd.DateTimeSerializer
+import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
@@ -45,6 +44,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.TerminateCluster
 import com.nextbreakpoint.flinkoperator.controller.task.TerminatePods
 import com.nextbreakpoint.flinkoperator.controller.task.TriggerSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.UpdatingCluster
+import io.kubernetes.client.JSON
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PersistentVolumeClaim
@@ -83,7 +83,7 @@ class OperatorVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(OperatorVerticle::class.simpleName)
 
-        private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
+        private val gson = JSON().gson//Builder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
 
         private val tasksHandlers = mapOf(
             ClusterTask.InitialiseCluster to InitialiseCluster(),
@@ -145,8 +145,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         val flinkClient = FlinkClient
 
-        val watch =
-            WatchAdapter(gson, kubeClient)
+        val watch = WatchAdapter(gson, kubeClient)
 
         val cache = Cache()
 
@@ -164,7 +163,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         val gauges = registerMetrics(registry, namespace)
 
-        val worker = vertx.createSharedWorkerExecutor("execution-queue", 1, 15, TimeUnit.SECONDS)
+        val worker = vertx.createSharedWorkerExecutor("execution-queue", 1, 60, TimeUnit.SECONDS)
 
         mainRouter.route().handler(LoggerHandler.create(true, LoggerFormat.DEFAULT))
         mainRouter.route().handler(BodyHandler.create())
@@ -385,6 +384,29 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
 
+        vertx.eventBus().consumer<String>("/resource/cluster/update") { message ->
+            handleCommandNoReply<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
+                controller.updateClusterStatus(it.clusterId)
+
+                null
+            })
+        }
+
+        vertx.eventBus().consumer<String>("/resource/cluster/forget") { message ->
+            handleCommandNoReply<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
+                controller.terminatePods(it.clusterId)
+
+                val result = controller.arePodsTerminated(it.clusterId)
+
+                if (result.status == ResultStatus.SUCCESS) {
+                    controller.deleteClusterResources(it.clusterId)
+                }
+
+                null
+            })
+        }
+
+
         vertx.exceptionHandler { error -> logger.error("An error occurred while processing the request", error) }
 
         context.runOnContext {
@@ -410,9 +432,9 @@ class OperatorVerticle : AbstractVerticle() {
         vertx.setPeriodic(5000L) {
             updateMetrics(cache, gauges)
 
-            doUpdateClusters(controller, cache, worker)
+            doUpdateClusters(cache)
 
-            doDeleteOrphans(controller, cache, worker)
+            doDeleteOrphans(cache)
         }
 
         return vertx.createHttpServer(serverOptions).requestHandler(mainRouter).rxListen(port)
@@ -506,6 +528,14 @@ class OperatorVerticle : AbstractVerticle() {
             .subscribe()
     }
 
+    private fun <T> handleCommandNoReply(message: Message<String>, worker: WorkerExecutor, converter: Function<Message<String>, T>, handler: Function<T, Void?>) {
+        Single.just(message)
+            .map { converter.apply(it) }
+            .flatMap { worker.rxExecuteBlocking<Void?> { future -> future.complete(handler.apply(it)) } }
+            .doOnError { logger.error("Can't process message [address=${message.address()}]", it) }
+            .subscribe()
+    }
+
     private fun <T> handleEvent(message: Message<String>, converter: Function<Message<String>, T>, handler: Consumer<T>) {
         Single.just(message)
             .map { converter.apply(it) }
@@ -517,45 +547,19 @@ class OperatorVerticle : AbstractVerticle() {
     private fun makeClusterId(flinkCluster: V1FlinkCluster) =
         ClusterId(namespace = flinkCluster.metadata.namespace, name = flinkCluster.metadata.name, uuid = flinkCluster.metadata.uid)
 
-    private fun doUpdateClusters(
-        controller: OperationController,
-        cache: Cache,
-        worker: WorkerExecutor
-    ) {
-        val observable = Observable.from(cache.getClusters()).map { pair ->
-            Runnable {
-                controller.updateClusterStatus(makeClusterId(pair.first))
-            }
+    private fun doUpdateClusters(cache: Cache) {
+        cache.getFlinkClusters().forEach {
+            vertx.eventBus().publish("/resource/cluster/update", gson.toJson(
+                com.nextbreakpoint.flinkoperator.controller.core.Message(makeClusterId(it), "{}")
+            ))
         }
-
-        worker.rxExecuteBlocking<Void> { future ->
-            observable.doOnCompleted { future.complete() }
-                .subscribe(Runnable::run) { e -> future.fail(e) }
-        }.doOnError {
-            logger.error("Can't update cluster resources", it)
-        }.subscribe()
     }
 
-    private fun doDeleteOrphans(
-        controller: OperationController,
-        cache: Cache,
-        worker: WorkerExecutor
-    ) {
-        val observable = Observable.from(cache.getOrphanedClusters()).map { clusterId ->
-            Runnable {
-                controller.terminatePods(clusterId)
-                val result = controller.arePodsTerminated(clusterId)
-                if (result.status == ResultStatus.SUCCESS) {
-                    controller.deleteClusterResources(clusterId)
-                }
-            }
+    private fun doDeleteOrphans(cache: Cache) {
+        cache.getOrphanedClusters().forEach {
+            vertx.eventBus().publish("/resource/cluster/forget", gson.toJson(
+                com.nextbreakpoint.flinkoperator.controller.core.Message(it, "{}")
+            ))
         }
-
-        worker.rxExecuteBlocking<Void> { future ->
-            observable.doOnCompleted { future.complete() }
-                .subscribe(Runnable::run) { e -> future.fail(e) }
-        }.doOnError {
-            logger.error("Can't delete orphaned resources", it)
-        }.subscribe()
     }
 }

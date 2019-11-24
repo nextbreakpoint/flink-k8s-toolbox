@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.common.crd;
 
 import com.google.gson.annotations.SerializedName;
+import org.joda.time.DateTime;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -19,7 +20,7 @@ public class V1FlinkClusterStatus {
     @SerializedName("totalTaskSlots")
     private Integer totalTaskSlots;
     @SerializedName("timestamp")
-    private Long timestamp;
+    private DateTime timestamp;
     @SerializedName("tasks")
     private String[] tasks;
     @SerializedName("taskStatus")
@@ -35,7 +36,9 @@ public class V1FlinkClusterStatus {
     @SerializedName("savepointTriggerId")
     private String savepointTriggerId;
     @SerializedName("savepointTimestamp")
-    private Long savepointTimestamp;
+    private DateTime savepointTimestamp;
+    @SerializedName("savepointRequestTimestamp")
+    private DateTime savepointRequestTimestamp;
     @SerializedName("digest")
     private V1ResourceDigest digest;
     @SerializedName("bootstrap")
@@ -89,11 +92,11 @@ public class V1FlinkClusterStatus {
         this.totalTaskSlots = totalTaskSlots;
     }
 
-    public Long getTimestamp() {
+    public DateTime getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Long timestamp) {
+    public void setTimestamp(DateTime timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -153,12 +156,20 @@ public class V1FlinkClusterStatus {
         this.savepointTriggerId = savepointTriggerId;
     }
 
-    public Long getSavepointTimestamp() {
+    public DateTime getSavepointTimestamp() {
         return savepointTimestamp;
     }
 
-    public void setSavepointTimestamp(Long savepointTimestamp) {
+    public void setSavepointTimestamp(DateTime savepointTimestamp) {
         this.savepointTimestamp = savepointTimestamp;
+    }
+
+    public DateTime getSavepointRequestTimestamp() {
+        return savepointRequestTimestamp;
+    }
+
+    public void setSavepointRequestTimestamp(DateTime savepointRequestTimestamp) {
+        this.savepointRequestTimestamp = savepointRequestTimestamp;
     }
 
     public V1ResourceDigest getDigest() {
@@ -197,13 +208,14 @@ public class V1FlinkClusterStatus {
                 Objects.equals(getSavepointJobId(), that.getSavepointJobId()) &&
                 Objects.equals(getSavepointTriggerId(), that.getSavepointTriggerId()) &&
                 Objects.equals(getSavepointTimestamp(), that.getSavepointTimestamp()) &&
+                Objects.equals(getSavepointRequestTimestamp(), that.getSavepointRequestTimestamp()) &&
                 Objects.equals(getDigest(), that.getDigest()) &&
                 Objects.equals(getBootstrap(), that.getBootstrap());
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getDigest(), getBootstrap());
+        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getSavepointRequestTimestamp(), getDigest(), getBootstrap());
         result = 31 * result + Arrays.hashCode(getTasks());
         return result;
     }
@@ -226,6 +238,7 @@ public class V1FlinkClusterStatus {
                 ", savepointJobId='" + savepointJobId + '\'' +
                 ", savepointTriggerId='" + savepointTriggerId + '\'' +
                 ", savepointTimestamp=" + savepointTimestamp +
+                ", savepointRequestTimestamp=" + savepointRequestTimestamp +
                 ", digest=" + digest +
                 ", bootstrap=" + bootstrap +
                 '}';

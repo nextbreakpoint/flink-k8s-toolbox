@@ -40,7 +40,7 @@ class ClusterRunningTest {
         given(context.clusterId).thenReturn(clusterId)
         given(context.resources).thenReturn(resources)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0L)
-        given(context.timeSinceLastSavepointInSeconds()).thenReturn(0L)
+        given(context.timeSinceLastSavepointRequestInSeconds()).thenReturn(0L)
         val actualBootstrapDigest = ClusterResource.computeDigest(cluster.spec?.bootstrap)
         val actualRuntimeDigest = ClusterResource.computeDigest(cluster.spec?.runtime)
         val actualJobManagerDigest = ClusterResource.computeDigest(cluster.spec?.jobManager)
@@ -99,7 +99,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).resources
         verify(context, times(2)).isClusterRunning(eq(clusterId))
-        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -117,7 +117,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).resources
-        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -135,7 +135,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).resources
-        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -345,7 +345,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).resources
         verify(context, times(2)).isClusterRunning(eq(clusterId))
-        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -365,7 +365,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).resources
         verify(context, times(2)).isClusterRunning(eq(clusterId))
-        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
@@ -396,11 +396,11 @@ class ClusterRunningTest {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
-        given(context.timeSinceLastSavepointInSeconds()).thenReturn(61)
+        given(context.timeSinceLastSavepointRequestInSeconds()).thenReturn(61)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verify(context, times(2)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
@@ -491,7 +491,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).resources
         val clusterScaling = ClusterScaling(taskManagers = 4, taskSlots = 1)
-        verify(context, times(1)).timeSinceLastSavepointInSeconds()
+        verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verify(context, times(2)).isClusterRunning(eq(clusterId))
         verify(context, times(1)).scaleCluster(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)

@@ -45,10 +45,16 @@ class CreateBootstrapJob : Task {
             return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.isJarReady(context.clusterId)
+        val jarReadyResponse = context.isJarReady(context.clusterId)
 
-        if (!response.isCompleted()) {
+        if (!jarReadyResponse.isCompleted()) {
             return taskAwaitingWithOutput(context.flinkCluster, "Waiting for JAR file...")
+        }
+
+        val jobStartedResponse = context.isJobStarted(context.clusterId)
+
+        if (!jobStartedResponse.isCompleted()) {
+            return taskAwaitingWithOutput(context.flinkCluster, "Waiting for job...")
         }
 
         return taskCompletedWithOutput(context.flinkCluster, "JAR file uploaded after $seconds seconds")

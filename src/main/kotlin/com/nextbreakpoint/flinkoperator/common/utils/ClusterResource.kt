@@ -1,7 +1,5 @@
 package com.nextbreakpoint.flinkoperator.common.utils
 
-import com.google.gson.GsonBuilder
-import com.nextbreakpoint.flinkoperator.common.crd.DateTimeSerializer
 import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterList
@@ -10,12 +8,12 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1JobManagerSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1RuntimeSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1TaskManagerSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import org.joda.time.DateTime
+import io.kubernetes.client.JSON
 import java.security.MessageDigest
 import java.util.Base64
 
 object ClusterResource {
-    private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
+    private val gson = JSON().gson//Builder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
 
     fun parseV1FlinkCluster(body: String): V1FlinkCluster = gson.fromJson(body, V1FlinkCluster::class.java)
 

@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.common.utils
 
 import com.google.common.io.ByteStreams
-import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
@@ -13,6 +12,7 @@ import io.kubernetes.client.ApiClient
 import io.kubernetes.client.ApiException
 import io.kubernetes.client.ApiResponse
 import io.kubernetes.client.Configuration
+import io.kubernetes.client.JSON
 import io.kubernetes.client.PortForward
 import io.kubernetes.client.apis.AppsV1Api
 import io.kubernetes.client.apis.BatchV1Api
@@ -41,6 +41,8 @@ import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 
 object KubeClient {
+    private val gson = JSON().gson
+
     private val logger = Logger.getLogger(KubeClient::class.simpleName)
 
     private val objectApi = CustomObjectsApi()
@@ -219,9 +221,7 @@ object KubeClient {
     }
 
     fun updateStatus(clusterId: ClusterId, status: V1FlinkClusterStatus) {
-        val patch = mapOf<String, Any?>(
-            "status" to status
-        )
+        val patch = V1FlinkCluster().status(status)
 
         val response = objectApi.patchNamespacedCustomObjectStatusCall(
             "nextbreakpoint.com",
@@ -229,7 +229,7 @@ object KubeClient {
             clusterId.namespace,
             "flinkclusters",
             clusterId.name,
-            patch,
+            V1Patch(gson.toJson(patch)),
             null,
             null
         ).execute()
@@ -950,7 +950,7 @@ object KubeClient {
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    V1Patch(Gson().toJson(patch)),
+                    V1Patch(gson.toJson(patch)),
                     null,
                     null,
                     null,
@@ -1004,7 +1004,7 @@ object KubeClient {
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    V1Patch(Gson().toJson(patch)),
+                    V1Patch(gson.toJson(patch)),
                     null,
                     null,
                     null,
@@ -1055,7 +1055,7 @@ object KubeClient {
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    V1Patch(Gson().toJson(patch)),
+                    V1Patch(gson.toJson(patch)),
                     null,
                     null,
                     null,
@@ -1217,7 +1217,7 @@ object KubeClient {
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    V1Patch(Gson().toJson(patch)),
+                    V1Patch(gson.toJson(patch)),
                     null,
                     null,
                     null,
@@ -1360,6 +1360,7 @@ object KubeClient {
         client.httpClient.setWriteTimeout(timeout, TimeUnit.MILLISECONDS)
         client.httpClient.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
         client.isDebugging = System.getProperty("kubernetes.client.debugging", "false")!!.toBoolean()
+        client.json
         return client
     }
 }

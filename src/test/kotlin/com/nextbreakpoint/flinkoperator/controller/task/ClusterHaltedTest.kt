@@ -38,7 +38,7 @@ class ClusterHaltedTest {
         given(context.flinkCluster).thenReturn(cluster)
         given(context.clusterId).thenReturn(clusterId)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0L)
-        given(context.timeSinceLastSavepointInSeconds()).thenReturn(0L)
+        given(context.timeSinceLastSavepointRequestInSeconds()).thenReturn(0L)
         given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
         val actualBootstrapDigest = ClusterResource.computeDigest(cluster.spec?.bootstrap)
         val actualRuntimeDigest = ClusterResource.computeDigest(cluster.spec?.runtime)
