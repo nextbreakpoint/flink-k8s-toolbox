@@ -3,7 +3,7 @@ ADD . /src
 WORKDIR /src
 RUN gradle --no-daemon clean shadowJar
 
-FROM openjdk:14-alpine
+FROM adoptopenjdk/openjdk8
 COPY --from=build /src/build/libs/flink-k8s-toolbox-*-with-dependencies.jar /usr/local/bin/flink-k8s-toolbox.jar
 RUN apk add curl
 WORKDIR /
