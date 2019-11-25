@@ -54,36 +54,34 @@ import io.kubernetes.client.models.V1Job
 class OperationController(
     val flinkOptions: FlinkOptions,
     val flinkClient: FlinkClient,
-    val kubeClient: KubeClient,
-    val cache: Cache,
-    val taskHandlers: Map<ClusterTask, Task>
+    val kubeClient: KubeClient
 ) {
-    fun requestStartCluster(clusterId: ClusterId, options: StartOptions) : Result<Void?> =
-        RequestClusterStart(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, options)
-
-    fun requestStopCluster(clusterId: ClusterId, options: StopOptions) : Result<Void?> =
-        RequestClusterStop(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, options)
-
     fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
         RequestClusterScale(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
-    fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<ClusterTask>> =
-        ClusterStart(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, options)
+    fun requestStartCluster(clusterId: ClusterId, options: StartOptions, adapter: CacheAdapter) : Result<Void?> =
+        RequestClusterStart(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
 
-    fun stopCluster(clusterId: ClusterId, options: StopOptions) : Result<List<ClusterTask>> =
-        ClusterStop(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, options)
+    fun requestStopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : Result<Void?> =
+        RequestClusterStop(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
 
-    fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling) : Result<List<ClusterTask>> =
-        ClusterScale(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, clusterScaling)
+    fun startCluster(clusterId: ClusterId, options: StartOptions, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+        ClusterStart(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
 
-    fun createSavepoint(clusterId: ClusterId) : Result<List<ClusterTask>> =
-        SavepointCreate(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, null)
+    fun stopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+        ClusterStop(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
 
-    fun forgetSavepoint(clusterId: ClusterId) : Result<List<ClusterTask>> =
-        SavepointForget(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, null)
+    fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+        ClusterScale(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, clusterScaling)
 
-    fun getClusterStatus(clusterId: ClusterId) : Result<Map<String, String>> =
-        ClusterGetStatus(flinkOptions, flinkClient, kubeClient, cache).execute(clusterId, null)
+    fun createSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+        SavepointCreate(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
+
+    fun forgetSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+        SavepointForget(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
+
+    fun getClusterStatus(clusterId: ClusterId, adapter: CacheAdapter) : Result<Map<String, String>> =
+        ClusterGetStatus(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
 
     fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : Result<Void?> =
         FlinkClusterCreate(flinkOptions, flinkClient, kubeClient).execute(clusterId, flinkCluster)
@@ -91,8 +89,8 @@ class OperationController(
     fun deleteFlinkCluster(clusterId: ClusterId) : Result<Void?> =
         FlinkClusterDelete(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun updateClusterStatus(clusterId: ClusterId) : Result<Void?> =
-        UpdateClusterStatus(this).execute(clusterId, null)
+    fun updateClusterStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster, adapter: CacheAdapter, taskHandlers: Map<ClusterTask, Task>) : Result<Void?> =
+        UpdateClusterStatus(this, adapter, taskHandlers).execute(clusterId, flinkCluster)
 
     fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
         ClusterCreateResources(flinkOptions, flinkClient, kubeClient).execute(clusterId, clusterResources)

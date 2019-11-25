@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
+import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
@@ -8,24 +8,20 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
-import com.nextbreakpoint.flinkoperator.controller.core.Status
 import org.apache.log4j.Logger
 
-class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val cache: Cache) : Operation<StartOptions, List<ClusterTask>>(flinkOptions, flinkClient, kubeClient) {
+class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val adapter: CacheAdapter) : Operation<StartOptions, List<ClusterTask>>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(ClusterStart::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: StartOptions): Result<List<ClusterTask>> {
         try {
-            val flinkCluster = cache.getFlinkCluster(clusterId)
-
-            val statusList = tryStartingCluster(flinkCluster, params)
+            val statusList = tryStartingCluster(adapter.getBootstrap(), adapter.getClusterStatus(), params)
 
             if (statusList.isEmpty()) {
                 logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
@@ -36,7 +32,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                 )
             }
 
-            Status.appendTasks(flinkCluster, statusList)
+            adapter.appendTasks(statusList)
 
             return Result(
                 ResultStatus.SUCCESS,
@@ -52,11 +48,7 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
         }
     }
 
-    private fun tryStartingCluster(flinkCluster: V1FlinkCluster, params: StartOptions): List<ClusterTask> {
-        val clusterStatus = Status.getClusterStatus(flinkCluster)
-
-        val bootstrapSpec = flinkCluster.spec?.bootstrap
-
+    private fun tryStartingCluster(bootstrapSpec: V1BootstrapSpec?, clusterStatus: ClusterStatus, params: StartOptions): List<ClusterTask> {
         return if (bootstrapSpec == null) {
             when (clusterStatus) {
                 ClusterStatus.Terminated ->

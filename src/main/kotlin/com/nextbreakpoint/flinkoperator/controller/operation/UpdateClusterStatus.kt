@@ -8,6 +8,7 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
@@ -17,8 +18,10 @@ import io.kubernetes.client.models.V1StatefulSet
 import org.apache.log4j.Logger
 
 class UpdateClusterStatus(
-    private val controller: OperationController
-) : Operation<Void?, Void?>(
+    private val controller: OperationController,
+    private val adapter: CacheAdapter,
+    private val taskHandlers: Map<ClusterTask, Task>
+) : Operation<V1FlinkCluster, Void?>(
     controller.flinkOptions,
     controller.flinkClient,
     controller.kubeClient
@@ -27,17 +30,11 @@ class UpdateClusterStatus(
         private val logger: Logger = Logger.getLogger(UpdateClusterStatus::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: V1FlinkCluster): Result<Void?> {
         try {
-            val flinkCluster = controller.cache.getFlinkCluster(clusterId)
+            val context = TaskContext(clusterId, params, adapter.cacheResources, controller)
 
-            val resources = controller.cache.getResources()
-
-            val context = TaskContext(
-                clusterId, flinkCluster, resources, controller
-            )
-
-            return if (Status.hasCurrentTask(flinkCluster)) {
+            return if (Status.hasCurrentTask(params)) {
                 updatedClusterStatus(clusterId, context)
             } else {
                 prepareClusterStatus(clusterId, context)
@@ -225,5 +222,5 @@ class UpdateClusterStatus(
     }
 
     private fun getOperatorTaskOrThrow(clusterTask: ClusterTask) =
-        controller.taskHandlers[clusterTask] ?: throw RuntimeException("Implementation not found for task $clusterTask")
+        taskHandlers[clusterTask] ?: throw RuntimeException("Implementation not found for task $clusterTask")
 }

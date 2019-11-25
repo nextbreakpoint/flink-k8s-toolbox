@@ -26,7 +26,7 @@ class CacheTest {
 
     @Test
     fun `should return empty list of clusters initially`() {
-        assertThat(cache.getClusters()).isEmpty()
+        assertThat(cache.getFlinkClusters()).isEmpty()
     }
 
     @Test
@@ -39,7 +39,7 @@ class CacheTest {
         val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
-        assertThat(cache.getClusters()).isNotEmpty()
+        assertThat(cache.getFlinkClusters()).isNotEmpty()
     }
 
     @Test
@@ -66,10 +66,10 @@ class CacheTest {
         val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
-        val clusters = cache.getClusters()
+        val clusters = cache.getFlinkClusters()
         assertThat(clusters).hasSize(2)
-        assertThat(clusters.get(0).first.metadata.uid).isEqualTo("123")
-        assertThat(clusters.get(1).first.metadata.uid).isEqualTo("456")
+        assertThat(clusters.get(0).metadata.uid).isEqualTo("123")
+        assertThat(clusters.get(1).metadata.uid).isEqualTo("456")
     }
 
     @Test
@@ -81,9 +81,9 @@ class CacheTest {
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
         cache.onFlinkClusterDeleted(cluster1)
-        val clusters = cache.getClusters()
+        val clusters = cache.getFlinkClusters()
         assertThat(clusters).hasSize(1)
-        assertThat(clusters.get(0).first.metadata.uid).isEqualTo("456")
+        assertThat(clusters.get(0).metadata.uid).isEqualTo("456")
     }
 
     @Test
@@ -94,9 +94,9 @@ class CacheTest {
         val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
-        assertThat(cache.getClusters()).hasSize(2)
+        assertThat(cache.getFlinkClusters()).hasSize(2)
         cache.onFlinkClusterDeleteAll()
-        assertThat(cache.getClusters()).hasSize(0)
+        assertThat(cache.getFlinkClusters()).hasSize(0)
     }
 
     @Test
@@ -115,17 +115,17 @@ class CacheTest {
     }
 
     @Test
-    fun `should return a cluster with empty resources initially`() {
+    fun `should return empty resources initially`() {
         val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
-        val clusters = cache.getClusters()
-        assertThat(clusters.get(0).second.bootstrapJobs).isEmpty()
-        assertThat(clusters.get(0).second.jobmanagerServices).isEmpty()
-        assertThat(clusters.get(0).second.jobmanagerStatefulSets).isEmpty()
-        assertThat(clusters.get(0).second.taskmanagerStatefulSets).isEmpty()
-        assertThat(clusters.get(0).second.jobmanagerPersistentVolumeClaims).isEmpty()
-        assertThat(clusters.get(0).second.taskmanagerPersistentVolumeClaims).isEmpty()
+        val resources = cache.getCachedResources()
+        assertThat(resources.bootstrapJobs).isEmpty()
+        assertThat(resources.jobmanagerServices).isEmpty()
+        assertThat(resources.jobmanagerStatefulSets).isEmpty()
+        assertThat(resources.taskmanagerStatefulSets).isEmpty()
+        assertThat(resources.jobmanagerPersistentVolumeClaims).isEmpty()
+        assertThat(resources.taskmanagerPersistentVolumeClaims).isEmpty()
     }
 
     @Test
@@ -145,7 +145,7 @@ class CacheTest {
         cache.onStatefulSetChanged(taskManagerStatefulSet1)
         cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim1)
         cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim1)
-        val resources = cache.getResources()
+        val resources = cache.getCachedResources()
         assertThat(resources.bootstrapJobs).hasSize(1)
         assertThat(resources.jobmanagerServices).hasSize(1)
         assertThat(resources.jobmanagerStatefulSets).hasSize(1)
@@ -185,13 +185,13 @@ class CacheTest {
         cache.onStatefulSetChanged(taskManagerStatefulSet2)
         cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim2)
         cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim2)
-        val clusters = cache.getClusters()
-        assertThat(clusters.get(0).second.bootstrapJobs).hasSize(2)
-        assertThat(clusters.get(0).second.jobmanagerServices).hasSize(2)
-        assertThat(clusters.get(0).second.jobmanagerStatefulSets).hasSize(2)
-        assertThat(clusters.get(0).second.taskmanagerStatefulSets).hasSize(2)
-        assertThat(clusters.get(0).second.jobmanagerPersistentVolumeClaims).hasSize(2)
-        assertThat(clusters.get(0).second.taskmanagerPersistentVolumeClaims).hasSize(2)
+        val resources = cache.getCachedResources()
+        assertThat(resources.bootstrapJobs).hasSize(2)
+        assertThat(resources.jobmanagerServices).hasSize(2)
+        assertThat(resources.jobmanagerStatefulSets).hasSize(2)
+        assertThat(resources.taskmanagerStatefulSets).hasSize(2)
+        assertThat(resources.jobmanagerPersistentVolumeClaims).hasSize(2)
+        assertThat(resources.taskmanagerPersistentVolumeClaims).hasSize(2)
     }
 
     @Test
@@ -231,13 +231,13 @@ class CacheTest {
         cache.onStatefulSetDeleted(taskManagerStatefulSet1)
         cache.onPersistentVolumeClaimDeleted(jobManagerPersistenVolumeClaim1)
         cache.onPersistentVolumeClaimDeleted(taskManagerPersistenVolumeClaim1)
-        val clusters = cache.getClusters()
-        assertThat(clusters.get(0).second.bootstrapJobs).hasSize(1)
-        assertThat(clusters.get(0).second.jobmanagerServices).hasSize(1)
-        assertThat(clusters.get(0).second.jobmanagerStatefulSets).hasSize(1)
-        assertThat(clusters.get(0).second.taskmanagerStatefulSets).hasSize(1)
-        assertThat(clusters.get(0).second.jobmanagerPersistentVolumeClaims).hasSize(1)
-        assertThat(clusters.get(0).second.taskmanagerPersistentVolumeClaims).hasSize(1)
+        val resources = cache.getCachedResources()
+        assertThat(resources.bootstrapJobs).hasSize(1)
+        assertThat(resources.jobmanagerServices).hasSize(1)
+        assertThat(resources.jobmanagerStatefulSets).hasSize(1)
+        assertThat(resources.taskmanagerStatefulSets).hasSize(1)
+        assertThat(resources.jobmanagerPersistentVolumeClaims).hasSize(1)
+        assertThat(resources.taskmanagerPersistentVolumeClaims).hasSize(1)
     }
 
     @Test
@@ -277,12 +277,12 @@ class CacheTest {
         cache.onStatefulSetDeleteAll()
         cache.onPersistentVolumeClaimDeleteAll()
         cache.onPersistentVolumeClaimDeleteAll()
-        val clusters = cache.getClusters()
-        assertThat(clusters.get(0).second.bootstrapJobs).isEmpty()
-        assertThat(clusters.get(0).second.jobmanagerServices).isEmpty()
-        assertThat(clusters.get(0).second.jobmanagerStatefulSets).isEmpty()
-        assertThat(clusters.get(0).second.taskmanagerStatefulSets).isEmpty()
-        assertThat(clusters.get(0).second.jobmanagerPersistentVolumeClaims).isEmpty()
-        assertThat(clusters.get(0).second.taskmanagerPersistentVolumeClaims).isEmpty()
+        val resources = cache.getCachedResources()
+        assertThat(resources.bootstrapJobs).isEmpty()
+        assertThat(resources.jobmanagerServices).isEmpty()
+        assertThat(resources.jobmanagerStatefulSets).isEmpty()
+        assertThat(resources.taskmanagerStatefulSets).isEmpty()
+        assertThat(resources.jobmanagerPersistentVolumeClaims).isEmpty()
+        assertThat(resources.taskmanagerPersistentVolumeClaims).isEmpty()
     }
 }

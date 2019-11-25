@@ -41,8 +41,6 @@ import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 
 object KubeClient {
-    private val gson = JSON().gson
-
     private val logger = Logger.getLogger(KubeClient::class.simpleName)
 
     private val objectApi = CustomObjectsApi()
@@ -56,7 +54,7 @@ object KubeClient {
     private val appsApiWatch = AppsV1Api()
 
     fun configure(kubeConfig: String?) {
-        Configuration.setDefaultApiClient(createKubernetesApiClient(kubeConfig, 10000))
+        Configuration.setDefaultApiClient(createKubernetesApiClient(kubeConfig, 5000))
         objectApi.apiClient = Configuration.getDefaultApiClient()
         batchApi.apiClient = Configuration.getDefaultApiClient()
         coreApi.apiClient = Configuration.getDefaultApiClient()
@@ -229,7 +227,7 @@ object KubeClient {
             clusterId.namespace,
             "flinkclusters",
             clusterId.name,
-            V1Patch(gson.toJson(patch)),
+            V1Patch(JSON().serialize(patch)),
             null,
             null
         ).execute()
@@ -950,7 +948,7 @@ object KubeClient {
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    V1Patch(gson.toJson(patch)),
+                    V1Patch(JSON().serialize(patch)),
                     null,
                     null,
                     null,
@@ -1004,7 +1002,7 @@ object KubeClient {
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    V1Patch(gson.toJson(patch)),
+                    V1Patch(JSON().serialize(patch)),
                     null,
                     null,
                     null,
@@ -1055,7 +1053,7 @@ object KubeClient {
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    V1Patch(gson.toJson(patch)),
+                    V1Patch(JSON().serialize(patch)),
                     null,
                     null,
                     null,
@@ -1217,7 +1215,7 @@ object KubeClient {
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
                     clusterId.namespace,
-                    V1Patch(gson.toJson(patch)),
+                    V1Patch(JSON().serialize(patch)),
                     null,
                     null,
                     null,

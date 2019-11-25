@@ -8,6 +8,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 
 class TaskManagersList(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, String>(flinkOptions, flinkClient, kubeClient) {
@@ -23,7 +24,7 @@ class TaskManagersList(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
 
             return Result(
                 ResultStatus.SUCCESS,
-                Gson().toJson(overview.taskmanagers)
+                JSON().serialize(overview.taskmanagers)
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't get list of task managers", e)

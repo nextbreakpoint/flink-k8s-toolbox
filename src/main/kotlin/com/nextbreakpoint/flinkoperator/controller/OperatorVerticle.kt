@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flinkoperator.controller
 
-import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
@@ -15,6 +14,7 @@ import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
@@ -60,7 +60,6 @@ import io.vertx.core.net.JksOptions
 import io.vertx.ext.web.handler.LoggerFormat
 import io.vertx.micrometer.backends.BackendRegistries
 import io.vertx.rxjava.core.AbstractVerticle
-import io.vertx.rxjava.core.WorkerExecutor
 import io.vertx.rxjava.core.eventbus.Message
 import io.vertx.rxjava.core.http.HttpServer
 import io.vertx.rxjava.ext.web.Router
@@ -69,11 +68,8 @@ import io.vertx.rxjava.ext.web.handler.BodyHandler
 import io.vertx.rxjava.ext.web.handler.LoggerHandler
 import io.vertx.rxjava.ext.web.handler.TimeoutHandler
 import org.apache.log4j.Logger
-import org.joda.time.DateTime
 import rx.Completable
-import rx.Observable
 import rx.Single
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
 import java.util.function.Consumer
@@ -82,8 +78,6 @@ import java.util.function.Function
 class OperatorVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(OperatorVerticle::class.simpleName)
-
-        private val gson = JSON().gson//Builder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
 
         private val tasksHandlers = mapOf(
             ClusterTask.InitialiseCluster to InitialiseCluster(),
@@ -123,7 +117,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         val useNodePort: Boolean = config.getBoolean("use_node_port", false)
 
-        val namespace: String = config.getString("namespace") ?: throw RuntimeException("Missing required property namespace")
+        val namespace: String = config.getString("namespace") ?: throw RuntimeException("Namespace required")
 
         val jksKeyStorePath = config.getString("server_keystore_path")
 
@@ -133,7 +127,9 @@ class OperatorVerticle : AbstractVerticle() {
 
         val jksTrustStoreSecret = config.getString("server_truststore_secret")
 
-        val serverOptions = createServerOptions(jksKeyStorePath, jksTrustStorePath, jksKeyStoreSecret, jksTrustStoreSecret)
+        val serverOptions = createServerOptions(
+            jksKeyStorePath, jksTrustStorePath, jksKeyStoreSecret, jksTrustStoreSecret
+        )
 
         val flinkOptions = FlinkOptions(
             hostname = flinkHostname,
@@ -145,17 +141,13 @@ class OperatorVerticle : AbstractVerticle() {
 
         val flinkClient = FlinkClient
 
-        val watch = WatchAdapter(gson, kubeClient)
+        val json = JSON()
+
+        val watch = WatchAdapter(json, kubeClient)
 
         val cache = Cache()
 
-        val controller = OperationController(
-            flinkOptions,
-            flinkClient,
-            kubeClient,
-            cache,
-            tasksHandlers
-        )
+        val controller = OperationController(flinkOptions, flinkClient, kubeClient)
 
         val mainRouter = Router.router(vertx)
 
@@ -163,172 +155,282 @@ class OperatorVerticle : AbstractVerticle() {
 
         val gauges = registerMetrics(registry, namespace)
 
-        val worker = vertx.createSharedWorkerExecutor("execution-queue", 1, 60, TimeUnit.SECONDS)
-
         mainRouter.route().handler(LoggerHandler.create(true, LoggerFormat.DEFAULT))
         mainRouter.route().handler(BodyHandler.create())
         mainRouter.route().handler(TimeoutHandler.create(120000))
 
-        mainRouter.options("/").handler { context -> context.response().setStatusCode(204).end() }
+        mainRouter.options("/").handler {
+            context -> context.response().setStatusCode(204).end()
+        }
 
 
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/start", BiFunction { ctx, ns -> gson.toJson(
-                com.nextbreakpoint.flinkoperator.controller.core.Message(
-                    cache.getClusterId(
-                        ns,
-                        ctx.pathParam("name")
-                    ), ctx.bodyAsString
+            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/start", BiFunction { ctx, ns ->
+                json.serialize(
+                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                        cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString
+                    )
                 )
-            ) })
+            })
         }
 
         mainRouter.put("/cluster/:name/stop").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/stop", BiFunction { ctx, ns -> gson.toJson(
-                com.nextbreakpoint.flinkoperator.controller.core.Message(
-                    cache.getClusterId(
-                        ns,
-                        ctx.pathParam("name")
-                    ), ctx.bodyAsString
+            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/stop", BiFunction { context, namespace ->
+                json.serialize(
+                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                        cache.getClusterId(namespace, context.pathParam("name")), context.bodyAsString
+                    )
                 )
-            ) })
+            })
         }
 
         mainRouter.put("/cluster/:name/scale").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/scale", BiFunction { ctx, ns -> gson.toJson(
-                com.nextbreakpoint.flinkoperator.controller.core.Message(
-                    cache.getClusterId(
-                        ns,
-                        ctx.pathParam("name")
-                    ), ctx.bodyAsString
+            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/scale", BiFunction { context, namespace ->
+                json.serialize(
+                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                        cache.getClusterId(namespace, context.pathParam("name")), context.bodyAsString
+                    )
                 )
-            ) })
+            })
         }
 
         mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/savepoint/trigger", BiFunction { ctx, ns -> gson.toJson(
-                com.nextbreakpoint.flinkoperator.controller.core.Message(
-                    cache.getClusterId(
-                        ns,
-                        ctx.pathParam("name")
-                    ), ctx.bodyAsString
+            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/savepoint/trigger", BiFunction { context, namespace ->
+                json.serialize(
+                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                        cache.getClusterId(namespace, context.pathParam("name")), context.bodyAsString
+                    )
                 )
-            ) })
+            })
         }
 
         mainRouter.delete("/cluster/:name/savepoint").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/savepoint/forget", BiFunction { ctx, ns -> gson.toJson(
-                com.nextbreakpoint.flinkoperator.controller.core.Message(
-                    cache.getClusterId(
-                        ns,
-                        ctx.pathParam("name")
-                    ), "{}"
+            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/savepoint/forget", BiFunction { context, namespace ->
+                json.serialize(
+                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                        cache.getClusterId(namespace, context.pathParam("name")), "{}"
+                    )
                 )
-            ) })
+            })
+        }
+
+        mainRouter.delete("/cluster/:name").handler { routingContext ->
+            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/delete", BiFunction { context, namespace ->
+                json.serialize(
+                    cache.getClusterId(namespace, context.pathParam("name"))
+                )
+            })
+        }
+
+        mainRouter.post("/cluster/:name").handler { routingContext ->
+            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/create", BiFunction { context, namespace ->
+                json.serialize(
+                    makeV1FlinkCluster(context, namespace)
+                )
+            })
         }
 
 
         mainRouter.get("/cluster/:name/status").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(controller.getClusterStatus(cache.getClusterId(namespace, context.pathParam("name")))) })
+            processRequest(routingContext, Function { context ->
+                json.serialize(
+                    controller.getClusterStatus(
+                        cache.getClusterId(namespace, context.pathParam("name")),
+                        CacheAdapter(
+                            cache.getFlinkCluster(cache.getClusterId(namespace, context.pathParam("name"))), cache.getCachedResources()
+                        )
+                    )
+                )
+            })
         }
 
         mainRouter.get("/cluster/:name/job/details").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(
-                JobDetails(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
-            ) })
+            processRequest(routingContext, Function { context ->
+                json.serialize(
+                    JobDetails(flinkOptions, flinkClient, kubeClient).execute(
+                        cache.getClusterId(namespace, context.pathParam("name")), null
+                    )
+                )
+            })
         }
 
         mainRouter.get("/cluster/:name/job/metrics").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(
-                JobMetrics(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
-            ) })
+            processRequest(routingContext, Function { context ->
+                json.serialize(
+                    JobMetrics(flinkOptions, flinkClient, kubeClient).execute(
+                        cache.getClusterId(namespace, context.pathParam("name")), null
+                    )
+                )
+            })
         }
 
         mainRouter.get("/cluster/:name/jobmanager/metrics").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(
-                JobManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
-            ) })
+            processRequest(routingContext, Function { context ->
+                json.serialize(
+                    JobManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(
+                        cache.getClusterId(namespace, context.pathParam("name")), null
+                    )
+                )
+            })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagersList(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), null)
-            ) })
+            processRequest(routingContext, Function { context ->
+                json.serialize(
+                    TaskManagersList(flinkOptions, flinkClient, kubeClient).execute(
+                        cache.getClusterId(namespace, context.pathParam("name")), null
+                    )
+                )
+            })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/details").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerDetails(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
-            ) })
+            processRequest(routingContext, Function { context ->
+                json.serialize(
+                    TaskManagerDetails(flinkOptions, flinkClient, kubeClient).execute(
+                        cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager"))
+                    )
+                )
+            })
         }
 
         mainRouter.get("/cluster/:name/taskmanagers/:taskmanager/metrics").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(
-                TaskManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager")))
-            ) })
-        }
-
-
-        mainRouter.delete("/cluster/:name").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/delete", BiFunction { context, namespace -> gson.toJson(
-                cache.getClusterId(namespace, context.pathParam("name"))
-            ) })
-        }
-
-        mainRouter.post("/cluster/:name").handler { routingContext ->
-            handleRequest(routingContext, namespace, "/cluster/create", BiFunction { context, namespace -> gson.toJson(
-                makeV1FlinkCluster(context, namespace)
-            ) })
+            processRequest(routingContext, Function { context ->
+                json.serialize(
+                    TaskManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(
+                        cache.getClusterId(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager"))
+                    )
+                )
+            })
         }
 
 
         vertx.eventBus().consumer<String>("/cluster/start") { message ->
-            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
-                gson.toJson(controller.requestStartCluster(it.clusterId, gson.fromJson(it.json, StartOptions::class.java)))
-            })
+            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                    )
+                },
+                Function {
+                    json.serialize(
+                        controller.requestStartCluster(
+                            it.clusterId, json.deserialize(it.json, StartOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                        )
+                    )
+                }
+            )
         }
 
         vertx.eventBus().consumer<String>("/cluster/stop") { message ->
-            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
-                gson.toJson(controller.requestStopCluster(it.clusterId, gson.fromJson(it.json, StopOptions::class.java)))
-            })
+            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                    )
+                },
+                Function {
+                    json.serialize(
+                        controller.requestStopCluster(
+                            it.clusterId, json.deserialize(it.json, StopOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                        )
+                    )
+                }
+            )
         }
 
         vertx.eventBus().consumer<String>("/cluster/scale") { message ->
-            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
-                gson.toJson(controller.requestScaleCluster(it.clusterId, gson.fromJson(it.json, ScaleOptions::class.java)))
-            })
+            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                    )
+                },
+                Function {
+                    json.serialize(
+                        controller.requestScaleCluster(
+                            it.clusterId, json.deserialize(it.json, ScaleOptions::class.java)
+                        )
+                    )
+                }
+            )
         }
 
         vertx.eventBus().consumer<String>("/cluster/delete") { message ->
-            handleCommand<ClusterId>(message, worker, Function { gson.fromJson(it.body(), ClusterId::class.java) }, Function {
-                gson.toJson(controller.deleteFlinkCluster(it))
-            })
+            processCommandAndReplyToSender<ClusterId>(
+                message,
+                Function {
+                    json.deserialize(it.body(), ClusterId::class.java)
+                },
+                Function {
+                    json.serialize(controller.deleteFlinkCluster(it))
+                }
+            )
         }
 
         vertx.eventBus().consumer<String>("/cluster/create") { message ->
-            handleCommand<V1FlinkCluster>(message, worker, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Function {
-                gson.toJson(controller.createFlinkCluster(ClusterId(it.metadata.namespace, it.metadata.name, ""), it)) })
+            processCommandAndReplyToSender<V1FlinkCluster>(
+                message,
+                Function {
+                    json.deserialize(it.body(), V1FlinkCluster::class.java)
+                },
+                Function {
+                    json.serialize(
+                        controller.createFlinkCluster(ClusterId(it.metadata.namespace, it.metadata.name, ""), it)
+                    )
+                }
+            )
         }
 
         vertx.eventBus().consumer<String>("/cluster/savepoint/trigger") { message ->
-            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
-                gson.toJson(controller.createSavepoint(it.clusterId))
-            })
+            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                    )
+                },
+                Function {
+                    json.serialize(
+                        controller.createSavepoint(
+                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                        )
+                    )
+                }
+            )
         }
 
         vertx.eventBus().consumer<String>("/cluster/savepoint/forget") { message ->
-            handleCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
-                gson.toJson(controller.forgetSavepoint(it.clusterId))
-            })
+            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                    )
+                },
+                Function {
+                    json.serialize(
+                        controller.forgetSavepoint(
+                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                        )
+                    )
+                }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/change") { message ->
-            handleEvent<V1FlinkCluster>(message, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterChanged(it) })
+            processMessage<V1FlinkCluster>(
+                message, Function { json.deserialize(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterChanged(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/delete") { message ->
-            handleEvent<V1FlinkCluster>(message, Function { gson.fromJson(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterDeleted(it) })
+            processMessage<V1FlinkCluster>(
+                message, Function { json.deserialize(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterDeleted(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/deleteAll") { _ ->
@@ -336,11 +438,15 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/resource/service/change") { message ->
-            handleEvent<V1Service>(message, Function { gson.fromJson(it.body(), V1Service::class.java) }, Consumer { cache.onServiceChanged(it) })
+            processMessage<V1Service>(
+                message, Function { json.deserialize(it.body(), V1Service::class.java) }, Consumer { cache.onServiceChanged(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/service/delete") { message ->
-            handleEvent<V1Service>(message, Function { gson.fromJson(it.body(), V1Service::class.java) }, Consumer { cache.onServiceDeleted(it) })
+            processMessage<V1Service>(
+                message, Function { json.deserialize(it.body(), V1Service::class.java) }, Consumer { cache.onServiceDeleted(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/service/deleteAll") { _ ->
@@ -348,11 +454,15 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/resource/job/change") { message ->
-            handleEvent<V1Job>(message, Function { gson.fromJson(it.body(), V1Job::class.java) }, Consumer { cache.onJobChanged(it) })
+            processMessage<V1Job>(
+                message, Function { json.deserialize(it.body(), V1Job::class.java) }, Consumer { cache.onJobChanged(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/job/delete") { message ->
-            handleEvent<V1Job>(message, Function { gson.fromJson(it.body(), V1Job::class.java) }, Consumer { cache.onJobDeleted(it) })
+            processMessage<V1Job>(
+                message, Function { json.deserialize(it.body(), V1Job::class.java) }, Consumer { cache.onJobDeleted(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/job/deleteAll") { _ ->
@@ -360,11 +470,15 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/resource/statefulset/change") { message ->
-            handleEvent<V1StatefulSet>(message, Function { gson.fromJson(it.body(), V1StatefulSet::class.java) }, Consumer { cache.onStatefulSetChanged(it) })
+            processMessage<V1StatefulSet>(
+                message, Function { json.deserialize(it.body(), V1StatefulSet::class.java) }, Consumer { cache.onStatefulSetChanged(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/statefulset/delete") { message ->
-            handleEvent<V1StatefulSet>(message, Function { gson.fromJson(it.body(), V1StatefulSet::class.java) }, Consumer { cache.onStatefulSetDeleted(it) })
+            processMessage<V1StatefulSet>(
+                message, Function { json.deserialize(it.body(), V1StatefulSet::class.java) }, Consumer { cache.onStatefulSetDeleted(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/statefulset/deleteAll") { _ ->
@@ -372,11 +486,15 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/change") { message ->
-            handleEvent<V1PersistentVolumeClaim>(message, Function { gson.fromJson(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { cache.onPersistentVolumeClaimChanged(it) })
+            processMessage<V1PersistentVolumeClaim>(
+                message, Function { json.deserialize(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { cache.onPersistentVolumeClaimChanged(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/delete") { message ->
-            handleEvent<V1PersistentVolumeClaim>(message, Function { gson.fromJson(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { cache.onPersistentVolumeClaimDeleted(it) })
+            processMessage<V1PersistentVolumeClaim>(
+                message, Function { json.deserialize(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { cache.onPersistentVolumeClaimDeleted(it) }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/deleteAll") { _ ->
@@ -385,29 +503,49 @@ class OperatorVerticle : AbstractVerticle() {
 
 
         vertx.eventBus().consumer<String>("/resource/cluster/update") { message ->
-            handleCommandNoReply<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
-                controller.updateClusterStatus(it.clusterId)
+            processCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                    )
+                },
+                Function {
+                    val adapter = CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
 
-                null
-            })
+                    controller.updateClusterStatus(it.clusterId, cache.getFlinkCluster(it.clusterId), adapter, tasksHandlers)
+
+                    null
+                }
+            )
         }
 
         vertx.eventBus().consumer<String>("/resource/cluster/forget") { message ->
-            handleCommandNoReply<com.nextbreakpoint.flinkoperator.controller.core.Message>(message, worker, Function { gson.fromJson(it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java) }, Function {
-                controller.terminatePods(it.clusterId)
+            processCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                    )
+                },
+                Function {
+                    controller.terminatePods(it.clusterId)
 
-                val result = controller.arePodsTerminated(it.clusterId)
+                    val result = controller.arePodsTerminated(it.clusterId)
 
-                if (result.status == ResultStatus.SUCCESS) {
-                    controller.deleteClusterResources(it.clusterId)
+                    if (result.status == ResultStatus.SUCCESS) {
+                        controller.deleteClusterResources(it.clusterId)
+                    }
+
+                    null
                 }
-
-                null
-            })
+            )
         }
 
 
-        vertx.exceptionHandler { error -> logger.error("An error occurred while processing the request", error) }
+        vertx.exceptionHandler {
+                error -> logger.error("An error occurred while processing the request", error)
+        }
 
         context.runOnContext {
             watch.watchFlinkClusters(context, namespace)
@@ -429,7 +567,10 @@ class OperatorVerticle : AbstractVerticle() {
             watch.watchPersistentVolumeClaims(context, namespace)
         }
 
+        // TODO parameterize loop delay
         vertx.setPeriodic(5000L) {
+            logger.debug("Updating...")
+
             updateMetrics(cache, gauges)
 
             doUpdateClusters(cache)
@@ -437,7 +578,9 @@ class OperatorVerticle : AbstractVerticle() {
             doDeleteOrphans(cache)
         }
 
-        return vertx.createHttpServer(serverOptions).requestHandler(mainRouter).rxListen(port)
+        return vertx.createHttpServer(serverOptions)
+            .requestHandler(mainRouter)
+            .rxListen(port)
     }
 
     private fun createServerOptions(
@@ -478,12 +621,14 @@ class OperatorVerticle : AbstractVerticle() {
         val counters = resourcesCache.getFlinkClusters()
             .foldRight(mutableMapOf<ClusterStatus, Int>()) { flinkCluster, counters ->
                 val status = Status.getClusterStatus(flinkCluster)
-                counters.compute(status) { _, value -> if (value != null) value + 1 else 1 }
+                counters.compute(status) { _, value ->
+                    if (value != null) value + 1 else 1
+                }
                 counters
             }
 
         ClusterStatus.values().forEach {
-            gauges.get(it)?.set(counters.get(it) ?: 0)
+            gauges[it]?.set(counters[it] ?: 0)
         }
     }
 
@@ -498,68 +643,124 @@ class OperatorVerticle : AbstractVerticle() {
         return flinkCluster
     }
 
-    private fun handleRequest(context: RoutingContext, handler: Function<RoutingContext, String>) {
+    private fun processRequest(context: RoutingContext, handler: Function<RoutingContext, String>) {
         Single.just(context)
-            .map { handler.apply(context) }
-            .doOnSuccess { context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it) }
-            .doOnError { context.response().setStatusCode(500).end(makeError(it)) }
-            .doOnError { logger.warn("Can't process request", it) }
+            .map {
+                handler.apply(context)
+            }
+            .doOnSuccess {
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it)
+            }
+            .doOnError {
+                context.response().setStatusCode(500).end(makeError(it))
+            }
+            .doOnError {
+                logger.warn("Can't process request", it)
+            }
             .subscribe()
     }
 
-    private fun handleRequest(context: RoutingContext, namespace: String, address: String, handler: BiFunction<RoutingContext, String, String>) {
+    private fun sendMessageAndWaitForReply(
+        context: RoutingContext,
+        namespace: String,
+        address: String,
+        handler: BiFunction<RoutingContext, String, String>
+    ) {
         Single.just(context)
-            .map { handler.apply(context, namespace) }
-            .flatMap { context.vertx().eventBus().rxRequest<String>(address, it, DeliveryOptions().setSendTimeout(30000)) }
-            .doOnSuccess { context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it.body()) }
-            .doOnError { context.response().setStatusCode(500).end(makeError(it)) }
-            .doOnError { logger.warn("Can't process request", it) }
+            .map {
+                handler.apply(context, namespace)
+            }
+            .flatMap {
+                context.vertx().eventBus().rxRequest<String>(address, it, DeliveryOptions().setSendTimeout(30000))
+            }
+            .doOnSuccess {
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it.body())
+            }
+            .doOnError {
+                context.response().setStatusCode(500).end(makeError(it))
+            }
+            .doOnError {
+                logger.warn("Can't process request", it)
+            }
             .subscribe()
     }
 
-    private fun <T> handleCommand(message: Message<String>, worker: WorkerExecutor, converter: Function<Message<String>, T>, handler: Function<T, String>) {
+    private fun <T> processCommandAndReplyToSender(
+        message: Message<String>,
+        converter: Function<Message<String>, T>,
+        handler: Function<T, String>
+    ) {
         Single.just(message)
-            .map { converter.apply(it) }
-            .flatMap { worker.rxExecuteBlocking<String> { future -> future.complete(handler.apply(it)) } }
-            .doOnError { logger.error("Can't process message [address=${message.address()}]", it) }
-            .onErrorReturn { makeError(it) }
-            .doOnSuccess { message.reply(it) }
-            .doOnError { logger.error("Can't send response [address=${message.address()}]", it) }
+            .map {
+                converter.apply(it)
+            }
+            .map {
+                handler.apply(it)
+            }
+            .doOnError {
+                logger.error("Can't process message [address=${message.address()}]", it)
+            }
+            .onErrorReturn {
+                makeError(it)
+            }
+            .doOnSuccess {
+                message.reply(it)
+            }
+            .doOnError {
+                logger.error("Can't send response [address=${message.address()}]", it)
+            }
             .subscribe()
     }
 
-    private fun <T> handleCommandNoReply(message: Message<String>, worker: WorkerExecutor, converter: Function<Message<String>, T>, handler: Function<T, Void?>) {
+    private fun <T> processCommand(
+        message: Message<String>,
+        converter: Function<Message<String>, T>,
+        handler: Function<T, Void?>
+    ) {
         Single.just(message)
-            .map { converter.apply(it) }
-            .flatMap { worker.rxExecuteBlocking<Void?> { future -> future.complete(handler.apply(it)) } }
-            .doOnError { logger.error("Can't process message [address=${message.address()}]", it) }
+            .map {
+                converter.apply(it)
+            }
+            .map {
+                handler.apply(it)
+            }
+            .doOnError {
+                logger.error("Can't process message [address=${message.address()}]", it)
+            }
             .subscribe()
     }
 
-    private fun <T> handleEvent(message: Message<String>, converter: Function<Message<String>, T>, handler: Consumer<T>) {
+    private fun <T> processMessage(
+        message: Message<String>,
+        converter: Function<Message<String>, T>,
+        handler: Consumer<T>
+    ) {
         Single.just(message)
-            .map { converter.apply(it) }
-            .doOnSuccess { handler.accept(it) }
-            .doOnError { logger.error("Can't process message [address=${message.address()}]", it) }
+            .map {
+                converter.apply(it)
+            }
+            .map {
+                handler.accept(it)
+            }
+            .doOnError {
+                logger.error("Can't process message [address=${message.address()}]", it)
+            }
             .subscribe()
     }
-
-    private fun makeClusterId(flinkCluster: V1FlinkCluster) =
-        ClusterId(namespace = flinkCluster.metadata.namespace, name = flinkCluster.metadata.name, uuid = flinkCluster.metadata.uid)
 
     private fun doUpdateClusters(cache: Cache) {
-        cache.getFlinkClusters().forEach {
-            vertx.eventBus().publish("/resource/cluster/update", gson.toJson(
-                com.nextbreakpoint.flinkoperator.controller.core.Message(makeClusterId(it), "{}")
-            ))
+        cache.getCachedClusters().forEach {
+            vertx.eventBus().publish(
+                "/resource/cluster/update", JSON().serialize(com.nextbreakpoint.flinkoperator.controller.core.Message(it, "{}"))
+            )
         }
     }
 
     private fun doDeleteOrphans(cache: Cache) {
         cache.getOrphanedClusters().forEach {
-            vertx.eventBus().publish("/resource/cluster/forget", gson.toJson(
-                com.nextbreakpoint.flinkoperator.controller.core.Message(it, "{}")
-            ))
+            vertx.eventBus().publish(
+                "/resource/cluster/forget", JSON().serialize(com.nextbreakpoint.flinkoperator.controller.core.Message(it, "{}"))
+            )
         }
     }
 }
