@@ -12,6 +12,7 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
+import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -55,7 +56,7 @@ class JobManagerMetricsTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
-        val metrics = Gson().fromJson(result.output, JobManagerStats::class.java)
+        val metrics = JSON().deserialize<JobManagerStats>(result.output, JobManagerStats::class.java)
         assertThat(metrics.jvmCPUTime).isEqualTo(10)
         assertThat(metrics.jvmCPULoad).isEqualTo(1.0)
     }

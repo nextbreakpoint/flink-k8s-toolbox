@@ -13,41 +13,44 @@ import java.security.MessageDigest
 import java.util.Base64
 
 object ClusterResource {
-    private val gson = JSON().gson//Builder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
+    fun parseV1FlinkCluster(body: String): V1FlinkCluster = JSON().deserialize(body, V1FlinkCluster::class.java)
 
-    fun parseV1FlinkCluster(body: String): V1FlinkCluster = gson.fromJson(body, V1FlinkCluster::class.java)
+    fun parseV1FlinkClusterList(body: String): V1FlinkClusterList = JSON().deserialize(body, V1FlinkClusterList::class.java)
 
-    fun parseV1FlinkClusterList(body: String): V1FlinkClusterList = gson.fromJson(body, V1FlinkClusterList::class.java)
-
-    fun parseV1FlinkClusterSpec(body: String): V1FlinkClusterSpec = gson.fromJson(body, V1FlinkClusterSpec::class.java)
+    fun parseV1FlinkClusterSpec(body: String): V1FlinkClusterSpec = JSON().deserialize(body, V1FlinkClusterSpec::class.java)
 
     fun computeDigest(spec: V1RuntimeSpec?): String {
         return if (spec == null) "" else String(
             Base64.getEncoder().encode(
-                MessageDigest.getInstance("MD5").digest(
-                    gson.toJson(spec).toByteArray())))
+                MessageDigest.getInstance("MD5").digest(JSON().serialize(spec).toByteArray())
+            )
+        )
     }
 
     fun computeDigest(spec: V1BootstrapSpec?): String {
         return if (spec == null) "" else String(
             Base64.getEncoder().encode(
-                MessageDigest.getInstance("MD5").digest(
-                    gson.toJson(spec).toByteArray())))
+                MessageDigest.getInstance("MD5").digest(JSON().serialize(spec).toByteArray())
+            )
+        )
     }
 
     fun computeDigest(spec: V1JobManagerSpec?): String {
         return if (spec == null) "" else String(
             Base64.getEncoder().encode(
-                MessageDigest.getInstance("MD5").digest(
-                    gson.toJson(spec).toByteArray())))
+                MessageDigest.getInstance("MD5").digest(JSON().serialize(spec).toByteArray())
+            )
+        )
     }
 
     fun computeDigest(spec: V1TaskManagerSpec?): String {
         return if (spec == null) "" else String(
             Base64.getEncoder().encode(
-                MessageDigest.getInstance("MD5").digest(
-                    gson.toJson(spec).toByteArray())))
+                MessageDigest.getInstance("MD5").digest(JSON().serialize(spec).toByteArray())
+            )
+        )
     }
 
-    fun makeLabelSelector(clusterId: ClusterId) = "uid=${clusterId.uuid},name=${clusterId.name},owner=flink-operator,component=flink,role=taskmanager"
+    fun makeLabelSelector(clusterId: ClusterId) =
+        "uid=${clusterId.uuid},name=${clusterId.name},owner=flink-operator,component=flink,role=taskmanager"
 }

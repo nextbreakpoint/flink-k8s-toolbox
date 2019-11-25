@@ -23,16 +23,16 @@ class TaskContext(
     fun timeSinceLastSavepointRequestInSeconds() = (controller.currentTimeMillis() - Status.getSavepointRequestTimestamp(flinkCluster).millis) / 1000L
 
     fun startCluster(clusterId: ClusterId, options: StartOptions) : Result<List<ClusterTask>> =
-        controller.startCluster(clusterId, options)
+        controller.startCluster(clusterId, options, CacheAdapter(flinkCluster, resources))
 
     fun stopCluster(clusterId: ClusterId, options: StopOptions) : Result<List<ClusterTask>> =
-        controller.stopCluster(clusterId, options)
+        controller.stopCluster(clusterId, options, CacheAdapter(flinkCluster, resources))
 
     fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling) : Result<List<ClusterTask>> =
-        controller.scaleCluster(clusterId, clusterScaling)
+        controller.scaleCluster(clusterId, clusterScaling, CacheAdapter(flinkCluster, resources))
 
     fun getClusterStatus(clusterId: ClusterId) : Result<Map<String, String>> =
-        controller.getClusterStatus(clusterId)
+        controller.getClusterStatus(clusterId, CacheAdapter(flinkCluster, resources))
 
     fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
         controller.createClusterResources(clusterId, clusterResources)
@@ -81,12 +81,6 @@ class TaskContext(
 
     fun isClusterRunning(clusterId: ClusterId): Result<Boolean> =
         controller.isClusterRunning(clusterId)
-
-    fun isClusterSuspended(clusterId: ClusterId): Result<Void?> =
-        controller.isClusterSuspended(clusterId)
-
-    fun isClusterTerminated(clusterId: ClusterId): Result<Void?> =
-        controller.isClusterTerminated(clusterId)
 
     fun isJobStarted(clusterId: ClusterId): Result<Void?> =
         controller.isJobStarted(clusterId)

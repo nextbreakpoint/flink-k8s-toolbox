@@ -8,25 +8,22 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class RequestClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val cache: Cache) : Operation<StopOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
+class RequestClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val adapter: CacheAdapter) : Operation<StopOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(RequestClusterStop::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: StopOptions): Result<Void?> {
         try {
-            val flinkCluster = cache.getFlinkCluster(clusterId)
+            adapter.setWithoutSavepoint(params.withoutSavepoint)
+            adapter.setDeleteResources(params.deleteResources)
+            adapter.setManualAction(ManualAction.STOP)
 
-            Annotations.setWithoutSavepoint(flinkCluster, params.withoutSavepoint)
-            Annotations.setDeleteResources(flinkCluster, params.deleteResources)
-            Annotations.setManualAction(flinkCluster, ManualAction.STOP)
-
-            kubeClient.updateAnnotations(clusterId, flinkCluster.metadata?.annotations.orEmpty())
+            kubeClient.updateAnnotations(clusterId, adapter.getAnnotations())
 
             return Result(
                 ResultStatus.SUCCESS,

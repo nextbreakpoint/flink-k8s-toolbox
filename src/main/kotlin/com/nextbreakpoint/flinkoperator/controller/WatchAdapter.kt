@@ -1,14 +1,14 @@
 package com.nextbreakpoint.flinkoperator.controller
 
-import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import io.kubernetes.client.JSON
 import io.kubernetes.client.util.Watch
 import io.vertx.core.Context
 import org.apache.log4j.Logger
 import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
 
-class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
+class WatchAdapter(val json: JSON, val kubeClient: KubeClient) {
     companion object {
         private val logger: Logger = Logger.getLogger(WatchAdapter::class.simpleName)
     }
@@ -19,11 +19,11 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                 kubeClient.watchFlickClusters(it)
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/flinkcluster/change", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/flinkcluster/change", json.serialize(resource))
                 }
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/flinkcluster/delete", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/flinkcluster/delete", json.serialize(resource))
                 }
             }, { namespace ->
                 logger.debug("Refresh FlinkClusters resources...")
@@ -32,7 +32,7 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                         context.owner().eventBus().publish("/resource/flinkcluster/deleteAll", "")
                         val resources = kubeClient.listFlinkClusters(namespace)
                         resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/flinkcluster/change", gson.toJson(resource))
+                            context.owner().eventBus().publish("/resource/flinkcluster/change", json.serialize(resource))
                         }
                     } catch (e: Exception) {
                         logger.error("An error occurred while listing resources", e)
@@ -48,11 +48,11 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                 kubeClient.watchServices(it)
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/service/change", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/service/change", json.serialize(resource))
                 }
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/service/delete", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/service/delete", json.serialize(resource))
                 }
             }, { namespace ->
                 logger.debug("Refresh Services resources...")
@@ -61,7 +61,7 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                         context.owner().eventBus().publish("/resource/service/deleteAll", "")
                         val resources = kubeClient.listServiceResources(namespace)
                         resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/service/change", gson.toJson(resource))
+                            context.owner().eventBus().publish("/resource/service/change", json.serialize(resource))
                         }
                     } catch (e: Exception) {
                         logger.error("An error occurred while listing resources", e)
@@ -77,11 +77,11 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                 kubeClient.watchDeployments(it)
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/deployment/change", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/deployment/change", json.serialize(resource))
                 }
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/deployment/delete", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/deployment/delete", json.serialize(resource))
                 }
             }, { namespace ->
                 logger.debug("Refresh Deployments resources...")
@@ -90,7 +90,7 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                         context.owner().eventBus().publish("/resource/deployment/deleteAll", "")
                         val resources = kubeClient.listDeploymentResources(namespace)
                         resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/deployment/change", gson.toJson(resource))
+                            context.owner().eventBus().publish("/resource/deployment/change", json.serialize(resource))
                         }
                     } catch (e: Exception) {
                         logger.error("An error occurred while listing resources", e)
@@ -106,11 +106,11 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                 kubeClient.watchJobs(it)
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/job/change", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/job/change", json.serialize(resource))
                 }
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/job/delete", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/job/delete", json.serialize(resource))
                 }
             }, { namespace ->
                 logger.debug("Refresh Jobs resources...")
@@ -119,7 +119,7 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                         context.owner().eventBus().publish("/resource/job/deleteAll", "")
                         val resources = kubeClient.listJobResources(namespace)
                         resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/job/change", gson.toJson(resource))
+                            context.owner().eventBus().publish("/resource/job/change", json.serialize(resource))
                         }
                     } catch (e: Exception) {
                         logger.error("An error occurred while listing resources", e)
@@ -135,11 +135,11 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                 kubeClient.watchStatefulSets(it)
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/statefulset/change", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/statefulset/change", json.serialize(resource))
                 }
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/statefulset/delete", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/statefulset/delete", json.serialize(resource))
                 }
             }, { namespace ->
                 logger.debug("Refresh StatefulSets resources...")
@@ -148,7 +148,7 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                         context.owner().eventBus().publish("/resource/statefulset/deleteAll", "")
                         val resources = kubeClient.listStatefulSetResources(namespace)
                         resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/statefulset/change", gson.toJson(resource))
+                            context.owner().eventBus().publish("/resource/statefulset/change", json.serialize(resource))
                         }
                     } catch (e: Exception) {
                         logger.error("An error occurred while listing resources", e)
@@ -164,11 +164,11 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                 kubeClient.watchPermanentVolumeClaims(it)
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", json.serialize(resource))
                 }
             }, { resource ->
                 context.runOnContext {
-                    context.owner().eventBus().publish("/resource/persistentvolumeclaim/delete", gson.toJson(resource))
+                    context.owner().eventBus().publish("/resource/persistentvolumeclaim/delete", json.serialize(resource))
                 }
             }, { namespace ->
                 logger.debug("Refresh PersistentVolumeClaims resources...")
@@ -177,7 +177,7 @@ class WatchAdapter(val gson: Gson, val kubeClient: KubeClient) {
                         context.owner().eventBus().publish("/resource/persistentvolumeclaim/deleteAll", "")
                         val resources = kubeClient.listPermanentVolumeClaimResources(namespace)
                         resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", gson.toJson(resource))
+                            context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", json.serialize(resource))
                         }
                     } catch (e: Exception) {
                         logger.error("An error occurred while listing resources", e)

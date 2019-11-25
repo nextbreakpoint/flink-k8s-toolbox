@@ -9,6 +9,7 @@ import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
 class Cache {
+    private val prioritizedClusters = mutableMapOf<ClusterId, FlinkClusterWrapper>()
     private val flinkClusters = mutableMapOf<ClusterId, V1FlinkCluster>()
     private val bootstrapJobs = mutableMapOf<ClusterId, V1Job>()
     private val jobmanagerServices = mutableMapOf<ClusterId, V1Service>()
@@ -19,28 +20,41 @@ class Cache {
 
     fun getFlinkClusters(): List<V1FlinkCluster> = flinkClusters.values.toList()
 
-    fun getFlinkCluster(clusterId: ClusterId) = flinkClusters.get(clusterId) ?: throw RuntimeException("Cluster not found ${clusterId.name}")
+    fun getCachedClusters(): List<ClusterId> = flinkClusters.keys.toList()
+
+    fun getFlinkCluster(clusterId: ClusterId) = flinkClusters[clusterId] ?: throw RuntimeException("Cluster not found ${clusterId.name}")
 
     fun getClusterId(namespace: String, name: String) =
         flinkClusters.keys.firstOrNull { it.namespace == namespace && it.name == name } ?: throw RuntimeException("Cluster not found")
 
     fun onFlinkClusterChanged(resource: V1FlinkCluster) {
-        flinkClusters.put(
-            ClusterId(
-                namespace = resource.metadata.namespace,
-                name = resource.metadata.name,
-                uuid = resource.metadata.uid
-            ), resource)
+        val clusterId = ClusterId(
+            namespace = resource.metadata.namespace,
+            name = resource.metadata.name,
+            uuid = resource.metadata.uid
+        )
+
+        val wrapper = prioritizedClusters[clusterId]
+
+        if (wrapper != null) {
+            prioritizedClusters[clusterId] = FlinkClusterWrapper(resource, wrapper.timestamp)
+        } else {
+            prioritizedClusters[clusterId] = FlinkClusterWrapper(resource, resource.metadata.creationTimestamp?.toInstant()?.millis ?: 0L)
+        }
+
+        flinkClusters[clusterId] = resource
     }
 
     fun onFlinkClusterDeleted(resource: V1FlinkCluster) {
-        flinkClusters.remove(
-            ClusterId(
-                namespace = resource.metadata.namespace,
-                name = resource.metadata.name,
-                uuid = resource.metadata.uid
-            )
+        val clusterId = ClusterId(
+            namespace = resource.metadata.namespace,
+            name = resource.metadata.name,
+            uuid = resource.metadata.uid
         )
+
+        prioritizedClusters.remove(clusterId)
+
+        flinkClusters.remove(clusterId)
     }
 
     fun onServiceChanged(resource: V1Service) {
@@ -169,19 +183,7 @@ class Cache {
         }
     }
 
-    fun getClusters(): List<Pair<V1FlinkCluster, CachedResources>> {
-        val resources = CachedResources(
-            bootstrapJobs.toMap(),
-            jobmanagerServices.toMap(),
-            jobmanagerStatefulSets.toMap(),
-            taskmanagerStatefulSets.toMap(),
-            jobmanagerPersistentVolumeClaims.toMap(),
-            taskmanagerPersistentVolumeClaims.toMap()
-        )
-        return flinkClusters.values.map { flinkCluster -> flinkCluster to resources }.toList()
-    }
-
-    fun getResources(): CachedResources {
+    fun getCachedResources(): CachedResources {
         return CachedResources(
             bootstrapJobs.toMap(),
             jobmanagerServices.toMap(),
@@ -201,6 +203,10 @@ class Cache {
         deletedClusters.addAll(jobmanagerPersistentVolumeClaims.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)
         deletedClusters.addAll(taskmanagerPersistentVolumeClaims.filter { (clusterId, _) -> flinkClusters[clusterId] == null }.keys)
         return deletedClusters
+    }
+
+    fun getPrioritizedClusters(): List<V1FlinkCluster> {
+        return prioritizedClusters.entries.sortedBy { it.value.timestamp }.map { it.value.flinkCluser }.toList()
     }
 
     fun onFlinkClusterDeleteAll() {
@@ -230,4 +236,6 @@ class Cache {
 
     private fun extractClusterId(objectMeta: V1ObjectMeta) =
         objectMeta.labels?.get("uid") ?: throw RuntimeException("Missing required label uid")
+
+    private data class FlinkClusterWrapper(val flinkCluser: V1FlinkCluster, val timestamp: Long)
 }

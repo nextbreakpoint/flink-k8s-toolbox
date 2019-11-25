@@ -10,6 +10,7 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 
 class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<TaskManagerId, String>(flinkOptions, flinkClient, kubeClient) {
@@ -57,7 +58,7 @@ class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
 
             return Result(
                 ResultStatus.SUCCESS,
-                Gson().toJson(metricsResponse)
+                JSON().serialize(metricsResponse)
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't get metrics of task manager $params", e)

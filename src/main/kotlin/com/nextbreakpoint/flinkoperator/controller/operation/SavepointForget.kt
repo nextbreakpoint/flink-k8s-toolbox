@@ -8,21 +8,18 @@ import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
-import com.nextbreakpoint.flinkoperator.controller.core.Status
 import org.apache.log4j.Logger
 
-class SavepointForget(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val cache: Cache) : Operation<Void?, List<ClusterTask>>(flinkOptions, flinkClient, kubeClient) {
+class SavepointForget(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val adapter: CacheAdapter) : Operation<Void?, List<ClusterTask>>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(SavepointForget::class.simpleName)
     }
 
     override fun execute(clusterId: ClusterId, params: Void?): Result<List<ClusterTask>> {
         try {
-            val flinkCluster = cache.getFlinkCluster(clusterId)
-
-            val clusterStatus = Status.getClusterStatus(flinkCluster)
+            val clusterStatus = adapter.getClusterStatus()
 
             if (clusterStatus != ClusterStatus.Suspended && clusterStatus != ClusterStatus.Terminated && clusterStatus != ClusterStatus.Failed) {
                 logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
@@ -38,7 +35,7 @@ class SavepointForget(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
                 ClusterTask.ClusterHalted
             )
 
-            Status.appendTasks(flinkCluster, statusList)
+            adapter.appendTasks(statusList)
 
             return Result(
                 ResultStatus.SUCCESS,

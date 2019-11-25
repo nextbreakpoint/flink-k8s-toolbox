@@ -20,8 +20,6 @@ import java.util.function.Function
 class MonitoringVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(MonitoringVerticle::class.simpleName)
-
-        private val gson = JSON().gson//GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
     }
 
     override fun rxStart(): Completable {
@@ -37,25 +35,37 @@ class MonitoringVerticle : AbstractVerticle() {
         mainRouter.route().handler(BodyHandler.create())
         mainRouter.route().handler(TimeoutHandler.create(120000))
 
-        mainRouter.options("/").handler { context -> context.response().setStatusCode(204).end() }
+        mainRouter.options("/").handler {
+                context -> context.response().setStatusCode(204).end()
+        }
 
         mainRouter.get("/version").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(getVersion()) })
+            handleRequest(routingContext, Function { context -> JSON().serialize(getVersion()) })
         }
 
         mainRouter.get("/metrics").handler(PrometheusScrapingHandler.create("flink-operator"))
 
-        return vertx.createHttpServer().requestHandler(mainRouter).rxListen(port)
+        return vertx.createHttpServer()
+            .requestHandler(mainRouter)
+            .rxListen(port)
     }
 
     private fun makeError(error: Throwable) = "{\"status\":\"FAILURE\",\"error\":\"${error.message}\"}"
 
     private fun handleRequest(context: RoutingContext, handler: Function<RoutingContext, String>) {
         Single.just(context)
-            .map { handler.apply(context) }
-            .doOnSuccess { context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it) }
-            .doOnError { context.response().setStatusCode(500).end(makeError(it)) }
-            .doOnError { logger.warn("Can't process request", it) }
+            .map {
+                handler.apply(context)
+            }
+            .doOnSuccess {
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it)
+            }
+            .doOnError {
+                context.response().setStatusCode(500).end(makeError(it))
+            }
+            .doOnError {
+                logger.warn("Can't process request", it)
+            }
             .subscribe()
     }
 

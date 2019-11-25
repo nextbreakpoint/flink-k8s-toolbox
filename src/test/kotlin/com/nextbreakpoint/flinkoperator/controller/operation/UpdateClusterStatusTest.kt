@@ -10,8 +10,8 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
@@ -22,7 +22,6 @@ import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -37,17 +36,15 @@ class UpdateClusterStatusTest {
     private val controller = mock(OperationController::class.java)
     private val resources = mock(CachedResources::class.java)
     private val handler = mock(Task::class.java)
-    private val cache = mock(Cache::class.java)
     private val taskHandlers = mapOf(ClusterTask.InitialiseCluster to handler)
+    private val adapter = CacheAdapter(cluster, resources)
     private val command = clusterUpdateStatus()
 
     private fun clusterUpdateStatus(): UpdateClusterStatus {
         given(controller.flinkOptions).thenReturn(flinkOptions)
         given(controller.flinkClient).thenReturn(flinkClient)
         given(controller.kubeClient).thenReturn(kubeClient)
-        given(controller.taskHandlers).thenReturn(taskHandlers)
-        given(controller.cache).thenReturn(cache)
-        return UpdateClusterStatus(controller)
+        return UpdateClusterStatus(controller, adapter, taskHandlers)
     }
 
     @BeforeEach
@@ -65,22 +62,16 @@ class UpdateClusterStatusTest {
         verify(controller, times(1)).flinkOptions
         verify(controller, times(1)).flinkClient
         verify(controller, times(1)).kubeClient
-        given(cache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
-        given(cache.getResources()).thenReturn(resources)
     }
 
     @Test
     fun `should initialise cluster resource when task is not defined`() {
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
@@ -95,15 +86,10 @@ class UpdateClusterStatusTest {
     fun `should fail when task handler is not defined`() {
         Status.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verifyNoMoreInteractions(controller)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
@@ -116,18 +102,13 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Executing)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onExecuting(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
@@ -143,18 +124,13 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Executing)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onExecuting(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
@@ -170,17 +146,12 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Executing)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onExecuting(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNull()
@@ -196,18 +167,13 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Awaiting)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onAwaiting(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
@@ -223,18 +189,13 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Awaiting)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onAwaiting(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
@@ -250,17 +211,12 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Awaiting)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onAwaiting(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNull()
@@ -276,18 +232,13 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Idle)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster, ClusterTask.ClusterRunning))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onIdle(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
         assertThat(result.output).isNull()
@@ -303,17 +254,12 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Idle)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onIdle(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
         assertThat(result.output).isNull()
@@ -329,18 +275,13 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Idle)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster, ClusterTask.ClusterRunning))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onIdle(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()
@@ -356,18 +297,13 @@ class UpdateClusterStatusTest {
         Status.setTaskStatus(cluster, TaskStatus.Failed)
         Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster, ClusterTask.ClusterRunning))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        val result = command.execute(clusterId, null)
+        val result = command.execute(clusterId, cluster)
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verify(controller, atLeastOnce()).cache
-        verify(controller, times(1)).taskHandlers
         verify(controller, times(1)).updateStatus(eq(clusterId), any())
         verifyNoMoreInteractions(controller)
         verify(handler, times(1)).onFailed(any())
         verifyNoMoreInteractions(handler)
-        verify(cache, times(1)).getResources()
-        verify(cache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(cache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.FAILED)
         assertThat(result.output).isNull()

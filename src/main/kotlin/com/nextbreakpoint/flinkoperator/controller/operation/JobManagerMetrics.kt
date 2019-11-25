@@ -9,6 +9,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 
 class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, String>(flinkOptions, flinkClient, kubeClient) {
@@ -56,7 +57,7 @@ class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
 
             return Result(
                 ResultStatus.SUCCESS,
-                Gson().toJson(metricsResponse)
+                JSON().serialize(metricsResponse)
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't get metrics of job manager", e)

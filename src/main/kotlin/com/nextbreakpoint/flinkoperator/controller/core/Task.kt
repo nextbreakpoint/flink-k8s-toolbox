@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
