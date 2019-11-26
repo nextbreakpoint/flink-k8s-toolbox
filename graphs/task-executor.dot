@@ -9,18 +9,12 @@ digraph state_machine {
           <TR>
               <TD>EXECUTING</TD>
           </TR>
-          <TR>
-              <TD>Execute<BR/>current<BR/>task</TD>
-          </TR>
       </TABLE>
   > ];
   AWAITING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>AWAITING</TD>
-          </TR>
-          <TR>
-              <TD>Wait for<BR/>task's<BR/>results</TD>
           </TR>
       </TABLE>
   > ];
@@ -29,9 +23,6 @@ digraph state_machine {
           <TR>
               <TD>IDLE</TD>
           </TR>
-          <TR>
-              <TD>Look for<BR/>tasks<BR/>to execute</TD>
-          </TR>
       </TABLE>
   > ];
   FAILED [ label = <
@@ -39,35 +30,29 @@ digraph state_machine {
           <TR>
               <TD>FAILED</TD>
           </TR>
-          <TR>
-              <TD>Change<BR/>cluster's<BR/>status to<BR/>FAILED</TD>
-          </TR>
       </TABLE>
   > ];
-  EXECUTING -> AWAITING [ label = "SUCCESS" ];
-  EXECUTING -> EXECUTING [ label = "AWAIT" ];
-  EXECUTING -> FAILED [ label = "FAILED" ];
-  AWAITING -> IDLE [ label = "SUCCESS" ];
-  AWAITING -> AWAITING [ label = "AWAIT" ];
-  AWAITING -> FAILED [ label = "FAILED" ];
-  IDLE -> IDLE [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>TASK NOT<BR/>CHANGED</TD>
-          </TR>
-      </TABLE>
-  > ];
+  EXECUTING -> AWAITING [ label = "NEXT" ];
+  EXECUTING -> EXECUTING [ label = "REPEAT" ];
+  EXECUTING -> FAILED [ label = "FAIL" ];
+  EXECUTING -> IDLE [ label = "SKIP" ];
+  AWAITING -> IDLE [ label = "NEXT" ];
+  AWAITING -> AWAITING [ label = "REPEAT" ];
+  AWAITING -> FAILED [ label = "FAIL" ];
+  AWAITING -> IDLE [ label = "SKIP" ];
+  IDLE -> FAILED [ label = "FAIL" ];
+  IDLE -> IDLE [ label = "REPEAT" ];
   IDLE -> EXECUTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>SELECT TASK<BR/>FROM LIST</TD>
+              <TD>NEXT TASK</TD>
           </TR>
       </TABLE>
   > ];
   FAILED -> EXECUTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>SELECT TASK<BR/>DO NOTHING</TD>
+              <TD>HALT CLUSTER</TD>
           </TR>
       </TABLE>
   > ];

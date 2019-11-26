@@ -24,7 +24,7 @@ digraph state_machine {
   STARTING -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources created<BR/>and job running<BR/>or not defined</TD>
+              <TD>Resources created<BR/>and job running<BR/>or job not defined</TD>
           </TR>
       </TABLE>
   > ];
@@ -73,7 +73,7 @@ digraph state_machine {
   UPDATING -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources created<BR/>and job running<BR/>or not defined</TD>
+              <TD>Resources created<BR/>and job running<BR/>or job not defined</TD>
           </TR>
       </TABLE>
   > ];
@@ -123,13 +123,6 @@ digraph state_machine {
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>User stopped<BR/>the cluster<BR/>and asked to<BR/>delete resources</TD>
-          </TR>
-      </TABLE>
-  > ];
-  SUSPENDED -> UPDATING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Specification modified</TD>
           </TR>
       </TABLE>
   > ];
