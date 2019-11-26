@@ -1,8 +1,9 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
+import com.nextbreakpoint.flinkoperator.controller.core.TaskAction
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
@@ -38,13 +39,13 @@ class TerminatePodsTest {
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.action).isEqualTo(TaskAction.FAIL)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onExecuting should return expected result when pods have not been terminated yet`() {
-        given(context.terminatePods(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.terminatePods(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -52,13 +53,13 @@ class TerminatePodsTest {
         verify(context, times(1)).terminatePods(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onExecuting should return expected result when pods can't be terminated`() {
-        given(context.terminatePods(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.terminatePods(eq(clusterId))).thenReturn(OperationResult(OperationStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -66,13 +67,13 @@ class TerminatePodsTest {
         verify(context, times(1)).terminatePods(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onExecuting should return expected result when pods have been terminated`() {
-        given(context.terminatePods(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.terminatePods(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -80,7 +81,7 @@ class TerminatePodsTest {
         verify(context, times(1)).terminatePods(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotBlank()
     }
 
@@ -92,13 +93,13 @@ class TerminatePodsTest {
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.action).isEqualTo(TaskAction.FAIL)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onAwaiting should return expected result when pods have not been terminated yet`() {
-        given(context.arePodsTerminated(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.arePodsTerminated(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -106,13 +107,13 @@ class TerminatePodsTest {
         verify(context, times(1)).arePodsTerminated(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onAwaiting should return expected result when pods can't be terminated`() {
-        given(context.arePodsTerminated(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.arePodsTerminated(eq(clusterId))).thenReturn(OperationResult(OperationStatus.FAILED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -120,13 +121,13 @@ class TerminatePodsTest {
         verify(context, times(1)).arePodsTerminated(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onAwaiting should return expected result when pods have been terminated`() {
-        given(context.arePodsTerminated(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.arePodsTerminated(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -134,7 +135,7 @@ class TerminatePodsTest {
         verify(context, times(1)).arePodsTerminated(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotBlank()
     }
 
@@ -144,7 +145,7 @@ class TerminatePodsTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
     }
 
@@ -154,7 +155,7 @@ class TerminatePodsTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
     }
 }

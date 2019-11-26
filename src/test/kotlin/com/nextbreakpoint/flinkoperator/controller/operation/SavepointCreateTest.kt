@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -41,7 +41,7 @@ class SavepointCreateTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
         assertThat(result.output).isEmpty()
     }
 
@@ -51,7 +51,7 @@ class SavepointCreateTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.CreatingSavepoint,
             ClusterTask.TriggerSavepoint,

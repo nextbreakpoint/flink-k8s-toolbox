@@ -5,7 +5,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
@@ -23,6 +22,7 @@ import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersList
+import com.nextbreakpoint.flinkoperator.controller.core.TaskExecutor
 import com.nextbreakpoint.flinkoperator.controller.task.CancelJob
 import com.nextbreakpoint.flinkoperator.controller.task.ClusterHalted
 import com.nextbreakpoint.flinkoperator.controller.task.ClusterRunning
@@ -79,7 +79,7 @@ class OperatorVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(OperatorVerticle::class.simpleName)
 
-        private val tasksHandlers = mapOf(
+        private val taskHandlers = mapOf(
             ClusterTask.InitialiseCluster to InitialiseCluster(),
             ClusterTask.TerminatedCluster to TerminateCluster(),
             ClusterTask.SuspendCluster to SuspendCluster(),
@@ -155,20 +155,22 @@ class OperatorVerticle : AbstractVerticle() {
 
         val gauges = registerMetrics(registry, namespace)
 
+        val statusUpdater = TaskExecutor(controller, taskHandlers)
+
         mainRouter.route().handler(LoggerHandler.create(true, LoggerFormat.DEFAULT))
         mainRouter.route().handler(BodyHandler.create())
         mainRouter.route().handler(TimeoutHandler.create(120000))
 
-        mainRouter.options("/").handler {
-            context -> context.response().setStatusCode(204).end()
+        mainRouter.options("/").handler { routingContext ->
+            routingContext.response().setStatusCode(204).end()
         }
 
 
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/start", BiFunction { ctx, ns ->
+            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/start", BiFunction { context, namespace ->
                 json.serialize(
                     com.nextbreakpoint.flinkoperator.controller.core.Message(
-                        cache.getClusterId(ns, ctx.pathParam("name")), ctx.bodyAsString
+                        cache.getClusterId(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
             })
@@ -423,81 +425,160 @@ class OperatorVerticle : AbstractVerticle() {
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/change") { message ->
             processMessage<V1FlinkCluster>(
-                message, Function { json.deserialize(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterChanged(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1FlinkCluster::class.java
+                    )
+                },
+                Consumer {
+                    cache.onFlinkClusterChanged(it)
+                }
             )
         }
 
         vertx.eventBus().consumer<String>("/resource/flinkcluster/delete") { message ->
             processMessage<V1FlinkCluster>(
-                message, Function { json.deserialize(it.body(), V1FlinkCluster::class.java) }, Consumer { cache.onFlinkClusterDeleted(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1FlinkCluster::class.java
+                    )
+                },
+                Consumer {
+                    cache.onFlinkClusterDeleted(it)
+                }
             )
         }
 
-        vertx.eventBus().consumer<String>("/resource/flinkcluster/deleteAll") { _ ->
+        vertx.eventBus().consumer<String>("/resource/flinkcluster/deleteAll") {
             cache.onFlinkClusterDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/service/change") { message ->
             processMessage<V1Service>(
-                message, Function { json.deserialize(it.body(), V1Service::class.java) }, Consumer { cache.onServiceChanged(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1Service::class.java
+                    )
+                },
+                Consumer {
+                    cache.onServiceChanged(it)
+                }
             )
         }
 
         vertx.eventBus().consumer<String>("/resource/service/delete") { message ->
             processMessage<V1Service>(
-                message, Function { json.deserialize(it.body(), V1Service::class.java) }, Consumer { cache.onServiceDeleted(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1Service::class.java
+                    )
+                },
+                Consumer {
+                    cache.onServiceDeleted(it)
+                }
             )
         }
 
-        vertx.eventBus().consumer<String>("/resource/service/deleteAll") { _ ->
+        vertx.eventBus().consumer<String>("/resource/service/deleteAll") {
             cache.onServiceDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/job/change") { message ->
             processMessage<V1Job>(
-                message, Function { json.deserialize(it.body(), V1Job::class.java) }, Consumer { cache.onJobChanged(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1Job::class.java
+                    )
+                },
+                Consumer {
+                    cache.onJobChanged(it)
+                }
             )
         }
 
         vertx.eventBus().consumer<String>("/resource/job/delete") { message ->
             processMessage<V1Job>(
-                message, Function { json.deserialize(it.body(), V1Job::class.java) }, Consumer { cache.onJobDeleted(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1Job::class.java
+                    )
+                },
+                Consumer {
+                    cache.onJobDeleted(it)
+                }
             )
         }
 
-        vertx.eventBus().consumer<String>("/resource/job/deleteAll") { _ ->
+        vertx.eventBus().consumer<String>("/resource/job/deleteAll") {
             cache.onJobDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/statefulset/change") { message ->
             processMessage<V1StatefulSet>(
-                message, Function { json.deserialize(it.body(), V1StatefulSet::class.java) }, Consumer { cache.onStatefulSetChanged(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1StatefulSet::class.java
+                    )
+                },
+                Consumer {
+                    cache.onStatefulSetChanged(it)
+                }
             )
         }
 
         vertx.eventBus().consumer<String>("/resource/statefulset/delete") { message ->
             processMessage<V1StatefulSet>(
-                message, Function { json.deserialize(it.body(), V1StatefulSet::class.java) }, Consumer { cache.onStatefulSetDeleted(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1StatefulSet::class.java)
+                },
+                Consumer {
+                    cache.onStatefulSetDeleted(it)
+                }
             )
         }
 
-        vertx.eventBus().consumer<String>("/resource/statefulset/deleteAll") { _ ->
+        vertx.eventBus().consumer<String>("/resource/statefulset/deleteAll") {
             cache.onStatefulSetDeleteAll()
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/change") { message ->
             processMessage<V1PersistentVolumeClaim>(
-                message, Function { json.deserialize(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { cache.onPersistentVolumeClaimChanged(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1PersistentVolumeClaim::class.java
+                    )
+                },
+                Consumer {
+                    cache.onPersistentVolumeClaimChanged(it)
+                }
             )
         }
 
         vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/delete") { message ->
             processMessage<V1PersistentVolumeClaim>(
-                message, Function { json.deserialize(it.body(), V1PersistentVolumeClaim::class.java) }, Consumer { cache.onPersistentVolumeClaimDeleted(it) }
+                message,
+                Function {
+                    json.deserialize(
+                        it.body(), V1PersistentVolumeClaim::class.java
+                    )
+                },
+                Consumer {
+                    cache.onPersistentVolumeClaimDeleted(it)
+                }
             )
         }
 
-        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/deleteAll") { _ ->
+        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/deleteAll") {
             cache.onPersistentVolumeClaimDeleteAll()
         }
 
@@ -511,9 +592,7 @@ class OperatorVerticle : AbstractVerticle() {
                     )
                 },
                 Function {
-                    val adapter = CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
-
-                    controller.updateClusterStatus(it.clusterId, cache.getFlinkCluster(it.clusterId), adapter, tasksHandlers)
+                    statusUpdater.update(it.clusterId, cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
 
                     null
                 }
@@ -529,13 +608,7 @@ class OperatorVerticle : AbstractVerticle() {
                     )
                 },
                 Function {
-                    controller.terminatePods(it.clusterId)
-
-                    val result = controller.arePodsTerminated(it.clusterId)
-
-                    if (result.status == ResultStatus.SUCCESS) {
-                        controller.deleteClusterResources(it.clusterId)
-                    }
+                    statusUpdater.forget(it.clusterId)
 
                     null
                 }
@@ -544,7 +617,7 @@ class OperatorVerticle : AbstractVerticle() {
 
 
         vertx.exceptionHandler {
-                error -> logger.error("An error occurred while processing the request", error)
+            error -> logger.error("An error occurred while processing the request", error)
         }
 
         context.runOnContext {

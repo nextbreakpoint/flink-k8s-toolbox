@@ -1,11 +1,12 @@
 package com.nextbreakpoint.flinkoperator.context.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.TaskAction
 import com.nextbreakpoint.flinkoperator.controller.task.CreateBootstrapJob
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
@@ -38,12 +39,12 @@ class CreateBootstrapJobTest {
 
     @Test
     fun `onExecuting should return expected result when job is not defined`() {
-        cluster.status.bootstrap = null
+        Status.setBootstrap(cluster, null)
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.action).isEqualTo(TaskAction.SKIP)
         assertThat(result.output).isNotBlank()
     }
 
@@ -55,13 +56,13 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.action).isEqualTo(TaskAction.FAIL)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onExecuting should return expected result when jar can't be removed`() {
-        given(context.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.removeJar(eq(clusterId))).thenReturn(OperationResult(OperationStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -69,14 +70,14 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).removeJar(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onExecuting should return expected result when jar has not been uploaded yet`() {
-        given(context.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(context.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.removeJar(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.createBootstrapJob(eq(clusterId), any())).thenReturn(OperationResult(OperationStatus.RETRY, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -85,14 +86,14 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).createBootstrapJob(eq(clusterId), any())
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onExecuting should return expected result when jar can't be uploaded`() {
-        given(context.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(context.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.removeJar(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.createBootstrapJob(eq(clusterId), any())).thenReturn(OperationResult(OperationStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -101,14 +102,14 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).createBootstrapJob(eq(clusterId), any())
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onExecuting should return expected result when jar has been uploaded`() {
-        given(context.removeJar(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(context.createBootstrapJob(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.removeJar(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.createBootstrapJob(eq(clusterId), any())).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -117,7 +118,7 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).createBootstrapJob(eq(clusterId), any())
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotBlank()
     }
 
@@ -129,14 +130,14 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.action).isEqualTo(TaskAction.FAIL)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onAwaiting should return expected result when jar is not ready`() {
         given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
-        given(context.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.isJarReady(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -144,14 +145,14 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).isJarReady(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onAwaiting should return expected result when can't get jar status`() {
         given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
-        given(context.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.isJarReady(eq(clusterId))).thenReturn(OperationResult(OperationStatus.FAILED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -159,15 +160,15 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).isJarReady(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onAwaiting should return expected result when jar is ready but job is not started`() {
         given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
-        given(context.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(context.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, null))
+        given(context.isJarReady(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.isJobStarted(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -176,15 +177,15 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).isJobStarted(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onAwaiting should return expected result when jar is ready but can't get job status`() {
         given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
-        given(context.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(context.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.FAILED, null))
+        given(context.isJarReady(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.isJobStarted(eq(clusterId))).thenReturn(OperationResult(OperationStatus.FAILED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -193,15 +194,15 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).isJobStarted(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotBlank()
     }
 
     @Test
     fun `onAwaiting should return expected result when jar is ready and job is started`() {
         given(context.resources).thenReturn(TestFactory.createResources(clusterId.uuid, cluster))
-        given(context.isJarReady(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
-        given(context.isJobStarted(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, null))
+        given(context.isJarReady(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.isJobStarted(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
         val result = task.onAwaiting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -210,7 +211,7 @@ class CreateBootstrapJobTest {
         verify(context, times(1)).isJobStarted(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotBlank()
     }
 
@@ -220,7 +221,7 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
     }
 
@@ -230,7 +231,7 @@ class CreateBootstrapJobTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
     }
 }

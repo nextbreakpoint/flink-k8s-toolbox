@@ -4,8 +4,8 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
@@ -17,15 +17,15 @@ class SavepointCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
         private val logger = Logger.getLogger(SavepointCreate::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<List<ClusterTask>> {
+    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<List<ClusterTask>> {
         try {
             val clusterStatus = adapter.getClusterStatus()
 
             if (clusterStatus != ClusterStatus.Running) {
                 logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
 
-                return Result(
-                    ResultStatus.AWAIT,
+                return OperationResult(
+                    OperationStatus.RETRY,
                     listOf()
                 )
             }
@@ -38,15 +38,15 @@ class SavepointCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
 
             adapter.appendTasks(statusList)
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 statusList
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't change tasks sequence", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 listOf()
             )
         }

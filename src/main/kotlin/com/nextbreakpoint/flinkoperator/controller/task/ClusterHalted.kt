@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.Result
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.Configuration
 import com.nextbreakpoint.flinkoperator.controller.core.Status
@@ -17,17 +17,13 @@ class ClusterHalted : Task {
         private val logger: Logger = Logger.getLogger(ClusterHalted::class.simpleName)
     }
 
-    override fun onExecuting(context: TaskContext): Result<String> {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
         Status.setTaskAttempts(context.flinkCluster, 0)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Nothing to do")
+        return skip(context.flinkCluster, "Cluster halted")
     }
 
-    override fun onAwaiting(context: TaskContext): Result<String> {
-        return taskCompletedWithOutput(context.flinkCluster, "Cluster is idle...")
-    }
-
-    override fun onIdle(context: TaskContext): Result<String> {
+    override fun onIdle(context: TaskContext): TaskResult<String> {
         val manualAction = Annotations.getManualAction(context.flinkCluster)
 
         if (manualAction != ManualAction.START && manualAction != ManualAction.STOP) {
@@ -36,27 +32,31 @@ class ClusterHalted : Task {
 
         if (isStartingCluster(context)) {
             Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-            return taskAwaitingWithOutput(context.flinkCluster, "Starting cluster...")
+            return next(context.flinkCluster, "Starting cluster...")
         }
 
         if (isStoppingCluster(context)) {
             Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
-            return taskAwaitingWithOutput(context.flinkCluster, "Stopping cluster...")
+            return next(context.flinkCluster, "Stopping cluster...")
         }
 
         if (isUpdatingCluster(context)) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Resource changed. Restarting...")
+            return next(context.flinkCluster, "Resource changed. Restarting...")
         }
 
         if (isClusterRunning(context)) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Cluster is running...")
+            return next(context.flinkCluster, "Cluster is running...")
         }
 
         if (isRestartingJob(context)) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Restarting job...")
+            return next(context.flinkCluster, "Restarting job...")
         }
 
-        return taskAwaitingWithOutput(context.flinkCluster, "Cluster halted")
+        if (Status.getClusterStatus(context.flinkCluster) == ClusterStatus.Failed) {
+            logger.warn("[name=${context.flinkCluster.metadata.name}] Not healthy")
+        }
+
+        return repeat(context.flinkCluster, "Cluster halted")
     }
 
     private fun isRestartingJob(context: TaskContext): Boolean {

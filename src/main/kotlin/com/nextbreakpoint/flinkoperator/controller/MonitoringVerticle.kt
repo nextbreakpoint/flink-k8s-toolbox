@@ -35,12 +35,12 @@ class MonitoringVerticle : AbstractVerticle() {
         mainRouter.route().handler(BodyHandler.create())
         mainRouter.route().handler(TimeoutHandler.create(120000))
 
-        mainRouter.options("/").handler {
-                context -> context.response().setStatusCode(204).end()
+        mainRouter.options("/").handler { routingContext ->
+            routingContext.response().setStatusCode(204).end()
         }
 
         mainRouter.get("/version").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> JSON().serialize(getVersion()) })
+            handleRequest(routingContext, Function { JSON().serialize(getVersion()) })
         }
 
         mainRouter.get("/metrics").handler(PrometheusScrapingHandler.create("flink-operator"))

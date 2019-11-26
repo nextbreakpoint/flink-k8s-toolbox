@@ -9,7 +9,6 @@ import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
 class Cache {
-    private val prioritizedClusters = mutableMapOf<ClusterId, FlinkClusterWrapper>()
     private val flinkClusters = mutableMapOf<ClusterId, V1FlinkCluster>()
     private val bootstrapJobs = mutableMapOf<ClusterId, V1Job>()
     private val jobmanagerServices = mutableMapOf<ClusterId, V1Service>()
@@ -34,14 +33,6 @@ class Cache {
             uuid = resource.metadata.uid
         )
 
-        val wrapper = prioritizedClusters[clusterId]
-
-        if (wrapper != null) {
-            prioritizedClusters[clusterId] = FlinkClusterWrapper(resource, wrapper.timestamp)
-        } else {
-            prioritizedClusters[clusterId] = FlinkClusterWrapper(resource, resource.metadata.creationTimestamp?.toInstant()?.millis ?: 0L)
-        }
-
         flinkClusters[clusterId] = resource
     }
 
@@ -51,8 +42,6 @@ class Cache {
             name = resource.metadata.name,
             uuid = resource.metadata.uid
         )
-
-        prioritizedClusters.remove(clusterId)
 
         flinkClusters.remove(clusterId)
     }
@@ -205,10 +194,6 @@ class Cache {
         return deletedClusters
     }
 
-    fun getPrioritizedClusters(): List<V1FlinkCluster> {
-        return prioritizedClusters.entries.sortedBy { it.value.timestamp }.map { it.value.flinkCluser }.toList()
-    }
-
     fun onFlinkClusterDeleteAll() {
         flinkClusters.clear()
     }
@@ -236,6 +221,4 @@ class Cache {
 
     private fun extractClusterId(objectMeta: V1ObjectMeta) =
         objectMeta.labels?.get("uid") ?: throw RuntimeException("Missing required label uid")
-
-    private data class FlinkClusterWrapper(val flinkCluser: V1FlinkCluster, val timestamp: Long)
 }

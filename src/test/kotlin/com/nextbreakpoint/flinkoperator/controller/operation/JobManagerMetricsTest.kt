@@ -1,12 +1,11 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.JobManagerStats
 import com.nextbreakpoint.flinkoperator.common.model.Metric
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
@@ -43,7 +42,7 @@ class JobManagerMetricsTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
         assertThat(result.output).isEqualTo("{}")
     }
 
@@ -55,7 +54,7 @@ class JobManagerMetricsTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         val metrics = JSON().deserialize<JobManagerStats>(result.output, JobManagerStats::class.java)
         assertThat(metrics.jvmCPUTime).isEqualTo(10)
         assertThat(metrics.jvmCPULoad).isEqualTo(1.0)

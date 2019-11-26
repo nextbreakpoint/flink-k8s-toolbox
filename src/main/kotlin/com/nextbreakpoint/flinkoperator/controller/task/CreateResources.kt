@@ -1,18 +1,17 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class CreateResources : Task {
-    override fun onExecuting(context: TaskContext): Result<String> {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_CLUSTER_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val clusterScaling = ClusterScaling(
@@ -23,7 +22,7 @@ class CreateResources : Task {
         val response = context.isClusterReady(context.clusterId, clusterScaling)
 
         if (response.isCompleted()) {
-            return taskCompletedWithOutput(context.flinkCluster, "Resources already created")
+            return skip(context.flinkCluster, "Resources already created")
         }
 
         val resources = makeClusterResources(context.clusterId, context.flinkCluster)
@@ -31,20 +30,20 @@ class CreateResources : Task {
         val createResourcesResponse = context.createClusterResources(context.clusterId, resources)
 
         if (!createResourcesResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry creating resources...")
+            return repeat(context.flinkCluster, "Retry creating resources...")
         }
 
         updateDigests(context.flinkCluster)
         updateBootstrap(context.flinkCluster)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Creating resources...")
+        return next(context.flinkCluster, "Creating resources...")
     }
 
-    override fun onAwaiting(context: TaskContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): TaskResult<String> {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_CLUSTER_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val clusterScale = ClusterScaling(
@@ -55,13 +54,13 @@ class CreateResources : Task {
         val response = context.isClusterReady(context.clusterId, clusterScale)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Creating resources...")
+            return repeat(context.flinkCluster, "Creating resources...")
         }
 
-        return taskCompletedWithOutput(context.flinkCluster, "Resources created after $seconds seconds")
+        return next(context.flinkCluster, "Resources created after $seconds seconds")
     }
 
-    override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "Resources created")
+    override fun onIdle(context: TaskContext): TaskResult<String> {
+        return next(context.flinkCluster, "Resources created")
     }
 }

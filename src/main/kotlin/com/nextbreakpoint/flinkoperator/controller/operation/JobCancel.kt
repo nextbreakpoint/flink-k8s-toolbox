@@ -2,8 +2,8 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -16,7 +16,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
         private val logger = Logger.getLogger(JobCancel::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: SavepointOptions): Result<SavepointRequest> {
+    override fun execute(clusterId: ClusterId, params: SavepointOptions): OperationResult<SavepointRequest> {
         try {
             val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
@@ -25,8 +25,8 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
             if (runningJobs.size != 1) {
                 logger.warn("[name=${clusterId.name}] Expected exactly one job running")
 
-                return Result(
-                    ResultStatus.FAILED,
+                return OperationResult(
+                    OperationStatus.FAILED,
                     SavepointRequest("", "")
                 )
             }
@@ -36,8 +36,8 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
             if (inprogressCheckpoints.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
                 logger.warn("[name=${clusterId.name}] Savepoint already in progress")
 
-                return Result(
-                    ResultStatus.FAILED,
+                return OperationResult(
+                    OperationStatus.FAILED,
                     SavepointRequest("", "")
                 )
             }
@@ -52,8 +52,8 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
                 logger.info("[name=${clusterId.name}] Created savepoint request ${it.second} for job ${it.first}")
             }.toMap()
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 requests.map {
                     SavepointRequest(
                         jobId = it.key,
@@ -64,8 +64,8 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't trigger savepoint", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 SavepointRequest("", "")
             )
         }

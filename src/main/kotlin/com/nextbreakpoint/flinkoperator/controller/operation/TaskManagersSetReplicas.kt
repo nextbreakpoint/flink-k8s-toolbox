@@ -2,8 +2,8 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
@@ -14,19 +14,19 @@ class TaskManagersSetReplicas(flinkOptions: FlinkOptions, flinkClient: FlinkClie
         private val logger = Logger.getLogger(TaskManagersSetReplicas::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Int): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: Int): OperationResult<Void?> {
         try {
             kubeClient.setTaskManagerStatefulSetReplicas(clusterId, params)
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 null
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't set replicas of task managers", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 null
             )
         }
