@@ -56,7 +56,7 @@ class ClusterHalted : Task {
             logger.warn("[name=${context.flinkCluster.metadata.name}] Not healthy")
         }
 
-        return repeat(context.flinkCluster, "Cluster halted")
+        return next(context.flinkCluster, "Cluster halted")
     }
 
     private fun isRestartingJob(context: TaskContext): Boolean {

@@ -42,20 +42,6 @@ class CacheAdapter(private val flinkCluster: V1FlinkCluster, val cacheResources:
     // TODO make copy of bootstrap to avoid side effects
     fun getBootstrap() = Status.getBootstrap(flinkCluster)
 
-    // the returned map must be immutable to avoid side effects
-    fun getStatus() = mapOf(
-        "timestamp" to (flinkCluster.status?.timestamp?.toString() ?: ""),
-        "clusterStatus" to (flinkCluster.status?.clusterStatus ?: ""),
-        "taskStatus" to (flinkCluster.status?.taskStatus ?: ""),
-        "tasks" to (flinkCluster.status?.tasks?.joinToString(" ") ?: ""),
-        "taskAttempts" to (flinkCluster.status?.taskAttempts?.toString() ?: ""),
-        "savepointPath" to (flinkCluster.status?.savepointPath ?: ""),
-        "savepointTimestamp" to (flinkCluster.status?.savepointTimestamp?.toString() ?: ""),
-        "savepointJobId" to (flinkCluster.status?.savepointJobId ?: ""),
-        "savepointTriggerId" to (flinkCluster.status?.savepointTriggerId ?: ""),
-        "runtimeDigest" to (flinkCluster.status?.digest?.runtime ?: ""),
-        "bootstrapDigest" to (flinkCluster.status?.digest?.bootstrap ?: ""),
-        "jobManagerDigest" to (flinkCluster.status?.digest?.jobManager ?: ""),
-        "taskManagerDigest" to (flinkCluster.status?.digest?.taskManager ?: "")
-    )
+    // TODO make copy of status to avoid side effects
+    fun getStatus() = flinkCluster.status
 }

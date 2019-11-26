@@ -68,6 +68,10 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                             ClusterTask.ClusterHalted
                         )
                     }
+                ClusterStatus.Terminated ->
+                    listOf(
+                        ClusterTask.ClusterHalted
+                    )
                 ClusterStatus.Suspended ->
                     listOf(
                         ClusterTask.StoppingCluster,
@@ -128,6 +132,10 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                             )
                         }
                     }
+                ClusterStatus.Terminated ->
+                    listOf(
+                        ClusterTask.ClusterHalted
+                    )
                 ClusterStatus.Suspended ->
                     listOf(
                         ClusterTask.StoppingCluster,

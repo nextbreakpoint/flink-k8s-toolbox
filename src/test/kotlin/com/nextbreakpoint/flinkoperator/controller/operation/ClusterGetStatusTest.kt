@@ -39,6 +39,6 @@ class ClusterGetStatusTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
-        assertThat(result.output).isNotEmpty()
+        assertThat(result.output).isNotNull()
     }
 }

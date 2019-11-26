@@ -89,7 +89,7 @@ class ClusterHaltedTest {
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -104,7 +104,7 @@ class ClusterHaltedTest {
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -121,7 +121,7 @@ class ClusterHaltedTest {
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -138,7 +138,7 @@ class ClusterHaltedTest {
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -323,23 +323,7 @@ class ClusterHaltedTest {
     }
 
     @Test
-    fun `onIdle should do nothing for at least 10 seconds when cluster status is failed`() {
-        Status.setClusterStatus(cluster, ClusterStatus.Failed)
-        val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.timeSinceLastUpdateInSeconds()).thenReturn(10)
-        val result = task.onIdle(context)
-        verify(context, atLeastOnce()).clusterId
-        verify(context, atLeastOnce()).flinkCluster
-        verify(context, times(1)).isClusterRunning(eq(clusterId))
-        verifyNoMoreInteractions(context)
-        assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
-        assertThat(result.output).isNotNull()
-        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
-    }
-
-    @Test
-    fun `onIdle should check if cluster is running after 10 seconds when cluster status is failed`() {
+    fun `onIdle should check if cluster is running when cluster status is failed`() {
         Status.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, false))
@@ -349,7 +333,7 @@ class ClusterHaltedTest {
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -386,7 +370,7 @@ class ClusterHaltedTest {
         verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(Status.getTaskAttempts(cluster)).isEqualTo(0)
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
