@@ -103,7 +103,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -121,7 +121,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -139,7 +139,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -349,7 +349,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         assertThat(Status.getTaskAttempts(cluster)).isEqualTo(0)
@@ -369,7 +369,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         assertThat(Status.getTaskAttempts(cluster)).isEqualTo(3)
@@ -429,7 +429,7 @@ class ClusterRunningTest {
         verify(context, times(2)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }

@@ -64,7 +64,7 @@ class ClusterRunning : Task {
             return next(context.flinkCluster, "Rescaling cluster...")
         }
 
-        return repeat(context.flinkCluster, "Cluster running")
+        return next(context.flinkCluster, "Cluster running")
     }
 
     private fun isRescalingCluster(context: TaskContext): Boolean {
