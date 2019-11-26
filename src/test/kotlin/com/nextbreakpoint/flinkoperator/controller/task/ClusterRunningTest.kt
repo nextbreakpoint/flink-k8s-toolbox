@@ -5,13 +5,14 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.TaskAction
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
@@ -71,7 +72,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.action).isEqualTo(TaskAction.SKIP)
         assertThat(result.output).isNotBlank()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         assertThat(Status.getNextOperatorTask(cluster)).isNull()
@@ -85,14 +86,14 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
     }
 
     @Test
     fun `onIdle should do nothing when digests didn't changed`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, false))
         val timestamp = Status.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
@@ -102,7 +103,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -120,7 +121,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -138,7 +139,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -154,7 +155,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -184,7 +185,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -210,7 +211,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -240,7 +241,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -266,7 +267,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -296,7 +297,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -321,7 +322,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -339,7 +340,7 @@ class ClusterRunningTest {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         Status.setTaskAttempts(cluster, 2)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, false))
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -348,7 +349,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         assertThat(Status.getTaskAttempts(cluster)).isEqualTo(0)
@@ -359,7 +360,7 @@ class ClusterRunningTest {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         Status.setTaskAttempts(cluster, 2)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, false))
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -368,7 +369,7 @@ class ClusterRunningTest {
         verify(context, times(1)).timeSinceLastSavepointRequestInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         assertThat(Status.getTaskAttempts(cluster)).isEqualTo(3)
@@ -379,14 +380,14 @@ class ClusterRunningTest {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         Status.setTaskAttempts(cluster, 3)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.AWAIT, false))
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, false))
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, times(2)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.action).isEqualTo(TaskAction.FAIL)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -395,7 +396,7 @@ class ClusterRunningTest {
     fun `onIdle should create checkpoint when savepoint mode is automatic and last savepoint is older than savepoint interval`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, false))
         given(context.timeSinceLastSavepointRequestInSeconds()).thenReturn(61)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
@@ -404,7 +405,7 @@ class ClusterRunningTest {
         verify(context, times(2)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -420,7 +421,7 @@ class ClusterRunningTest {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         cluster.spec.operator.savepointMode = "MANUAL"
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, false))
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -428,7 +429,7 @@ class ClusterRunningTest {
         verify(context, times(2)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -437,14 +438,14 @@ class ClusterRunningTest {
     fun `onIdle should suspend cluster when job is finished`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         val timestamp = Status.getOperatorTimestamp(cluster)
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, true))
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, true))
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, times(1)).isClusterRunning(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
         assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
         Status.selectNextTask(cluster)
@@ -462,7 +463,7 @@ class ClusterRunningTest {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
         Annotations.setManualAction(cluster, ManualAction.STOP)
         val tasks = listOf(ClusterTask.CancelJob, ClusterTask.ClusterHalted)
-        given(context.stopCluster(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, tasks))
+        given(context.stopCluster(eq(clusterId), any())).thenReturn(OperationResult(OperationStatus.COMPLETED, tasks))
         val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
@@ -471,7 +472,7 @@ class ClusterRunningTest {
         verify(context, times(1)).stopCluster(eq(clusterId), eq(options))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isEqualTo("[name=test] Stopping cluster...")
         assertThat(actionTimestamp).isNotEqualTo(Annotations.getActionTimestamp(cluster))
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.NONE)
@@ -483,8 +484,8 @@ class ClusterRunningTest {
         Status.setSavepointPath(context.flinkCluster, "/tmp/000")
         cluster.spec.taskManagers = 4
         val tasks = listOf(ClusterTask.CancelJob, ClusterTask.CreateResources, ClusterTask.ClusterRunning)
-        given(context.isClusterRunning(eq(clusterId))).thenReturn(Result(ResultStatus.SUCCESS, false))
-        given(context.scaleCluster(eq(clusterId), any())).thenReturn(Result(ResultStatus.SUCCESS, tasks))
+        given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, false))
+        given(context.scaleCluster(eq(clusterId), any())).thenReturn(OperationResult(OperationStatus.COMPLETED, tasks))
         val timestamp = Status.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
@@ -496,7 +497,7 @@ class ClusterRunningTest {
         verify(context, times(1)).scaleCluster(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isEqualTo("[name=test] Rescaling cluster...")
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }
@@ -507,7 +508,7 @@ class ClusterRunningTest {
         verify(context, atLeastOnce()).flinkCluster
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
         assertThat(result.output).isNotNull()
     }
 }

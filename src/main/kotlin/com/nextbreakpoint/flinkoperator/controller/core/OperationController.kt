@@ -5,7 +5,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
@@ -47,7 +46,6 @@ import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetLatest
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetReplicas
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersSetReplicas
-import com.nextbreakpoint.flinkoperator.controller.operation.UpdateClusterStatus
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import io.kubernetes.client.models.V1Job
 
@@ -56,109 +54,106 @@ class OperationController(
     val flinkClient: FlinkClient,
     val kubeClient: KubeClient
 ) {
-    fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): Result<Void?> =
+    fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): OperationResult<Void?> =
         RequestClusterScale(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
-    fun requestStartCluster(clusterId: ClusterId, options: StartOptions, adapter: CacheAdapter) : Result<Void?> =
+    fun requestStartCluster(clusterId: ClusterId, options: StartOptions, adapter: CacheAdapter) : OperationResult<Void?> =
         RequestClusterStart(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
 
-    fun requestStopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : Result<Void?> =
+    fun requestStopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : OperationResult<Void?> =
         RequestClusterStop(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
 
-    fun startCluster(clusterId: ClusterId, options: StartOptions, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+    fun startCluster(clusterId: ClusterId, options: StartOptions, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
         ClusterStart(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
 
-    fun stopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+    fun stopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
         ClusterStop(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
 
-    fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+    fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
         ClusterScale(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, clusterScaling)
 
-    fun createSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+    fun createSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
         SavepointCreate(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
 
-    fun forgetSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : Result<List<ClusterTask>> =
+    fun forgetSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
         SavepointForget(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
 
-    fun getClusterStatus(clusterId: ClusterId, adapter: CacheAdapter) : Result<Map<String, String>> =
+    fun getClusterStatus(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<Map<String, String>> =
         ClusterGetStatus(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
 
-    fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : Result<Void?> =
+    fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : OperationResult<Void?> =
         FlinkClusterCreate(flinkOptions, flinkClient, kubeClient).execute(clusterId, flinkCluster)
 
-    fun deleteFlinkCluster(clusterId: ClusterId) : Result<Void?> =
+    fun deleteFlinkCluster(clusterId: ClusterId) : OperationResult<Void?> =
         FlinkClusterDelete(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun updateClusterStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster, adapter: CacheAdapter, taskHandlers: Map<ClusterTask, Task>) : Result<Void?> =
-        UpdateClusterStatus(this, adapter, taskHandlers).execute(clusterId, flinkCluster)
-
-    fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : Result<Void?> =
+    fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : OperationResult<Void?> =
         ClusterCreateResources(flinkOptions, flinkClient, kubeClient).execute(clusterId, clusterResources)
 
-    fun deleteClusterResources(clusterId: ClusterId) : Result<Void?> =
+    fun deleteClusterResources(clusterId: ClusterId) : OperationResult<Void?> =
         ClusterDeleteResources(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun removeJar(clusterId: ClusterId) : Result<Void?> =
+    fun removeJar(clusterId: ClusterId) : OperationResult<Void?> =
         JarRemove(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun isJarReady(clusterId: ClusterId) : Result<Void?> =
+    fun isJarReady(clusterId: ClusterId) : OperationResult<Void?> =
         JarIsReady(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : Result<SavepointRequest> =
+    fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : OperationResult<SavepointRequest> =
         SavepointTrigger(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
-    fun getLatestSavepoint(clusterId: ClusterId, savepointRequest: SavepointRequest) : Result<String> =
+    fun getLatestSavepoint(clusterId: ClusterId, savepointRequest: SavepointRequest) : OperationResult<String> =
         SavepointGetLatest(flinkOptions, flinkClient, kubeClient).execute(clusterId, savepointRequest)
 
-    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): Result<Void?> =
+    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): OperationResult<Void?> =
         BootstrapCreateJob(flinkOptions, flinkClient, kubeClient).execute(clusterId, bootstrapJob)
 
-    fun deleteBootstrapJob(clusterId: ClusterId) : Result<Void?> =
+    fun deleteBootstrapJob(clusterId: ClusterId) : OperationResult<Void?> =
         BootstrapDeleteJob(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun terminatePods(clusterId: ClusterId) : Result<Void?> =
+    fun terminatePods(clusterId: ClusterId) : OperationResult<Void?> =
         PodsScaleDown(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun restartPods(clusterId: ClusterId, clusterResources: ClusterResources): Result<Void?> =
+    fun restartPods(clusterId: ClusterId, clusterResources: ClusterResources): OperationResult<Void?> =
         PodsScaleUp(flinkOptions, flinkClient, kubeClient).execute(clusterId, clusterResources)
 
-    fun arePodsTerminated(clusterId: ClusterId): Result<Void?> =
+    fun arePodsTerminated(clusterId: ClusterId): OperationResult<Void?> =
         PodsAreTerminated(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun startJob(clusterId: ClusterId, cluster: V1FlinkCluster) : Result<Void?> =
+    fun startJob(clusterId: ClusterId, cluster: V1FlinkCluster) : OperationResult<Void?> =
         JobStart(flinkOptions, flinkClient, kubeClient).execute(clusterId, cluster)
 
-    fun stopJob(clusterId: ClusterId): Result<Void?> =
+    fun stopJob(clusterId: ClusterId): OperationResult<Void?> =
         JobStop(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): Result<SavepointRequest> =
+    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): OperationResult<SavepointRequest> =
         JobCancel(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
-    fun isClusterReady(clusterId: ClusterId, options: ClusterScaling): Result<Void?> =
+    fun isClusterReady(clusterId: ClusterId, options: ClusterScaling): OperationResult<Void?> =
         ClusterIsReady(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
-    fun isClusterRunning(clusterId: ClusterId): Result<Boolean> =
+    fun isClusterRunning(clusterId: ClusterId): OperationResult<Boolean> =
         ClusterIsRunning(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun isClusterSuspended(clusterId: ClusterId): Result<Void?> =
+    fun isClusterSuspended(clusterId: ClusterId): OperationResult<Void?> =
         ClusterIsSuspended(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun isClusterTerminated(clusterId: ClusterId): Result<Void?> =
+    fun isClusterTerminated(clusterId: ClusterId): OperationResult<Void?> =
         ClusterIsTerminated(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun isJobStarted(clusterId: ClusterId): Result<Void?> =
+    fun isJobStarted(clusterId: ClusterId): OperationResult<Void?> =
         JobHasStarted(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun isJobStopped(clusterId: ClusterId): Result<Void?> =
+    fun isJobStopped(clusterId: ClusterId): OperationResult<Void?> =
         JobHasStopped(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun isJobRunning(clusterId: ClusterId): Result<Void?> =
+    fun isJobRunning(clusterId: ClusterId): OperationResult<Void?> =
         JobIsRunning(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun setTaskManagersReplicas(clusterId: ClusterId, taskManagers: Int) : Result<Void?> =
+    fun setTaskManagersReplicas(clusterId: ClusterId, taskManagers: Int) : OperationResult<Void?> =
         TaskManagersSetReplicas(flinkOptions, flinkClient, kubeClient).execute(clusterId, taskManagers)
 
-    fun getTaskManagersReplicas(clusterId: ClusterId) : Result<Int> =
+    fun getTaskManagersReplicas(clusterId: ClusterId) : OperationResult<Int> =
         TaskManagersGetReplicas(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
     fun updateStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {

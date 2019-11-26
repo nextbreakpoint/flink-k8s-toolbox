@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -44,7 +44,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StartingCluster,
             ClusterTask.CreateResources,
@@ -60,7 +60,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StartingCluster,
             ClusterTask.RestartPods,
@@ -76,7 +76,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StoppingCluster,
             ClusterTask.TerminatePods,
@@ -94,7 +94,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
         assertThat(result.output).isEmpty()
     }
 
@@ -105,7 +105,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StartingCluster,
             ClusterTask.EraseSavepoint,
@@ -122,7 +122,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StartingCluster,
             ClusterTask.EraseSavepoint,
@@ -139,7 +139,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StoppingCluster,
             ClusterTask.TerminatePods,
@@ -158,7 +158,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
         assertThat(result.output).isEmpty()
     }
 
@@ -169,7 +169,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StartingCluster,
             ClusterTask.CreateResources,
@@ -185,7 +185,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StartingCluster,
             ClusterTask.RestartPods,
@@ -201,7 +201,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StoppingCluster,
             ClusterTask.TerminatePods,
@@ -219,7 +219,7 @@ class ClusterStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
         assertThat(result.output).isEmpty()
     }
 }

@@ -2,8 +2,8 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
@@ -15,7 +15,7 @@ class ClusterCreateResources(flinkOptions: FlinkOptions, flinkClient: FlinkClien
         private val logger = Logger.getLogger(ClusterCreateResources::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: ClusterResources): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: ClusterResources): OperationResult<Void?> {
         try {
             logger.info("[name=${clusterId.name}] Creating resources...")
 
@@ -65,15 +65,15 @@ class ClusterCreateResources(flinkOptions: FlinkOptions, flinkClient: FlinkClien
                 logger.info("[name=${clusterId.name}] TaskManager created: ${taskmanagerStatefulSetOut.metadata.name}")
             }
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 null
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't create resources", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 null
             )
         }

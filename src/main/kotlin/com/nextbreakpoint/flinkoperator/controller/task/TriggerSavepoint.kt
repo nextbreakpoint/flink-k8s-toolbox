@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.Result
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.controller.core.Configuration
 import com.nextbreakpoint.flinkoperator.controller.core.Status
@@ -9,17 +9,17 @@ import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
 class TriggerSavepoint : Task {
-    override fun onExecuting(context: TaskContext): Result<String> {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val jobRunningResponse = context.isJobRunning(context.clusterId)
 
         if (!jobRunningResponse.isCompleted()) {
-            return taskFailedWithOutput(context.flinkCluster, "Job not running!")
+            return fail(context.flinkCluster, "Job not running!")
         }
 
         val options = SavepointOptions(
@@ -29,43 +29,43 @@ class TriggerSavepoint : Task {
         val response = context.triggerSavepoint(context.clusterId, options)
 
         if (!response.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Retry creating savepoint...")
+            return repeat(context.flinkCluster, "Retry creating savepoint...")
         }
 
         val savepointRequest = response.output
 
         Status.setSavepointRequest(context.flinkCluster, savepointRequest)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Creating savepoint...")
+        return next(context.flinkCluster, "Creating savepoint...")
     }
 
-    override fun onAwaiting(context: TaskContext): Result<String> {
+    override fun onAwaiting(context: TaskContext): TaskResult<String> {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
-            return taskFailedWithOutput(context.flinkCluster, "Operation timeout after $seconds seconds!")
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
         val savepointRequest = Status.getSavepointRequest(context.flinkCluster)
 
         if (savepointRequest == null) {
-            return taskFailedWithOutput(context.flinkCluster, "Failed to create savepoint after $seconds seconds")
+            return fail(context.flinkCluster, "Failed to create savepoint after $seconds seconds")
         }
 
         val savepointStatusResponse = context.getLatestSavepoint(context.clusterId, savepointRequest)
 
         if (!savepointStatusResponse.isCompleted()) {
-            return taskAwaitingWithOutput(context.flinkCluster, "Creating savepoint...")
+            return repeat(context.flinkCluster, "Creating savepoint...")
         }
 
         val savepointPath = savepointStatusResponse.output
 
         Status.setSavepointPath(context.flinkCluster, savepointPath)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Savepoint created after $seconds seconds")
+        return next(context.flinkCluster, "Savepoint created after $seconds seconds")
     }
 
-    override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "Savepoint created")
+    override fun onIdle(context: TaskContext): TaskResult<String> {
+        return next(context.flinkCluster, "Savepoint created")
     }
 }

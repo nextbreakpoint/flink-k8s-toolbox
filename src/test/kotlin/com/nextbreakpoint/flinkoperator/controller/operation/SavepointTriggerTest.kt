@@ -5,7 +5,7 @@ import com.nextbreakpoint.flinkclient.model.CheckpointingStatisticsCounts
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -45,7 +45,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
         assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
@@ -58,7 +58,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
         assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
@@ -75,7 +75,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
         assertThat(result.output).isEqualTo(SavepointRequest("", ""))
     }
 
@@ -89,7 +89,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).isEqualTo(SavepointRequest(jobId = "1", triggerId = "100"))
     }
 }

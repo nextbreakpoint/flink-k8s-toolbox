@@ -2,14 +2,14 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
-import com.nextbreakpoint.flinkoperator.common.model.Result
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 
 class InitialiseCluster : Task {
-    override fun onExecuting(context: TaskContext): Result<String> {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
         Status.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
         Status.setTaskAttempts(context.flinkCluster, 0)
 
@@ -35,14 +35,6 @@ class InitialiseCluster : Task {
         val labelSelector = ClusterResource.makeLabelSelector(context.clusterId)
         Status.setLabelSelector(context.flinkCluster, labelSelector)
 
-        return taskCompletedWithOutput(context.flinkCluster, "Status has been updated")
-    }
-
-    override fun onAwaiting(context: TaskContext): Result<String> {
-        return taskCompletedWithOutput(context.flinkCluster, "Cluster initialized")
-    }
-
-    override fun onIdle(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "Nothing to do")
+        return skip(context.flinkCluster, "Cluster initialized")
     }
 }

@@ -1,11 +1,10 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.JobManagerStats
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
@@ -17,7 +16,7 @@ class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
         private val logger = Logger.getLogger(JobManagerMetrics::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
+    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<String> {
         try {
             val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
@@ -55,15 +54,15 @@ class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
                 numRunningJobs = metricsMap.get("numRunningJobs")?.toInt() ?: 0
             )
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 JSON().serialize(metricsResponse)
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't get metrics of job manager", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 "{}"
             )
         }

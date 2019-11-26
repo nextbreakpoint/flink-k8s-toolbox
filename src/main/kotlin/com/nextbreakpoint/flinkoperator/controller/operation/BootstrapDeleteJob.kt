@@ -2,8 +2,8 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
@@ -14,7 +14,7 @@ class BootstrapDeleteJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
         private val logger = Logger.getLogger(BootstrapDeleteJob::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
         try {
             logger.info("[name=${clusterId.name}] Deleting bootstrap job...")
 
@@ -22,15 +22,15 @@ class BootstrapDeleteJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
 
             kubeClient.deleteBootstrapJobPods(clusterId)
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 null
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't delete bootstrap job", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 null
             )
         }

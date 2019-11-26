@@ -3,8 +3,8 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
@@ -15,7 +15,7 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
         private val logger = Logger.getLogger(JobStart::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: V1FlinkCluster): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: V1FlinkCluster): OperationResult<Void?> {
         try {
             val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
@@ -28,8 +28,8 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
             if (overview.jobsRunning > 0) {
                 logger.warn("[name=${clusterId.name}] Job already running!")
 
-                return Result(
-                    ResultStatus.SUCCESS,
+                return OperationResult(
+                    OperationStatus.COMPLETED,
                     null
                 )
             }
@@ -41,8 +41,8 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
             if (jarFile == null) {
                 logger.warn("[name=${clusterId.name}] Can't find any JAR file")
 
-                return Result(
-                    ResultStatus.AWAIT,
+                return OperationResult(
+                    OperationStatus.RETRY,
                     null
                 )
             }
@@ -56,15 +56,15 @@ class JobStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
 
             logger.debug("[name=${clusterId.name}] Job started")
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 null
             )
         } catch (e : Exception) {
             logger.warn("[name=${clusterId.name}] Can't start job")
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 null
             )
         }

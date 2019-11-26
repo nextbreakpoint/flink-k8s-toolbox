@@ -5,8 +5,8 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -19,30 +19,30 @@ class ClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
         private val logger = Logger.getLogger(ClusterStart::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: StartOptions): Result<List<ClusterTask>> {
+    override fun execute(clusterId: ClusterId, params: StartOptions): OperationResult<List<ClusterTask>> {
         try {
             val statusList = tryStartingCluster(adapter.getBootstrap(), adapter.getClusterStatus(), params)
 
             if (statusList.isEmpty()) {
                 logger.warn("[name=${clusterId.name}] Can't change tasks sequence")
 
-                return Result(
-                    ResultStatus.AWAIT,
+                return OperationResult(
+                    OperationStatus.RETRY,
                     listOf()
                 )
             }
 
             adapter.appendTasks(statusList)
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 statusList
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterId.name}] Can't change tasks sequence", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 listOf()
             )
         }

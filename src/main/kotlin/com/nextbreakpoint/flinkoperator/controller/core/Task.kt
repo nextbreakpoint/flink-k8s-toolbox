@@ -3,8 +3,6 @@ package com.nextbreakpoint.flinkoperator.controller.core
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
@@ -15,26 +13,33 @@ import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResou
 import io.kubernetes.client.models.V1Job
 
 interface Task {
-    fun onExecuting(context: TaskContext): Result<String>
+    fun onExecuting(context: TaskContext): TaskResult<String>
 
-    fun onAwaiting(context: TaskContext): Result<String>
+    fun onAwaiting(context: TaskContext): TaskResult<String> {
+        return next(context.flinkCluster, "Nothing to do")
+    }
 
-    fun onIdle(context: TaskContext): Result<String>
+    fun onFailed(context: TaskContext): TaskResult<String> {
+        return repeat(context.flinkCluster, "Not healthy")
+    }
 
-    fun onFailed(context: TaskContext): Result<String> {
-        return taskAwaitingWithOutput(context.flinkCluster, "")
+    fun onIdle(context: TaskContext): TaskResult<String> {
+        return repeat(context.flinkCluster, "Idle")
     }
 
     fun isBootstrapJobDefined(cluster: V1FlinkCluster) = cluster.status?.bootstrap != null
 
-    fun taskCompletedWithOutput(cluster: V1FlinkCluster, output: String): Result<String> =
-        Result(ResultStatus.SUCCESS, "[name=${cluster.metadata.name}] $output")
+    fun repeat(cluster: V1FlinkCluster, output: String): TaskResult<String> =
+        TaskResult(TaskAction.REPEAT, "[name=${cluster.metadata.name}] $output")
 
-    fun taskAwaitingWithOutput(cluster: V1FlinkCluster, output: String): Result<String> =
-        Result(ResultStatus.AWAIT, "[name=${cluster.metadata.name}] $output")
+    fun next(cluster: V1FlinkCluster, output: String): TaskResult<String> =
+        TaskResult(TaskAction.NEXT, "[name=${cluster.metadata.name}] $output")
 
-    fun taskFailedWithOutput(cluster: V1FlinkCluster, output: String): Result<String> =
-        Result(ResultStatus.FAILED, "[name=${cluster.metadata.name}] $output")
+    fun skip(cluster: V1FlinkCluster, output: String): TaskResult<String> =
+        TaskResult(TaskAction.SKIP, "[name=${cluster.metadata.name}] $output")
+
+    fun fail(cluster: V1FlinkCluster, output: String): TaskResult<String> =
+        TaskResult(TaskAction.FAIL, "[name=${cluster.metadata.name}] $output")
 
     fun makeClusterResources(clusterId: ClusterId, cluster: V1FlinkCluster): ClusterResources {
         return ClusterResourcesBuilder(
@@ -57,12 +62,12 @@ interface Task {
     }
 
     fun resourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
-        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
-        val jobmnagerService = resources.jobmanagerServices.get(clusterId)
-        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
-        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
-        val jobmanagerPersistentVolumeClaim = resources.jobmanagerPersistentVolumeClaims.get(clusterId)
-        val taskmanagerPersistentVolumeClaim = resources.taskmanagerPersistentVolumeClaims.get(clusterId)
+        val bootstrapJob = resources.bootstrapJobs[clusterId]
+        val jobmnagerService = resources.jobmanagerServices[clusterId]
+        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets[clusterId]
+        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets[clusterId]
+        val jobmanagerPersistentVolumeClaim = resources.jobmanagerPersistentVolumeClaims[clusterId]
+        val taskmanagerPersistentVolumeClaim = resources.taskmanagerPersistentVolumeClaims[clusterId]
 
         return bootstrapJob == null &&
                 jobmnagerService == null &&
@@ -73,7 +78,7 @@ interface Task {
     }
 
     fun bootstrapResourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
-        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
+        val bootstrapJob = resources.bootstrapJobs[clusterId]
 
         return bootstrapJob == null
     }
