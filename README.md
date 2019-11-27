@@ -18,10 +18,10 @@ Flink Kubernetes Toolbox contains tools for managing Flink clusters and jobs on 
 
 Main features:
 
-- Automatic creation of Job Manager and Task Managers using StatefulSets
-- Automatic creation of service for accessing Job Manager
+- Automatic creation of JobManager and TaskManagers using StatefulSets
+- Automatic creation of service for accessing JobManager
 - Support for bare cluster or single job cluster
-- Support for init containers and side containers for Job Manager and Task Managers
+- Support for init containers and side containers for JobManager and TaskManagers
 - Support for mounted volumes and persistent volumes claims
 - Support for environment variables, including variables from config map
 - Support for resource requirements
