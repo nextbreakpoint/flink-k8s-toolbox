@@ -86,7 +86,7 @@ or recreating the cluster when the specification changed.
 
 The possible states of a FlinkCluster resource are represented in this graph:
 
-![Flink cluster status graph](/graphs/flink-cluster-status.dot.png "Flink cluster status graph")
+![Cluster status graph](/graphs/flink-cluster.png "Cluster status graph")
 
 - **UNKNOWN**
 
@@ -126,7 +126,7 @@ The possible states of a FlinkCluster resource are represented in this graph:
 
 Each arrow in this graph above represents a specific sequence of tasks which are executed in order to transition from one status to another. Each task of the sequence is processed according to this state machine:
 
-![Task executor state machine](/graphs/task-executor-status.dot.png "Task executor state machine")
+![Task executor graph](/graphs/task-executor.png "Task executor graph")
 
 - **EXECUTING**
 
