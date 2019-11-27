@@ -1,79 +1,42 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
-class DeleteBootstrapJob : OperatorTaskHandler {
-    override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+class DeleteBootstrapJob : Task {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
-        if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to delete bootstrap job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+        if (seconds > Timeout.DELETING_CLUSTER_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.controller.deleteBootstrapJob(context.clusterId)
+        val response = context.deleteBootstrapJob(context.clusterId)
 
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Deleting bootstrap job of cluster ${context.flinkCluster.metadata.name}..."
-            )
+        if (!response.isCompleted()) {
+            return repeat(context.flinkCluster, "Retry deleting bootstrap job...")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Retry deleting bootstrap job of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return next(context.flinkCluster, "Deleting bootstrap job...")
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+    override fun onAwaiting(context: TaskContext): TaskResult<String> {
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
-        if (elapsedTime > OperatorTimeouts.DELETING_CLUSTER_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to delete bootstrap job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+        if (seconds > Timeout.DELETING_CLUSTER_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        if (resourcesHaveBeenRemoved(context.clusterId, context.resources)) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Bootstrap job of cluster ${context.flinkCluster.metadata.name} removed in ${elapsedTime / 1000} seconds"
-            )
+        if (!bootstrapResourcesHaveBeenRemoved(context.clusterId, context.resources)) {
+            return repeat(context.flinkCluster, "Deleting bootstrap job...")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Wait for deletion of bootstrap job of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return next(context.flinkCluster, "Bootstrap job removed after $seconds seconds")
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
-    }
-
-    override fun onFailed(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
-    }
-
-    private fun resourcesHaveBeenRemoved(clusterId: ClusterId, resources: OperatorResources): Boolean {
-        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
-
-        return bootstrapJob == null
+    override fun onIdle(context: TaskContext): TaskResult<String> {
+        return next(context.flinkCluster, "Bootstrap job deleted")
     }
 }

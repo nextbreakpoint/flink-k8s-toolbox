@@ -1,107 +1,53 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
-import org.apache.log4j.Logger
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
-class RescaleCluster : OperatorTaskHandler {
-    companion object {
-        private val logger = Logger.getLogger(RescaleCluster::class.simpleName)
-    }
+class RescaleCluster : Task {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
-    override fun onExecuting(context: OperatorContext): Result<String> {
-        try {
-            val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
-
-            if (elapsedTime > OperatorTimeouts.RESCALING_CLUSTER_TIMEOUT) {
-                return Result(
-                    ResultStatus.FAILED,
-                    "Failed to rescale task managers of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-                )
-            }
-
-            val taskManagers = context.flinkCluster.spec?.taskManagers ?: 1
-
-            val result = context.controller.setTaskManagersReplicas(context.clusterId, taskManagers)
-
-            if (result.status != ResultStatus.SUCCESS) {
-                return Result(
-                    ResultStatus.AWAIT,
-                    "Can't rescale task managers of cluster ${context.clusterId.name}"
-                )
-            }
-
-            return Result(
-                ResultStatus.SUCCESS,
-                "Task managers of cluster ${context.clusterId.name} have been rescaled"
-            )
-        } catch (e : Exception) {
-            logger.error("Can't rescale task managers of cluster ${context.clusterId.name}")
-
-            return Result(
-                ResultStatus.AWAIT,
-                "Failed to rescale task managers of cluster ${context.clusterId.name}"
-            )
+        if (seconds > Timeout.RESCALING_CLUSTER_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
-    }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
-        try {
-            val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val desiredTaskManagers = Status.getTaskManagers(context.flinkCluster)
 
-            if (elapsedTime > OperatorTimeouts.RESCALING_CLUSTER_TIMEOUT) {
-                return Result(
-                    ResultStatus.FAILED,
-                    "Failed to scale task managers of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-                )
-            }
+        val result = context.setTaskManagersReplicas(context.clusterId, desiredTaskManagers)
 
-            val desiredTaskManagers = context.flinkCluster.spec?.taskManagers ?: 1
-
-            val result = context.controller.getTaskManagersReplicas(context.clusterId)
-
-            if (result.status != ResultStatus.SUCCESS) {
-                return Result(
-                    ResultStatus.AWAIT,
-                    "Task managers of cluster ${context.clusterId.name} have not been scaled yet..."
-                )
-            }
-
-            if (desiredTaskManagers != result.output) {
-                return Result(
-                    ResultStatus.AWAIT,
-                    "Task managers of cluster ${context.clusterId.name} have not been scaled yet..."
-                )
-            }
-
-            return Result(
-                ResultStatus.SUCCESS,
-                "Task managers of cluster ${context.clusterId.name} have been scaled"
-            )
-        } catch (e : Exception) {
-            logger.error("Can't scale task managers of cluster ${context.clusterId.name}")
-
-            return Result(
-                ResultStatus.AWAIT,
-                "Failed to scale task managers of cluster ${context.clusterId.name}"
-            )
+        if (!result.isCompleted()) {
+            return repeat(context.flinkCluster, "Retry rescaling task managers...")
         }
+
+        return next(context.flinkCluster, "Rescaling task managers...")
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+    override fun onAwaiting(context: TaskContext): TaskResult<String> {
+        val seconds = context.timeSinceLastUpdateInSeconds()
+
+        if (seconds > Timeout.RESCALING_CLUSTER_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
+        }
+
+        val result = context.getTaskManagersReplicas(context.clusterId)
+
+        if (!result.isCompleted()) {
+            return repeat(context.flinkCluster, "Rescaling task managers...")
+        }
+
+        val desiredTaskManagers = Status.getTaskManagers(context.flinkCluster)
+
+        if (desiredTaskManagers != result.output) {
+            return repeat(context.flinkCluster, "Rescaling task managers...")
+        }
+
+        return next(context.flinkCluster, "Task managers rescaled")
     }
 
-    override fun onFailed(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+    override fun onIdle(context: TaskContext): TaskResult<String> {
+        return next(context.flinkCluster, "Cluster rescaled")
     }
 }

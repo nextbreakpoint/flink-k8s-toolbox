@@ -1,39 +1,14 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 
-class EraseSavepoint : OperatorTaskHandler {
-    override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setSavepointPath(context.flinkCluster, "")
+class EraseSavepoint : Task {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
+        Status.setSavepointPath(context.flinkCluster, "")
 
-        return Result(
-            ResultStatus.SUCCESS,
-            "Erasing savepoint of cluster ${context.clusterId.name}..."
-        )
-    }
-
-    override fun onAwaiting(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.SUCCESS,
-            "Savepoint of cluster ${context.clusterId.name} erased"
-        )
-    }
-
-    override fun onIdle(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
-    }
-
-    override fun onFailed(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return skip(context.flinkCluster, "Savepoint erased from status")
     }
 }

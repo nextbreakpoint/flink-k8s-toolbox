@@ -4,10 +4,12 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
+import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 import com.nextbreakpoint.flinkoperator.common.model.ConnectionConfig
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
@@ -15,8 +17,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import org.apache.log4j.Logger
 import java.io.File
 import java.nio.file.Files
@@ -57,7 +58,8 @@ class Main(private val factory: CommandFactory) {
                 ScaleClusterCommand(factory)
             ),
             Savepoint().subcommands(
-                TriggerSavepointCommand(factory)
+                TriggerSavepointCommand(factory),
+                ForgetSavepointCommand(factory)
             ),
             Bootstrap().subcommands(
                 BootstrapCommand(factory)
@@ -284,6 +286,28 @@ class Main(private val factory: CommandFactory) {
         }
     }
 
+    class ForgetSavepointCommand(private val factory: CommandFactory): CliktCommand(name="forget", help="Forget savepoint reference") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+
+        override fun run() {
+            factory.createForgetSavepointCommand().run(
+                ConnectionConfig(
+                    host,
+                    port,
+                    keystorePath,
+                    keystoreSecret,
+                    truststorePath,
+                    truststoreSecret
+                ), clusterName)
+        }
+    }
+
     class GetJobDetailsCommand(private val factory: CommandFactory): CliktCommand(name = "details", help="Get job's details") {
         private val host: String by option(help="The operator host").default("localhost")
         private val port: Int by option(help="The operator port").int().default(4444)
@@ -447,24 +471,32 @@ class Main(private val factory: CommandFactory) {
                 truststorePath = truststorePath,
                 truststoreSecret = truststoreSecret
             )
-            KubernetesContext.configure(kubeConfig)
+            KubeClient.configure(kubeConfig)
             factory.createRunOperatorCommand().run(config)
         }
     }
 
-    class BootstrapCommand(private val factory: CommandFactory): CliktCommand(name="upload", help="Upload a JAR file") {
+    class BootstrapCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Upload a JAR file and start a job") {
         private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of kuke config")
         private val namespace: String by option(help="The namespace of the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val jarPath: String by option(help="The path of the JAR file to upload").required()
+        private val className: String by option(help="The name of the class to execute").required()
+        private val parallelism: Int by option(help="The default parallelism of the job").int().default(1)
+        private val savepointPath: String? by option(help="The path of a valid savepoint")
+        private val argument: List<String> by option(help="One or more job's argument").multiple()
 
         override fun run() {
             val params = BootstrapOptions(
-                jarPath = jarPath
+                jarPath = jarPath,
+                className = className,
+                parallelism = parallelism,
+                savepointPath = savepointPath,
+                arguments = argument
             )
-            KubernetesContext.configure(kubeConfig)
+            KubeClient.configure(kubeConfig)
             val flinkOptions = FlinkOptions(
                 hostname = flinkHostname,
                 portForward = portForward,

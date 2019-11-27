@@ -2,30 +2,27 @@ package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import io.kubernetes.client.custom.IntOrString
-import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1Affinity
-import io.kubernetes.client.models.V1Container
 import io.kubernetes.client.models.V1ContainerBuilder
 import io.kubernetes.client.models.V1ContainerPort
 import io.kubernetes.client.models.V1EnvVar
 import io.kubernetes.client.models.V1EnvVarSource
-import io.kubernetes.client.models.V1Job
-import io.kubernetes.client.models.V1JobBuilder
+import io.kubernetes.client.models.V1HTTPGetAction
 import io.kubernetes.client.models.V1LabelSelector
 import io.kubernetes.client.models.V1LocalObjectReference
 import io.kubernetes.client.models.V1ObjectFieldSelector
 import io.kubernetes.client.models.V1ObjectMeta
-import io.kubernetes.client.models.V1PodAffinity
 import io.kubernetes.client.models.V1PodAffinityTerm
 import io.kubernetes.client.models.V1PodAntiAffinity
 import io.kubernetes.client.models.V1PodSpecBuilder
-import io.kubernetes.client.models.V1ResourceRequirements
+import io.kubernetes.client.models.V1Probe
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1ServiceBuilder
 import io.kubernetes.client.models.V1ServicePort
 import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.models.V1StatefulSetBuilder
 import io.kubernetes.client.models.V1StatefulSetUpdateStrategy
+import io.kubernetes.client.models.V1TCPSocketAction
 import io.kubernetes.client.models.V1WeightedPodAffinityTerm
 
 object DefaultClusterResourcesFactory : ClusterResourcesFactory {
@@ -82,102 +79,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withType(flinkCluster.spec.jobManager?.serviceMode ?: "ClusterIP")
             .endSpec()
             .build()
-    }
-
-    override fun createBootstrapJob(
-        namespace: String,
-        clusterId: String,
-        clusterOwner: String,
-        flinkCluster: V1FlinkCluster
-    ): V1Job? {
-        if (flinkCluster.spec.bootstrap == null) {
-            return null
-        }
-
-        if (flinkCluster.metadata.name == null) {
-            throw RuntimeException("name is required")
-        }
-
-        if (flinkCluster.spec.bootstrap.image == null) {
-            throw RuntimeException("image is required")
-        }
-
-        if (flinkCluster.spec.bootstrap.jarPath == null) {
-            throw RuntimeException("jarPath is required")
-        }
-
-        val jobLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("name", flinkCluster.metadata.name),
-            Pair("uid", clusterId),
-            Pair("component", "flink")
-        )
-
-        val podNameEnvVar =
-            createEnvVarFromField(
-                "POD_NAME", "metadata.name"
-            )
-
-        val podNamespaceEnvVar =
-            createEnvVarFromField(
-                "POD_NAMESPACE", "metadata.namespace"
-            )
-
-        val arguments =
-            createBootstrapArguments(
-                namespace, flinkCluster.metadata.name, flinkCluster.spec.bootstrap.jarPath
-            )
-
-        val jobSelector = V1LabelSelector().matchLabels(jobLabels)
-
-        val jobAffinity =
-            createBootstrapJobAffinity(
-                jobSelector
-            )
-
-        val pullSecrets =
-            createObjectReferenceListOrNull(
-                flinkCluster.spec.bootstrap?.pullSecrets
-            )
-
-        val jobPodSpec = V1PodSpecBuilder()
-            .addToContainers(V1Container())
-            .editFirstContainer()
-            .withName("flink-bootstrap")
-            .withImage(flinkCluster.spec.bootstrap.image)
-            .withImagePullPolicy(flinkCluster.spec.bootstrap?.pullPolicy ?: "Always")
-            .withArgs(arguments)
-            .addToEnv(podNameEnvVar)
-            .addToEnv(podNamespaceEnvVar)
-            .withResources(createBootstrapJobResourceRequirements())
-            .endContainer()
-            .withServiceAccountName(flinkCluster.spec.bootstrap?.serviceAccount ?: "default")
-            .withImagePullSecrets(pullSecrets)
-            .withRestartPolicy("OnFailure")
-            .withAffinity(jobAffinity)
-            .build()
-
-        val job = V1JobBuilder()
-            .editOrNewMetadata()
-            .withName("flink-bootstrap-${flinkCluster.metadata.name}")
-            .withLabels(jobLabels)
-            .endMetadata()
-            .editOrNewSpec()
-            .withCompletions(1)
-            .withParallelism(1)
-            .withBackoffLimit(3)
-            .withTtlSecondsAfterFinished(30)
-            .editOrNewTemplate()
-            .editOrNewMetadata()
-            .withName("flink-bootstrap-${flinkCluster.metadata.name}")
-            .withLabels(jobLabels)
-            .endMetadata()
-            .withSpec(jobPodSpec)
-            .endTemplate()
-            .endSpec()
-            .build()
-
-        return job
     }
 
     override fun createJobManagerStatefulSet(
@@ -287,6 +188,30 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             .withEnv(jobmanagerVariables)
             .withEnvFrom(flinkCluster.spec.jobManager?.environmentFrom)
             .withResources(flinkCluster.spec.jobManager?.resources)
+            .withLivenessProbe(
+                V1Probe()
+                    .httpGet(V1HTTPGetAction().port(IntOrString(8081)).path("/overview"))
+                    .initialDelaySeconds(30)
+                    .periodSeconds(10)
+            )
+            .withLivenessProbe(
+                V1Probe()
+                    .tcpSocket(V1TCPSocketAction().port(IntOrString(6123)))
+                    .initialDelaySeconds(30)
+                    .periodSeconds(10)
+            )
+            .withReadinessProbe(
+                V1Probe()
+                    .httpGet(V1HTTPGetAction().port(IntOrString(8081)).path("/overview"))
+                    .initialDelaySeconds(15)
+                    .periodSeconds(5)
+            )
+            .withReadinessProbe(
+                V1Probe()
+                    .tcpSocket(V1TCPSocketAction().port(IntOrString(6123)))
+                    .initialDelaySeconds(15)
+                    .periodSeconds(5)
+            )
             .build()
 
         val jobmanagerPullSecrets = if (flinkCluster.spec.runtime?.pullSecrets != null) {
@@ -511,21 +436,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
             )
         )
 
-    private fun createBootstrapJobAffinity(
-        jobSelector: V1LabelSelector?
-    ): V1Affinity = V1Affinity()
-        .podAffinity(
-            V1PodAffinity().preferredDuringSchedulingIgnoredDuringExecution(
-                listOf(
-                    V1WeightedPodAffinityTerm().weight(100).podAffinityTerm(
-                        V1PodAffinityTerm()
-                            .topologyKey("kubernetes.io/hostname")
-                            .labelSelector(jobSelector)
-                    )
-                )
-            )
-        )
-
     private fun createObjectMeta(name: String, labels: Map<String, String>) = V1ObjectMeta().name(name).labels(labels)
 
     private fun createEnvVarFromField(name: String, fieldPath: String) =
@@ -534,20 +444,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         )
 
     private fun createEnvVar(name: String, value: String) = V1EnvVar().name(name).value(value)
-
-    private fun createBootstrapJobResourceRequirements() = V1ResourceRequirements()
-        .limits(
-            mapOf(
-                "cpu" to Quantity("1"),
-                "memory" to Quantity("512Mi")
-            )
-        )
-        .requests(
-            mapOf(
-                "cpu" to Quantity("0.2"),
-                "memory" to Quantity("256Mi")
-            )
-        )
 
     private fun createServicePort(port: Int, name: String) = V1ServicePort()
         .protocol("TCP")
@@ -559,32 +455,4 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         .protocol("TCP")
         .containerPort(port)
         .name(name)
-
-    private fun createObjectReferenceListOrNull(referenceName: String?): List<V1LocalObjectReference>? {
-        return if (referenceName != null) {
-            listOf(
-                V1LocalObjectReference().name(referenceName)
-            )
-        } else null
-    }
-
-    private fun createBootstrapArguments(
-        namespace: String,
-        clusterName: String,
-        jarPath: String
-    ): List<String> {
-        val arguments = mutableListOf<String>()
-
-        arguments.addAll(
-            listOf(
-                "bootstrap",
-                "upload",
-                "--namespace=$namespace",
-                "--cluster-name=$clusterName",
-                "--jar-path=$jarPath"
-            )
-        )
-
-        return arguments.toList()
-    }
 }

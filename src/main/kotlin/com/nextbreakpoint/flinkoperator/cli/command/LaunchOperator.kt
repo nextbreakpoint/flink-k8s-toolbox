@@ -81,7 +81,7 @@ class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerComman
         vertxOptions?.maxWorkerExecuteTimeUnit = TimeUnit.SECONDS
         vertxOptions?.warningExceptionTime = 20
         vertxOptions?.warningExceptionTimeUnit = TimeUnit.SECONDS
-        vertxOptions?.maxEventLoopExecuteTime = 5
+        vertxOptions?.maxEventLoopExecuteTime = 30
         vertxOptions?.maxEventLoopExecuteTimeUnit = TimeUnit.SECONDS
     }
 

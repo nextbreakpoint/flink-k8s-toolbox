@@ -2,32 +2,32 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class RequestClusterScale(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<ScaleOptions, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class RequestClusterScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<ScaleOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(RequestClusterScale::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: ScaleOptions): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: ScaleOptions): OperationResult<Void?> {
         try {
-            kubernetesContext.rescaleCluster(clusterId, params.taskManagers)
+            kubeClient.rescaleCluster(clusterId, params.taskManagers)
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't annotate cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't scale cluster", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 null
             )
         }

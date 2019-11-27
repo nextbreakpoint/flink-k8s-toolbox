@@ -1,89 +1,58 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
-class StartJob : OperatorTaskHandler {
-    override fun onExecuting(context: OperatorContext): Result<String> {
-        if (context.flinkCluster.spec?.bootstrap == null) {
-            return Result(
-                ResultStatus.FAILED,
-                "Cluster ${context.flinkCluster.metadata.name} doesn't have a job"
-            )
+class StartJob : Task {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
+        if (!isBootstrapJobDefined(context.flinkCluster)) {
+            return skip(context.flinkCluster, "Bootstrap job not defined")
         }
 
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
-        if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to start job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+        if (seconds > Timeout.STARTING_JOB_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.controller.isJobStarted(context.clusterId)
+        val jobStartedResponse = context.isJobStarted(context.clusterId)
 
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Job of cluster ${context.flinkCluster.metadata.name} already started"
-            )
+        if (jobStartedResponse.isCompleted()) {
+            return skip(context.flinkCluster, "Job already started")
         }
 
-        val runJarResponse = context.controller.startJob(context.clusterId, context.flinkCluster)
+        val startJobResponse = context.startJob(context.clusterId, context.flinkCluster)
 
-        if (runJarResponse.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Stating job of cluster ${context.flinkCluster.metadata.name}..."
-            )
+        if (!startJobResponse.isCompleted()) {
+            return repeat(context.flinkCluster, "Retry starting job...")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Retry starting job of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return next(context.flinkCluster, "Starting job...")
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
-
-        if (elapsedTime > OperatorTimeouts.STARTING_JOBS_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to start job of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+    override fun onAwaiting(context: TaskContext): TaskResult<String> {
+        if (!isBootstrapJobDefined(context.flinkCluster)) {
+            return skip(context.flinkCluster, "Bootstrap job not defined")
         }
 
-        val response = context.controller.isJobStarted(context.clusterId)
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Job of cluster ${context.flinkCluster.metadata.name} started in ${elapsedTime / 1000} seconds"
-            )
+        if (seconds > Timeout.STARTING_JOB_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Wait for creation of job of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        val jobStartedResponse = context.isJobStarted(context.clusterId)
+
+        if (!jobStartedResponse.isCompleted()) {
+            return repeat(context.flinkCluster, "Starting job...")
+        }
+
+        return next(context.flinkCluster, "Job started after $seconds seconds")
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
-    }
-
-    override fun onFailed(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+    override fun onIdle(context: TaskContext): TaskResult<String> {
+        return next(context.flinkCluster, "Job started")
     }
 }

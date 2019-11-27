@@ -80,8 +80,8 @@ public class V1FlinkCluster {
         this.status = status;
     }
 
-    public V1FlinkCluster state(V1FlinkClusterStatus state) {
-        this.status = state;
+    public V1FlinkCluster status(V1FlinkClusterStatus status) {
+        this.status = status;
         return this;
     }
 

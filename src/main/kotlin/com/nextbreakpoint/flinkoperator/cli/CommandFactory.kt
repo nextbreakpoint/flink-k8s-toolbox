@@ -1,11 +1,11 @@
 package com.nextbreakpoint.flinkoperator.cli
 
+import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 
 interface CommandFactory {
     fun createRunOperatorCommand() : ServerCommand<OperatorConfig>
@@ -25,6 +25,8 @@ interface CommandFactory {
     fun createGetClusterStatusCommand(): RemoteCommandNoArgs
 
     fun createTriggerSavepointCommand(): RemoteCommandNoArgs
+
+    fun createForgetSavepointCommand(): RemoteCommandNoArgs
 
     fun createGetJobDetailsCommand() : RemoteCommandNoArgs
 

@@ -2,20 +2,20 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorAnnotations
-import com.nextbreakpoint.flinkoperator.controller.OperatorCache
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Annotations
+import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
-import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -29,67 +29,49 @@ class RequestClusterStartTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
-    private val flinkContext = mock(FlinkContext::class.java)
-    private val kubernetesContext = mock(KubernetesContext::class.java)
-    private val operatorCache = mock(OperatorCache::class.java)
-    private val command = RequestClusterStart(flinkOptions, flinkContext, kubernetesContext, operatorCache)
+    private val flinkClient = mock(FlinkClient::class.java)
+    private val kubeClient = mock(KubeClient::class.java)
+    private val adapter = CacheAdapter(cluster, CachedResources())
+    private val command = RequestClusterStart(flinkOptions, flinkClient, kubeClient, adapter)
 
     @BeforeEach
     fun configure() {
-        OperatorState.setClusterStatus(cluster, ClusterStatus.Running)
-        OperatorState.setTaskStatus(cluster, TaskStatus.Idle)
-        OperatorState.appendTasks(cluster, listOf(OperatorTask.ClusterHalted))
-        given(operatorCache.getFlinkCluster(eq(clusterId))).thenReturn(cluster)
-    }
-
-    @Test
-    fun `should fail when cluster doesn't exist`() {
-        given(operatorCache.getFlinkCluster(eq(clusterId))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
-        verifyNoMoreInteractions(operatorCache)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
-        assertThat(result.output).isNull()
+        Status.setClusterStatus(cluster, ClusterStatus.Running)
+        Status.setTaskStatus(cluster, TaskStatus.Idle)
+        Status.appendTasks(cluster, listOf(ClusterTask.ClusterHalted))
     }
 
     @Test
     fun `should return expected result when starting without savepoint`() {
-        OperatorState.setTaskStatus(cluster, TaskStatus.Awaiting)
-        OperatorState.setClusterStatus(cluster, ClusterStatus.Terminated)
-        val actionTimestamp = OperatorAnnotations.getActionTimestamp(cluster)
+        Status.setTaskStatus(cluster, TaskStatus.Awaiting)
+        Status.setClusterStatus(cluster, ClusterStatus.Terminated)
+        val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verify(kubernetesContext, times(1)).updateAnnotations(eq(clusterId), any())
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
-        verifyNoMoreInteractions(operatorCache)
+        verify(kubeClient, times(1)).updateAnnotations(eq(clusterId), any())
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).isNull()
-        assertThat(OperatorAnnotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
-        assertThat(OperatorAnnotations.isWithSavepoint(cluster)).isEqualTo(true)
-        assertThat(OperatorAnnotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
+        assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
+        assertThat(Annotations.isWithSavepoint(cluster)).isEqualTo(true)
+        assertThat(Annotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
     }
 
     @Test
     fun `should return expected result when starting with savepoint`() {
-        OperatorState.setTaskStatus(cluster, TaskStatus.Awaiting)
-        OperatorState.setClusterStatus(cluster, ClusterStatus.Terminated)
-        val actionTimestamp = OperatorAnnotations.getActionTimestamp(cluster)
+        Status.setTaskStatus(cluster, TaskStatus.Awaiting)
+        Status.setClusterStatus(cluster, ClusterStatus.Terminated)
+        val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = command.execute(clusterId, StartOptions(withoutSavepoint = false))
-        verify(operatorCache, times(1)).getFlinkCluster(eq(clusterId))
-        verify(kubernetesContext, times(1)).updateAnnotations(eq(clusterId), any())
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
-        verifyNoMoreInteractions(operatorCache)
+        verify(kubeClient, times(1)).updateAnnotations(eq(clusterId), any())
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).isNull()
-        assertThat(OperatorAnnotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
-        assertThat(OperatorAnnotations.isWithSavepoint(cluster)).isEqualTo(false)
-        assertThat(OperatorAnnotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
+        assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
+        assertThat(Annotations.isWithSavepoint(cluster)).isEqualTo(false)
+        assertThat(Annotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
     }
 }

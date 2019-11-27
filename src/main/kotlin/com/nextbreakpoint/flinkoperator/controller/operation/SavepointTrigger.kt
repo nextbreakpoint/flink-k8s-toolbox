@@ -2,54 +2,54 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class SavepointTrigger(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<SavepointOptions, SavepointRequest?>(flinkOptions, flinkContext, kubernetesContext) {
+class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<SavepointOptions, SavepointRequest>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(SavepointTrigger::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: SavepointOptions): Result<SavepointRequest?> {
+    override fun execute(clusterId: ClusterId, params: SavepointOptions): OperationResult<SavepointRequest> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val runningJobs = flinkContext.listRunningJobs(address)
+            val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.size > 1) {
-                logger.warn("There are multiple jobs running in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] There are multiple jobs running")
             }
 
             if (runningJobs.size != 1) {
-                logger.warn("Can't find a running job in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Can't find a running job")
 
-                return Result(
-                    ResultStatus.FAILED,
-                    null
+                return OperationResult(
+                    OperationStatus.FAILED,
+                    SavepointRequest("", "")
                 )
             }
 
-            val checkpointingStatistics = flinkContext.getCheckpointingStatistics(address, runningJobs)
+            val checkpointingStatistics = flinkClient.getCheckpointingStatistics(address, runningJobs)
 
             if (checkpointingStatistics.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
-                logger.warn("Savepoint in progress for job in cluster ${clusterId.name}")
+                logger.warn("[name=${clusterId.name}] Savepoint in progress for job")
 
-                return Result(
-                    ResultStatus.AWAIT,
-                    null
+                return OperationResult(
+                    OperationStatus.RETRY,
+                    SavepointRequest("", "")
                 )
             }
 
-            val savepointRequests = flinkContext.triggerSavepoints(address, runningJobs, params.targetPath)
+            val savepointRequests = flinkClient.triggerSavepoints(address, runningJobs, params.targetPath)
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 savepointRequests.map {
                     SavepointRequest(
                         jobId = it.key,
@@ -58,11 +58,11 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkContext: FlinkContext, k
                 }.first()
             )
         } catch (e : Exception) {
-            logger.error("Can't trigger savepoint for job of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't trigger savepoint for job", e)
 
-            return Result(
-                ResultStatus.FAILED,
-                null
+            return OperationResult(
+                OperationStatus.FAILED,
+                SavepointRequest("", "")
             )
         }
     }

@@ -1,77 +1,40 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.OperatorTask
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.CustomResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorState
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
+import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 
-class InitialiseCluster : OperatorTaskHandler {
-    override fun onExecuting(context: OperatorContext): Result<String> {
-        OperatorState.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
-        OperatorState.setTaskAttempts(context.flinkCluster, 0)
+class InitialiseCluster : Task {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
+        Status.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
+        Status.setTaskAttempts(context.flinkCluster, 0)
 
-        if (context.flinkCluster.spec.bootstrap != null) {
-            OperatorState.appendTasks(context.flinkCluster,
-                listOf(
-                    OperatorTask.CreateResources,
-                    OperatorTask.CreateBootstrapJob,
-                    OperatorTask.StartJob,
-                    OperatorTask.ClusterRunning
-                )
+        updateBootstrap(context.flinkCluster)
+
+        Status.appendTasks(context.flinkCluster,
+            listOf(
+                ClusterTask.CreateResources,
+                ClusterTask.CreateBootstrapJob,
+                ClusterTask.ClusterRunning
             )
-        } else {
-            OperatorState.appendTasks(context.flinkCluster,
-                listOf(
-                    OperatorTask.CreateResources,
-                    OperatorTask.ClusterRunning
-                )
-            )
-        }
+        )
 
-        val jobManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.jobManager)
-        val taskManagerDigest = CustomResources.computeDigest(context.flinkCluster.spec?.taskManager)
-        val runtimeDigest = CustomResources.computeDigest(context.flinkCluster.spec?.runtime)
-        val bootstrapDigest = CustomResources.computeDigest(context.flinkCluster.spec?.bootstrap)
-
-        OperatorState.setJobManagerDigest(context.flinkCluster, jobManagerDigest)
-        OperatorState.setTaskManagerDigest(context.flinkCluster, taskManagerDigest)
-        OperatorState.setRuntimeDigest(context.flinkCluster, runtimeDigest)
-        OperatorState.setBootstrapDigest(context.flinkCluster, bootstrapDigest)
-
-        OperatorState.setTaskManagers(context.flinkCluster, 0)
-
-        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 1
+        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 0
         val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
-        OperatorState.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
+        Status.setTaskManagers(context.flinkCluster, taskManagers)
+        Status.setTaskSlots(context.flinkCluster, taskSlots)
+        Status.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
 
-        return Result(
-            ResultStatus.SUCCESS,
-            "Status of cluster ${context.clusterId.name} has been updated"
-        )
-    }
+        val savepointPath = context.flinkCluster.spec?.operator?.savepointPath
+        Status.setSavepointPath(context.flinkCluster, savepointPath)
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.SUCCESS,
-            "Cluster ${context.clusterId.name} initialized"
-        )
-    }
+        val labelSelector = ClusterResource.makeLabelSelector(context.clusterId)
+        Status.setLabelSelector(context.flinkCluster, labelSelector)
 
-    override fun onIdle(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
-    }
-
-    override fun onFailed(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+        return skip(context.flinkCluster, "Cluster initialized")
     }
 }

@@ -2,31 +2,31 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class TaskManagersGetReplicas(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, Int>(flinkOptions, flinkContext, kubernetesContext) {
+class TaskManagersGetReplicas(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Int>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(TaskManagersGetReplicas::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<Int> {
+    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Int> {
         try {
-            val replicas = kubernetesContext.getTaskManagerStatefulSetReplicas(clusterId)
+            val replicas = kubeClient.getTaskManagerStatefulSetReplicas(clusterId)
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 replicas
             )
         } catch (e : Exception) {
-            logger.error("Can't get replicas of task managers of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get replicas of task managers", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 0
             )
         }
