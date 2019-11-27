@@ -104,7 +104,23 @@ tasks.withType(JavaCompile) {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform() {
+        excludeTags 'IntegrationTest'
+    }
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform {
+        includeTags 'IntegrationTest'
+    }
+    check.dependsOn it
+    shouldRunAfter test
+}
+
+// This is a workaround until JUnit5 supports system properties
+afterEvaluate {
+    def junitPlatformTestTask = tasks.getByName('integrationTest')
+    junitPlatformTestTask.systemProperty('skipDockerImages', 'false')
 }
 
 shadowJar {

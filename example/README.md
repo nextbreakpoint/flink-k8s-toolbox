@@ -58,7 +58,7 @@ Build custom Flink image:
 
 Build Flink jobs image:
 
-    docker build -t example/flink-jobs:1 example/flink-jobs
+    docker build -t example/flink-jobs:1 example/flink-jobs --build-arg repository=nextbreakpoint/flink-k8s-toolbox --build-arg version=1.2.2-beta
 
 ### Create Flink resources    
 
