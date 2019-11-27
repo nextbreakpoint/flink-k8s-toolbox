@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller
 
-import com.google.gson.GsonBuilder
-import com.nextbreakpoint.flinkoperator.common.crd.DateTimeSerializer
+import io.kubernetes.client.JSON
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.handler.LoggerFormat
 import io.vertx.rxjava.core.AbstractVerticle
@@ -13,7 +12,6 @@ import io.vertx.rxjava.ext.web.handler.LoggerHandler
 import io.vertx.rxjava.ext.web.handler.TimeoutHandler
 import io.vertx.rxjava.micrometer.PrometheusScrapingHandler
 import org.apache.log4j.Logger
-import org.joda.time.DateTime
 import rx.Completable
 import rx.Single
 import java.util.Properties
@@ -22,8 +20,6 @@ import java.util.function.Function
 class MonitoringVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(MonitoringVerticle::class.simpleName)
-
-        private val gson = GsonBuilder().registerTypeAdapter(DateTime::class.java, DateTimeSerializer()).create()
     }
 
     override fun rxStart(): Completable {
@@ -39,25 +35,37 @@ class MonitoringVerticle : AbstractVerticle() {
         mainRouter.route().handler(BodyHandler.create())
         mainRouter.route().handler(TimeoutHandler.create(120000))
 
-        mainRouter.options("/").handler { context -> context.response().setStatusCode(204).end() }
+        mainRouter.options("/").handler { routingContext ->
+            routingContext.response().setStatusCode(204).end()
+        }
 
         mainRouter.get("/version").handler { routingContext ->
-            handleRequest(routingContext, Function { context -> gson.toJson(getVersion()) })
+            handleRequest(routingContext, Function { JSON().serialize(getVersion()) })
         }
 
         mainRouter.get("/metrics").handler(PrometheusScrapingHandler.create("flink-operator"))
 
-        return vertx.createHttpServer().requestHandler(mainRouter).rxListen(port)
+        return vertx.createHttpServer()
+            .requestHandler(mainRouter)
+            .rxListen(port)
     }
 
     private fun makeError(error: Throwable) = "{\"status\":\"FAILURE\",\"error\":\"${error.message}\"}"
 
     private fun handleRequest(context: RoutingContext, handler: Function<RoutingContext, String>) {
         Single.just(context)
-            .map { handler.apply(context) }
-            .doOnSuccess { context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it) }
-            .doOnError { context.response().setStatusCode(500).end(makeError(it)) }
-            .doOnError { logger.warn("Can't process request", it) }
+            .map {
+                handler.apply(context)
+            }
+            .doOnSuccess {
+                context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it)
+            }
+            .doOnError {
+                context.response().setStatusCode(500).end(makeError(it))
+            }
+            .doOnError {
+                logger.warn("Can't process request", it)
+            }
             .subscribe()
     }
 

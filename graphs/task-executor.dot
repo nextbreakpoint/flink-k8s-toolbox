@@ -1,0 +1,59 @@
+digraph state_machine {
+  graph [autosize=false, resolution=100];
+  center=true;
+  margin=0;
+  rankdir=LR;
+  node [shape=circle, style="filled", fillcolor=skyblue];
+  EXECUTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>EXECUTING</TD>
+          </TR>
+      </TABLE>
+  > ];
+  AWAITING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>AWAITING</TD>
+          </TR>
+      </TABLE>
+  > ];
+  IDLE [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>IDLE</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FAILED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>FAILED</TD>
+          </TR>
+      </TABLE>
+  > ];
+  EXECUTING -> AWAITING [ label = "NEXT" ];
+  EXECUTING -> EXECUTING [ label = "REPEAT" ];
+  EXECUTING -> FAILED [ label = "FAIL" ];
+  EXECUTING -> IDLE [ label = "SKIP" ];
+  AWAITING -> IDLE [ label = "NEXT" ];
+  AWAITING -> AWAITING [ label = "REPEAT" ];
+  AWAITING -> FAILED [ label = "FAIL" ];
+  AWAITING -> IDLE [ label = "SKIP" ];
+  IDLE -> FAILED [ label = "FAIL" ];
+  IDLE -> IDLE [ label = "REPEAT" ];
+  IDLE -> EXECUTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>NEXT TASK</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FAILED -> EXECUTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>HALT CLUSTER</TD>
+          </TR>
+      </TABLE>
+  > ];
+}

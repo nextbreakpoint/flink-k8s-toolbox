@@ -2,9 +2,9 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import io.kubernetes.client.models.V1ContainerStatusBuilder
@@ -22,37 +22,37 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 class PodsAreTerminatedTest {
     private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
-    private val flinkContext = mock(FlinkContext::class.java)
-    private val kubernetesContext = mock(KubernetesContext::class.java)
-    private val command = PodsAreTerminated(flinkOptions, flinkContext, kubernetesContext)
+    private val flinkClient = mock(FlinkClient::class.java)
+    private val kubeClient = mock(KubeClient::class.java)
+    private val command = PodsAreTerminated(flinkOptions, flinkClient, kubeClient)
 
     @BeforeEach
     fun configure() {
-        given(kubernetesContext.listJobManagerPods(eq(clusterId))).thenReturn(V1PodList())
-        given(kubernetesContext.listTaskManagerPods(eq(clusterId))).thenReturn(V1PodList())
+        given(kubeClient.listJobManagerPods(eq(clusterId))).thenReturn(V1PodList())
+        given(kubeClient.listTaskManagerPods(eq(clusterId))).thenReturn(V1PodList())
     }
 
     @Test
-    fun `should fail when kubernetesContext throws exception`() {
-        given(kubernetesContext.listJobManagerPods(eq(clusterId))).thenThrow(RuntimeException::class.java)
+    fun `should fail when kubeClient throws exception`() {
+        given(kubeClient.listJobManagerPods(eq(clusterId))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).listJobManagerPods(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterId))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
         assertThat(result.output).isNull()
     }
 
     @Test
     fun `should return expected result when there aren't pods running`() {
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).listJobManagerPods(eq(clusterId))
-        verify(kubernetesContext, times(1)).listTaskManagerPods(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterId))
+        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterId))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.SUCCESS)
+        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).isNull()
     }
 
@@ -74,14 +74,14 @@ class PodsAreTerminatedTest {
             .withStatus(podStatus)
             .endItem()
             .build()
-        given(kubernetesContext.listJobManagerPods(eq(clusterId))).thenReturn(podList)
+        given(kubeClient.listJobManagerPods(eq(clusterId))).thenReturn(podList)
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).listJobManagerPods(eq(clusterId))
-        verify(kubernetesContext, times(1)).listTaskManagerPods(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterId))
+        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterId))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
         assertThat(result.output).isNull()
     }
 
@@ -103,14 +103,14 @@ class PodsAreTerminatedTest {
             .withStatus(podStatus)
             .endItem()
             .build()
-        given(kubernetesContext.listTaskManagerPods(eq(clusterId))).thenReturn(podList)
+        given(kubeClient.listTaskManagerPods(eq(clusterId))).thenReturn(podList)
         val result = command.execute(clusterId, null)
-        verify(kubernetesContext, times(1)).listJobManagerPods(eq(clusterId))
-        verify(kubernetesContext, times(1)).listTaskManagerPods(eq(clusterId))
-        verifyNoMoreInteractions(kubernetesContext)
-        verifyNoMoreInteractions(flinkContext)
+        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterId))
+        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterId))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(ResultStatus.AWAIT)
+        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
         assertThat(result.output).isNull()
     }
 }

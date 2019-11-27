@@ -1,36 +1,36 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 
-class TaskManagerDetails(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext): OperatorCommand<TaskManagerId, String>(flinkOptions, flinkContext, kubernetesContext) {
+class TaskManagerDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient): Operation<TaskManagerId, String>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(TaskManagerDetails::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: TaskManagerId): Result<String> {
+    override fun execute(clusterId: ClusterId, params: TaskManagerId): OperationResult<String> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val details = flinkContext.getTaskManagerDetails(address, params)
+            val details = flinkClient.getTaskManagerDetails(address, params)
 
-            return Result(
-                ResultStatus.SUCCESS,
-                Gson().toJson(details)
+            return OperationResult(
+                OperationStatus.COMPLETED,
+                JSON().serialize(details)
             )
         } catch (e : Exception) {
-            logger.error("Can't get details of TaskManager of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get details of task manager $params", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 "{}"
             )
         }

@@ -2,39 +2,39 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import org.apache.log4j.Logger
 
-class ClusterDeleteResources(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, Void?>(flinkOptions, flinkContext, kubernetesContext) {
+class ClusterDeleteResources(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(ClusterDeleteResources::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<Void?> {
+    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
         try {
-            logger.info("Deleting resources of cluster ${clusterId.name}...")
+            logger.info("[name=${clusterId.name}] Deleting resources...")
 
-            kubernetesContext.deleteBootstrapJobs(clusterId)
+            kubeClient.deleteBootstrapJobs(clusterId)
 
-            kubernetesContext.deleteStatefulSets(clusterId)
+            kubeClient.deleteStatefulSets(clusterId)
 
-            kubernetesContext.deleteServices(clusterId)
+            kubeClient.deleteJobManagerServices(clusterId)
 
-            kubernetesContext.deletePersistentVolumeClaims(clusterId)
+            kubeClient.deletePersistentVolumeClaims(clusterId)
 
-            return Result(
-                ResultStatus.SUCCESS,
+            return OperationResult(
+                OperationStatus.COMPLETED,
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't delete resources of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't delete resources", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 null
             )
         }

@@ -8347,12 +8347,16 @@ spec:
               type: string
             taskManagers:
               type: integer
-            totalTaskSlots:
+            taskSlots:
               type: integer
             jobParallelism:
               type: integer
-            timestamp:
+            activeTaskManagers:
               type: integer
+            totalTaskSlots:
+              type: integer
+            timestamp:
+              type: string
               nullable: false
             tasks:
               type: array
@@ -8367,6 +8371,7 @@ spec:
                   - ClusterRunning
                   - StartingCluster
                   - StoppingCluster
+                  - UpdatingCluster
                   - RescaleCluster
                   - CreatingSavepoint
                   - TriggerSavepoint
@@ -8399,6 +8404,7 @@ spec:
                 - Unknown
                 - Starting
                 - Stopping
+                - Updating
                 - Running
                 - Failed
                 - Suspended
@@ -8411,7 +8417,7 @@ spec:
             savepointTriggerId:
               type: string
             savepointTimestamp:
-              type: integer
+              type: string
             digest:
               type: object
               properties:
@@ -8423,6 +8429,38 @@ spec:
                   type: string
                 taskManager:
                   type: string
+            bootstrap:
+              type: object
+              nullable: true
+              properties:
+                pullSecrets:
+                  type: string
+                  nullable: false
+                pullPolicy:
+                  type: string
+                  nullable: false
+                  enum:
+                    - Never
+                    - Always
+                    - IfNotPresent
+                image:
+                  type: string
+                  nullable: false
+                className:
+                  type: string
+                  nullable: false
+                jarPath:
+                  type: string
+                  nullable: false
+                arguments:
+                  type: array
+                  nullable: true
+                  items:
+                    type: string
+              required:
+                - image
+                - className
+                - jarPath
           required:
             - timestamp
             - tasks
@@ -8449,10 +8487,13 @@ spec:
       JSONPath: .status.tasks[0]
     - name: TASK-MANAGERS
       type: integer
-      JSONPath: .spec.taskManagers
-    - name: TASK-MANAGERS-READY
-      type: integer
       JSONPath: .status.taskManagers
+    - name: TASK-SLOTS
+      type: integer
+      JSONPath: .status.taskSlots
+    - name: ACTIVE-TASK-MANAGERS
+      type: integer
+      JSONPath: .status.activeTaskManagers
     - name: TOTAL-TASK-SLOTS
       type: integer
       JSONPath: .status.totalTaskSlots
@@ -8465,9 +8506,21 @@ spec:
     - name: SERVICE-MODE
       type: string
       JSONPath: .spec.jobManager.serviceMode
+    - name: SAVEPOINT-MODE
+      type: string
+      JSONPath: .spec.operator.savepointMode
     - name: SAVEPOINT-PATH
       type: string
       JSONPath: .status.savepointPath
+    - name: SAVEPOINT-AGE
+      type: date
+      JSONPath: .status.savepointTimestamp
     - name: AGE
       type: date
       JSONPath: .metadata.creationTimestamp
+status:
+  acceptedNames:
+    kind: ''
+    plural: ''
+  conditions: []
+  storedVersions: []

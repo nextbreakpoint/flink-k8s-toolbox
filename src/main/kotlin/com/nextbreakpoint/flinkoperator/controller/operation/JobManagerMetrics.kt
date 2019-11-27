@@ -1,26 +1,26 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.google.gson.Gson
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.JobManagerStats
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkContext
-import com.nextbreakpoint.flinkoperator.common.utils.KubernetesContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorCommand
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
+import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
+import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 
-class JobManagerMetrics(flinkOptions: FlinkOptions, flinkContext: FlinkContext, kubernetesContext: KubernetesContext) : OperatorCommand<Void?, String>(flinkOptions, flinkContext, kubernetesContext) {
+class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, String>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobManagerMetrics::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): Result<String> {
+    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<String> {
         try {
-            val address = kubernetesContext.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            val metrics = flinkContext.getJobManagerMetrics(address,
+            val metrics = flinkClient.getJobManagerMetrics(address,
                 "Status.JVM.CPU.Time,Status.JVM.CPU.Load,Status.JVM.Threads.Count,Status.JVM.Memory.Heap.Max,Status.JVM.Memory.Heap.Used,Status.JVM.Memory.Heap.Committed,Status.JVM.Memory.NonHeap.Max,Status.JVM.Memory.NonHeap.Used,Status.JVM.Memory.NonHeap.Committed,Status.JVM.Memory.Direct.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Direct.TotalCapacity,Status.JVM.Memory.Mapped.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Mapped.TotalCapacity,Status.JVM.GarbageCollector.Copy.Time,Status.JVM.GarbageCollector.Copy.Count,Status.JVM.GarbageCollector.MarkSweepCompact.Time,Status.JVM.GarbageCollector.MarkSweepCompact.Count,Status.JVM.ClassLoader.ClassesLoaded,Status.JVM.ClassLoader.ClassesUnloaded,taskSlotsTotal,taskSlotsAvailable,numRegisteredTaskManagers,numRunningJobs"
             )
 
@@ -54,15 +54,15 @@ class JobManagerMetrics(flinkOptions: FlinkOptions, flinkContext: FlinkContext, 
                 numRunningJobs = metricsMap.get("numRunningJobs")?.toInt() ?: 0
             )
 
-            return Result(
-                ResultStatus.SUCCESS,
-                Gson().toJson(metricsResponse)
+            return OperationResult(
+                OperationStatus.COMPLETED,
+                JSON().serialize(metricsResponse)
             )
         } catch (e : Exception) {
-            logger.error("Can't get metrics of JobManager of cluster ${clusterId.name}", e)
+            logger.error("[name=${clusterId.name}] Can't get metrics of job manager", e)
 
-            return Result(
-                ResultStatus.FAILED,
+            return OperationResult(
+                OperationStatus.FAILED,
                 "{}"
             )
         }

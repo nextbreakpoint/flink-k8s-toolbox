@@ -1,83 +1,52 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
-class RestartPods : OperatorTaskHandler {
-    override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+class RestartPods : Task {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
-        if (elapsedTime > OperatorTimeouts.TERMINATING_PODS_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+        if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val clusterResources = ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
-            context.flinkCluster.metadata.namespace,
-            context.clusterId.uuid,
-            "flink-operator",
-            context.flinkCluster
-        ).build()
+        val resources = makeClusterResources(context.clusterId, context.flinkCluster)
 
-        val response = context.controller.restartPods(context.clusterId, clusterResources)
+        val response = context.restartPods(context.clusterId, resources)
 
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Restarting pods of cluster ${context.flinkCluster.metadata.name}..."
-            )
+        if (!response.isCompleted()) {
+            return repeat(context.flinkCluster, "Retry restarting pods...")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Retry restarting pods of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return next(context.flinkCluster, "Restarting pods...")
     }
 
-    override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
+    override fun onAwaiting(context: TaskContext): TaskResult<String> {
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
-        if (elapsedTime > OperatorTimeouts.TERMINATING_PODS_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to restart pods of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+        if (seconds > Timeout.TERMINATING_RESOURCES_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val response = context.controller.isClusterReady(context.clusterId)
+        val clusterScaling = ClusterScaling(
+            taskManagers = context.flinkCluster.status.taskManagers,
+            taskSlots = context.flinkCluster.status.taskSlots
+        )
 
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} restarted in ${elapsedTime / 1000} seconds"
-            )
+        val response = context.isClusterReady(context.clusterId, clusterScaling)
+
+        if (!response.isCompleted()) {
+            return repeat(context.flinkCluster, "Restarting pods...")
         }
 
-        return Result(
-            ResultStatus.AWAIT,
-            "Wait for creation of pods of cluster ${context.flinkCluster.metadata.name}..."
-        )
+        return next(context.flinkCluster, "Resources restarted after $seconds seconds")
     }
 
-    override fun onIdle(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
-    }
-
-    override fun onFailed(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
+    override fun onIdle(context: TaskContext): TaskResult<String> {
+        return next(context.flinkCluster, "Pods restarted")
     }
 }

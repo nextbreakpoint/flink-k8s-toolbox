@@ -1,136 +1,66 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.Result
-import com.nextbreakpoint.flinkoperator.common.model.ResultStatus
-import com.nextbreakpoint.flinkoperator.controller.OperatorContext
-import com.nextbreakpoint.flinkoperator.controller.OperatorResources
-import com.nextbreakpoint.flinkoperator.controller.OperatorTaskHandler
-import com.nextbreakpoint.flinkoperator.controller.OperatorTimeouts
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatus
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesStatusEvaluator
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
-import org.apache.log4j.Logger
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
+import com.nextbreakpoint.flinkoperator.controller.core.Task
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 
-class CreateResources : OperatorTaskHandler {
-    companion object {
-        private val logger: Logger = Logger.getLogger(CreateResources::class.simpleName)
-    }
+class CreateResources : Task {
+    override fun onExecuting(context: TaskContext): TaskResult<String> {
+        val seconds = context.timeSinceLastUpdateInSeconds()
 
-    private val statusEvaluator = ClusterResourcesStatusEvaluator()
-
-    override fun onExecuting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
-
-        if (elapsedTime > OperatorTimeouts.CREATING_CLUSTER_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to create resources of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
+        if (seconds > Timeout.CREATING_CLUSTER_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
-
-        val response = context.controller.isClusterReady(context.clusterId)
-
-        if (!context.haveClusterResourcesDiverged(clusterStatus) && response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} already created"
-            )
-        }
-
-        val clusterResources = ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
-            context.flinkCluster.metadata.namespace,
-            context.clusterId.uuid,
-            "flink-operator",
-            context.flinkCluster
-        ).build()
-
-        val createResponse = context.controller.createClusterResources(context.clusterId, clusterResources)
-
-        if (createResponse.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Creating resources of cluster ${context.flinkCluster.metadata.name}..."
-            )
-        }
-
-        return Result(
-            ResultStatus.AWAIT,
-            "Retry creating resources of cluster ${context.flinkCluster.metadata.name}..."
-        )
-    }
-
-    override fun onAwaiting(context: OperatorContext): Result<String> {
-        val elapsedTime = context.controller.currentTimeMillis() - context.operatorTimestamp
-
-        if (elapsedTime > OperatorTimeouts.CREATING_CLUSTER_TIMEOUT) {
-            return Result(
-                ResultStatus.FAILED,
-                "Failed to create resources of cluster ${context.flinkCluster.metadata.name} after ${elapsedTime / 1000} seconds"
-            )
-        }
-
-        val clusterStatus = evaluateClusterStatus(context.clusterId, context.flinkCluster, context.resources)
-
-        if (context.haveClusterResourcesDiverged(clusterStatus)) {
-            logger.info(clusterStatus.jobmanagerService.toString())
-            logger.info(clusterStatus.jobmanagerStatefulSet.toString())
-            logger.info(clusterStatus.taskmanagerStatefulSet.toString())
-
-            return Result(
-                ResultStatus.AWAIT,
-                "Wait for creation of resources of cluster ${context.flinkCluster.metadata.name}..."
-            )
-        }
-
-        val response = context.controller.isClusterReady(context.clusterId)
-
-        if (response.status == ResultStatus.SUCCESS) {
-            return Result(
-                ResultStatus.SUCCESS,
-                "Resources of cluster ${context.flinkCluster.metadata.name} created in ${elapsedTime / 1000} seconds"
-            )
-        }
-
-        return Result(
-            ResultStatus.AWAIT,
-            "Wait for creation of cluster ${context.flinkCluster.metadata.name}..."
-        )
-    }
-
-    override fun onIdle(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
-    }
-
-    override fun onFailed(context: OperatorContext): Result<String> {
-        return Result(
-            ResultStatus.AWAIT,
-            ""
-        )
-    }
-
-    private fun evaluateClusterStatus(clusterId: ClusterId, cluster: V1FlinkCluster, resources: OperatorResources): ClusterResourcesStatus {
-        val bootstrapJob = resources.bootstrapJobs.get(clusterId)
-        val jobmnagerService = resources.jobmanagerServices.get(clusterId)
-        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets.get(clusterId)
-        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets.get(clusterId)
-
-        val actualResources = ClusterResources(
-            bootstrapJob = bootstrapJob,
-            jobmanagerService = jobmnagerService,
-            jobmanagerStatefulSet = jobmanagerStatefulSet,
-            taskmanagerStatefulSet = taskmanagerStatefulSet
+        val clusterScaling = ClusterScaling(
+            taskManagers = context.flinkCluster.status.taskManagers,
+            taskSlots = context.flinkCluster.status.taskSlots
         )
 
-        return statusEvaluator.evaluate(clusterId, cluster, actualResources)
+        val response = context.isClusterReady(context.clusterId, clusterScaling)
+
+        if (response.isCompleted()) {
+            return skip(context.flinkCluster, "Resources already created")
+        }
+
+        val resources = makeClusterResources(context.clusterId, context.flinkCluster)
+
+        val createResourcesResponse = context.createClusterResources(context.clusterId, resources)
+
+        if (!createResourcesResponse.isCompleted()) {
+            return repeat(context.flinkCluster, "Retry creating resources...")
+        }
+
+        updateDigests(context.flinkCluster)
+        updateBootstrap(context.flinkCluster)
+
+        return next(context.flinkCluster, "Creating resources...")
+    }
+
+    override fun onAwaiting(context: TaskContext): TaskResult<String> {
+        val seconds = context.timeSinceLastUpdateInSeconds()
+
+        if (seconds > Timeout.CREATING_CLUSTER_TIMEOUT) {
+            return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
+        }
+
+        val clusterScale = ClusterScaling(
+            taskManagers = context.flinkCluster.status.taskManagers,
+            taskSlots = context.flinkCluster.status.taskSlots
+        )
+
+        val response = context.isClusterReady(context.clusterId, clusterScale)
+
+        if (!response.isCompleted()) {
+            return repeat(context.flinkCluster, "Creating resources...")
+        }
+
+        return next(context.flinkCluster, "Resources created after $seconds seconds")
+    }
+
+    override fun onIdle(context: TaskContext): TaskResult<String> {
+        return next(context.flinkCluster, "Resources created")
     }
 }
