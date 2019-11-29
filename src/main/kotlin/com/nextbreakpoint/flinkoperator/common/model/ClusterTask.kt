@@ -10,6 +10,7 @@ enum class ClusterTask {
     StoppingCluster,
     UpdatingCluster,
     RescaleCluster,
+    RefreshStatus,
     CreatingSavepoint,
     TriggerSavepoint,
     EraseSavepoint,

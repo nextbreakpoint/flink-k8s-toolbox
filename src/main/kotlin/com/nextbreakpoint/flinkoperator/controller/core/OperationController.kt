@@ -79,7 +79,7 @@ class OperationController(
     fun forgetSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
         SavepointForget(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
 
-    fun getClusterStatus(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<V1FlinkClusterStatus> =
+    fun getClusterStatus(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<String> =
         ClusterGetStatus(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
 
     fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : OperationResult<Void?> =

@@ -30,10 +30,16 @@ class InitialiseCluster : Task {
         Status.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
 
         val savepointPath = context.flinkCluster.spec?.operator?.savepointPath
-        Status.setSavepointPath(context.flinkCluster, savepointPath)
+        Status.setSavepointPath(context.flinkCluster, savepointPath ?: "")
 
         val labelSelector = ClusterResource.makeLabelSelector(context.clusterId)
         Status.setLabelSelector(context.flinkCluster, labelSelector)
+
+        val savepointMode = context.flinkCluster.spec?.operator?.savepointMode
+        Status.setSavepointMode(context.flinkCluster, savepointMode)
+
+        val jobRestartPolicy = context.flinkCluster.spec?.operator?.jobRestartPolicy
+        Status.setJobRestartPolicy(context.flinkCluster, jobRestartPolicy)
 
         return skip(context.flinkCluster, "Cluster initialized")
     }

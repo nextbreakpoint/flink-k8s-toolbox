@@ -8373,6 +8373,7 @@ spec:
                   - StoppingCluster
                   - UpdatingCluster
                   - RescaleCluster
+                  - RefreshStatus
                   - CreatingSavepoint
                   - TriggerSavepoint
                   - EraseSavepoint
@@ -8502,13 +8503,13 @@ spec:
       JSONPath: .status.jobParallelism
     - name: JOB-RESTART
       type: string
-      JSONPath: .spec.operator.jobRestartPolicy
+      JSONPath: .status.jobRestartPolicy
     - name: SERVICE-MODE
       type: string
-      JSONPath: .spec.jobManager.serviceMode
+      JSONPath: .status.serviceMode
     - name: SAVEPOINT-MODE
       type: string
-      JSONPath: .spec.operator.savepointMode
+      JSONPath: .status.savepointMode
     - name: SAVEPOINT-PATH
       type: string
       JSONPath: .status.savepointPath

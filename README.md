@@ -182,6 +182,10 @@ All the possible tasks which the operator can execute to transition from one sta
 
   Delete secondary resources and wait until resources reach expected status.
 
+- **REFRESH STATUS**
+
+  Update status with current values from resource specification.
+
 - **CREATE BOOTSTRAP JOB**
 
   Schedule batch job which upload JAR file to Flink.  

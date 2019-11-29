@@ -74,9 +74,9 @@ class ClusterHalted : Task {
             return false
         }
 
-        val restartPolicy = Configuration.getJobRestartPolicy(context.flinkCluster)
+        val restartPolicy = Status.getJobRestartPolicy(context.flinkCluster)
 
-        if (restartPolicy.toUpperCase() != "ALWAYS") {
+        if (restartPolicy?.toUpperCase() != "ALWAYS") {
             return false
         }
 
