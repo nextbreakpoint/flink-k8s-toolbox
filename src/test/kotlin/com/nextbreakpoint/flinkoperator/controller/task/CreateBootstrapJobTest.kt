@@ -3,10 +3,10 @@ package com.nextbreakpoint.flinkoperator.context.task
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
-import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
-import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.TaskAction
+import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.controller.task.CreateBootstrapJob
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq

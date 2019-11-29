@@ -54,6 +54,9 @@ class ClusterHaltedTest {
         Status.setTaskManagers(cluster, 1)
         Status.setTaskSlots(cluster, 1)
         Status.setBootstrap(cluster, cluster.spec.bootstrap)
+        Status.setServiceMode(cluster, "Manual")
+        Status.setSavepointMode(cluster, "Automatic")
+        Status.setJobRestartPolicy(cluster, "Always")
     }
 
     @Test
@@ -97,16 +100,18 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should do nothing when cluster status is failed and digests didn't changed`() {
         Status.setClusterStatus(cluster, ClusterStatus.Failed)
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.RETRY, null))
         val timestamp = Status.getOperatorTimestamp(cluster)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, times(1)).isClusterRunning(eq(clusterId))
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
-        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
     }
 
     @Test
@@ -327,15 +332,17 @@ class ClusterHaltedTest {
         Status.setClusterStatus(cluster, ClusterStatus.Failed)
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, false))
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.RETRY, null))
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, times(1)).isClusterRunning(eq(clusterId))
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotNull()
-        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
+        assertThat(timestamp).isNotEqualTo(Status.getOperatorTimestamp(cluster))
     }
 
     @Test

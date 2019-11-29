@@ -1,6 +1,8 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
@@ -19,9 +21,11 @@ class CreateResources : Task {
             taskSlots = context.flinkCluster.status.taskSlots
         )
 
+        val changes = computeChanges(context.flinkCluster)
+
         val response = context.isClusterReady(context.clusterId, clusterScaling)
 
-        if (response.isCompleted()) {
+        if (changes.isEmpty() && response.isCompleted()) {
             return skip(context.flinkCluster, "Resources already created")
         }
 

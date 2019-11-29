@@ -27,6 +27,15 @@ class ClusterRunning : Task {
         Status.setTaskSlots(context.flinkCluster, taskSlots)
         Status.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
 
+        val serviceMode = context.flinkCluster.spec?.jobManager?.serviceMode
+        Status.setServiceMode(context.flinkCluster, serviceMode)
+
+        val savepointMode = context.flinkCluster.spec?.operator?.savepointMode
+        Status.setSavepointMode(context.flinkCluster, savepointMode)
+
+        val jobRestartPolicy = context.flinkCluster.spec?.operator?.jobRestartPolicy
+        Status.setJobRestartPolicy(context.flinkCluster, jobRestartPolicy)
+
         Status.resetSavepointRequest(context.flinkCluster)
 
         return skip(context.flinkCluster, "Cluster running")
@@ -95,9 +104,9 @@ class ClusterRunning : Task {
             return false
         }
 
-        val savepointMode = Configuration.getSavepointMode(context.flinkCluster)
+        val savepointMode = Status.getSavepointMode(context.flinkCluster)
 
-        if (savepointMode.toUpperCase() != "AUTOMATIC") {
+        if (savepointMode?.toUpperCase() != "AUTOMATIC") {
             return false
         }
 
@@ -244,6 +253,7 @@ class ClusterRunning : Task {
                 listOf(
                     ClusterTask.UpdatingCluster,
                     ClusterTask.CancelJob,
+                    ClusterTask.RefreshStatus,
                     ClusterTask.CreateBootstrapJob,
                     ClusterTask.ClusterRunning
                 )

@@ -53,6 +53,9 @@ class ClusterRunningTest {
         Status.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
         Status.setTaskManagers(cluster, 1)
         Status.setBootstrap(cluster, cluster.spec.bootstrap)
+        Status.setServiceMode(cluster, "Manual")
+        Status.setSavepointMode(cluster, "Automatic")
+        Status.setJobRestartPolicy(cluster, "Always")
         val taskmanagersStatefuleset = V1StatefulSetBuilder()
             .withNewSpec()
             .withReplicas(1)
@@ -330,6 +333,8 @@ class ClusterRunningTest {
         Status.selectNextTask(cluster)
         assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.CancelJob)
         Status.selectNextTask(cluster)
+        assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.RefreshStatus)
+        Status.selectNextTask(cluster)
         assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.CreateBootstrapJob)
         Status.selectNextTask(cluster)
         assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.ClusterRunning)
@@ -419,7 +424,7 @@ class ClusterRunningTest {
     @Test
     fun `onIdle should not create checkpoint when savepoint mode is manual`() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        cluster.spec.operator.savepointMode = "MANUAL"
+        cluster.status.savepointMode = "MANUAL"
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.isClusterRunning(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, false))
         val result = task.onIdle(context)

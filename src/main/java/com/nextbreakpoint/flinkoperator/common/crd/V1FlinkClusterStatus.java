@@ -43,6 +43,12 @@ public class V1FlinkClusterStatus {
     private V1ResourceDigest digest;
     @SerializedName("bootstrap")
     private V1BootstrapSpec bootstrap;
+    @SerializedName("savepointMode")
+    private String savepointMode;
+    @SerializedName("serviceMode")
+    private String serviceMode;
+    @SerializedName("jobRestartPolicy")
+    private String jobRestartPolicy;
 
     public String getLabelSelector() {
         return labelSelector;
@@ -188,6 +194,30 @@ public class V1FlinkClusterStatus {
         this.bootstrap = bootstrap;
     }
 
+    public String getSavepointMode() {
+        return savepointMode;
+    }
+
+    public void setSavepointMode(String savepointMode) {
+        this.savepointMode = savepointMode;
+    }
+
+    public String getServiceMode() {
+        return serviceMode;
+    }
+
+    public void setServiceMode(String serviceMode) {
+        this.serviceMode = serviceMode;
+    }
+
+    public String getJobRestartPolicy() {
+        return jobRestartPolicy;
+    }
+
+    public void setJobRestartPolicy(String jobRestartPolicy) {
+        this.jobRestartPolicy = jobRestartPolicy;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -210,12 +240,15 @@ public class V1FlinkClusterStatus {
                 Objects.equals(getSavepointTimestamp(), that.getSavepointTimestamp()) &&
                 Objects.equals(getSavepointRequestTimestamp(), that.getSavepointRequestTimestamp()) &&
                 Objects.equals(getDigest(), that.getDigest()) &&
-                Objects.equals(getBootstrap(), that.getBootstrap());
+                Objects.equals(getBootstrap(), that.getBootstrap()) &&
+                Objects.equals(getSavepointMode(), that.getSavepointMode()) &&
+                Objects.equals(getServiceMode(), that.getServiceMode()) &&
+                Objects.equals(getJobRestartPolicy(), that.getJobRestartPolicy());
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getSavepointRequestTimestamp(), getDigest(), getBootstrap());
+        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getSavepointRequestTimestamp(), getDigest(), getBootstrap(), getSavepointMode(), getServiceMode(), getJobRestartPolicy());
         result = 31 * result + Arrays.hashCode(getTasks());
         return result;
     }
@@ -241,6 +274,9 @@ public class V1FlinkClusterStatus {
                 ", savepointRequestTimestamp=" + savepointRequestTimestamp +
                 ", digest=" + digest +
                 ", bootstrap=" + bootstrap +
+                ", savepointMode='" + savepointMode + '\'' +
+                ", serviceMode='" + serviceMode + '\'' +
+                ", jobRestartPolicy='" + jobRestartPolicy + '\'' +
                 '}';
     }
 }

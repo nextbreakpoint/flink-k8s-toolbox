@@ -51,6 +51,9 @@ class TaskExecutorTest {
         Status.setTaskManagerDigest(cluster, actualTaskManagerDigest)
         Status.setTaskAttempts(cluster, 1)
         Status.setClusterStatus(cluster, ClusterStatus.Running)
+        Status.setServiceMode(cluster, "Manual")
+        Status.setSavepointMode(cluster, "Automatic")
+        Status.setJobRestartPolicy(cluster, "Never")
     }
 
     @Test
