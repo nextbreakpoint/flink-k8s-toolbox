@@ -94,8 +94,8 @@ Check logs of TaskManager:
 
 Force deletion of pods if Kubernetes get stuck:
 
-    kubectl delete pod flink-jobmanager-test-11-0 --grace-period=0 --force -n flink
-    kubectl delete pod flink-taskmanager-test-11-0 --grace-period=0 --force -n flink
+    kubectl delete pod flink-jobmanager-test-0 --grace-period=0 --force -n flink
+    kubectl delete pod flink-taskmanager-test-0 --grace-period=0 --force -n flink
 
 ### Patch Flink Cluster resource     
 
