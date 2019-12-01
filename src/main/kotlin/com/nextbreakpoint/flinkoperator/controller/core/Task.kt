@@ -86,8 +86,8 @@ interface Task {
     fun computeChanges(flinkCluster: V1FlinkCluster): MutableList<String> {
         val jobManagerDigest = Status.getJobManagerDigest(flinkCluster)
         val taskManagerDigest = Status.getTaskManagerDigest(flinkCluster)
-        val flinkImageDigest = Status.getRuntimeDigest(flinkCluster)
-        val flinkJobDigest = Status.getBootstrapDigest(flinkCluster)
+        val runtimeDigest = Status.getRuntimeDigest(flinkCluster)
+        val bootstrapDigest = Status.getBootstrapDigest(flinkCluster)
 
         val actualJobManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.jobManager)
         val actualTaskManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.taskManager)
@@ -104,11 +104,11 @@ interface Task {
             changes.add("TASK_MANAGER")
         }
 
-        if (flinkImageDigest != actualRuntimeDigest) {
+        if (runtimeDigest != actualRuntimeDigest) {
             changes.add("RUNTIME")
         }
 
-        if (flinkJobDigest != actualBootstrapDigest) {
+        if (bootstrapDigest != actualBootstrapDigest) {
             changes.add("BOOTSTRAP")
         }
 

@@ -58,13 +58,13 @@ Build custom Flink image:
 
 Build Flink jobs image:
 
-    docker build -t example/flink-jobs:1 example/flink-jobs
+    docker build -t example/flink-jobs:1 example/flink-jobs --build-arg repository=nextbreakpoint/flink-k8s-toolbox --build-arg version=1.2.2-beta
 
 ### Create Flink resources    
 
 Create Flink ConfigMap resource:
 
-    kubectl create -f example/config-map.yaml -n flink
+    kubectl create -f example/config.yaml -n flink
 
 Create Flink Secret resource:
 
@@ -94,8 +94,8 @@ Check logs of TaskManager:
 
 Force deletion of pods if Kubernetes get stuck:
 
-    kubectl delete pod flink-jobmanager-test-11-0 --grace-period=0 --force -n flink
-    kubectl delete pod flink-taskmanager-test-11-0 --grace-period=0 --force -n flink
+    kubectl delete pod flink-jobmanager-test-0 --grace-period=0 --force -n flink
+    kubectl delete pod flink-taskmanager-test-0 --grace-period=0 --force -n flink
 
 ### Patch Flink Cluster resource     
 
@@ -144,17 +144,17 @@ You can tag and push images to your local registry:
 
 Compile Docker image of Flink Operator:
 
-    docker build -t flink-k8s-toolbox:1.2.1-beta .
+    docker build -t flink-k8s-toolbox:1.2.2-beta .
 
 Optionally tag and push Docker image to your local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.2.1-beta registry:30000/flink-k8s-toolbox:1.2.1-beta
+    docker tag flink-k8s-toolbox:1.2.2-beta registry:30000/flink-k8s-toolbox:1.2.2-beta
     docker login registry:30000
-    docker push registry:30000/flink-k8s-toolbox:1.2.1-beta
+    docker push registry:30000/flink-k8s-toolbox:1.2.2-beta
 
 Run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.2.1-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.2.2-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Run Flink Operator using Helm and local registry:
 

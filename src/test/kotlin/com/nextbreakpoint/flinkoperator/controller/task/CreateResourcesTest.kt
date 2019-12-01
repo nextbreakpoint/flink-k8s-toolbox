@@ -2,13 +2,14 @@ package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.TaskAction
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
-import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
@@ -36,6 +37,14 @@ class CreateResourcesTest {
         given(context.clusterId).thenReturn(clusterId)
         given(context.resources).thenReturn(resources)
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(0)
+        val actualBootstrapDigest = ClusterResource.computeDigest(cluster.spec?.bootstrap)
+        val actualRuntimeDigest = ClusterResource.computeDigest(cluster.spec?.runtime)
+        val actualJobManagerDigest = ClusterResource.computeDigest(cluster.spec?.jobManager)
+        val actualTaskManagerDigest = ClusterResource.computeDigest(cluster.spec?.taskManager)
+        Status.setBootstrapDigest(cluster, actualBootstrapDigest)
+        Status.setRuntimeDigest(cluster, actualRuntimeDigest)
+        Status.setJobManagerDigest(cluster, actualJobManagerDigest)
+        Status.setTaskManagerDigest(cluster, actualTaskManagerDigest)
         Status.setTaskManagers(cluster, 1)
         Status.setTaskSlots(cluster, 1)
     }
@@ -65,6 +74,25 @@ class CreateResourcesTest {
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.SKIP)
+        assertThat(result.output).isNotBlank()
+    }
+
+    @Test
+    fun `onExecuting should return expected result when resources already exists but they have changed`() {
+        Status.setJobManagerDigest(cluster, "xxxxxxx")
+        val resources = TestFactory.createResourcesWithoutJob(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.createClusterResources(eq(clusterId), any())).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        val result = task.onExecuting(context)
+        verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verify(context, times(1)).createClusterResources(eq(clusterId), any())
+        verifyNoMoreInteractions(context)
+        assertThat(result).isNotNull()
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotBlank()
     }
 
