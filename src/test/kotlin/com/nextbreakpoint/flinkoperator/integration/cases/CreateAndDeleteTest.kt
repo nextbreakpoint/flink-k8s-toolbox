@@ -14,7 +14,7 @@ class CreateAndDeleteTest : IntegrationSetup() {
     @Test
     fun `should create and delete clusters`() {
         println("Should create cluster...")
-        val json = String(Files.readAllBytes(File("integration/cluster-spec.json").toPath()))
+        val json = String(Files.readAllBytes(File("example/cluster-spec.json").toPath()))
         val spec = JSON().deserialize<V1FlinkClusterSpec>(json, specTypeToken.type)
         createCluster(name = "cluster-0", spec = spec)
         awaitUntilAsserted(timeout = 60) {

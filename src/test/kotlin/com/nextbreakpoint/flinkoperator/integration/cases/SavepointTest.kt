@@ -27,10 +27,10 @@ class SavepointTest : IntegrationSetup() {
             }
             println("Clusters created")
             println("Waiting for clusters...")
-            awaitUntilAsserted(timeout = 180) {
+            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
             }
-            awaitUntilAsserted(timeout = 180) {
+            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
             }
             println("Clusters started")
