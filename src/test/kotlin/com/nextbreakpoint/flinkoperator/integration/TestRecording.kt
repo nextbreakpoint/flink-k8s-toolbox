@@ -1,4 +1,4 @@
-package com.nextbreakpoint.flinkoperator.controller
+package com.nextbreakpoint.flinkoperator.integration
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier

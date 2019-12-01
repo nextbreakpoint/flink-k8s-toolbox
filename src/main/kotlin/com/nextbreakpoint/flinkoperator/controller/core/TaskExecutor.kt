@@ -78,7 +78,7 @@ class TaskExecutor(
 
         val statefulSet = context.resources.taskmanagerStatefulSets[context.clusterId]
 
-        updateStatusTaskManagers(context.flinkCluster, statefulSet)
+        updateStatus(context.flinkCluster, statefulSet)
 
         val newOperatorTimestamp = Status.getOperatorTimestamp(context.flinkCluster)
 
@@ -93,14 +93,22 @@ class TaskExecutor(
         }
     }
 
-    private fun updateStatusTaskManagers(flinkCluster: V1FlinkCluster, statefulSet: V1StatefulSet?) {
+    private fun updateStatus(flinkCluster: V1FlinkCluster, statefulSet: V1StatefulSet?) {
         val taskManagers = statefulSet?.status?.readyReplicas ?: 0
         if (Status.getActiveTaskManagers(flinkCluster) != taskManagers) {
             Status.setActiveTaskManagers(flinkCluster, taskManagers)
         }
         val taskSlots = flinkCluster.status?.taskSlots ?: 1
         if (Status.getTotalTaskSlots(flinkCluster) != taskManagers * taskSlots) {
-            Status.setTotalTaskSlots(flinkCluster,taskManagers * taskSlots)
+            Status.setTotalTaskSlots(flinkCluster, taskManagers * taskSlots)
+        }
+        val savepointMode = flinkCluster.spec?.operator?.savepointMode
+        if (Status.getSavepointMode(flinkCluster) != savepointMode) {
+            Status.setSavepointMode(flinkCluster, savepointMode)
+        }
+        val jobRestartPolicy = flinkCluster.spec?.operator?.jobRestartPolicy
+        if (Status.getJobRestartPolicy(flinkCluster) != jobRestartPolicy) {
+            Status.setJobRestartPolicy(flinkCluster, jobRestartPolicy)
         }
     }
 

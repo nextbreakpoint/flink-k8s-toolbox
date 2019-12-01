@@ -33,6 +33,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.DeleteBootstrapJob
 import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
 import com.nextbreakpoint.flinkoperator.controller.task.EraseSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.InitialiseCluster
+import com.nextbreakpoint.flinkoperator.controller.task.RefreshStatus
 import com.nextbreakpoint.flinkoperator.controller.task.RescaleCluster
 import com.nextbreakpoint.flinkoperator.controller.task.RestartPods
 import com.nextbreakpoint.flinkoperator.controller.task.StartJob
@@ -89,6 +90,7 @@ class OperatorVerticle : AbstractVerticle() {
             ClusterTask.StoppingCluster to StoppingCluster(),
             ClusterTask.UpdatingCluster to UpdatingCluster(),
             ClusterTask.RescaleCluster to RescaleCluster(),
+            ClusterTask.RefreshStatus to RefreshStatus(),
             ClusterTask.CreatingSavepoint to CreatingSavepoint(),
             ClusterTask.TriggerSavepoint to TriggerSavepoint(),
             ClusterTask.EraseSavepoint to EraseSavepoint(),

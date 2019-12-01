@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.nextbreakpoint'
-version = '1.2.1-beta'
+version = '1.2.2-beta'
 description = 'Tool for managing Flink clusters on Kubernetes'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -104,7 +104,17 @@ tasks.withType(JavaCompile) {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform() {
+        excludeTags 'IntegrationTest'
+    }
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform {
+        includeTags 'IntegrationTest'
+    }
+//    check.dependsOn it
+//    shouldRunAfter test
 }
 
 shadowJar {

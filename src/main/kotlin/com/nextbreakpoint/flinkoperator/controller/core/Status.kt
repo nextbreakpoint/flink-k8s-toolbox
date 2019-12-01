@@ -30,7 +30,7 @@ object Status {
         flinkCluster.status?.timestamp ?: DateTime(0)
 
     fun getSavepointPath(flinkCluster: V1FlinkCluster) : String? =
-        if (flinkCluster.status?.savepointPath == null || flinkCluster.status?.savepointPath == "") null else flinkCluster.status?.savepointPath
+        if (flinkCluster.status?.savepointPath.orEmpty().isBlank()) null else flinkCluster.status?.savepointPath
 
     fun getSavepointRequest(flinkCluster: V1FlinkCluster) : SavepointRequest? {
         val savepointJobId = flinkCluster.status?.savepointJobId
@@ -95,16 +95,18 @@ object Status {
         flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
     }
 
-    fun setSavepointPath(flinkCluster: V1FlinkCluster, path: String?) {
+    fun setSavepointPath(flinkCluster: V1FlinkCluster, path: String) {
         ensureState(flinkCluster)
 
         val currentTimeMillis = currentTimeMillis()
 
         flinkCluster.status?.savepointRequestTimestamp = DateTime(currentTimeMillis)
 
-        flinkCluster.status?.savepointTimestamp = DateTime(currentTimeMillis)
+        if ((path.isNotBlank() && flinkCluster.status?.savepointPath != path) || (path.isBlank() && flinkCluster.status?.savepointPath.orEmpty().isNotBlank())) {
+            flinkCluster.status?.savepointTimestamp = DateTime(currentTimeMillis)
+        }
 
-        flinkCluster.status?.savepointPath = path ?: ""
+        flinkCluster.status?.savepointPath = path
 
         flinkCluster.status?.timestamp = DateTime(currentTimeMillis)
     }
@@ -263,6 +265,39 @@ object Status {
 
     fun getLabelSelector(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.labelSelector
+
+    fun setSavepointMode(flinkCluster: V1FlinkCluster, savepointMode: String?) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.savepointMode = savepointMode
+
+        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
+    }
+
+    fun getSavepointMode(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.status?.savepointMode
+
+    fun setServiceMode(flinkCluster: V1FlinkCluster, serviceMode: String?) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.serviceMode = serviceMode
+
+        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
+    }
+
+    fun getServiceMode(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.status?.serviceMode
+
+    fun setJobRestartPolicy(flinkCluster: V1FlinkCluster, jobRestartPolicy: String?) {
+        ensureState(flinkCluster)
+
+        flinkCluster.status?.jobRestartPolicy = jobRestartPolicy
+
+        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
+    }
+
+    fun getJobRestartPolicy(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.status?.jobRestartPolicy
 
     fun setBootstrap(flinkCluster: V1FlinkCluster, bootstrap: V1BootstrapSpec?) {
         ensureState(flinkCluster)

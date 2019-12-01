@@ -1,0 +1,98 @@
+apiVersion: "nextbreakpoint.com/v1"
+kind: FlinkCluster
+metadata:
+  name: cluster-2
+spec:
+  taskManagers: 2
+  runtime:
+    pullPolicy: Never
+    image: integration/flink:1.9.0
+  bootstrap:
+    serviceAccount: flink-bootstrap
+    pullPolicy: Never
+    image: integration/flink-jobs:1
+    jarPath: /flink-jobs.jar
+    className: com.nextbreakpoint.flink.jobs.TestJob
+    arguments:
+      - --DEVELOP_MODE
+      - disabled
+  jobManager:
+    serviceMode: ClusterIP
+    maxHeapMemory: 256
+    annotations:
+      managed: true
+    environment:
+    - name: FLINK_ENVIRONMENT
+      value: test
+    - name: FLINK_SAVEPOINTS_LOCATION
+      value: file:///var/savepoints
+    - name: FLINK_CHECKPOINTS_LOCATION
+      value: file:///var/checkpoints
+    - name: FLINK_FS_CHECKPOINTS_LOCATION
+      value: file:///var/fs_checkpoints
+    environmentFrom:
+    - secretRef:
+        name: flink-secrets
+    volumeMounts:
+      - name: config-vol
+        mountPath: /hadoop/etc/core-site.xml
+        subPath: core-site.xml
+      - name: config-vol
+        mountPath: /docker-entrypoint.sh
+        subPath: docker-entrypoint.sh
+      - name: config-vol
+        mountPath: /opt/flink/conf/flink-conf-template.yaml
+        subPath: flink-conf.yaml
+    volumes:
+      - name: config-vol
+        configMap:
+          name: flink-config
+          defaultMode: 0777
+    resources:
+      limits:
+        cpu: '1'
+        memory: 512Mi
+      requests:
+        cpu: '0.1'
+        memory: 256Mi
+  taskManager:
+    taskSlots: 2
+    maxHeapMemory: 1024
+    annotations:
+      managed: true
+    environment:
+    - name: FLINK_ENVIRONMENT
+      value: test
+    - name: FLINK_SAVEPOINTS_LOCATION
+      value: file:///var/savepoints
+    - name: FLINK_CHECKPOINTS_LOCATION
+      value: file:///var/checkpoints
+    - name: FLINK_FS_CHECKPOINTS_LOCATION
+      value: file:///var/fs_checkpoints
+    volumeMounts:
+      - name: config-vol
+        mountPath: /hadoop/etc/core-site.xml
+        subPath: core-site.xml
+      - name: config-vol
+        mountPath: /docker-entrypoint.sh
+        subPath: docker-entrypoint.sh
+      - name: config-vol
+        mountPath: /opt/flink/conf/flink-conf-template.yaml
+        subPath: flink-conf.yaml
+    volumes:
+      - name: config-vol
+        configMap:
+          name: flink-config
+          defaultMode: 0777
+    resources:
+      limits:
+        cpu: '1'
+        memory: 2048Mi
+      requests:
+        cpu: '0.2'
+        memory: 1024Mi
+  operator:
+    savepointMode: Automatic
+    savepointInterval: 20
+    savepointTargetPath: file:///var/savepoints
+    jobRestartPolicy: Never
