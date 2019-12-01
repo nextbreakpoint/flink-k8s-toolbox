@@ -12,3 +12,5 @@ build
 .vertx
 tmp
 config
+.vagrant
+ubuntu-bionic-18.04-cloudimg-console.log

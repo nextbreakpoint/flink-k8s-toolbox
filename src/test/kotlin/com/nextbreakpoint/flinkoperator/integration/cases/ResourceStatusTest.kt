@@ -20,19 +20,21 @@ class ResourceStatusTest : IntegrationSetup() {
             println("Creating clusters...")
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
-            awaitUntilAsserted(timeout = 60) {
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isTrue()
             }
-            awaitUntilAsserted(timeout = 60) {
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isTrue()
             }
             println("Clusters created")
             println("Waiting for clusters...")
-            awaitUntilAsserted(timeout = 180) {
+            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+                assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
             }
-            awaitUntilAsserted(timeout = 180) {
+            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
+                assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
             }
             println("Clusters started")
         }
@@ -40,13 +42,15 @@ class ResourceStatusTest : IntegrationSetup() {
         @AfterAll
         @JvmStatic
         fun deleteClusters() {
+            describePods(redirect = redirect, namespace = namespace)
+            describeClusters(redirect = redirect, namespace = namespace)
             println("Deleting clusters...")
             deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
             deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
-            awaitUntilAsserted(timeout = 60) {
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
             }
-            awaitUntilAsserted(timeout = 60) {
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
             }
             println("Clusters deleted")
@@ -56,15 +60,7 @@ class ResourceStatusTest : IntegrationSetup() {
     @Test
     fun `should return resource's status`() {
         println("Should return status...")
-        awaitUntilAsserted(timeout = 180) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
-            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 180) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
-            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
-        }
-        val response1 = getClusterStatus(name = "cluster-1")
+        val response1 = getClusterStatus(name = "cluster-1", port = port)
         println(response1)
         assertThat(response1["status"] as String?).isEqualTo("COMPLETED")
         val status1 = JSON().deserialize<V1FlinkClusterStatus>(response1["output"] as String, statusTypeToken.type)
@@ -78,7 +74,7 @@ class ResourceStatusTest : IntegrationSetup() {
         assertThat(status1.taskSlots).isEqualTo(1)
         assertThat(status1.totalTaskSlots).isEqualTo(1)
         assertThat(status1.jobRestartPolicy).isEqualTo("Always")
-        val response2 = getClusterStatus(name = "cluster-2")
+        val response2 = getClusterStatus(name = "cluster-2", port = port)
         println(response2)
         assertThat(response2["status"] as String?).isEqualTo("COMPLETED")
         val status2 = JSON().deserialize<V1FlinkClusterStatus>(response2["output"] as String, statusTypeToken.type)

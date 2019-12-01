@@ -73,7 +73,7 @@ spec:
       - metadata:
           name: jobmanager
         spec:
-          storageClassName: hostpath
+          storageClassName: standard
           accessModes:
            - ReadWriteOnce
           resources:
@@ -140,7 +140,7 @@ spec:
       - metadata:
           name: taskmanager
         spec:
-          storageClassName: hostpath
+          storageClassName: standard
           accessModes:
            - ReadWriteOnce
           resources:

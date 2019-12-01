@@ -20,18 +20,18 @@ class DetailsAndMetricsTest : IntegrationSetup() {
             println("Creating clusters...")
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
-            awaitUntilAsserted(timeout = 60) {
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isTrue()
             }
-            awaitUntilAsserted(timeout = 60) {
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isTrue()
             }
             println("Clusters created")
             println("Waiting for clusters...")
-            awaitUntilAsserted(timeout = 180) {
+            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
             }
-            awaitUntilAsserted(timeout = 180) {
+            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
             }
             println("Clusters started")
@@ -40,13 +40,15 @@ class DetailsAndMetricsTest : IntegrationSetup() {
         @AfterAll
         @JvmStatic
         fun deleteClusters() {
+            describePods(redirect = redirect, namespace = namespace)
+            describeClusters(redirect = redirect, namespace = namespace)
             println("Deleting clusters...")
             deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
             deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
-            awaitUntilAsserted(timeout = 60) {
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
             }
-            awaitUntilAsserted(timeout = 60) {
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
             }
             println("Clusters deleted")
@@ -56,7 +58,7 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     @Test
     fun `should return job's details`() {
         println("Should return job details...")
-        val response = getJobDetails(name = "cluster-1")
+        val response = getJobDetails(name = "cluster-1", port = port)
         println(response)
         assertThat(response["status"] as String?).isEqualTo("COMPLETED")
         val details = response["output"] as String
@@ -66,7 +68,7 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     @Test
     fun `should return job's metrics`() {
         println("Should return job metrics...")
-        val response = getJobMetrics(name = "cluster-1")
+        val response = getJobMetrics(name = "cluster-1", port = port)
         println(response)
         assertThat(response["status"] as String?).isEqualTo("COMPLETED")
         val metrics = response["output"] as String
@@ -76,7 +78,7 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     @Test
     fun `should return jobmanager's metrics`() {
         println("Should return JobManager details...")
-        val response = getJobManagerMetrics(name = "cluster-1")
+        val response = getJobManagerMetrics(name = "cluster-1", port = port)
         println(response)
         assertThat(response["status"] as String?).isEqualTo("COMPLETED")
         val metrics = response["output"] as String
@@ -86,11 +88,11 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     @Test
     fun `should return taskmanagers`() {
         println("Should return TaskManagers...")
-        val response1 = getTaskManagers(name = "cluster-1")
+        val response1 = getTaskManagers(name = "cluster-1", port = port)
         assertThat(response1["status"] as String?).isEqualTo("COMPLETED")
         val taskmanagers1 = JSON().deserialize<List<TaskManagerInfo>>(response1["output"] as String, taskmanagersTypeToken.type)
         assertThat(taskmanagers1).hasSize(1)
-        val response2 = getTaskManagers(name = "cluster-2")
+        val response2 = getTaskManagers(name = "cluster-2", port = port)
         assertThat(response2["status"] as String?).isEqualTo("COMPLETED")
         val taskmanagers2 = JSON().deserialize<List<TaskManagerInfo>>(response2["output"] as String, taskmanagersTypeToken.type)
         assertThat(taskmanagers2).hasSize(2)
@@ -99,10 +101,10 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     @Test
     fun `should return taskmanager's details`() {
         println("Should return TaskManager details...")
-        val listResponse = getTaskManagers(name = "cluster-1")
+        val listResponse = getTaskManagers(name = "cluster-1", port = port)
         assertThat(listResponse["status"] as String?).isEqualTo("COMPLETED")
         val taskmanagers = JSON().deserialize<List<TaskManagerInfo>>(listResponse["output"] as String, taskmanagersTypeToken.type)
-        val detailsResponse = getTaskManagerDetails(name = "cluster-1", taskmanagerId = TaskManagerId(taskmanagers[0].id))
+        val detailsResponse = getTaskManagerDetails(name = "cluster-1", taskmanagerId = TaskManagerId(taskmanagers[0].id), port = port)
         println(detailsResponse)
         assertThat(detailsResponse["status"] as String?).isEqualTo("COMPLETED")
         val details = detailsResponse["output"] as String
@@ -112,15 +114,15 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     @Test
     fun `should return taskmanager's metrics`() {
         println("Should return TaskManager metrics...")
-        val listResponse = getTaskManagers(name = "cluster-2")
+        val listResponse = getTaskManagers(name = "cluster-2", port = port)
         assertThat(listResponse["status"] as String?).isEqualTo("COMPLETED")
         val taskmanagers = JSON().deserialize<List<TaskManagerInfo>>(listResponse["output"] as String, taskmanagersTypeToken.type)
-        val metricsResponse1 = getTaskManagerMetrics(name = "cluster-2", taskmanagerId = TaskManagerId(taskmanagers[0].id))
+        val metricsResponse1 = getTaskManagerMetrics(name = "cluster-2", taskmanagerId = TaskManagerId(taskmanagers[0].id), port = port)
         println(metricsResponse1)
         assertThat(metricsResponse1["status"] as String?).isEqualTo("COMPLETED")
         val metrics1 = metricsResponse1["output"] as String
         assertThat(metrics1).isNotBlank()
-        val metricsResponse2 = getTaskManagerMetrics(name = "cluster-2", taskmanagerId = TaskManagerId(taskmanagers[1].id))
+        val metricsResponse2 = getTaskManagerMetrics(name = "cluster-2", taskmanagerId = TaskManagerId(taskmanagers[1].id), port = port)
         println(metricsResponse2)
         assertThat(metricsResponse2["status"] as String?).isEqualTo("COMPLETED")
         val metrics2 = metricsResponse2["output"] as String
