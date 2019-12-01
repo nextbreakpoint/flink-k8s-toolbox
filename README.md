@@ -184,7 +184,7 @@ All the possible tasks which the operator can execute to transition from one sta
 
 - **REFRESH STATUS**
 
-  Update status with current values from resource specification.
+  Copy relevant values from resource specification to resource status.
 
 - **CREATE BOOTSTRAP JOB**
 
