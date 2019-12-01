@@ -29,10 +29,10 @@ class ResourceUpdatedTest : IntegrationSetup() {
         }
         println("Clusters created")
         println("Waiting for clusters...")
-        awaitUntilAsserted(timeout = 180) {
+        awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
         }
-        awaitUntilAsserted(timeout = 180) {
+        awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         println("Clusters started")
@@ -138,7 +138,7 @@ class ResourceUpdatedTest : IntegrationSetup() {
     }
 
     @Test
-    fun `should update job after patching bootstrap spec with invalid configuration`() {
+    fun `should cluster fail after patching bootstrap spec with broken configuration`() {
         println("Should update clusters...")
         if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-1", patch = "[{\"op\":\"replace\",\"path\":\"/spec/bootstrap/image\",\"value\":\"integration/wrongimage\"}]") != 0) {
             fail("Can't update cluster")

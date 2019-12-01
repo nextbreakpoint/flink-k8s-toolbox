@@ -64,7 +64,7 @@ Build Flink jobs image:
 
 Create Flink ConfigMap resource:
 
-    kubectl create -f example/config-map.yaml -n flink
+    kubectl create -f example/config.yaml -n flink
 
 Create Flink Secret resource:
 

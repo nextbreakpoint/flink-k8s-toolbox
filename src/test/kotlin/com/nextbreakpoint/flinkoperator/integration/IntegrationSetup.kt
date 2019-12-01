@@ -28,25 +28,20 @@ import kotlin.test.fail
 open class IntegrationSetup {
     companion object {
         val redirect = Redirect.INHERIT
-
         val version = "1.2.2-beta"
-
-        var timestamp = 0L
-
-        var namespace = "integration"
-
-        private var skipDockerImages = System.getenv("SKIP_BUILD_IMAGES") == "true"
+        val timestamp = System.currentTimeMillis()
+        val namespace = "integration-$timestamp"
 
         val mapTypeToken = object : TypeToken<Map<String, Any>>() {}
         val specTypeToken = object : TypeToken<V1FlinkClusterSpec>() {}
         val statusTypeToken = object : TypeToken<V1FlinkClusterStatus>() {}
         val taskmanagersTypeToken = object : TypeToken<List<TaskManagerInfo>>() {}
 
+        private var skipDockerImages = System.getenv("SKIP_BUILD_IMAGES") == "true"
+
         @BeforeAll
         @JvmStatic
         fun setup() {
-            timestamp = System.currentTimeMillis()
-            namespace = "integration-$timestamp"
             printInfo()
             createNamespace()
             buildDockerImages()
@@ -104,8 +99,8 @@ open class IntegrationSetup {
 
         fun installOperator() {
             println("Installing operator...")
-            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd-$timestamp", path = "helm/flink-k8s-toolbox-crd") != 0) {
-                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd-$timestamp", path = "helm/flink-k8s-toolbox-crd") != 0) {
+            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd", path = "helm/flink-k8s-toolbox-crd") != 0) {
+                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd", path = "helm/flink-k8s-toolbox-crd") != 0) {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
@@ -115,8 +110,8 @@ open class IntegrationSetup {
                 "--set", "image.repository=integration/flink-k8s-toolbox",
                 "--set", "image.version=$version"
             )
-            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator-$timestamp", path = "helm/flink-k8s-toolbox-operator", args = args) != 0) {
-                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator-$timestamp", path = "helm/flink-k8s-toolbox-operator", args = args) != 0) {
+            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator", path = "helm/flink-k8s-toolbox-operator", args = args) != 0) {
+                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator", path = "helm/flink-k8s-toolbox-operator", args = args) != 0) {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
@@ -141,8 +136,8 @@ open class IntegrationSetup {
 
         fun installResources() {
             println("Install resources...")
-            if (createResources(redirect = redirect, namespace = namespace, path = "example/config-map.yaml") != 0) {
-                if (replaceResources(redirect = redirect, namespace = namespace, path = "example/config-map.yaml") != 0) {
+            if (createResources(redirect = redirect, namespace = namespace, path = "example/config.yaml") != 0) {
+                if (replaceResources(redirect = redirect, namespace = namespace, path = "example/config.yaml") != 0) {
                     fail("Can't create resources")
                 }
             }
@@ -168,10 +163,10 @@ open class IntegrationSetup {
                 }
             println("Operator terminated")
             println("Uninstalling operator...")
-            if (uninstallHelmChart(redirect = redirect, name = "flink-k8s-toolbox-operator-$timestamp") != 0) {
+            if (uninstallHelmChart(redirect = redirect, name = "flink-k8s-toolbox-operator") != 0) {
                 println("Can't uninstall Helm chart")
             }
-            if (uninstallHelmChart(redirect = redirect, name = "flink-k8s-toolbox-crd-$timestamp") != 0) {
+            if (uninstallHelmChart(redirect = redirect, name = "flink-k8s-toolbox-crd") != 0) {
                 println("Can't uninstall Helm chart")
             }
             println("Operator uninstalled")
@@ -557,7 +552,7 @@ open class IntegrationSetup {
         private fun executeCommand(redirect: Redirect?, command: List<String>): Int {
             val processBuilder = ProcessBuilder(command)
             val environment = processBuilder.environment()
-            environment["KUBECONFIG"] = System.getProperty("user.home") + "/.kube/config"
+            environment["KUBECONFIG"] = System.getenv("KUBECONFIG") ?: System.getProperty("user.home") + "/.kube/config"
             processBuilder.redirectErrorStream(true)
             processBuilder.redirectOutput(redirect)
             val process = processBuilder.start()

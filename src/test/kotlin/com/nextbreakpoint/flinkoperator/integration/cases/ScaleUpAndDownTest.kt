@@ -29,10 +29,10 @@ class ScaleUpAndDownTest : IntegrationSetup() {
             }
             println("Clusters created")
             println("Waiting for clusters...")
-            awaitUntilAsserted(timeout = 180) {
+            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
             }
-            awaitUntilAsserted(timeout = 180) {
+            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
             }
             println("Clusters started")
@@ -67,10 +67,10 @@ class ScaleUpAndDownTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Stopping)).isTrue()
         }
-        awaitUntilAsserted(timeout = 120) {
+        awaitUntilAsserted(timeout = 180) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
         }
-        awaitUntilAsserted(timeout = 120) {
+        awaitUntilAsserted(timeout = 180) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         val response1 = getClusterStatus(name = "cluster-1")
@@ -102,12 +102,12 @@ class ScaleUpAndDownTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Stopping)).isTrue()
         }
-        awaitUntilAsserted(timeout = 120) {
+        awaitUntilAsserted(timeout = 180) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Suspended)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
             assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-1", taskManagers = 0)).isTrue()
         }
-        awaitUntilAsserted(timeout = 120) {
+        awaitUntilAsserted(timeout = 180) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Suspended)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
             assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-2", taskManagers = 0)).isTrue()
