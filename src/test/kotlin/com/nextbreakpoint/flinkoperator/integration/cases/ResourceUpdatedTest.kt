@@ -70,10 +70,12 @@ class ResourceUpdatedTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 180) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
+            assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-1", taskManagers = 1)).isTrue()
         }
         awaitUntilAsserted(timeout = 180) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
+            assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-2", taskManagers = 2)).isTrue()
         }
         val response1 = getClusterStatus(name = "cluster-1")
         println(response1)
