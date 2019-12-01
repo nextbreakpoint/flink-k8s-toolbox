@@ -579,6 +579,21 @@ Tag and push the image to your Docker registry if needed:
     docker login some-registry
     docker push some-registry/flink-k8s-toolbox:1.2.2-beta
 
+## Run automated tests of Flink Operator
+
+Run unit tests with command:
+
+    ./gradlew clean test
+
+Run integration tests against Docker for Desktop or Minikube with command:
+
+    ./gradlew clean integrationTest
+
+You can skip the Docker images build step, if images already exist:
+
+    export SKIP_DOCKER_IMAGES=true
+    ./gradlew clean integrationTest
+
 ## Automatic savepoints
 
 The operator automatically creates savepoints before stopping the cluster.
