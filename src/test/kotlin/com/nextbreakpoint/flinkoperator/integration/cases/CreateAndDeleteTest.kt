@@ -14,18 +14,22 @@ class CreateAndDeleteTest : IntegrationSetup() {
     @Test
     fun `should create and delete clusters`() {
         println("Should create cluster...")
-        val json = String(Files.readAllBytes(File("example/cluster-spec.json").toPath()))
+        val json = String(Files.readAllBytes(File("integration/cluster-spec.json").toPath()))
         val spec = JSON().deserialize<V1FlinkClusterSpec>(json, specTypeToken.type)
-        createCluster(name = "cluster-0", spec = spec)
-        awaitUntilAsserted(timeout = 60) {
+        createCluster(name = "cluster-0", spec = spec, port = port)
+        awaitUntilAsserted(timeout = 30) {
             assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-0")).isTrue()
         }
+        describePods(redirect = redirect, namespace = namespace)
+        describeClusters(redirect = redirect, namespace = namespace)
         println("Cluster created")
         println("Should delete cluster...")
-        deleteCluster(name = "cluster-0")
-        awaitUntilAsserted(timeout = 60) {
+        deleteCluster(name = "cluster-0", port = port)
+        awaitUntilAsserted(timeout = 30) {
             assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-0")).isFalse()
         }
         println("Cluster delete")
+        describePods(redirect = redirect, namespace = namespace)
+        describeClusters(redirect = redirect, namespace = namespace)
     }
 }

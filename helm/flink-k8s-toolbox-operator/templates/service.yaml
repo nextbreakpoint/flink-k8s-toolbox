@@ -13,9 +13,12 @@ metadata:
     release: {{ $root.Release.Name }}
     heritage: {{ $root.Release.Service }}
 spec:
-  type: ClusterIP
+  type: {{ $root.Values.serviceType | default "ClusterIP" }}
   ports:
     - port: {{ $root.Values.controlPort | default 4444 }}
+      {{- if $root.Values.serviceNodePort}}
+      nodePort: {{ $root.Values.serviceNodePort }}
+      {{- end}}
       targetPort: control
       protocol: TCP
       name: {{ $root.Values.controlPortName | default "control" }}

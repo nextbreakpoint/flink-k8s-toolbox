@@ -30,7 +30,9 @@ open class IntegrationSetup {
         val redirect = Redirect.INHERIT
         val version = "1.2.2-beta"
         val timestamp = System.currentTimeMillis()
-        val namespace = "integration-$timestamp"
+//        val namespace = "integration-$timestamp"
+        val namespace = "integration"
+        val port = 30000
 
         val mapTypeToken = object : TypeToken<Map<String, Any>>() {}
         val specTypeToken = object : TypeToken<V1FlinkClusterSpec>() {}
@@ -43,17 +45,21 @@ open class IntegrationSetup {
         @JvmStatic
         fun setup() {
             printInfo()
+            TimeUnit.SECONDS.sleep(5)
             createNamespace()
             buildDockerImages()
             installOperator()
-            exposeOperator()
             installResources()
+            exposeOperator()
+            TimeUnit.SECONDS.sleep(5)
         }
 
         @AfterAll
         @JvmStatic
         fun teardown() {
+            TimeUnit.SECONDS.sleep(5)
             uninstallOperator()
+            TimeUnit.SECONDS.sleep(5)
             deleteNamespace()
         }
 
@@ -108,7 +114,9 @@ open class IntegrationSetup {
                 /*"--set", "namespace=$namespace",*/
                 "--set", "image.pullPolicy=Never",
                 "--set", "image.repository=integration/flink-k8s-toolbox",
-                "--set", "image.version=$version"
+                "--set", "image.version=$version",
+                "--set", "serviceType=NodePort",
+                "--set", "serviceNodePort=$port"
             )
             if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator", path = "helm/flink-k8s-toolbox-operator", args = args) != 0) {
                 if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator", path = "helm/flink-k8s-toolbox-operator", args = args) != 0) {
@@ -150,7 +158,6 @@ open class IntegrationSetup {
         }
 
         fun uninstallOperator() {
-            TimeUnit.SECONDS.sleep(10)
             val redirect = Redirect.INHERIT
             println("Stopping operator...")
             if (scaleOperator(redirect = redirect, namespace = namespace, replicas = 0) != 0) {
@@ -186,99 +193,107 @@ open class IntegrationSetup {
                 .untilAsserted(assertion)
         }
 
-        fun stopCluster(name: String, options: StopOptions) {
-            val response = sendPutRequest(url = "http://localhost:4444/cluster/$name/stop", body = options, typeToken = mapTypeToken)
+        fun awaitUntilCondition(timeout: Long, condition: () -> Boolean) {
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(timeout))
+                .pollDelay(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofSeconds(5))
+                .until(condition)
+        }
+
+        fun stopCluster(name: String, options: StopOptions, port: Int) {
+            val response = sendPutRequest(url = "http://localhost:$port/cluster/$name/stop", body = options, typeToken = mapTypeToken)
             if (response.first != 200 || response.second["status"] != "COMPLETED") {
                 fail("Can't stop cluster $name")
             }
         }
 
-        fun startCluster(name: String, options: StartOptions) {
-            val response = sendPutRequest(url = "http://localhost:4444/cluster/$name/start", body = options, typeToken = mapTypeToken)
+        fun startCluster(name: String, options: StartOptions, port: Int) {
+            val response = sendPutRequest(url = "http://localhost:$port/cluster/$name/start", body = options, typeToken = mapTypeToken)
             if (response.first != 200 || response.second["status"] != "COMPLETED") {
                 fail("Can't start cluster $name")
             }
         }
 
-        fun scaleCluster(name: String, options: ScaleOptions) {
-            val response = sendPutRequest(url = "http://localhost:4444/cluster/$name/scale", body = options, typeToken = mapTypeToken)
+        fun scaleCluster(name: String, options: ScaleOptions, port: Int) {
+            val response = sendPutRequest(url = "http://localhost:$port/cluster/$name/scale", body = options, typeToken = mapTypeToken)
             if (response.first != 200 || response.second["status"] != "COMPLETED") {
                 fail("Can't scale cluster $name")
             }
         }
 
-        fun createCluster(name: String, spec: V1FlinkClusterSpec) {
-            val response = sendPostRequest(url = "http://localhost:4444/cluster/$name", body = spec, typeToken = mapTypeToken)
+        fun createCluster(name: String, spec: V1FlinkClusterSpec, port: Int) {
+            val response = sendPostRequest(url = "http://localhost:$port/cluster/$name", body = spec, typeToken = mapTypeToken)
             if (response.first != 200 || response.second["status"] != "COMPLETED") {
                 fail("Can't create cluster $name")
             }
         }
 
-        fun deleteCluster(name: String) {
-            val response = sendDeleteRequest(url = "http://localhost:4444/cluster/$name", typeToken = mapTypeToken)
+        fun deleteCluster(name: String, port: Int) {
+            val response = sendDeleteRequest(url = "http://localhost:$port/cluster/$name", typeToken = mapTypeToken)
             if (response.first != 200 || response.second["status"] != "COMPLETED") {
                 fail("Can't delete cluster $name")
             }
         }
 
-        fun getClusterStatus(name: String): Map<String, Any> {
-            val response = sendGetRequest(url = "http://localhost:4444/cluster/$name/status", typeToken = mapTypeToken)
+        fun getClusterStatus(name: String, port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://localhost:$port/cluster/$name/status", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't get status of cluster $name")
             }
             return response.second
         }
 
-        fun getJobDetails(name: String): Map<String, Any> {
-            val response = sendGetRequest(url = "http://localhost:4444/cluster/$name/job/details", typeToken = mapTypeToken)
+        fun getJobDetails(name: String, port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://localhost:$port/cluster/$name/job/details", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't get job details of cluster $name")
             }
             return response.second
         }
 
-        fun getJobMetrics(name: String): Map<String, Any> {
-            val response = sendGetRequest(url = "http://localhost:4444/cluster/$name/job/metrics", typeToken = mapTypeToken)
+        fun getJobMetrics(name: String, port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://localhost:$port/cluster/$name/job/metrics", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't get job metrics of cluster $name")
             }
             return response.second
         }
 
-        fun getJobManagerMetrics(name: String): Map<String, Any> {
-            val response = sendGetRequest(url = "http://localhost:4444/cluster/$name/jobmanager/metrics", typeToken = mapTypeToken)
+        fun getJobManagerMetrics(name: String, port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://localhost:$port/cluster/$name/jobmanager/metrics", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't get JobManager metrics of cluster $name")
             }
             return response.second
         }
 
-        fun getTaskManagers(name: String): Map<String, Any> {
-            val response = sendGetRequest(url = "http://localhost:4444/cluster/$name/taskmanagers", typeToken = mapTypeToken)
+        fun getTaskManagers(name: String, port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://localhost:$port/cluster/$name/taskmanagers", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't get TaskManagers list of cluster $name")
             }
             return response.second
         }
 
-        fun getTaskManagerDetails(name: String, taskmanagerId: TaskManagerId): Map<String, Any> {
-            val response = sendGetRequest(url = "http://localhost:4444/cluster/$name/taskmanagers/${taskmanagerId.taskmanagerId}/details", typeToken = mapTypeToken)
+        fun getTaskManagerDetails(name: String, taskmanagerId: TaskManagerId, port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://localhost:$port/cluster/$name/taskmanagers/${taskmanagerId.taskmanagerId}/details", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't get TaskManager details of cluster $name")
             }
             return response.second
         }
 
-        fun getTaskManagerMetrics(name: String, taskmanagerId: TaskManagerId): Map<String, Any> {
-            val response = sendGetRequest(url = "http://localhost:4444/cluster/$name/taskmanagers/${taskmanagerId.taskmanagerId}/metrics", typeToken = mapTypeToken)
+        fun getTaskManagerMetrics(name: String, taskmanagerId: TaskManagerId, port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://localhost:$port/cluster/$name/taskmanagers/${taskmanagerId.taskmanagerId}/metrics", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't get TaskManager metrics of cluster $name")
             }
             return response.second
         }
 
-        fun triggerSavepoint(name: String): Map<String, Any> {
-            val response = sendPutRequest(url = "http://localhost:4444/cluster/$name/savepoint", typeToken = mapTypeToken, body = "")
+        fun triggerSavepoint(name: String, port: Int): Map<String, Any> {
+            val response = sendPutRequest(url = "http://localhost:$port/cluster/$name/savepoint", typeToken = mapTypeToken, body = "")
             if (response.first != 200) {
                 fail("Can't trigger savepoint in cluster $name")
             }
@@ -379,6 +394,28 @@ open class IntegrationSetup {
             return executeCommand(redirect, command)
         }
 
+        fun describeClusters(redirect: Redirect?, namespace: String): Int {
+            val command = listOf(
+                "kubectl",
+                "-n",
+                namespace,
+                "get",
+                "fc"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        fun describePods(redirect: Redirect?, namespace: String): Int {
+            val command = listOf(
+                "kubectl",
+                "-n",
+                namespace,
+                "describe",
+                "pod"
+            )
+            return executeCommand(redirect, command)
+        }
+
         fun updateCluster(redirect: Redirect?, namespace: String, name: String, patch: String): Int {
             val command = listOf(
                 "kubectl",
@@ -406,14 +443,18 @@ open class IntegrationSetup {
 
         private fun exposeOperator(redirect: Redirect?, namespace: String): Int {
             val command = listOf(
-                "kubectl",
-                "-n",
-                namespace,
-                "expose",
-                "service",
-                "flink-operator",
-                "--type=LoadBalancer",
-                "--name=flink-operator-lb"
+                "sh",
+                "-c",
+                "kubectl -n $namespace expose service flink-operator --type=LoadBalancer --name=flink-operator-lb --port=4444 --external-ip=192.168.1.20"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun saveOperatorPort(redirect: Redirect?, namespace: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace get service -o json | jq -r '.items[0].spec.ports[] | select(.name==\"control\") | .nodePort' > .port"
             )
             return executeCommand(redirect, command)
         }

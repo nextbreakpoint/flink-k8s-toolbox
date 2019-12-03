@@ -591,7 +591,7 @@ Run integration tests against Docker for Desktop or Minikube with command:
 
 You can skip the Docker images build step, if images already exist:
 
-    export SKIP_DOCKER_IMAGES=true
+    export SKIP_BUILD_IMAGES=true
     ./gradlew clean integrationTest
 
 ## Automatic savepoints

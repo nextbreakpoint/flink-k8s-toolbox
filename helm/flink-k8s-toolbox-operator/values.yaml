@@ -25,6 +25,9 @@ secretName:
 
 serviceAccount: flink-operator
 
+serviceType: ClusterIP
+serviceNodePort:
+
 keystore:
   pathKey: keystore.jks
   secretKey: keystore-secret
