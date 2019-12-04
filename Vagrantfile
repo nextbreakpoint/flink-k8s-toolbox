@@ -24,8 +24,8 @@ Vagrant.configure(2) do |config|
       privileged: false
     s.vm.provider "virtualbox" do |v|
       v.name = "integration"
-      v.cpus = 4
-      v.memory = 10240
+      v.cpus = 2
+      v.memory = 7168
       v.gui = false
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       #v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
