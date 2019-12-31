@@ -154,7 +154,7 @@ class CancelJobTest {
         verify(context, atLeastOnce()).isJobStopped(eq(clusterId))
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
-        assertThat(result.action).isEqualTo(TaskAction.REPEAT)
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotBlank()
         assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
     }

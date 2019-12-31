@@ -61,7 +61,7 @@ class CancelJob : Task {
         val lastestSavepointResponse = context.getLatestSavepoint(context.clusterId, savepointRequest)
 
         if (!lastestSavepointResponse.isCompleted()) {
-            return repeat(context.flinkCluster, "Savepoint not created yet...")
+            return next(context.flinkCluster, "Job stopped after $seconds seconds, but savepoint failed!")
         }
 
         val savepointPath = lastestSavepointResponse.output
