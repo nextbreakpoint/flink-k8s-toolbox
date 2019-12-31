@@ -397,7 +397,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.error("[$address] Can't get savepoint status for job ${it.first}")
+                        throw CallException("[$address] Can't get savepoint status for job ${it.first}")
                     }
 
                     val asynchronousOperationResult = body.source().use { source ->
@@ -415,6 +415,8 @@ object FlinkClient {
             }.map {
                 it.first
             }.toList()
+        } catch (e : CallException) {
+            throw e
         } catch (e : Exception) {
             throw RuntimeException(e)
         }
@@ -431,7 +433,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.error("[$address] Can't get checkpointing statistics for job ${it.first}")
+                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
                     }
 
                     val checkpointingStatistics = body.source().use { source ->
@@ -451,6 +453,8 @@ object FlinkClient {
             }.filter {
                 it.second.isNotBlank()
             }.toMap()
+        } catch (e : CallException) {
+            throw e
         } catch (e : Exception) {
             throw RuntimeException(e)
         }
@@ -469,7 +473,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.warn("[$address] Can't request savepoint for job $it")
+                        throw CallException("[$address] Can't request savepoint for job $it")
                     }
 
                     it.first to body.source().use { source ->
@@ -481,6 +485,8 @@ object FlinkClient {
             }.onEach {
                 logger.info("[$address] Created savepoint request ${it.second} for job ${it.first}")
             }.toMap()
+        } catch (e : CallException) {
+            throw e
         } catch (e : Exception) {
             throw RuntimeException(e)
         }
