@@ -10,7 +10,6 @@ metadata:
     release: {{ $root.Release.Name }}
     heritage: {{ $root.Release.Service }}
 spec:
-  preserveUnknownField: false
   group: nextbreakpoint.com
   versions:
     - name: v1
