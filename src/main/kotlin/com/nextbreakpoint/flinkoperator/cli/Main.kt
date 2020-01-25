@@ -49,6 +49,9 @@ class Main(private val factory: CommandFactory) {
             Operator().subcommands(
                 RunOperatorCommand(factory)
             ),
+            Clusters().subcommands(
+                ListClustersCommand(factory)
+            ),
             Cluster().subcommands(
                 CreateClusterCommand(factory),
                 DeleteClusterCommand(factory),
@@ -89,6 +92,10 @@ class Main(private val factory: CommandFactory) {
         override fun run() = Unit
     }
 
+    class Clusters: CliktCommand(name = "clusters", help = "Access clusters subcommands") {
+        override fun run() = Unit
+    }
+
     class Cluster: CliktCommand(name = "cluster", help = "Access cluster subcommands") {
         override fun run() = Unit
     }
@@ -115,6 +122,27 @@ class Main(private val factory: CommandFactory) {
 
     class TaskManagers: CliktCommand(name = "taskmanagers", help = "Access TaskManagers subcommands") {
         override fun run() = Unit
+    }
+
+    class ListClustersCommand(private val factory: CommandFactory): CliktCommand(name = "list", help="List clusters") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+
+        override fun run() {
+            factory.createListClustersCommand().run(
+                ConnectionConfig(
+                    host,
+                    port,
+                    keystorePath,
+                    keystoreSecret,
+                    truststorePath,
+                    truststoreSecret
+                ))
+        }
     }
 
     class CreateClusterCommand(private val factory: CommandFactory): CliktCommand(name = "create", help="Create a cluster") {

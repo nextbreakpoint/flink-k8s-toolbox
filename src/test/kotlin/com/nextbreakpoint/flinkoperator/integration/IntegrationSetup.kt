@@ -35,6 +35,7 @@ open class IntegrationSetup {
         val port = getVariable("OPERATOR_PORT", "30000").toInt()
         val host = getVariable("OPERATOR_HOST", "localhost")
         val mapTypeToken = object : TypeToken<Map<String, Any>>() {}
+        val listTypeToken = object : TypeToken<List<String>>() {}
         val specTypeToken = object : TypeToken<V1FlinkClusterSpec>() {}
         val statusTypeToken = object : TypeToken<V1FlinkClusterStatus>() {}
         val taskmanagersTypeToken = object : TypeToken<List<TaskManagerInfo>>() {}
@@ -139,6 +140,9 @@ open class IntegrationSetup {
             if (exposeOperator(redirect = redirect, namespace = namespace) != 0) {
                 fail("Can't expose the operator")
             }
+            awaitUntilAsserted(timeout = 60) {
+                assertThat(listClusters(port = port)).isEmpty()
+            }
             println("Operator exposed")
         }
 
@@ -146,19 +150,22 @@ open class IntegrationSetup {
             println("Install resources...")
             if (createResources(redirect = redirect, namespace = namespace, path = "example/config.yaml") != 0) {
                 if (replaceResources(redirect = redirect, namespace = namespace, path = "example/config.yaml") != 0) {
-                    fail("Can't create resources")
+                    fail("Can't create configmap")
                 }
             }
             if (createResources(redirect = redirect, namespace = namespace, path = "example/secrets.yaml") != 0) {
                 if (replaceResources(redirect = redirect, namespace = namespace, path = "example/secrets.yaml") != 0) {
-                    fail("Can't create resources")
+                    fail("Can't create secrets")
                 }
             }
-            if (createResources(redirect = redirect, namespace = namespace, path = "example/volumes.yaml") != 0) {
-                if (replaceResources(redirect = redirect, namespace = namespace, path = "example/volumes.yaml") != 0) {
-                    fail("Can't create resources")
-                }
-            }
+//            if (createResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
+//                if (deleteResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
+//                    fail("Can't delete volumes")
+//                }
+//                if (createResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
+//                    fail("Can't create volumes")
+//                }
+//            }
             println("Resources installed")
         }
 
@@ -204,6 +211,14 @@ open class IntegrationSetup {
                 .pollDelay(Duration.ofSeconds(5))
                 .pollInterval(Duration.ofSeconds(5))
                 .until(condition)
+        }
+
+        private fun listClusters(port: Int): List<String> {
+            val response = sendGetRequest(url = "http://$host:$port/clusters", typeToken = listTypeToken)
+            if (response.first != 200) {
+                fail("Can't list clusters")
+            }
+            return response.second
         }
 
         fun stopCluster(name: String, options: StopOptions, port: Int) {
@@ -305,12 +320,12 @@ open class IntegrationSetup {
             return response.second
         }
 
-        private fun <T> sendGetRequest(timeout: Long = 10, url: String, typeToken: TypeToken<T>): Pair<Int, T> {
+        private fun <T> sendGetRequest(timeout: Long = 60, url: String, typeToken: TypeToken<T>): Pair<Int, T> {
             val request = Request.Builder().url(url).get().build()
             return executeCall(request, timeout, typeToken)
         }
 
-        private fun <T> sendPostRequest(timeout: Long = 10, url: String, body: Any? = null, typeToken: TypeToken<T>): Pair<Int, T> {
+        private fun <T> sendPostRequest(timeout: Long = 60, url: String, body: Any? = null, typeToken: TypeToken<T>): Pair<Int, T> {
             val mediaType = MediaType.parse("application/json")
             val builder = Request.Builder().url(url)
             if (body != null) {
@@ -322,7 +337,7 @@ open class IntegrationSetup {
             return executeCall(request, timeout, typeToken)
         }
 
-        private fun <T> sendPutRequest(timeout: Long = 10, url: String, body: Any? = null, typeToken: TypeToken<T>): Pair<Int, T> {
+        private fun <T> sendPutRequest(timeout: Long = 60, url: String, body: Any? = null, typeToken: TypeToken<T>): Pair<Int, T> {
             val mediaType = MediaType.parse("application/json")
             val builder = Request.Builder().url(url)
             if (body != null) {
@@ -334,7 +349,7 @@ open class IntegrationSetup {
             return executeCall(request, timeout, typeToken)
         }
 
-        private fun <T> sendDeleteRequest(timeout: Long = 10, url: String, typeToken: TypeToken<T>): Pair<Int, T> {
+        private fun <T> sendDeleteRequest(timeout: Long = 60, url: String, typeToken: TypeToken<T>): Pair<Int, T> {
             val request = Request.Builder().url(url).delete().build()
             return executeCall(request, timeout, typeToken)
         }
@@ -450,7 +465,7 @@ open class IntegrationSetup {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace expose service flink-operator --type=LoadBalancer --name=flink-operator-lb --port=4444 --external-ip=192.168.1.20"
+                "kubectl -n $namespace expose service flink-operator --type=LoadBalancer --name=flink-operator-lb --port=4444 --external-ip=\$(minikube ip)"
             )
             return executeCommand(redirect, command)
         }
@@ -460,6 +475,13 @@ open class IntegrationSetup {
                 "sh",
                 "-c",
                 "kubectl -n $namespace get service -o json | jq -r '.items[0].spec.ports[] | select(.name==\"control\") | .nodePort' > .port"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun saveOperatorHost(redirect: Redirect?, namespace: String): Int {
+            val command = listOf(
+                "minikube", "ip", ">", ".host"
             )
             return executeCommand(redirect, command)
         }
@@ -549,6 +571,26 @@ open class IntegrationSetup {
             return executeCommand(redirect, command)
         }
 
+        private fun createResources(redirect: Redirect?, path: String): Int {
+            val command = listOf(
+                "kubectl",
+                "create",
+                "-f",
+                "$path"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun deleteResources(redirect: Redirect?, path: String): Int {
+            val command = listOf(
+                "kubectl",
+                "delete",
+                "-f",
+                "$path"
+            )
+            return executeCommand(redirect, command)
+        }
+
         private fun createNamespace(redirect: Redirect?, namespace: String): Int {
             val command = listOf(
                 "kubectl",
@@ -588,7 +630,9 @@ open class IntegrationSetup {
         private fun <T> executeCall(request: Request, timeout: Long, typeToken: TypeToken<T>): Pair<Int, T> {
             val response = createApiClient(timeout).newCall(request).execute()
             response.body().use {
-                return response.code() to JSON().deserialize(it.source().readUtf8Line(), typeToken.type)
+                val line = it.source().readUtf8Line()
+                println("Response { code: ${response.code()}, body: $line }")
+                return response.code() to JSON().deserialize(line, typeToken.type)
             }
         }
 
