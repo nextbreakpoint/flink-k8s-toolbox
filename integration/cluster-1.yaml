@@ -58,13 +58,13 @@ spec:
           - ls
         imagePullPolicy: IfNotPresent
         name: initializer
-      resources:
-        limits:
-          cpu: '0.2'
-          memory: 128Mi
-        requests:
-          cpu: '0.1'
-          memory: 64Mi
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
     sideContainers:
       - image: busybox
         command:
@@ -72,13 +72,13 @@ spec:
           - '3600'
         imagePullPolicy: IfNotPresent
         name: sidecar
-      resources:
-        limits:
-          cpu: '0.2'
-          memory: 128Mi
-        requests:
-          cpu: '0.1'
-          memory: 64Mi
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
     extraPorts:
       - name: prometheus
         containerPort: 9999
@@ -139,13 +139,13 @@ spec:
           - ls
         imagePullPolicy: IfNotPresent
         name: initializer
-      resources:
-        limits:
-          cpu: '0.2'
-          memory: 128Mi
-        requests:
-          cpu: '0.1'
-          memory: 64Mi
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
     sideContainers:
       - image: busybox
         command:
@@ -153,13 +153,13 @@ spec:
           - '3600'
         imagePullPolicy: IfNotPresent
         name: sidecar
-      resources:
-        limits:
-          cpu: '0.2'
-          memory: 128Mi
-        requests:
-          cpu: '0.1'
-          memory: 64Mi
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
     extraPorts:
       - name: prometheus
         containerPort: 9999
@@ -173,7 +173,7 @@ spec:
            - ReadWriteOnce
           resources:
             requests:
-              storage: 5Gi
+              storage: 2Gi
     resources:
       limits:
         cpu: '0.5'

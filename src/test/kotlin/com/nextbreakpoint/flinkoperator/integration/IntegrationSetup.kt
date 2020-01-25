@@ -154,6 +154,11 @@ open class IntegrationSetup {
                     fail("Can't create resources")
                 }
             }
+            if (createResources(redirect = redirect, namespace = namespace, path = "example/volumes.yaml") != 0) {
+                if (replaceResources(redirect = redirect, namespace = namespace, path = "example/volumes.yaml") != 0) {
+                    fail("Can't create resources")
+                }
+            }
             println("Resources installed")
         }
 
