@@ -97,7 +97,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
             .editOrNewSpec()
             .withCompletions(1)
             .withParallelism(1)
-            .withBackoffLimit(3)
+            .withBackoffLimit(1)
             .withTtlSecondsAfterFinished(30)
             .editOrNewTemplate()
             .editOrNewMetadata()

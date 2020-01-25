@@ -20,13 +20,27 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
 
             val address = KubeClient.findFlinkAddress(flinkOptions, namespace, clusterName)
 
-            val uploadResult = FlinkClient.uploadJarCall(address, File(args.jarPath))
+            var count = 0;
 
-            if (uploadResult.status != JarUploadResponseBody.StatusEnum.SUCCESS) {
-                throw Exception("Failed to upload file ${args.jarPath}")
+            while (count < 5) {
+                try {
+                    val uploadResult = FlinkClient.uploadJarCall(address, File(args.jarPath))
+
+                    if (uploadResult.status == JarUploadResponseBody.StatusEnum.SUCCESS) {
+                        logger.info("File ${args.jarPath} uploaded to ${uploadResult.filename}")
+
+                        break;
+                    } else {
+                        logger.warn("Failed to upload file. Retrying...")
+                    }
+                } catch (e : Exception) {
+                    logger.warn("Failed to upload file. Retrying...", e)
+                }
+
+                Thread.sleep(5000)
+
+                count += 1
             }
-
-            logger.info("File ${args.jarPath} uploaded to ${uploadResult.filename}")
 
             val files = FlinkClient.listJars(address)
 
@@ -45,7 +59,25 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
                 logger.info("Resuming from savepoint $parallelism")
             }
 
-            FlinkClient.runJar(address, jarFile, className, parallelism, savepointPath, arguments)
+            count = 0;
+
+            while (count < 5) {
+                try {
+                    FlinkClient.runJar(address, jarFile, className, parallelism, savepointPath, arguments)
+                } catch (e : Exception) {
+                    logger.warn("Failed to run job. Retrying...", e)
+                }
+
+                Thread.sleep(5000)
+
+                count += 1
+            }
+
+            val jobs = FlinkClient.listRunningJobs(address)
+
+            if (jobs.isEmpty()) {
+                throw Exception("Can't find running job")
+            }
 
             logger.info("Job started")
         } catch (e: Exception) {

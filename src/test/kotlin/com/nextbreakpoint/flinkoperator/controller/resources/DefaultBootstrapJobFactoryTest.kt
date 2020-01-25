@@ -25,7 +25,7 @@ class DefaultBootstrapJobFactoryTest {
 
         assertThat(job.spec?.parallelism).isEqualTo(1)
         assertThat(job.spec?.completions).isEqualTo(1)
-        assertThat(job.spec?.backoffLimit).isEqualTo(3)
+        assertThat(job.spec?.backoffLimit).isEqualTo(1)
         assertThat(job.spec?.ttlSecondsAfterFinished).isEqualTo(30)
 
         val podSpec = job.spec?.template?.spec
