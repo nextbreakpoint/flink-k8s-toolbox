@@ -235,6 +235,14 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
 
+        mainRouter.get("/clusters").handler { routingContext ->
+            processRequest(routingContext, Function { context ->
+                json.serialize(
+                    cache.getCachedClusters().map { it.name }.toList()
+                )
+            })
+        }
+
         mainRouter.get("/cluster/:name/status").handler { routingContext ->
             processRequest(routingContext, Function { context ->
                 json.serialize(

@@ -7,8 +7,3 @@ sudo minikube start --memory=6gb --vm-driver=none --kubernetes-version v1.17.0
 sudo chown -R $USER $HOME/.kube $HOME/.minikube
 sudo chgrp -R $USER $HOME/.kube $HOME/.minikube
 
-sudo mkdir -p /var/tmp/pv1
-sudo mkdir -p /var/tmp/pv2
-sudo mkdir -p /var/tmp/pv3
-sudo mkdir -p /var/tmp/pv4
-sudo mkdir -p /var/tmp/pv5

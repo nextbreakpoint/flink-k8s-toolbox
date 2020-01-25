@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.cli
 
-interface ServerCommand<T> {
+interface LaunchCommand<T> {
     fun run(args: T)
 }
 

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
 object FlinkClient {
     private val logger = Logger.getLogger(FlinkClient::class.simpleName)
 
-    private const val TIMEOUT = 5000L
+    private const val TIMEOUT = 10000L
 
     fun getOverview(address: FlinkAddress): ClusterOverviewWithVersion {
         try {
@@ -154,7 +154,7 @@ object FlinkClient {
         arguments: List<String>
     ) {
         try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
+            val flinkApi = createFlinkApiClient(address, TIMEOUT * 10)
 
             val response = flinkApi.runJarCall(
                 jarFile.id,
@@ -494,7 +494,7 @@ object FlinkClient {
 
     fun uploadJarCall(address: FlinkAddress, file: File): JarUploadResponseBody {
         try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
+            val flinkApi = createFlinkApiClient(address, TIMEOUT * 30)
 
             val response = flinkApi.uploadJarCall(file, null, null).execute();
 
