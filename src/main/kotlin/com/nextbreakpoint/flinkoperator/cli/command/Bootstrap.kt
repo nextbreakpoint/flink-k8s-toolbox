@@ -29,7 +29,7 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
                     if (uploadResult.status == JarUploadResponseBody.StatusEnum.SUCCESS) {
                         logger.info("File ${args.jarPath} uploaded to ${uploadResult.filename}")
 
-                        break;
+                        break
                     } else {
                         logger.warn("Failed to upload file. Retrying...")
                     }
@@ -59,25 +59,7 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
                 logger.info("Resuming from savepoint $parallelism")
             }
 
-            count = 0;
-
-            while (count < 5) {
-                try {
-                    FlinkClient.runJar(address, jarFile, className, parallelism, savepointPath, arguments)
-                } catch (e : Exception) {
-                    logger.warn("Failed to run job. Retrying...", e)
-                }
-
-                Thread.sleep(5000)
-
-                count += 1
-            }
-
-            val jobs = FlinkClient.listRunningJobs(address)
-
-            if (jobs.isEmpty()) {
-                throw Exception("Can't find running job")
-            }
+            FlinkClient.runJar(address, jarFile, className, parallelism, savepointPath, arguments)
 
             logger.info("Job started")
         } catch (e: Exception) {
