@@ -479,7 +479,7 @@ open class IntegrationSetup {
             return executeCommand(redirect, command)
         }
 
-        private fun saveOperatorHost(redirect: Redirect?, namespace: String): Int {
+        private fun saveOperatorHost(redirect: Redirect?): Int {
             val command = listOf(
                 "minikube", "ip", ">", ".host"
             )
