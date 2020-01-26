@@ -92,9 +92,13 @@ Create Flink Secret resource:
 
     kubectl create -f example/secrets.yaml -n flink
 
-Create Flink Cluster resource:
+Create Flink Cluster resource with standard storage class (required for Minikube):
 
     kubectl create -f example/cluster.yaml -n flink
+
+Create Flink Cluster resource with hostpath storage class (required for Docker for Desktop):
+
+    kubectl create -f example/cluster-hostpath.yaml -n flink
 
 Get Flink Cluster resource:
 
