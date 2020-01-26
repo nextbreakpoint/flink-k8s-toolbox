@@ -1,0 +1,188 @@
+apiVersion: "nextbreakpoint.com/v1"
+kind: FlinkCluster
+metadata:
+  name: test
+spec:
+  taskManagers: 1
+  runtime:
+    pullPolicy: Never
+    image: example/flink:1.9.0
+  bootstrap:
+    serviceAccount: flink-bootstrap
+    pullPolicy: Never
+    image: example/flink-jobs:1
+    jarPath: /flink-jobs.jar
+    className: com.nextbreakpoint.flink.jobs.TestJob
+    arguments:
+      - --DEVELOP_MODE
+      - disabled
+  jobManager:
+    serviceMode: NodePort
+    maxHeapMemory: 256
+    annotations:
+      managed: true
+    environment:
+    - name: FLINK_ENVIRONMENT
+      value: test
+    - name: FLINK_GRAPHITE_HOST
+      value: graphite.default.svc.cluster.local
+    - name: FLINK_SAVEPOINTS_LOCATION
+      value: file:///var/savepoints
+    - name: FLINK_CHECKPOINTS_LOCATION
+      value: file:///var/checkpoints
+    - name: FLINK_FS_CHECKPOINTS_LOCATION
+      value: file:///var/fs_checkpoints
+    environmentFrom:
+    - secretRef:
+        name: flink-secrets
+    volumeMounts:
+      - name: config-vol
+        mountPath: /hadoop/etc/core-site.xml
+        subPath: core-site.xml
+      - name: config-vol
+        mountPath: /docker-entrypoint.sh
+        subPath: docker-entrypoint.sh
+      - name: config-vol
+        mountPath: /opt/flink/conf/flink-conf-template.yaml
+        subPath: flink-conf.yaml
+      - name: jobmanager
+        mountPath: /var
+    volumes:
+      - name: config-vol
+        configMap:
+          name: flink-config
+          defaultMode: 0777
+    initContainers:
+      - image: busybox
+        command:
+          - ls
+        imagePullPolicy: IfNotPresent
+        name: initializer
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
+    sideContainers:
+      - image: busybox
+        command:
+          - sleep
+          - '3600'
+        imagePullPolicy: IfNotPresent
+        name: sidecar
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
+    extraPorts:
+      - name: prometheus
+        containerPort: 9999
+        protocol: TCP
+    persistentVolumeClaimsTemplates:
+      - metadata:
+          name: jobmanager
+        spec:
+          storageClassName: hostpath
+          accessModes:
+           - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+    resources:
+      limits:
+        cpu: '1'
+        memory: 300Mi
+      requests:
+        cpu: '0.2'
+        memory: 200Mi
+  taskManager:
+    taskSlots: 1
+    maxHeapMemory: 1024
+    annotations:
+      managed: true
+    environment:
+    - name: FLINK_ENVIRONMENT
+      value: test
+    - name: FLINK_GRAPHITE_HOST
+      value: graphite.default.svc.cluster.local
+    - name: FLINK_SAVEPOINTS_LOCATION
+      value: file:///var/savepoints
+    - name: FLINK_CHECKPOINTS_LOCATION
+      value: file:///var/checkpoints
+    - name: FLINK_FS_CHECKPOINTS_LOCATION
+      value: file:///var/fs_checkpoints
+    volumeMounts:
+      - name: config-vol
+        mountPath: /hadoop/etc/core-site.xml
+        subPath: core-site.xml
+      - name: config-vol
+        mountPath: /docker-entrypoint.sh
+        subPath: docker-entrypoint.sh
+      - name: config-vol
+        mountPath: /opt/flink/conf/flink-conf-template.yaml
+        subPath: flink-conf.yaml
+      - name: taskmanager
+        mountPath: /var
+    volumes:
+      - name: config-vol
+        configMap:
+          name: flink-config
+          defaultMode: 0777
+    initContainers:
+      - image: busybox
+        command:
+          - ls
+        imagePullPolicy: IfNotPresent
+        name: initializer
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
+    sideContainers:
+      - image: busybox
+        command:
+          - sleep
+          - '3600'
+        imagePullPolicy: IfNotPresent
+        name: sidecar
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
+    extraPorts:
+      - name: prometheus
+        containerPort: 9999
+        protocol: TCP
+    persistentVolumeClaimsTemplates:
+      - metadata:
+          name: taskmanager
+        spec:
+          storageClassName: hostpath
+          accessModes:
+           - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
+    resources:
+      limits:
+        cpu: '1'
+        memory: 1100Mi
+      requests:
+        cpu: '0.2'
+        memory: 600Mi
+  operator:
+    savepointMode: Manual
+    savepointInterval: 60
+    savepointTargetPath: file:///var/savepoints
+    jobRestartPolicy: Always
