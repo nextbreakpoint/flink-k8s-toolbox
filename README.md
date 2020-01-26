@@ -230,6 +230,8 @@ All the possible tasks which the operator can execute to transition from one sta
 
 The operator exposes a REST API on port 4444 by default. The API provides information about the status of the resources, metrics of clusters and jobs, and more:
 
+    http://localhost:4444/clusters
+
     http://localhost:4444/cluster/<name>/status
 
     http://localhost:4444/cluster/<name>/job/details
@@ -561,9 +563,14 @@ Build the uber JAR file with command:
 
     ./gradlew clean shadowJar
 
-and test the JAR printing the CLI usage:
+and test the JAR invoking the CLI:
 
     java -jar build/libs/flink-k8s-toolbox-1.2.3-beta-with-dependencies.jar --help
+
+Please note that Java 8 is required to build the JAR. Define JAVA_HOME variable to specify the correct JDK:  
+
+    export JAVA_HOME=/path_to_jdk
+    ./gradlew clean shadowJar
 
 Build a Docker image with command:
 
@@ -594,6 +601,12 @@ You can skip the Docker images build step, if images already exist:
     export SKIP_BUILD_IMAGES=true
     ./gradlew clean integrationTest
 
+Please note that only Java 8 is supported. Define JAVA_HOME variable to specify the correct JDK:  
+
+    export JAVA_HOME=/path_to_jdk
+    export SKIP_BUILD_IMAGES=true
+    ./gradlew clean integrationTest
+
 ## Automatic savepoints
 
 The operator automatically creates savepoints before stopping the cluster.
@@ -618,6 +631,7 @@ The output should look like:
 
     Commands:
       operator      Access operator subcommands
+      clusters      Access clusters subcommands
       cluster       Access cluster subcommands
       savepoint     Access savepoint subcommands
       bootstrap     Access bootstrap subcommands
@@ -778,15 +792,21 @@ Show more options with the command:
 
     docker run --rm -it flink-k8s-toolbox:1.2.3-beta cluster create --help
 
+### How to get the list of clusters
+
+Execute the command:
+
+    docker run --rm -it flink-k8s-toolbox:1.2.3-beta clusters list --host=$OPERATOR_HOST --port=4444
+
 ### How to get the status of a cluster
 
 Execute the command:
 
     docker run --rm -it flink-k8s-toolbox:1.2.3-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-Use grep and jq to format the output:
+Use jq to format the output:
 
-    docker run --rm -it flink-k8s-toolbox:1.2.3-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444 | grep -v WARNING | jq -r
+    docker run --rm -it flink-k8s-toolbox:1.2.3-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444 | jq -r
 
 Show more options with the command:
 
