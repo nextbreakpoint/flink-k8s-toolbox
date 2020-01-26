@@ -1,16 +1,16 @@
 apiVersion: "nextbreakpoint.com/v1"
 kind: FlinkCluster
 metadata:
-  name: cluster-1
+  name: test
 spec:
   taskManagers: 1
   runtime:
     pullPolicy: Never
-    image: integration/flink:1.9.0
+    image: example/flink:1.9.0
   bootstrap:
     serviceAccount: flink-bootstrap
     pullPolicy: Never
-    image: integration/flink-jobs:1
+    image: example/flink-jobs:1
     jarPath: /flink-jobs.jar
     className: com.nextbreakpoint.flink.jobs.TestJob
     arguments:
@@ -60,10 +60,10 @@ spec:
         name: initializer
         resources:
           limits:
-            cpu: '0.1'
+            cpu: '0.2'
             memory: 128Mi
           requests:
-            cpu: '0.05'
+            cpu: '0.1'
             memory: 64Mi
     sideContainers:
       - image: busybox
@@ -74,10 +74,10 @@ spec:
         name: sidecar
         resources:
           limits:
-            cpu: '0.1'
+            cpu: '0.2'
             memory: 128Mi
           requests:
-            cpu: '0.05'
+            cpu: '0.1'
             memory: 64Mi
     extraPorts:
       - name: prometheus
@@ -95,10 +95,10 @@ spec:
               storage: 1Gi
     resources:
       limits:
-        cpu: '0.2'
+        cpu: '1'
         memory: 300Mi
       requests:
-        cpu: '0.1'
+        cpu: '0.2'
         memory: 200Mi
   taskManager:
     taskSlots: 1
@@ -141,10 +141,10 @@ spec:
         name: initializer
         resources:
           limits:
-            cpu: '0.1'
+            cpu: '0.2'
             memory: 128Mi
           requests:
-            cpu: '0.05'
+            cpu: '0.1'
             memory: 64Mi
     sideContainers:
       - image: busybox
@@ -155,10 +155,10 @@ spec:
         name: sidecar
         resources:
           limits:
-            cpu: '0.1'
+            cpu: '0.2'
             memory: 128Mi
           requests:
-            cpu: '0.05'
+            cpu: '0.1'
             memory: 64Mi
     extraPorts:
       - name: prometheus
@@ -173,13 +173,13 @@ spec:
            - ReadWriteOnce
           resources:
             requests:
-              storage: 2Gi
+              storage: 5Gi
     resources:
       limits:
-        cpu: '0.2'
+        cpu: '1'
         memory: 1100Mi
       requests:
-        cpu: '0.1'
+        cpu: '0.2'
         memory: 600Mi
   operator:
     savepointMode: Manual

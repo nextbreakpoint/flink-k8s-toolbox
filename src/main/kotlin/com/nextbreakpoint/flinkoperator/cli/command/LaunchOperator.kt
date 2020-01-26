@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.cli.command
 
-import com.nextbreakpoint.flinkoperator.cli.ServerCommand
+import com.nextbreakpoint.flinkoperator.cli.LaunchCommand
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
 import com.nextbreakpoint.flinkoperator.controller.MonitoringVerticle
 import com.nextbreakpoint.flinkoperator.controller.OperatorVerticle
@@ -15,7 +15,7 @@ import io.vertx.micrometer.VertxPrometheusOptions
 import org.apache.log4j.Logger
 import java.util.concurrent.TimeUnit
 
-class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, ServerCommand<OperatorConfig> {
+class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, LaunchCommand<OperatorConfig> {
     companion object {
         private val logger = Logger.getLogger(LaunchOperator::class.simpleName)
     }

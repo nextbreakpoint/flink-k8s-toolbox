@@ -65,10 +65,6 @@
         "name": "config-vol",
         "mountPath": "/opt/flink/conf/flink-conf-template.yaml",
         "subPath": "flink-conf.yaml"
-      },
-      {
-        "name": "jobmanager",
-        "mountPath": "/var"
       }
     ],
     "volumes": [
@@ -80,27 +76,6 @@
         }
       }
     ],
-    "initContainers": [
-      {
-        "image": "busybox",
-        "command": [
-          "ls"
-        ],
-        "imagePullPolicy": "IfNotPresent",
-        "name": "initializer"
-      }
-    ],
-    "sideContainers": [
-      {
-        "image": "busybox",
-        "command": [
-          "sleep",
-          "3600"
-        ],
-        "imagePullPolicy": "IfNotPresent",
-        "name": "sidecar"
-      }
-    ],
     "extraPorts": [
       {
         "name": "prometheus",
@@ -108,30 +83,14 @@
         "protocol": "TCP"
       }
     ],
-    "persistentVolumeClaimsTemplates": [
-      {
-        "metadata": {
-          "name": "jobmanager"
-        },
-        "spec": {
-          "storageClassName": "standard",
-          "accessModes": [ "ReadWriteOnce" ],
-          "resources": {
-            "requests": {
-              "storage": "1Gi"
-            }
-          }
-        }
-      }
-    ],
     "resources": {
       "limits": {
-        "cpu": "1",
-        "memory": "512Mi"
+        "cpu": "0.2",
+        "memory": "300Mi"
       },
       "requests": {
         "cpu": "0.1",
-        "memory": "256Mi"
+        "memory": "200Mi"
       }
     }
   },
@@ -178,10 +137,6 @@
         "name": "config-vol",
         "mountPath": "/opt/flink/conf/flink-conf-template.yaml",
         "subPath": "flink-conf.yaml"
-      },
-      {
-        "name": "taskmanager",
-        "mountPath": "/var"
       }
     ],
     "volumes": [
@@ -193,27 +148,6 @@
         }
       }
     ],
-    "initContainers": [
-      {
-        "image": "busybox",
-        "command": [
-          "ls"
-        ],
-        "imagePullPolicy": "IfNotPresent",
-        "name": "initializer"
-      }
-    ],
-    "sideContainers": [
-      {
-        "image": "busybox",
-        "command": [
-          "sleep",
-          "3600"
-        ],
-        "imagePullPolicy": "IfNotPresent",
-        "name": "sidecar"
-      }
-    ],
     "extraPorts": [
       {
         "name": "prometheus",
@@ -221,30 +155,14 @@
         "protocol": "TCP"
       }
     ],
-    "persistentVolumeClaimsTemplates": [
-      {
-        "metadata": {
-          "name": "taskmanager"
-        },
-        "spec": {
-          "storageClassName": "standard",
-          "accessModes": [ "ReadWriteOnce" ],
-          "resources": {
-            "requests": {
-              "storage": "5Gi"
-            }
-          }
-        }
-      }
-    ],
     "resources": {
       "limits": {
-        "cpu": "1",
-        "memory": "2048Mi"
+        "cpu": "0.2",
+        "memory": "1100Mi"
       },
       "requests": {
-        "cpu": "0.2",
-        "memory": "1024Mi"
+        "cpu": "0.1",
+        "memory": "600Mi"
       }
     }
   },

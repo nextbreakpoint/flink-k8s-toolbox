@@ -58,6 +58,13 @@ spec:
           - ls
         imagePullPolicy: IfNotPresent
         name: initializer
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
     sideContainers:
       - image: busybox
         command:
@@ -65,6 +72,13 @@ spec:
           - '3600'
         imagePullPolicy: IfNotPresent
         name: sidecar
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
     extraPorts:
       - name: prometheus
         containerPort: 9999
@@ -82,10 +96,10 @@ spec:
     resources:
       limits:
         cpu: '1'
-        memory: 512Mi
+        memory: 300Mi
       requests:
-        cpu: '0.1'
-        memory: 256Mi
+        cpu: '0.2'
+        memory: 200Mi
   taskManager:
     taskSlots: 1
     maxHeapMemory: 1024
@@ -125,6 +139,13 @@ spec:
           - ls
         imagePullPolicy: IfNotPresent
         name: initializer
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
     sideContainers:
       - image: busybox
         command:
@@ -132,6 +153,13 @@ spec:
           - '3600'
         imagePullPolicy: IfNotPresent
         name: sidecar
+        resources:
+          limits:
+            cpu: '0.2'
+            memory: 128Mi
+          requests:
+            cpu: '0.1'
+            memory: 64Mi
     extraPorts:
       - name: prometheus
         containerPort: 9999
@@ -149,10 +177,10 @@ spec:
     resources:
       limits:
         cpu: '1'
-        memory: 2048Mi
+        memory: 1100Mi
       requests:
         cpu: '0.2'
-        memory: 1024Mi
+        memory: 600Mi
   operator:
     savepointMode: Manual
     savepointInterval: 60

@@ -414,9 +414,9 @@ data:
     blob.server.port: 6124
     query.server.port: 6125
 
-    fs.hdfs.hadoopconf: /hadoop/etc
     jobmanager.log.path: /var/log/jobmanager.log
     taskmanager.log.path: /var/log/taskmanager.log
+
     io.tmp.dirs: /var/tmp
 
     metrics.reporters: prometheus

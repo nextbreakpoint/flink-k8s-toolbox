@@ -4,7 +4,7 @@
 
 image:
   repository: nextbreakpoint/flink-k8s-toolbox
-  tag: 1.2.2-beta
+  tag: 1.2.3-beta
   pullPolicy: Always
   pullSecrets:
 
