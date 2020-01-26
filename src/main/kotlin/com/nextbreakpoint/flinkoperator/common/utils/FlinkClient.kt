@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
 object FlinkClient {
     private val logger = Logger.getLogger(FlinkClient::class.simpleName)
 
-    private const val TIMEOUT = 5000L
+    private const val TIMEOUT = 10000L
 
     fun getOverview(address: FlinkAddress): ClusterOverviewWithVersion {
         try {
@@ -154,7 +154,7 @@ object FlinkClient {
         arguments: List<String>
     ) {
         try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
+            val flinkApi = createFlinkApiClient(address, TIMEOUT * 10)
 
             val response = flinkApi.runJarCall(
                 jarFile.id,
@@ -397,7 +397,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.error("[$address] Can't get savepoint status for job ${it.first}")
+                        throw CallException("[$address] Can't get savepoint status for job ${it.first}")
                     }
 
                     val asynchronousOperationResult = body.source().use { source ->
@@ -415,6 +415,8 @@ object FlinkClient {
             }.map {
                 it.first
             }.toList()
+        } catch (e : CallException) {
+            throw e
         } catch (e : Exception) {
             throw RuntimeException(e)
         }
@@ -431,7 +433,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.error("[$address] Can't get checkpointing statistics for job ${it.first}")
+                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
                     }
 
                     val checkpointingStatistics = body.source().use { source ->
@@ -451,6 +453,8 @@ object FlinkClient {
             }.filter {
                 it.second.isNotBlank()
             }.toMap()
+        } catch (e : CallException) {
+            throw e
         } catch (e : Exception) {
             throw RuntimeException(e)
         }
@@ -469,7 +473,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        logger.warn("[$address] Can't request savepoint for job $it")
+                        throw CallException("[$address] Can't request savepoint for job $it")
                     }
 
                     it.first to body.source().use { source ->
@@ -481,6 +485,8 @@ object FlinkClient {
             }.onEach {
                 logger.info("[$address] Created savepoint request ${it.second} for job ${it.first}")
             }.toMap()
+        } catch (e : CallException) {
+            throw e
         } catch (e : Exception) {
             throw RuntimeException(e)
         }
@@ -488,7 +494,7 @@ object FlinkClient {
 
     fun uploadJarCall(address: FlinkAddress, file: File): JarUploadResponseBody {
         try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
+            val flinkApi = createFlinkApiClient(address, TIMEOUT * 30)
 
             val response = flinkApi.uploadJarCall(file, null, null).execute();
 

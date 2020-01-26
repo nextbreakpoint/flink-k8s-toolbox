@@ -87,7 +87,17 @@
           "ls"
         ],
         "imagePullPolicy": "IfNotPresent",
-        "name": "initializer"
+        "name": "initializer",
+        "resources": {
+          "limits": {
+            "cpu": "0.2",
+            "memory": "128Mi"
+          },
+          "requests": {
+            "cpu": "0.1",
+            "memory": "64Mi"
+          }
+        }
       }
     ],
     "sideContainers": [
@@ -98,7 +108,17 @@
           "3600"
         ],
         "imagePullPolicy": "IfNotPresent",
-        "name": "sidecar"
+        "name": "sidecar",
+        "resources": {
+          "limits": {
+            "cpu": "0.2",
+            "memory": "128Mi"
+          },
+          "requests": {
+            "cpu": "0.1",
+            "memory": "64Mi"
+          }
+        }
       }
     ],
     "extraPorts": [
@@ -114,7 +134,7 @@
           "name": "jobmanager"
         },
         "spec": {
-          "storageClassName": "hostpath",
+          "storageClassName": "standard",
           "accessModes": [ "ReadWriteOnce" ],
           "resources": {
             "requests": {
@@ -127,11 +147,11 @@
     "resources": {
       "limits": {
         "cpu": "1",
-        "memory": "512Mi"
+        "memory": "300Mi"
       },
       "requests": {
-        "cpu": "0.1",
-        "memory": "256Mi"
+        "cpu": "0.2",
+        "memory": "200Mi"
       }
     }
   },
@@ -200,7 +220,17 @@
           "ls"
         ],
         "imagePullPolicy": "IfNotPresent",
-        "name": "initializer"
+        "name": "initializer",
+        "resources": {
+          "limits": {
+            "cpu": "0.2",
+            "memory": "128Mi"
+          },
+          "requests": {
+            "cpu": "0.1",
+            "memory": "64Mi"
+          }
+        }
       }
     ],
     "sideContainers": [
@@ -211,7 +241,17 @@
           "3600"
         ],
         "imagePullPolicy": "IfNotPresent",
-        "name": "sidecar"
+        "name": "sidecar",
+        "resources": {
+          "limits": {
+            "cpu": "0.2",
+            "memory": "128Mi"
+          },
+          "requests": {
+            "cpu": "0.1",
+            "memory": "64Mi"
+          }
+        }
       }
     ],
     "extraPorts": [
@@ -227,7 +267,7 @@
           "name": "taskmanager"
         },
         "spec": {
-          "storageClassName": "hostpath",
+          "storageClassName": "standard",
           "accessModes": [ "ReadWriteOnce" ],
           "resources": {
             "requests": {
@@ -240,11 +280,11 @@
     "resources": {
       "limits": {
         "cpu": "1",
-        "memory": "2048Mi"
+        "memory": "1100Mi"
       },
       "requests": {
         "cpu": "0.2",
-        "memory": "1024Mi"
+        "memory": "600Mi"
       }
     }
   },

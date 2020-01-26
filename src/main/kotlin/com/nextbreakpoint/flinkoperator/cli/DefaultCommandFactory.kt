@@ -7,6 +7,7 @@ import com.nextbreakpoint.flinkoperator.cli.command.ClusterScale
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterStart
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterStatus
 import com.nextbreakpoint.flinkoperator.cli.command.ClusterStop
+import com.nextbreakpoint.flinkoperator.cli.command.ClustersList
 import com.nextbreakpoint.flinkoperator.cli.command.JobDetails
 import com.nextbreakpoint.flinkoperator.cli.command.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.cli.command.JobMetrics
@@ -21,6 +22,8 @@ object DefaultCommandFactory : CommandFactory {
     override fun createRunOperatorCommand() = LaunchOperator()
 
     override fun createBootstrapCommand() = Bootstrap()
+
+    override fun createListClustersCommand() = ClustersList()
 
     override fun createCreateClusterCommand() = ClusterCreate()
 

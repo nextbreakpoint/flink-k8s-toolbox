@@ -50,11 +50,11 @@ spec:
           defaultMode: 0777
     resources:
       limits:
-        cpu: '1'
-        memory: 512Mi
+        cpu: '0.2'
+        memory: 300Mi
       requests:
         cpu: '0.1'
-        memory: 256Mi
+        memory: 200Mi
   taskManager:
     taskSlots: 2
     maxHeapMemory: 1024
@@ -86,11 +86,11 @@ spec:
           defaultMode: 0777
     resources:
       limits:
-        cpu: '1'
-        memory: 2048Mi
-      requests:
         cpu: '0.2'
-        memory: 1024Mi
+        memory: 1100Mi
+      requests:
+        cpu: '0.1'
+        memory: 600Mi
   operator:
     savepointMode: Automatic
     savepointInterval: 20

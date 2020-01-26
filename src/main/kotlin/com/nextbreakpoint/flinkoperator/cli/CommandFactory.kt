@@ -8,35 +8,37 @@ import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 
 interface CommandFactory {
-    fun createRunOperatorCommand() : ServerCommand<OperatorConfig>
+    fun createRunOperatorCommand() : LaunchCommand<OperatorConfig>
 
     fun createBootstrapCommand() : BootstrapCommand<BootstrapOptions>
 
-    fun createCreateClusterCommand() : RemoteCommand<String>
+    fun createListClustersCommand() : OperatorCommandNoArgs
 
-    fun createDeleteClusterCommand() : RemoteCommandNoArgs
+    fun createCreateClusterCommand() : ClusterCommand<String>
 
-    fun createStartClusterCommand() : RemoteCommand<StartOptions>
+    fun createDeleteClusterCommand() : ClusterCommandNoArgs
 
-    fun createStopClusterCommand() : RemoteCommand<StopOptions>
+    fun createStartClusterCommand() : ClusterCommand<StartOptions>
 
-    fun createScaleClusterCommand() : RemoteCommand<ScaleOptions>
+    fun createStopClusterCommand() : ClusterCommand<StopOptions>
 
-    fun createGetClusterStatusCommand(): RemoteCommandNoArgs
+    fun createScaleClusterCommand() : ClusterCommand<ScaleOptions>
 
-    fun createTriggerSavepointCommand(): RemoteCommandNoArgs
+    fun createGetClusterStatusCommand(): ClusterCommandNoArgs
 
-    fun createForgetSavepointCommand(): RemoteCommandNoArgs
+    fun createTriggerSavepointCommand(): ClusterCommandNoArgs
 
-    fun createGetJobDetailsCommand() : RemoteCommandNoArgs
+    fun createForgetSavepointCommand(): ClusterCommandNoArgs
 
-    fun createGetJobMetricsCommand() : RemoteCommandNoArgs
+    fun createGetJobDetailsCommand() : ClusterCommandNoArgs
 
-    fun createGetJobManagerMetricsCommand() : RemoteCommandNoArgs
+    fun createGetJobMetricsCommand() : ClusterCommandNoArgs
 
-    fun createListTaskManagersCommand() : RemoteCommandNoArgs
+    fun createGetJobManagerMetricsCommand() : ClusterCommandNoArgs
 
-    fun createGetTaskManagerDetailsCommand() : RemoteCommand<TaskManagerId>
+    fun createListTaskManagersCommand() : ClusterCommandNoArgs
 
-    fun createGetTaskManagerMetricsCommand() : RemoteCommand<TaskManagerId>
+    fun createGetTaskManagerDetailsCommand() : ClusterCommand<TaskManagerId>
+
+    fun createGetTaskManagerMetricsCommand() : ClusterCommand<TaskManagerId>
 }

@@ -4,13 +4,31 @@ Follow these instructions to setup a local environment for testing the Flink Ope
 
 
 
-## Configure Docker for Desktop   
+## Install Docker and Kubernetes   
 
-We assume you are using Docker for Desktop 2.0.0.3 or later and you have enabled Kubernetes.
+You can use Docker for Desktop or Minikube for this example.
 
-**Please verify that Docker is using at least 8Gb of memory (see Docker for Desktop settings).**
+### Docker for Desktop   
 
-### Install Flink Operator    
+We assume you are using Docker for Desktop 2.2.0.0 or later with Kubernetes 1.15 or later.
+
+Make sure that Docker is using at least 8Gb of memory (see Docker for Desktop settings).
+
+### Minikube
+
+We assume you are using Minikube 1.6.1 or later with Kubernetes 1.15 or later.
+
+Make sure that Minikube is using at least 8Gb of memory:
+
+    minikube start --memory=8gb ...
+
+Don't forget to configure the environment before executing docker commands:
+
+    eval $(minikube docker-env)
+
+
+
+## Install Flink Operator    
 
 Install kubectl:
 
@@ -18,11 +36,7 @@ Install kubectl:
 
 Install Helm:
 
-    brew install kubernetes-helm
-
-Install Tiller:
-
-    helm init --history-max 200 --kube-context docker-for-desktop
+    brew install helm
 
 Create namespace:
 
@@ -30,37 +44,45 @@ Create namespace:
 
 Install operator's global resources:
 
-    helm install --name flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
+    helm install flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
 
 Install operator's namespace resources:
 
-    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
+    helm install --namespace flink flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator
 
 Run Flink Operator:
 
-     kubectl scale deployment -n flink flink-operator --replicas=1
+    kubectl scale deployment -n flink flink-operator --replicas=1
 
 Check that operator is running:
 
-     kubectl get pod -n flink
+    kubectl get pod -n flink
 
 Stop Flink Operator:
 
-     kubectl scale deployment -n flink flink-operator --replicas=0
+    kubectl scale deployment -n flink flink-operator --replicas=0
 
-### Prepare Flink image    
+## Prepare Flink image    
+
+Configure Docker environment (only for minikube):
+
+    eval $(minikube docker-env)
 
 Build custom Flink image:
 
     docker build -t example/flink:1.9.0 --build-arg flink_version=1.9.0 --build-arg scala_version=2.11 example/flink
 
-### Prepare Flink job    
+## Prepare Flink job    
+
+Configure Docker environment (only for minikube):
+
+    eval $(minikube docker-env)
 
 Build Flink jobs image:
 
-    docker build -t example/flink-jobs:1 example/flink-jobs --build-arg repository=nextbreakpoint/flink-k8s-toolbox --build-arg version=1.2.2-beta
+    docker build -t example/flink-jobs:1 example/flink-jobs --build-arg repository=nextbreakpoint/flink-k8s-toolbox --build-arg version=1.2.3-beta
 
-### Create Flink resources    
+## Create Flink resources    
 
 Create Flink ConfigMap resource:
 
@@ -70,15 +92,27 @@ Create Flink Secret resource:
 
     kubectl create -f example/secrets.yaml -n flink
 
-Create Flink Cluster resource:
+Create Flink Cluster resource with standard storage class (required for Minikube):
 
-    kubectl create -f example/flink-cluster-test.yaml -n flink
+    kubectl create -f example/cluster.yaml -n flink
+
+Create Flink Cluster resource with hostpath storage class (required for Docker for Desktop):
+
+    kubectl create -f example/cluster-hostpath.yaml -n flink
 
 Get Flink Cluster resource:
 
-    kubectl get fc -o yaml -n flink
+    kubectl get fc test -o yaml -n flink
 
-### Check logs and remove pods     
+List Flink Cluster resources:
+
+    kubectl get fc -n flink
+
+Watch Flink Cluster resources:
+
+    kubectl get fc -n flink --watch
+
+## Check logs and remove pods     
 
 Check pods are created:
 
@@ -86,18 +120,18 @@ Check pods are created:
 
 Check logs of JobManager:
 
-    kubectl logs -n flink flink-jobmanager-test-0
+    kubectl logs -n flink flink-jobmanager-test-0 -c flink-jobmanager
 
 Check logs of TaskManager:
 
-    kubectl logs -n flink flink-taskmanager-test-0
+    kubectl logs -n flink flink-taskmanager-test-0 -c flink-taskmanager
 
 Force deletion of pods if Kubernetes get stuck:
 
     kubectl delete pod flink-jobmanager-test-0 --grace-period=0 --force -n flink
     kubectl delete pod flink-taskmanager-test-0 --grace-period=0 --force -n flink
 
-### Patch Flink Cluster resource     
+## Patch Flink Cluster resource     
 
 Example of patch operation to change pullPolicy:
 
@@ -112,13 +146,11 @@ Example of patch operation to change serviceMode:
 
 Create docker-registry files:
 
-    pushd kube
     ./docker-registry-setup.sh
-    popd
 
 Create docker-registry:
 
-    kubectl create -f ./example/docker-registry.yaml
+    kubectl create -f docker-registry.yaml
 
 Add this entry to your hosts file (etc/hosts):
 
@@ -142,34 +174,31 @@ You can tag and push images to your local registry:
 
 ## Build Flink Operator from source code
 
+Configure Docker environment (only for minikube):
+
+    eval $(minikube docker-env)
+
 Compile Docker image of Flink Operator:
 
-    docker build -t flink-k8s-toolbox:1.2.2-beta .
+    docker build -t flink-k8s-toolbox:1.2.3-beta .
 
 Optionally tag and push Docker image to your local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.2.2-beta registry:30000/flink-k8s-toolbox:1.2.2-beta
+    docker tag flink-k8s-toolbox:1.2.3-beta registry:30000/flink-k8s-toolbox:1.2.3-beta
     docker login registry:30000
-    docker push registry:30000/flink-k8s-toolbox:1.2.2-beta
+    docker push registry:30000/flink-k8s-toolbox:1.2.3-beta
 
 Run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.2.2-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.2.3-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Run Flink Operator using Helm and local registry:
 
-    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
+    helm install --namespace flink flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
 
 Run Flink Operator using Helm and local image:
 
-    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
+    helm install --namespace flink flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
 
 
 
-## Use Minikube instead of Docker for Desktop
-
-All the previous commands should apply to Minikube.
-
-**Please ensure that Minikube is using at least 8Gb of memory:**
-
-    minikube start --memory=8gb ...
