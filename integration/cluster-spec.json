@@ -89,7 +89,7 @@
         "memory": "300Mi"
       },
       "requests": {
-        "cpu": "0.2",
+        "cpu": "0.1",
         "memory": "200Mi"
       }
     }
@@ -157,11 +157,11 @@
     ],
     "resources": {
       "limits": {
-        "cpu": "0.5",
+        "cpu": "0.2",
         "memory": "1100Mi"
       },
       "requests": {
-        "cpu": "0.5",
+        "cpu": "0.1",
         "memory": "600Mi"
       }
     }
