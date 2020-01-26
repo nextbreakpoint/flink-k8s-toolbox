@@ -20,7 +20,7 @@ Vagrant.configure(2) do |config|
       path: "pipeline/setup-helm.sh",
       privileged: false
     s.vm.provision :shell,
-      inline: "sudo apt-get install -y openjdk-8-jdk",
+      path: "pipeline/setup-java.sh",
       privileged: false
     s.vm.provider "virtualbox" do |v|
       v.name = "integration"
