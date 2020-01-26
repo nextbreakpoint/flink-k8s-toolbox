@@ -60,10 +60,10 @@ spec:
         name: initializer
         resources:
           limits:
-            cpu: '0.2'
+            cpu: '0.1'
             memory: 128Mi
           requests:
-            cpu: '0.1'
+            cpu: '0.05'
             memory: 64Mi
     sideContainers:
       - image: busybox
@@ -74,10 +74,10 @@ spec:
         name: sidecar
         resources:
           limits:
-            cpu: '0.2'
+            cpu: '0.1'
             memory: 128Mi
           requests:
-            cpu: '0.1'
+            cpu: '0.05'
             memory: 64Mi
     extraPorts:
       - name: prometheus
@@ -98,7 +98,7 @@ spec:
         cpu: '0.2'
         memory: 300Mi
       requests:
-        cpu: '0.2'
+        cpu: '0.1'
         memory: 200Mi
   taskManager:
     taskSlots: 1
@@ -141,10 +141,10 @@ spec:
         name: initializer
         resources:
           limits:
-            cpu: '0.2'
+            cpu: '0.1'
             memory: 128Mi
           requests:
-            cpu: '0.1'
+            cpu: '0.05'
             memory: 64Mi
     sideContainers:
       - image: busybox
@@ -155,10 +155,10 @@ spec:
         name: sidecar
         resources:
           limits:
-            cpu: '0.2'
+            cpu: '0.1'
             memory: 128Mi
           requests:
-            cpu: '0.1'
+            cpu: '0.05'
             memory: 64Mi
     extraPorts:
       - name: prometheus
@@ -176,10 +176,10 @@ spec:
               storage: 2Gi
     resources:
       limits:
-        cpu: '0.5'
+        cpu: '0.2'
         memory: 1100Mi
       requests:
-        cpu: '0.5'
+        cpu: '0.1'
         memory: 600Mi
   operator:
     savepointMode: Manual
