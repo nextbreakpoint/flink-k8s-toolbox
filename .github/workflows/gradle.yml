@@ -18,6 +18,6 @@ jobs:
     - name: Set up Helm
       run: sh pipeline/setup-helm.sh
     - name: Build and run unit tests
-      run: ./gradlew test
+      run: ./gradlew test --info
     - name: Run integration tests
-      run: ./gradlew integrationTest
+      run: ./gradlew integrationTest --info
