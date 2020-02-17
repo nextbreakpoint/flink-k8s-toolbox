@@ -87,9 +87,9 @@ open class IntegrationSetup {
             }
             println("Building flink image...")
             val flinkBuildArgs = listOf(
-                "--build-arg", "flink_version=1.9.0", "--build-arg", "scala_version=2.11"
+                "--build-arg", "flink_version=1.9.2", "--build-arg", "scala_version=2.11"
             )
-            if (buildDockerImage(redirect = redirect, path = "example/flink", name = "integration/flink:1.9.0", args = flinkBuildArgs) != 0) {
+            if (buildDockerImage(redirect = redirect, path = "example/flink", name = "integration/flink:1.9.2", args = flinkBuildArgs) != 0) {
                 fail("Can't build flink image")
             }
             println("Building job image...")

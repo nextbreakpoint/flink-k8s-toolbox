@@ -25,7 +25,7 @@ object TestFactory {
               "runtime": {
                 "pullSecrets": "flink-regcred",
                 "pullPolicy": "IfNotPresent",
-                "image": "registry:30000/flink:1.9.0"
+                "image": "registry:30000/flink:1.9.2"
               },
               "bootstrap": {
                 "serviceAccount": "bootstrap-test",
@@ -33,7 +33,7 @@ object TestFactory {
                 "pullPolicy": "IfNotPresent",
                 "image": "registry:30000/flink-jobs:1",
                 "jarPath": "/flink-jobs.jar",
-                "className": "com.nextbreakpoint.flink.jobs.TestJob",
+                "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
                 "arguments": [
                   "--BUCKET_BASE_PATH",
                   "file:///var/tmp"
