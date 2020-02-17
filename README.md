@@ -444,13 +444,13 @@ Tag and push the image into your registry if needed:
 
 Pull Flink image:
 
-    docker pull flink:1.9.0
+    docker pull flink:1.9.2
 
 Tag and push the image into your registry if needed:
 
-    docker tag flink:1.9.0 some-registry/flink:1.9.0
+    docker tag flink:1.9.2 some-registry/flink:1.9.2
     docker login some-registry
-    docker push some-registry/flink:1.9.0
+    docker push some-registry/flink:1.9.2
 
 Create a Flink Cluster file:
 
@@ -463,12 +463,12 @@ Create a Flink Cluster file:
       taskManagers: 1
       runtime:
         pullPolicy: Always
-        image: some-registry/flink:1.9.0
+        image: some-registry/flink:1.9.2
       bootstrap:
         pullPolicy: Always
         image: some-registry/flink-jobs:1
         jarPath: /flink-jobs.jar
-        className: com.nextbreakpoint.flink.jobs.TestJob
+        className: com.nextbreakpoint.flink.jobs.stream.TestJob
         arguments:
           - --DEVELOP_MODE
           - disabled
@@ -666,13 +666,13 @@ Create a JSON file:
       "taskManagers": 1,
       "runtime": {
         "pullPolicy": "Always",
-        "image": "some-registry/flink:1.9.0"
+        "image": "some-registry/flink:1.9.2"
       },
       "bootstrap": {
         "pullPolicy": "Always",
         "image": "some-registry/flink-jobs:1",
         "jarPath": "/flink-jobs.jar",
-        "className": "com.nextbreakpoint.flink.jobs.TestJob",
+        "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
         "arguments": [
           "--DEVELOP_MODE",
           "disabled"

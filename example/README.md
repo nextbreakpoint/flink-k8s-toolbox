@@ -70,7 +70,7 @@ Configure Docker environment (only for minikube):
 
 Build custom Flink image:
 
-    docker build -t example/flink:1.9.0 --build-arg flink_version=1.9.0 --build-arg scala_version=2.11 example/flink
+    docker build -t example/flink:1.9.2 --build-arg flink_version=1.9.2 --build-arg scala_version=2.11 example/flink
 
 ## Prepare Flink job    
 
@@ -166,9 +166,9 @@ Associate pull secrets to flink-operator service account:
 
 You can tag and push images to your local registry:
 
-    docker tag flink:1.9.0 registry:30000/flink:1.9.0
+    docker tag flink:1.9.2 registry:30000/flink:1.9.2
     docker login registry:30000
-    docker push registry:30000/flink:1.9.0
+    docker push registry:30000/flink:1.9.2
 
 
 
@@ -199,6 +199,3 @@ Run Flink Operator using Helm and local registry:
 Run Flink Operator using Helm and local image:
 
     helm install --namespace flink flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
-
-
-
