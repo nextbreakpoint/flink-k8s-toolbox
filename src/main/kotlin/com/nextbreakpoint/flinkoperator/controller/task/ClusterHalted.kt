@@ -6,7 +6,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.Configuration
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
@@ -164,10 +163,10 @@ class ClusterHalted : Task {
             return false
         }
 
-        val clusterRunning = context.isClusterRunning(context.clusterId)
+        val clusterTerminated = context.isClusterTerminated(context.clusterId)
 
-        if (!clusterRunning.isCompleted()) {
-            // cluster is not running
+        if (clusterTerminated.isCompleted()) {
+            // cluster is terminated
             return false
         }
 
@@ -181,7 +180,7 @@ class ClusterHalted : Task {
             )
         )
 
-        // cluster is suspended
+        // cluster should be suspended
         return true
     }
 
@@ -191,10 +190,10 @@ class ClusterHalted : Task {
             return false
         }
 
-        val clusterRunning = context.isClusterRunning(context.clusterId)
+        val clusterTerminated = context.isClusterTerminated(context.clusterId)
 
-        if (!clusterRunning.isCompleted()) {
-            // cluster is not running
+        if (clusterTerminated.isCompleted()) {
+            // cluster is terminated
             return false
         }
 
@@ -208,7 +207,7 @@ class ClusterHalted : Task {
             )
         )
 
-        // cluster is terminated
+        // cluster should be terminated
         return true
     }
 
