@@ -2,7 +2,7 @@ Vagrant.configure(2) do |config|
   config.vm.define "integration" do |s|
     s.ssh.forward_agent = true
     s.vm.box = "ubuntu/bionic64"
-    s.vm.hostname = "integration"
+    s.vm.hostname = "minikube"
     s.vm.network "private_network",
       ip: "192.168.1.20",
       netmask: "255.255.255.0",

@@ -14,8 +14,8 @@ spec:
     jarPath: /flink-jobs.jar
     className: com.nextbreakpoint.flink.jobs.stream.TestJob
     arguments:
-      - --DEVELOP_MODE
-      - disabled
+      - --CONSOLE_OUTPUT
+      - "true"
   jobManager:
     serviceMode: NodePort
     maxHeapMemory: 256
