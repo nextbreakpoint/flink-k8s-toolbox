@@ -158,14 +158,11 @@ open class IntegrationSetup {
                     fail("Can't create secrets")
                 }
             }
-//            if (createResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
-//                if (deleteResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
-//                    fail("Can't delete volumes")
-//                }
-//                if (createResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
-//                    fail("Can't create volumes")
-//                }
-//            }
+            if (createResources(redirect = redirect, namespace = namespace, path = "example/data.yaml") != 0) {
+                if (replaceResources(redirect = redirect, namespace = namespace, path = "example/data.yaml") != 0) {
+                    fail("Can't create data")
+                }
+            }
             println("Resources installed")
         }
 

@@ -62,7 +62,7 @@ class ClusterRunning : Task {
         }
 
         if (isClusterNotRunning(context)) {
-            return fail(context.flinkCluster, "Cluster failure...")
+            return fail(context.flinkCluster, "Cluster not running...")
         }
 
         if (isCreatingSavepoint(context)) {
@@ -84,62 +84,72 @@ class ClusterRunning : Task {
         val currentTaskSlots = context.flinkCluster.status?.taskSlots ?: 1
 
         if (actualTaskManagers == desiredTaskManagers && currentTaskManagers == desiredTaskManagers) {
+            // cluster doesn't need rescaling
             return false
         }
 
         val clusterScaling = ClusterScaling(taskManagers = desiredTaskManagers, taskSlots = currentTaskSlots)
         val result = context.scaleCluster(context.clusterId, clusterScaling)
 
+        // cluster scale changed
         return result.isCompleted()
     }
 
     private fun isCreatingSavepoint(context: TaskContext): Boolean {
-        val nextTask = Status.getNextOperatorTask(context.flinkCluster)
-
-        if (nextTask != null) {
+        if (!isBootstrapJobDefined(context.flinkCluster)) {
+            // job is not defined
             return false
         }
 
-        if (!isBootstrapJobDefined(context.flinkCluster)) {
+        val nextTask = Status.getNextOperatorTask(context.flinkCluster)
+
+        if (nextTask != null) {
+            // there are still tasks in the progress
             return false
         }
 
         val savepointMode = Status.getSavepointMode(context.flinkCluster)
 
         if (savepointMode?.toUpperCase() != "AUTOMATIC") {
+            // automatic savepoints not enabled
             return false
         }
 
         val savepointIntervalInSeconds = Configuration.getSavepointInterval(context.flinkCluster)
 
-        if (context.timeSinceLastSavepointRequestInSeconds() > savepointIntervalInSeconds) {
-            Status.appendTasks(
-                context.flinkCluster,
-                listOf(
-                    ClusterTask.CreatingSavepoint,
-                    ClusterTask.TriggerSavepoint,
-                    ClusterTask.ClusterRunning
-                )
-            )
-
-            return true
+        if (context.timeSinceLastSavepointRequestInSeconds() < savepointIntervalInSeconds) {
+            // not time yet for creating a savepoint
+            return false
         }
 
-        return false
+        Status.appendTasks(
+            context.flinkCluster,
+            listOf(
+                ClusterTask.CreatingSavepoint,
+                ClusterTask.TriggerSavepoint,
+                ClusterTask.ClusterRunning
+            )
+        )
+
+        // create a new savepoint
+        return true
     }
 
     private fun isClusterNotRunning(context: TaskContext): Boolean {
         if (!isBootstrapJobDefined(context.flinkCluster)) {
+            // job is not defined
             return false
         }
 
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Running) {
+            // process only a cluster when not running
             return false
         }
 
         val nextTask = Status.getNextOperatorTask(context.flinkCluster)
 
         if (nextTask != null) {
+            // there are still tasks in the progress
             return false
         }
 
@@ -152,11 +162,12 @@ class ClusterRunning : Task {
                 // prevent updating status when not necessary
                 Status.setTaskAttempts(context.flinkCluster, 0)
             }
-
+            // cluster not running
             return false
         }
 
         if (clusterRunning.output) {
+            // job has finished
             return false
         }
 
@@ -165,34 +176,41 @@ class ClusterRunning : Task {
         Status.setTaskAttempts(context.flinkCluster, attempts + 1)
 
         if (attempts < 3) {
+            // abort only after 3 attempts
             return false
         }
 
+        // cluster not running
         return true
     }
 
     private fun isTerminatingJob(context: TaskContext): Boolean {
         if (!isBootstrapJobDefined(context.flinkCluster)) {
+            // job is not defined
             return false
         }
 
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Running) {
+            // process only a cluster when not running
             return false
         }
 
         val nextTask = Status.getNextOperatorTask(context.flinkCluster)
 
         if (nextTask != null) {
+            // there are still tasks in the progress
             return false
         }
 
         val clusterRunning = context.isClusterRunning(context.clusterId)
 
         if (!clusterRunning.isCompleted()) {
+            // cluster not running
             return false
         }
 
         if (!clusterRunning.output) {
+            // job is still running
             return false
         }
 
@@ -205,11 +223,13 @@ class ClusterRunning : Task {
             )
         )
 
+        // terminate job
         return true
     }
 
     private fun isUpdatingCluster(context: TaskContext): Boolean {
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Running) {
+            // attempt updating a cluster only when not running
             return false
         }
 
@@ -260,6 +280,7 @@ class ClusterRunning : Task {
             )
         }
 
+        // update cluster if something changed
         return changes.isNotEmpty()
     }
 }

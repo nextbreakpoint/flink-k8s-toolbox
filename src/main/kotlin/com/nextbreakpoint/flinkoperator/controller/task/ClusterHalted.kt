@@ -45,7 +45,15 @@ class ClusterHalted : Task {
         }
 
         if (isClusterRunning(context)) {
-            return next(context.flinkCluster, "Cluster is running...")
+            return next(context.flinkCluster, "Cluster should be running...")
+        }
+
+        if (isClusterSuspended(context)) {
+            return next(context.flinkCluster, "Cluster should be suspended...")
+        }
+
+        if (isClusterTerminated(context)) {
+            return next(context.flinkCluster, "Cluster should be terminated...")
         }
 
         if (isRestartingJob(context)) {
@@ -61,22 +69,26 @@ class ClusterHalted : Task {
 
     private fun isRestartingJob(context: TaskContext): Boolean {
         if (!isBootstrapJobDefined(context.flinkCluster)) {
+            // job is not defined
             return false
         }
 
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Failed) {
+            // attempt restarting a cluster only when failed
             return false
         }
 
         val nextTask = Status.getNextOperatorTask(context.flinkCluster)
 
         if (nextTask != null) {
+            // there are still tasks in the progress
             return false
         }
 
         val restartPolicy = Status.getJobRestartPolicy(context.flinkCluster)
 
         if (restartPolicy?.toUpperCase() != "ALWAYS") {
+            // policy doesn't allow restart
             return false
         }
 
@@ -94,7 +106,7 @@ class ClusterHalted : Task {
                 // prevent updating status when not necessary
                 Status.setTaskAttempts(context.flinkCluster, 0)
             }
-
+            // cluster not ready
             return false
         }
 
@@ -103,6 +115,7 @@ class ClusterHalted : Task {
         Status.setTaskAttempts(context.flinkCluster, attempts + 1)
 
         if (attempts < 3) {
+            // restart only after 3 attempts
             return false
         }
 
@@ -113,27 +126,95 @@ class ClusterHalted : Task {
             )
         )
 
+        // cluster should be restarted
         return true
     }
 
     private fun isClusterRunning(context: TaskContext): Boolean {
-        val clusterRunning = context.isClusterRunning(context.clusterId)
-
-        if (clusterRunning.isCompleted()) {
-            Status.appendTasks(
-                context.flinkCluster, listOf(
-                    ClusterTask.ClusterRunning
-                )
-            )
-
-            return true
+        if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Failed) {
+            // process cluster only when failed
+            return false
         }
 
-        return false
+        val clusterRunning = context.isClusterRunning(context.clusterId)
+
+        if (!clusterRunning.isCompleted()) {
+            // cluster is not running
+            return false
+        }
+
+        if (clusterRunning.output) {
+            // job has finished
+            return false
+        }
+
+        Status.appendTasks(
+            context.flinkCluster, listOf(
+                ClusterTask.ClusterRunning
+            )
+        )
+
+        // cluster is running
+        return true
+    }
+
+    private fun isClusterSuspended(context: TaskContext): Boolean {
+        if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Suspended) {
+            // process cluster only when suspended
+            return false
+        }
+
+        val clusterRunning = context.isClusterRunning(context.clusterId)
+
+        if (!clusterRunning.isCompleted()) {
+            // cluster is not running
+            return false
+        }
+
+        Status.appendTasks(
+            context.flinkCluster, listOf(
+                ClusterTask.StoppingCluster,
+                ClusterTask.TerminatePods,
+                ClusterTask.DeleteBootstrapJob,
+                ClusterTask.SuspendCluster,
+                ClusterTask.ClusterHalted
+            )
+        )
+
+        // cluster is suspended
+        return true
+    }
+
+    private fun isClusterTerminated(context: TaskContext): Boolean {
+        if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Terminated) {
+            // process cluster only when terminated
+            return false
+        }
+
+        val clusterRunning = context.isClusterRunning(context.clusterId)
+
+        if (!clusterRunning.isCompleted()) {
+            // cluster is not running
+            return false
+        }
+
+        Status.appendTasks(
+            context.flinkCluster, listOf(
+                ClusterTask.StoppingCluster,
+                ClusterTask.TerminatePods,
+                ClusterTask.DeleteResources,
+                ClusterTask.TerminatedCluster,
+                ClusterTask.ClusterHalted
+            )
+        )
+
+        // cluster is terminated
+        return true
     }
 
     private fun isUpdatingCluster(context: TaskContext): Boolean {
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Failed) {
+            // attempt updating a cluster only when failed
             return false
         }
 
@@ -183,6 +264,7 @@ class ClusterHalted : Task {
             )
         }
 
+        // update cluster if something changed
         return changes.isNotEmpty()
     }
 }
