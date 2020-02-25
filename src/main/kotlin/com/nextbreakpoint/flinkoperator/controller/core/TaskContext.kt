@@ -79,6 +79,9 @@ class TaskContext(
     fun isClusterRunning(clusterId: ClusterId): OperationResult<Boolean> =
         controller.isClusterRunning(clusterId)
 
+    fun isClusterTerminated(clusterId: ClusterId): OperationResult<Void?> =
+        controller.isClusterTerminated(clusterId)
+
     fun isJobStarted(clusterId: ClusterId): OperationResult<Void?> =
         controller.isJobStarted(clusterId)
 

@@ -136,9 +136,6 @@ class OperationController(
     fun isClusterRunning(clusterId: ClusterId): OperationResult<Boolean> =
         ClusterIsRunning(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun isClusterSuspended(clusterId: ClusterId): OperationResult<Void?> =
-        ClusterIsSuspended(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
-
     fun isClusterTerminated(clusterId: ClusterId): OperationResult<Void?> =
         ClusterIsTerminated(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
