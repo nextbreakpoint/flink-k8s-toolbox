@@ -87,10 +87,12 @@ class ClusterHaltedTest {
         Status.setClusterStatus(cluster, ClusterStatus.Suspended)
         val timestamp = Status.getOperatorTimestamp(cluster)
         given(context.isClusterTerminated(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(500)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).isClusterTerminated(eq(clusterId))
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.NEXT)
@@ -427,13 +429,34 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should not change status when cluster status is suspended and cluster is terminated`() {
         Status.setClusterStatus(cluster, ClusterStatus.Suspended)
+        Status.setActiveTaskManagers(cluster, 1)
         val timestamp = Status.getOperatorTimestamp(cluster)
         cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(context.isClusterTerminated(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(500)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).isClusterTerminated(eq(clusterId))
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verifyNoMoreInteractions(context)
+        assertThat(result).isNotNull()
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
+        assertThat(result.output).isNotNull()
+        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
+        assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.ClusterHalted)
+    }
+
+    @Test
+    fun `onIdle should not change status when cluster status is suspended and there aren't active task managers`() {
+        Status.setClusterStatus(cluster, ClusterStatus.Suspended)
+        Status.setActiveTaskManagers(cluster, 0)
+        val timestamp = Status.getOperatorTimestamp(cluster)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(500)
+        cluster.spec.operator.jobRestartPolicy = "ALWAYS"
+        val result = task.onIdle(context)
+        verify(context, atLeastOnce()).flinkCluster
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.NEXT)
@@ -445,13 +468,16 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should change status when cluster status is suspended and cluster is not terminated`() {
         Status.setClusterStatus(cluster, ClusterStatus.Suspended)
+        Status.setActiveTaskManagers(cluster, 1)
         val timestamp = Status.getOperatorTimestamp(cluster)
         cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(context.isClusterTerminated(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, null))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(500)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).isClusterTerminated(eq(clusterId))
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.NEXT)
@@ -472,13 +498,34 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should not change status when cluster status is terminated and cluster is terminated`() {
         Status.setClusterStatus(cluster, ClusterStatus.Terminated)
+        Status.setActiveTaskManagers(cluster, 1)
         val timestamp = Status.getOperatorTimestamp(cluster)
         cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(context.isClusterTerminated(eq(clusterId))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(500)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).isClusterTerminated(eq(clusterId))
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verifyNoMoreInteractions(context)
+        assertThat(result).isNotNull()
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
+        assertThat(result.output).isNotNull()
+        assertThat(timestamp).isEqualTo(Status.getOperatorTimestamp(cluster))
+        assertThat(Status.getCurrentTask(cluster)).isEqualTo(ClusterTask.ClusterHalted)
+    }
+
+    @Test
+    fun `onIdle should not change status when cluster status is terminated and there aren't active task managers`() {
+        Status.setClusterStatus(cluster, ClusterStatus.Terminated)
+        Status.setActiveTaskManagers(cluster, 0)
+        val timestamp = Status.getOperatorTimestamp(cluster)
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(500)
+        cluster.spec.operator.jobRestartPolicy = "ALWAYS"
+        val result = task.onIdle(context)
+        verify(context, atLeastOnce()).flinkCluster
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.NEXT)
@@ -490,13 +537,16 @@ class ClusterHaltedTest {
     @Test
     fun `onIdle should change status when cluster status is terminated and cluster is not terminated`() {
         Status.setClusterStatus(cluster, ClusterStatus.Terminated)
+        Status.setActiveTaskManagers(cluster, 1)
         val timestamp = Status.getOperatorTimestamp(cluster)
         cluster.spec.operator.jobRestartPolicy = "ALWAYS"
         given(context.isClusterTerminated(eq(clusterId))).thenReturn(OperationResult(OperationStatus.RETRY, null))
+        given(context.timeSinceLastUpdateInSeconds()).thenReturn(500)
         val result = task.onIdle(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
         verify(context, atLeastOnce()).isClusterTerminated(eq(clusterId))
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
         verifyNoMoreInteractions(context)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.NEXT)

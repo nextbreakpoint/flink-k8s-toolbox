@@ -163,6 +163,16 @@ class ClusterHalted : Task {
             return false
         }
 
+        if (context.timeSinceLastUpdateInSeconds() < 300) {
+            // ensure enough time passed
+            return false
+        }
+
+        if (context.flinkCluster.status.activeTaskManagers == 0) {
+            // resources are terminated
+            return false
+        }
+
         val clusterTerminated = context.isClusterTerminated(context.clusterId)
 
         if (clusterTerminated.isCompleted()) {
@@ -187,6 +197,16 @@ class ClusterHalted : Task {
     private fun isClusterTerminated(context: TaskContext): Boolean {
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Terminated) {
             // process cluster only when terminated
+            return false
+        }
+
+        if (context.timeSinceLastUpdateInSeconds() < 300) {
+            // ensure enough time passed
+            return false
+        }
+
+        if (context.flinkCluster.status.activeTaskManagers == 0) {
+            // resources are terminated
             return false
         }
 
