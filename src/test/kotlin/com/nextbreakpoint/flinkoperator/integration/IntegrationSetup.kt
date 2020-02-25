@@ -28,7 +28,7 @@ import kotlin.test.fail
 open class IntegrationSetup {
     companion object {
         val redirect = Redirect.INHERIT
-        val version = "1.2.3-beta"
+        val version = "1.2.4-beta"
         val timestamp = System.currentTimeMillis()
 //        val namespace = "integration-$timestamp"
         val namespace = "integration"
@@ -87,9 +87,9 @@ open class IntegrationSetup {
             }
             println("Building flink image...")
             val flinkBuildArgs = listOf(
-                "--build-arg", "flink_version=1.9.0", "--build-arg", "scala_version=2.11"
+                "--build-arg", "flink_version=1.9.2", "--build-arg", "scala_version=2.11"
             )
-            if (buildDockerImage(redirect = redirect, path = "example/flink", name = "integration/flink:1.9.0", args = flinkBuildArgs) != 0) {
+            if (buildDockerImage(redirect = redirect, path = "example/flink", name = "integration/flink:1.9.2", args = flinkBuildArgs) != 0) {
                 fail("Can't build flink image")
             }
             println("Building job image...")
@@ -158,14 +158,11 @@ open class IntegrationSetup {
                     fail("Can't create secrets")
                 }
             }
-//            if (createResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
-//                if (deleteResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
-//                    fail("Can't delete volumes")
-//                }
-//                if (createResources(redirect = redirect, path = "example/volumes.yaml") != 0) {
-//                    fail("Can't create volumes")
-//                }
-//            }
+            if (createResources(redirect = redirect, namespace = namespace, path = "example/data.yaml") != 0) {
+                if (replaceResources(redirect = redirect, namespace = namespace, path = "example/data.yaml") != 0) {
+                    fail("Can't create data")
+                }
+            }
             println("Resources installed")
         }
 

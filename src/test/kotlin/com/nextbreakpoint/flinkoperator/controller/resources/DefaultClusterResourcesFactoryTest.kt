@@ -87,7 +87,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(podSpec?.initContainers).hasSize(1)
 
         val container = podSpec?.containers?.get(0)
-        assertThat(container?.image).isEqualTo("registry:30000/flink:1.9.0")
+        assertThat(container?.image).isEqualTo("registry:30000/flink:1.9.2")
         assertThat(container?.imagePullPolicy).isEqualTo("IfNotPresent")
         assertThat(container?.ports).hasSize(4)
         assertThat(container?.ports?.get(0)?.name).isEqualTo("ui")
@@ -156,7 +156,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(podSpec?.initContainers).hasSize(1)
 
         val container = podSpec?.containers?.get(0)
-        assertThat(container?.image).isEqualTo("registry:30000/flink:1.9.0")
+        assertThat(container?.image).isEqualTo("registry:30000/flink:1.9.2")
         assertThat(container?.imagePullPolicy).isEqualTo("IfNotPresent")
         assertThat(container?.ports).hasSize(2)
         assertThat(container?.ports?.get(0)?.name).isEqualTo("data")
