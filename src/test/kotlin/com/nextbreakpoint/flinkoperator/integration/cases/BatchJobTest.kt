@@ -28,6 +28,11 @@ class BatchJobTest : IntegrationSetup() {
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster suspended")
+        Thread.sleep(10000)
+        awaitUntilAsserted(timeout = 20) {
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Suspended)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
+        }
         describePods(redirect = redirect, namespace = namespace)
         describeClusters(redirect = redirect, namespace = namespace)
         println("Deleting cluster...")
@@ -57,6 +62,11 @@ class BatchJobTest : IntegrationSetup() {
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster failed")
+        Thread.sleep(10000)
+        awaitUntilAsserted(timeout = 20) {
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Failed)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()
+        }
         describePods(redirect = redirect, namespace = namespace)
         describeClusters(redirect = redirect, namespace = namespace)
         println("Deleting cluster...")
