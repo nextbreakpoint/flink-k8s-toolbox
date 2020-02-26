@@ -53,6 +53,7 @@ class BootstrapCreateJobTest {
         val result = command.execute(clusterId, bootstrapJob)
         verify(kubeClient, times(1)).listBootstrapJobs(eq(clusterId))
         verify(kubeClient, times(1)).deleteBootstrapJobs(eq(clusterId))
+        verify(kubeClient, times(1)).deleteBootstrapJobPods(eq(clusterId))
         verify(kubeClient, times(1)).createBootstrapJob(eq(clusterId), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
