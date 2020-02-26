@@ -119,6 +119,7 @@ class ClusterStopTest {
             ClusterTask.StoppingCluster,
             ClusterTask.StopJob,
             ClusterTask.TerminatePods,
+            ClusterTask.DeleteBootstrapJob,
             ClusterTask.DeleteResources,
             ClusterTask.TerminatedCluster,
             ClusterTask.ClusterHalted
@@ -153,6 +154,7 @@ class ClusterStopTest {
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StoppingCluster,
             ClusterTask.TerminatePods,
+            ClusterTask.DeleteBootstrapJob,
             ClusterTask.DeleteResources,
             ClusterTask.TerminatedCluster,
             ClusterTask.ClusterHalted
@@ -170,6 +172,7 @@ class ClusterStopTest {
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StoppingCluster,
             ClusterTask.TerminatePods,
+            ClusterTask.DeleteBootstrapJob,
             ClusterTask.DeleteResources,
             ClusterTask.TerminatedCluster,
             ClusterTask.ClusterHalted
@@ -188,6 +191,7 @@ class ClusterStopTest {
             ClusterTask.StoppingCluster,
             ClusterTask.CancelJob,
             ClusterTask.TerminatePods,
+            ClusterTask.DeleteBootstrapJob,
             ClusterTask.DeleteResources,
             ClusterTask.TerminatedCluster,
             ClusterTask.ClusterHalted
@@ -222,6 +226,7 @@ class ClusterStopTest {
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StoppingCluster,
             ClusterTask.TerminatePods,
+            ClusterTask.DeleteBootstrapJob,
             ClusterTask.DeleteResources,
             ClusterTask.TerminatedCluster,
             ClusterTask.ClusterHalted
@@ -239,6 +244,7 @@ class ClusterStopTest {
         assertThat(result.output).containsExactlyElementsOf(listOf(
             ClusterTask.StoppingCluster,
             ClusterTask.TerminatePods,
+            ClusterTask.DeleteBootstrapJob,
             ClusterTask.DeleteResources,
             ClusterTask.TerminatedCluster,
             ClusterTask.ClusterHalted

@@ -37,75 +37,14 @@ class ClusterCreateResourcesTest {
 
     @BeforeEach
     fun configure() {
-        given(kubeClient.listJobManagerServices(eq(clusterId))).thenReturn(V1ServiceList())
-        given(kubeClient.listJobManagerStatefulSets(eq(clusterId))).thenReturn(V1StatefulSetList())
-        given(kubeClient.listTaskManagerStatefulSets(eq(clusterId))).thenReturn(V1StatefulSetList())
         given(kubeClient.createJobManagerService(eq(clusterId), any())).thenReturn(v1Service)
         given(kubeClient.createJobManagerStatefulSet(eq(clusterId), any())).thenReturn(v1StatefulSet)
         given(kubeClient.createTaskManagerStatefulSet(eq(clusterId), any())).thenReturn(v1StatefulSet)
-        given(kubeClient.replaceJobManagerService(eq(clusterId), any())).thenReturn(v1Service)
-        given(kubeClient.replaceJobManagerStatefulSet(eq(clusterId), any())).thenReturn(v1StatefulSet)
-        given(kubeClient.replaceTaskManagerStatefulSet(eq(clusterId), any())).thenReturn(v1StatefulSet)
-    }
-
-    @Test
-    fun `should replace job manager when service already exists`() {
-        given(kubeClient.listJobManagerServices(eq(clusterId))).thenReturn(V1ServiceList().addItemsItem(resources.jobmanagerService))
-        val result = command.execute(clusterId, resources)
-        verify(kubeClient, times(1)).listJobManagerServices(eq(clusterId))
-        verify(kubeClient, times(1)).listJobManagerStatefulSets(eq(clusterId))
-        verify(kubeClient, times(1)).listTaskManagerStatefulSets(eq(clusterId))
-        verify(kubeClient, times(1)).deleteJobManagerServices(eq(clusterId))
-        verify(kubeClient, times(1)).createJobManagerService(eq(clusterId), any())
-        verify(kubeClient, times(1)).createJobManagerStatefulSet(eq(clusterId), eq(resources))
-        verify(kubeClient, times(1)).createTaskManagerStatefulSet(eq(clusterId), eq(resources))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
-        assertThat(result.output).isNull()
-    }
-
-    @Test
-    fun `should replace job manager when statefulset already exists`() {
-        given(kubeClient.listJobManagerStatefulSets(eq(clusterId))).thenReturn(V1StatefulSetList().addItemsItem(resources.jobmanagerStatefulSet))
-        val result = command.execute(clusterId, resources)
-        verify(kubeClient, times(1)).listJobManagerServices(eq(clusterId))
-        verify(kubeClient, times(1)).listJobManagerStatefulSets(eq(clusterId))
-        verify(kubeClient, times(1)).listTaskManagerStatefulSets(eq(clusterId))
-        verify(kubeClient, times(1)).createJobManagerService(eq(clusterId), any())
-        verify(kubeClient, times(1)).replaceJobManagerStatefulSet(eq(clusterId), any())
-        verify(kubeClient, times(1)).createTaskManagerStatefulSet(eq(clusterId), eq(resources))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
-        assertThat(result.output).isNull()
-    }
-
-    @Test
-    fun `should replace task manager when statefulset already exists`() {
-        given(kubeClient.listTaskManagerStatefulSets(eq(clusterId))).thenReturn(V1StatefulSetList().addItemsItem(resources.taskmanagerStatefulSet))
-        val result = command.execute(clusterId, resources)
-        verify(kubeClient, times(1)).listJobManagerServices(eq(clusterId))
-        verify(kubeClient, times(1)).listJobManagerStatefulSets(eq(clusterId))
-        verify(kubeClient, times(1)).listTaskManagerStatefulSets(eq(clusterId))
-        verify(kubeClient, times(1)).createJobManagerService(eq(clusterId), any())
-        verify(kubeClient, times(1)).createJobManagerStatefulSet(eq(clusterId), eq(resources))
-        verify(kubeClient, times(1)).replaceTaskManagerStatefulSet(eq(clusterId), any())
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
-        assertThat(result.output).isNull()
     }
 
     @Test
     fun `should create job manager and task manager resources`() {
         val result = command.execute(clusterId, resources)
-        verify(kubeClient, times(1)).listJobManagerServices(eq(clusterId))
-        verify(kubeClient, times(1)).listJobManagerStatefulSets(eq(clusterId))
-        verify(kubeClient, times(1)).listTaskManagerStatefulSets(eq(clusterId))
         verify(kubeClient, times(1)).createJobManagerService(eq(clusterId), eq(resources))
         verify(kubeClient, times(1)).createJobManagerStatefulSet(eq(clusterId), eq(resources))
         verify(kubeClient, times(1)).createTaskManagerStatefulSet(eq(clusterId), eq(resources))
@@ -118,9 +57,9 @@ class ClusterCreateResourcesTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.listJobManagerServices(eq(clusterId))).thenThrow(RuntimeException::class.java)
+        given(kubeClient.createJobManagerService(eq(clusterId), any())).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, resources)
-        verify(kubeClient, times(1)).listJobManagerServices(eq(clusterId))
+        verify(kubeClient, times(1)).createJobManagerService(eq(clusterId), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()

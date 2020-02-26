@@ -6,6 +6,7 @@ import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import java.util.concurrent.TimeUnit
 
 @Tag("IntegrationTest")
 class BatchJobTest : IntegrationSetup() {
@@ -28,7 +29,7 @@ class BatchJobTest : IntegrationSetup() {
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster suspended")
-        Thread.sleep(10000)
+        TimeUnit.SECONDS.sleep(10)
         awaitUntilAsserted(timeout = 20) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Suspended)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
@@ -62,7 +63,7 @@ class BatchJobTest : IntegrationSetup() {
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster failed")
-        Thread.sleep(10000)
+        TimeUnit.SECONDS.sleep(10)
         awaitUntilAsserted(timeout = 20) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Failed)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()

@@ -28,7 +28,7 @@ import kotlin.test.fail
 open class IntegrationSetup {
     companion object {
         val redirect = Redirect.INHERIT
-        val version = "1.2.5-beta"
+        val version = "1.2.6-beta"
         val timestamp = System.currentTimeMillis()
 //        val namespace = "integration-$timestamp"
         val namespace = "integration"
@@ -45,10 +45,12 @@ open class IntegrationSetup {
         @BeforeAll
         @JvmStatic
         fun setup() {
-            printInfo()
-            TimeUnit.SECONDS.sleep(5)
-            createNamespace()
             buildDockerImages()
+            TimeUnit.SECONDS.sleep(5)
+            printInfo()
+            deleteCRD()
+            deleteNamespace()
+            createNamespace()
             installOperator()
             installResources()
             exposeOperator()
@@ -191,6 +193,12 @@ open class IntegrationSetup {
         fun deleteNamespace() {
             if (deleteNamespace(redirect = redirect, namespace = namespace) != 0) {
                 println("Can't delete namespace")
+            }
+        }
+
+        fun deleteCRD() {
+            if (deleteCRD(redirect = redirect, name = "flinkclusters.nextbreakpoint.com") != 0) {
+                println("Can't delete CRD")
             }
         }
 
@@ -608,11 +616,30 @@ open class IntegrationSetup {
             return executeCommand(redirect, command)
         }
 
+        private fun deleteCRD(redirect: Redirect?, name: String): Int {
+            val command = listOf(
+                "kubectl",
+                "delete",
+                "crd",
+                name
+            )
+            return executeCommand(redirect, command)
+        }
+
         private fun buildDockerImage(redirect: Redirect?, path: String, name: String, args: List<String>? = emptyList()): Int {
             val command = listOf(
                 "sh",
                 "-c",
                 "eval $(minikube docker-env) && docker build -t $name $path ${args?.asSequence().orEmpty().joinToString(" ")}"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun cleanDockerImages(redirect: Redirect?): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "eval $(minikube docker-env) && docker rmi $(docker images -f dangling=true -q)"
             )
             return executeCommand(redirect, command)
         }

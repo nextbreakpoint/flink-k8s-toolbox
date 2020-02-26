@@ -4,11 +4,11 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import org.apache.log4j.Logger
 
 class ClusterHalted : Task {
@@ -39,7 +39,7 @@ class ClusterHalted : Task {
             return next(context.flinkCluster, "Stopping cluster...")
         }
 
-        if (isUpdatingCluster(context)) {
+        if (isRestartingCluster(context)) {
             return next(context.flinkCluster, "Resource changed. Restarting...")
         }
 
@@ -57,6 +57,10 @@ class ClusterHalted : Task {
 
         if (isRestartingJob(context)) {
             return next(context.flinkCluster, "Restarting job...")
+        }
+
+        if (isTerminatingCluster(context)) {
+            return next(context.flinkCluster, "Terminating cluster...")
         }
 
         if (Status.getClusterStatus(context.flinkCluster) == ClusterStatus.Failed) {
@@ -221,6 +225,7 @@ class ClusterHalted : Task {
             context.flinkCluster, listOf(
                 ClusterTask.StoppingCluster,
                 ClusterTask.TerminatePods,
+                ClusterTask.DeleteBootstrapJob,
                 ClusterTask.DeleteResources,
                 ClusterTask.TerminatedCluster,
                 ClusterTask.ClusterHalted
@@ -231,7 +236,7 @@ class ClusterHalted : Task {
         return true
     }
 
-    private fun isUpdatingCluster(context: TaskContext): Boolean {
+    private fun isRestartingCluster(context: TaskContext): Boolean {
         if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Failed) {
             // attempt updating a cluster only when failed
             return false
@@ -243,42 +248,60 @@ class ClusterHalted : Task {
             logger.info("[name=${context.flinkCluster.metadata.name}] Detected changes: ${changes.joinToString(separator = ",")}")
         }
 
+        if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME") || changes.contains("BOOTSTRAP")) {
+            logger.info("[name=${context.flinkCluster.metadata.name}] Replace strategy not enabled")
+
+            Status.appendTasks(
+                context.flinkCluster,
+                listOf(
+                    ClusterTask.StoppingCluster,
+                    ClusterTask.TerminatePods,
+                    ClusterTask.DeleteBootstrapJob,
+                    ClusterTask.DeleteResources,
+                    ClusterTask.StartingCluster,
+                    ClusterTask.CreateResources,
+                    ClusterTask.CreateBootstrapJob,
+                    ClusterTask.ClusterRunning
+                )
+            )
+        }
+
+        // update cluster if something changed
+        return changes.isNotEmpty()
+    }
+
+    private fun isTerminatingCluster(context: TaskContext): Boolean {
+        if (Status.getClusterStatus(context.flinkCluster) != ClusterStatus.Suspended) {
+            // attempt updating a cluster only when failed
+            return false
+        }
+
+        val changes = computeChanges(context.flinkCluster)
+
+        if (changes.isNotEmpty()) {
+            logger.info("[name=${context.flinkCluster.metadata.name}] Detected changes: ${changes.joinToString(separator = ",")}")
+        }
+
         if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
-            if (java.lang.Boolean.getBoolean("disableReplaceStrategy")) {
-                logger.info("[name=${context.flinkCluster.metadata.name}] Replace strategy not enabled")
-
-                Status.appendTasks(
-                    context.flinkCluster,
-                    listOf(
-                        ClusterTask.StoppingCluster,
-                        ClusterTask.TerminatePods,
-                        ClusterTask.StartingCluster,
-                        ClusterTask.CreateResources,
-                        ClusterTask.CreateBootstrapJob,
-                        ClusterTask.ClusterRunning
-                    )
+            Status.appendTasks(
+                context.flinkCluster,
+                listOf(
+                    ClusterTask.StoppingCluster,
+                    ClusterTask.DeleteBootstrapJob,
+                    ClusterTask.DeleteResources,
+                    ClusterTask.TerminatedCluster,
+                    ClusterTask.ClusterHalted
                 )
-            } else {
-                logger.info("[name=${context.flinkCluster.metadata.name}] Replace strategy enabled")
-
-                Status.appendTasks(
-                    context.flinkCluster,
-                    listOf(
-                        ClusterTask.UpdatingCluster,
-                        ClusterTask.CreateResources,
-                        ClusterTask.CreateBootstrapJob,
-                        ClusterTask.ClusterRunning
-                    )
-                )
-            }
+            )
         } else if (changes.contains("BOOTSTRAP")) {
             Status.appendTasks(
                 context.flinkCluster,
                 listOf(
                     ClusterTask.UpdatingCluster,
-                    ClusterTask.CreateResources,
-                    ClusterTask.CreateBootstrapJob,
-                    ClusterTask.ClusterRunning
+                    ClusterTask.DeleteBootstrapJob,
+                    ClusterTask.RefreshStatus,
+                    ClusterTask.SuspendCluster,
+                    ClusterTask.ClusterHalted
                 )
             )
         }

@@ -14,15 +14,16 @@ import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
+import com.nextbreakpoint.flinkoperator.controller.core.Command
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.TaskExecutor
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersList
-import com.nextbreakpoint.flinkoperator.controller.core.TaskExecutor
 import com.nextbreakpoint.flinkoperator.controller.task.CancelJob
 import com.nextbreakpoint.flinkoperator.controller.task.ClusterHalted
 import com.nextbreakpoint.flinkoperator.controller.task.ClusterRunning
@@ -157,7 +158,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         val gauges = registerMetrics(registry, namespace)
 
-        val statusUpdater = TaskExecutor(controller, taskHandlers)
+        val taskExecutor = TaskExecutor(controller, taskHandlers)
 
         mainRouter.route().handler(LoggerHandler.create(true, LoggerFormat.DEFAULT))
         mainRouter.route().handler(BodyHandler.create())
@@ -171,7 +172,7 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/start", BiFunction { context, namespace ->
                 json.serialize(
-                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    Command(
                         cache.getClusterId(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
@@ -181,7 +182,7 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.put("/cluster/:name/stop").handler { routingContext ->
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/stop", BiFunction { context, namespace ->
                 json.serialize(
-                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    Command(
                         cache.getClusterId(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
@@ -191,7 +192,7 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.put("/cluster/:name/scale").handler { routingContext ->
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/scale", BiFunction { context, namespace ->
                 json.serialize(
-                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    Command(
                         cache.getClusterId(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
@@ -201,7 +202,7 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.put("/cluster/:name/savepoint").handler { routingContext ->
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/savepoint/trigger", BiFunction { context, namespace ->
                 json.serialize(
-                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    Command(
                         cache.getClusterId(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
@@ -211,7 +212,7 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.delete("/cluster/:name/savepoint").handler { routingContext ->
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/savepoint/forget", BiFunction { context, namespace ->
                 json.serialize(
-                    com.nextbreakpoint.flinkoperator.controller.core.Message(
+                    Command(
                         cache.getClusterId(namespace, context.pathParam("name")), "{}"
                     )
                 )
@@ -318,11 +319,11 @@ class OperatorVerticle : AbstractVerticle() {
 
 
         vertx.eventBus().consumer<String>("/cluster/start") { message ->
-            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+            processCommandAndReplyToSender<Command>(
                 message,
                 Function {
                     json.deserialize(
-                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                        it.body(), Command::class.java
                     )
                 },
                 Function {
@@ -336,11 +337,11 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/cluster/stop") { message ->
-            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+            processCommandAndReplyToSender<Command>(
                 message,
                 Function {
                     json.deserialize(
-                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                        it.body(), Command::class.java
                     )
                 },
                 Function {
@@ -354,11 +355,11 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/cluster/scale") { message ->
-            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+            processCommandAndReplyToSender<Command>(
                 message,
                 Function {
                     json.deserialize(
-                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                        it.body(), Command::class.java
                     )
                 },
                 Function {
@@ -398,11 +399,11 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/cluster/savepoint/trigger") { message ->
-            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+            processCommandAndReplyToSender<Command>(
                 message,
                 Function {
                     json.deserialize(
-                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                        it.body(), Command::class.java
                     )
                 },
                 Function {
@@ -416,11 +417,11 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/cluster/savepoint/forget") { message ->
-            processCommandAndReplyToSender<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+            processCommandAndReplyToSender<Command>(
                 message,
                 Function {
                     json.deserialize(
-                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                        it.body(), Command::class.java
                     )
                 },
                 Function {
@@ -594,15 +595,15 @@ class OperatorVerticle : AbstractVerticle() {
 
 
         vertx.eventBus().consumer<String>("/resource/cluster/update") { message ->
-            processCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+            processCommand<Command>(
                 message,
                 Function {
                     json.deserialize(
-                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                        it.body(), Command::class.java
                     )
                 },
                 Function {
-                    statusUpdater.update(it.clusterId, cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                    updateCluster(taskExecutor, it.clusterId, cache)
 
                     null
                 }
@@ -610,15 +611,15 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         vertx.eventBus().consumer<String>("/resource/cluster/forget") { message ->
-            processCommand<com.nextbreakpoint.flinkoperator.controller.core.Message>(
+            processCommand<Command>(
                 message,
                 Function {
                     json.deserialize(
-                        it.body(), com.nextbreakpoint.flinkoperator.controller.core.Message::class.java
+                        it.body(), Command::class.java
                     )
                 },
                 Function {
-                    statusUpdater.forget(it.clusterId)
+                    forgetCluster(controller, it.clusterId)
 
                     null
                 }
@@ -664,6 +665,30 @@ class OperatorVerticle : AbstractVerticle() {
         return vertx.createHttpServer(serverOptions)
             .requestHandler(mainRouter)
             .rxListen(port)
+    }
+
+    private fun updateCluster(executor: TaskExecutor, clusterId: ClusterId, cache: Cache) {
+        try {
+            executor.update(clusterId, cache.getFlinkCluster(clusterId), cache.getCachedResources())
+        } catch (e : Exception) {
+            logger.error("Error occurred while updating cluster ${clusterId.name}", e)
+        }
+    }
+
+    private fun forgetCluster(controller: OperationController, clusterId: ClusterId) {
+        try {
+            controller.deleteBootstrapJob(clusterId)
+
+            controller.terminatePods(clusterId)
+
+            val result = controller.arePodsTerminated(clusterId)
+
+            if (result.isCompleted()) {
+                controller.deleteClusterResources(clusterId)
+            }
+        } catch (e : Exception) {
+            logger.error("Error occurred while forgetting cluster ${clusterId.name}", e)
+        }
     }
 
     private fun createServerOptions(
@@ -781,7 +806,7 @@ class OperatorVerticle : AbstractVerticle() {
                 handler.apply(it)
             }
             .doOnError {
-                logger.error("Can't process message [address=${message.address()}]", it)
+                logger.error("Can't process command [address=${message.address()}]", it)
             }
             .onErrorReturn {
                 makeError(it)
@@ -808,7 +833,7 @@ class OperatorVerticle : AbstractVerticle() {
                 handler.apply(it)
             }
             .doOnError {
-                logger.error("Can't process message [address=${message.address()}]", it)
+                logger.error("Can't process command [address=${message.address()}]", it)
             }
             .subscribe()
     }
@@ -834,7 +859,7 @@ class OperatorVerticle : AbstractVerticle() {
     private fun doUpdateClusters(cache: Cache) {
         cache.getCachedClusters().forEach {
             vertx.eventBus().publish(
-                "/resource/cluster/update", JSON().serialize(com.nextbreakpoint.flinkoperator.controller.core.Message(it, "{}"))
+                "/resource/cluster/update", JSON().serialize(Command(it, "{}"))
             )
         }
     }
@@ -842,7 +867,7 @@ class OperatorVerticle : AbstractVerticle() {
     private fun doDeleteOrphans(cache: Cache) {
         cache.getOrphanedClusters().forEach {
             vertx.eventBus().publish(
-                "/resource/cluster/forget", JSON().serialize(com.nextbreakpoint.flinkoperator.controller.core.Message(it, "{}"))
+                "/resource/cluster/forget", JSON().serialize(Command(it, "{}"))
             )
         }
     }
