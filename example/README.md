@@ -80,7 +80,7 @@ Configure Docker environment (only for minikube):
 
 Build Flink jobs image:
 
-    docker build -t example/flink-jobs:1 example/flink-jobs --build-arg repository=nextbreakpoint/flink-k8s-toolbox --build-arg version=1.2.4-beta
+    docker build -t example/flink-jobs:1 example/flink-jobs --build-arg repository=nextbreakpoint/flink-k8s-toolbox --build-arg version=1.2.5-beta
 
 ## Create Flink resources    
 
@@ -180,17 +180,17 @@ Configure Docker environment (only for minikube):
 
 Compile Docker image of Flink Operator:
 
-    docker build -t flink-k8s-toolbox:1.2.4-beta .
+    docker build -t flink-k8s-toolbox:1.2.5-beta .
 
 Optionally tag and push Docker image to your local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.2.4-beta registry:30000/flink-k8s-toolbox:1.2.4-beta
+    docker tag flink-k8s-toolbox:1.2.5-beta registry:30000/flink-k8s-toolbox:1.2.5-beta
     docker login registry:30000
-    docker push registry:30000/flink-k8s-toolbox:1.2.4-beta
+    docker push registry:30000/flink-k8s-toolbox:1.2.5-beta
 
 Run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.2.4-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.2.5-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Run Flink Operator using Helm and local registry:
 
