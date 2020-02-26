@@ -3,6 +3,7 @@ package com.nextbreakpoint.flinkoperator.cli.command
 import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
 import com.nextbreakpoint.flinkoperator.cli.BootstrapCommand
 import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
+import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -22,24 +23,15 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
 
             var count = 0;
 
-            while (count < 5) {
-                try {
-                    val uploadResult = FlinkClient.uploadJarCall(address, File(args.jarPath))
+            val maxAttempts = 12
 
-                    if (uploadResult.status == JarUploadResponseBody.StatusEnum.SUCCESS) {
-                        logger.info("File ${args.jarPath} uploaded to ${uploadResult.filename}")
-
-                        break
-                    } else {
-                        logger.warn("Failed to upload file. Retrying...")
-                    }
-                } catch (e : Exception) {
-                    logger.warn("Failed to upload file. Retrying...", e)
-                }
-
-                Thread.sleep(5000)
-
+            while (count < maxAttempts && !uploadFile(address, args)) {
+                Thread.sleep(10000)
                 count += 1
+            }
+
+            if (count >= maxAttempts) {
+                throw Exception("Failed to upload JAR file. Max attempts reached")
             }
 
             val files = FlinkClient.listJars(address)
@@ -65,5 +57,22 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
         } catch (e: Exception) {
             throw RuntimeException(e)
         }
+    }
+
+    private fun uploadFile(address: FlinkAddress, args: BootstrapOptions): Boolean {
+        try {
+            val uploadResult = FlinkClient.uploadJarCall(address, File(args.jarPath))
+
+            if (uploadResult.status == JarUploadResponseBody.StatusEnum.SUCCESS) {
+                logger.info("File ${args.jarPath} uploaded to ${uploadResult.filename}")
+
+                return true
+            } else {
+                logger.warn("Failed to upload file. Retrying...")
+            }
+        } catch (e: Exception) {
+            logger.warn("Failed to upload file. Retrying...", e)
+        }
+        return false
     }
 }
