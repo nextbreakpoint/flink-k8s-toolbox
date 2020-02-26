@@ -12,9 +12,11 @@ import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -75,7 +77,9 @@ class TaskExecutorTest {
     fun `should fail when task handler is not defined`() {
         Status.appendTasks(cluster, listOf(ClusterTask.ClusterRunning))
         val timestamp = Status.getOperatorTimestamp(cluster)
-        command.update(clusterId, cluster, resources)
+        Assertions.assertThatThrownBy { command.update(clusterId, cluster, resources) }
+            .isInstanceOf(RuntimeException::class.java)
+            .hasMessage("Implementation not found for task ClusterRunning")
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(controller)

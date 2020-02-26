@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
@@ -20,7 +19,6 @@ import com.nextbreakpoint.flinkoperator.controller.operation.ClusterDeleteResour
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterGetStatus
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsReady
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsRunning
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsSuspended
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsTerminated
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterScale
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStart

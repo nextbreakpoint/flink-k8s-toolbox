@@ -17,30 +17,12 @@ class TaskExecutor(
     }
 
     fun update(clusterId: ClusterId, flinkCluster: V1FlinkCluster, cacheResources: CachedResources) {
-        try {
-            val context = TaskContext(clusterId, flinkCluster, cacheResources, controller)
+        val taskContext = TaskContext(clusterId, flinkCluster, cacheResources, controller)
 
-            return if (Status.hasCurrentTask(flinkCluster)) {
-                updatedClusterStatus(clusterId, context)
-            } else {
-                prepareClusterStatus(clusterId, context)
-            }
-        } catch (e : Exception) {
-            logger.error("Error occurred while updating cluster ${clusterId.name}", e)
-        }
-    }
-
-    fun forget(clusterId: ClusterId) {
-        try {
-            controller.terminatePods(clusterId)
-
-            val result = controller.arePodsTerminated(clusterId)
-
-            if (result.isCompleted()) {
-                controller.deleteClusterResources(clusterId)
-            }
-        } catch (e : Exception) {
-            logger.error("Error occurred while forgetting cluster ${clusterId.name}", e)
+        if (Status.hasCurrentTask(flinkCluster)) {
+            updatedClusterStatus(clusterId, taskContext)
+        } else {
+            prepareClusterStatus(clusterId, taskContext)
         }
     }
 

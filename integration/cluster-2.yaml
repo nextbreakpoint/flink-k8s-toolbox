@@ -43,11 +43,23 @@ spec:
       - name: config-vol
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
+      - name: jobmanager
+        mountPath: /var
     volumes:
       - name: config-vol
         configMap:
           name: flink-config
           defaultMode: 0777
+    persistentVolumeClaimsTemplates:
+      - metadata:
+          name: jobmanager
+        spec:
+          storageClassName: standard
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
     resources:
       limits:
         cpu: '0.2'
@@ -79,11 +91,23 @@ spec:
       - name: config-vol
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
+      - name: taskmanager
+        mountPath: /var
     volumes:
       - name: config-vol
         configMap:
           name: flink-config
           defaultMode: 0777
+    persistentVolumeClaimsTemplates:
+      - metadata:
+          name: taskmanager
+        spec:
+          storageClassName: standard
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     resources:
       limits:
         cpu: '0.2'

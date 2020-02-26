@@ -5,13 +5,13 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
-import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import org.apache.log4j.Logger
 
 class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val adapter: CacheAdapter) : Operation<StopOptions, List<ClusterTask>>(flinkOptions, flinkClient, kubeClient) {
@@ -99,6 +99,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                                 ClusterTask.StoppingCluster,
                                 ClusterTask.StopJob,
                                 ClusterTask.TerminatePods,
+                                ClusterTask.DeleteBootstrapJob,
                                 ClusterTask.DeleteResources,
                                 ClusterTask.TerminatedCluster,
                                 ClusterTask.ClusterHalted
@@ -108,6 +109,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                                 ClusterTask.StoppingCluster,
                                 ClusterTask.CancelJob,
                                 ClusterTask.TerminatePods,
+                                ClusterTask.DeleteBootstrapJob,
                                 ClusterTask.DeleteResources,
                                 ClusterTask.TerminatedCluster,
                                 ClusterTask.ClusterHalted
@@ -140,6 +142,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                     listOf(
                         ClusterTask.StoppingCluster,
                         ClusterTask.TerminatePods,
+                        ClusterTask.DeleteBootstrapJob,
                         ClusterTask.DeleteResources,
                         ClusterTask.TerminatedCluster,
                         ClusterTask.ClusterHalted
@@ -148,6 +151,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                     listOf(
                         ClusterTask.StoppingCluster,
                         ClusterTask.TerminatePods,
+                        ClusterTask.DeleteBootstrapJob,
                         ClusterTask.DeleteResources,
                         ClusterTask.TerminatedCluster,
                         ClusterTask.ClusterHalted

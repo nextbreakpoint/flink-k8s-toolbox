@@ -3,6 +3,7 @@ package com.nextbreakpoint.flinkoperator.integration.cases
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
+import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -51,9 +52,11 @@ class StartAndStopTest : IntegrationSetup() {
         println("Should start clusters automatically...")
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
         }
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
         }
         println("Clusters started")
         println("Should suspend clusters...")
@@ -62,9 +65,11 @@ class StartAndStopTest : IntegrationSetup() {
         stopCluster(name = "cluster-2", options = stopOptions, port = port)
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Suspended)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
         }
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Suspended)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
         }
         println("Clusters suspended")
         println("Should resume clusters...")
@@ -74,9 +79,11 @@ class StartAndStopTest : IntegrationSetup() {
         startCluster(name = "cluster-2", options = startWithoutSavepointOptions, port = port)
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
         }
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
         }
         println("Clusters resumed")
         println("Should terminate clusters...")
@@ -86,9 +93,11 @@ class StartAndStopTest : IntegrationSetup() {
         stopCluster(name = "cluster-2", options = terminateWithoutSavepointOptions, port = port)
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Terminated)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
         }
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Terminated)).isTrue()
+            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
         }
         println("Clusters terminated")
     }

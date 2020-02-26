@@ -4,12 +4,12 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.Configuration
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
+import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
 import org.apache.log4j.Logger
 
 class ClusterRunning : Task {
@@ -218,6 +218,7 @@ class ClusterRunning : Task {
             listOf(
                 ClusterTask.StoppingCluster,
                 ClusterTask.TerminatePods,
+                ClusterTask.DeleteBootstrapJob,
                 ClusterTask.SuspendCluster,
                 ClusterTask.ClusterHalted
             )
@@ -240,39 +241,28 @@ class ClusterRunning : Task {
         }
 
         if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
-            if (java.lang.Boolean.getBoolean("disableReplaceStrategy")) {
-                logger.info("[name=${context.flinkCluster.metadata.name}] Replace strategy not enabled")
+            logger.info("[name=${context.flinkCluster.metadata.name}] Replace strategy not enabled")
 
-                Status.appendTasks(context.flinkCluster,
-                    listOf(
-                        ClusterTask.StoppingCluster,
-                        ClusterTask.CancelJob,
-                        ClusterTask.TerminatePods,
-                        ClusterTask.StartingCluster,
-                        ClusterTask.CreateResources,
-                        ClusterTask.CreateBootstrapJob,
-                        ClusterTask.ClusterRunning
-                    )
+            Status.appendTasks(context.flinkCluster,
+                listOf(
+                    ClusterTask.StoppingCluster,
+                    ClusterTask.CancelJob,
+                    ClusterTask.TerminatePods,
+                    ClusterTask.DeleteBootstrapJob,
+                    ClusterTask.DeleteResources,
+                    ClusterTask.StartingCluster,
+                    ClusterTask.CreateResources,
+                    ClusterTask.CreateBootstrapJob,
+                    ClusterTask.ClusterRunning
                 )
-            } else {
-                logger.info("[name=${context.flinkCluster.metadata.name}] Replace strategy enabled")
-
-                Status.appendTasks(context.flinkCluster,
-                    listOf(
-                        ClusterTask.UpdatingCluster,
-                        ClusterTask.CancelJob,
-                        ClusterTask.CreateResources,
-                        ClusterTask.CreateBootstrapJob,
-                        ClusterTask.ClusterRunning
-                    )
-                )
-            }
+            )
         } else if (changes.contains("BOOTSTRAP")) {
             Status.appendTasks(
                 context.flinkCluster,
                 listOf(
                     ClusterTask.UpdatingCluster,
                     ClusterTask.CancelJob,
+                    ClusterTask.DeleteBootstrapJob,
                     ClusterTask.RefreshStatus,
                     ClusterTask.CreateBootstrapJob,
                     ClusterTask.ClusterRunning

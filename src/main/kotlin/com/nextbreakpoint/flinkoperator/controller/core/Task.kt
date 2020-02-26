@@ -77,6 +77,12 @@ interface Task {
                 taskmanagerPersistentVolumeClaim == null
     }
 
+    fun serviceResourceHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
+        val jobmnagerService = resources.jobmanagerServices[clusterId]
+
+        return jobmnagerService == null
+    }
+
     fun bootstrapResourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
         val bootstrapJob = resources.bootstrapJobs[clusterId]
 

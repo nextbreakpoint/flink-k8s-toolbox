@@ -28,9 +28,9 @@ class ClusterDeleteResourcesTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.deleteBootstrapJobs(eq(clusterId))).thenThrow(RuntimeException::class.java)
+        given(kubeClient.deleteStatefulSets(eq(clusterId))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteBootstrapJobs(eq(clusterId))
+        verify(kubeClient, times(1)).deleteStatefulSets(eq(clusterId))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -41,7 +41,6 @@ class ClusterDeleteResourcesTest {
     @Test
     fun `should delete job manager and task manager resources`() {
         val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteBootstrapJobs(eq(clusterId))
         verify(kubeClient, times(1)).deleteStatefulSets(eq(clusterId))
         verify(kubeClient, times(1)).deleteJobManagerServices(eq(clusterId))
         verify(kubeClient, times(1)).deletePersistentVolumeClaims(eq(clusterId))
