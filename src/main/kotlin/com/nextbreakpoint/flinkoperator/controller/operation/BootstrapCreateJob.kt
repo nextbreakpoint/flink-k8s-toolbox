@@ -24,6 +24,8 @@ class BootstrapCreateJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
             if (jobs.items.isNotEmpty()) {
                 kubeClient.deleteBootstrapJobs(clusterId)
 
+                kubeClient.deleteBootstrapJobPods(clusterId)
+
                 val jobOut = kubeClient.createBootstrapJob(clusterId, params)
 
                 logger.info("[name=${clusterId.name}] Bootstrap job recreated: ${jobOut.metadata.name}")
