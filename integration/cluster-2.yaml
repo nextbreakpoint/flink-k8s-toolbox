@@ -25,11 +25,19 @@ spec:
     - name: FLINK_ENVIRONMENT
       value: test
     - name: FLINK_SAVEPOINTS_LOCATION
-      value: file:///var/savepoints
+      value: s3a://flink/2/savepoints
     - name: FLINK_CHECKPOINTS_LOCATION
       value: file:///var/checkpoints
     - name: FLINK_FS_CHECKPOINTS_LOCATION
       value: file:///var/fs_checkpoints
+    - name: FLINK_S3_ENDPOINT
+      value: http://minio-headless:9000
+    - name: FLINK_S3_ACCESS_KEY
+      value: minioaccesskey
+    - name: FLINK_S3_SECRET_KEY
+      value: miniosecretkey
+    - name: FLINK_S3_PATH_STYLE_ACCESS
+      value: "true"
     environmentFrom:
     - secretRef:
         name: flink-secrets
@@ -76,11 +84,19 @@ spec:
     - name: FLINK_ENVIRONMENT
       value: test
     - name: FLINK_SAVEPOINTS_LOCATION
-      value: file:///var/savepoints
+      value: s3a://flink/2/savepoints
     - name: FLINK_CHECKPOINTS_LOCATION
       value: file:///var/checkpoints
     - name: FLINK_FS_CHECKPOINTS_LOCATION
       value: file:///var/fs_checkpoints
+    - name: FLINK_S3_ENDPOINT
+      value: http://minio-headless:9000
+    - name: FLINK_S3_ACCESS_KEY
+      value: minioaccesskey
+    - name: FLINK_S3_SECRET_KEY
+      value: miniosecretkey
+    - name: FLINK_S3_PATH_STYLE_ACCESS
+      value: "true"
     volumeMounts:
       - name: config-vol
         mountPath: /hadoop/etc/core-site.xml
@@ -116,7 +132,7 @@ spec:
         cpu: '0.1'
         memory: 600Mi
   operator:
-    savepointMode: Automatic
+    savepointMode: Manual
     savepointInterval: 20
-    savepointTargetPath: file:///var/savepoints
+    savepointTargetPath: s3a://flink/2/savepoints
     jobRestartPolicy: Never

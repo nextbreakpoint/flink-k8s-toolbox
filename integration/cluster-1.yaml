@@ -27,11 +27,19 @@ spec:
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
     - name: FLINK_SAVEPOINTS_LOCATION
-      value: file:///var/savepoints
+      value: s3a://flink/1/savepoints
     - name: FLINK_CHECKPOINTS_LOCATION
       value: file:///var/checkpoints
     - name: FLINK_FS_CHECKPOINTS_LOCATION
       value: file:///var/fs_checkpoints
+    - name: FLINK_S3_ENDPOINT
+      value: http://minio-headless:9000
+    - name: FLINK_S3_ACCESS_KEY
+      value: minioaccesskey
+    - name: FLINK_S3_SECRET_KEY
+      value: miniosecretkey
+    - name: FLINK_S3_PATH_STYLE_ACCESS
+      value: "true"
     environmentFrom:
     - secretRef:
         name: flink-secrets
@@ -111,11 +119,19 @@ spec:
     - name: FLINK_GRAPHITE_HOST
       value: graphite.default.svc.cluster.local
     - name: FLINK_SAVEPOINTS_LOCATION
-      value: file:///var/savepoints
+      value: s3a://flink/1/savepoints
     - name: FLINK_CHECKPOINTS_LOCATION
       value: file:///var/checkpoints
     - name: FLINK_FS_CHECKPOINTS_LOCATION
       value: file:///var/fs_checkpoints
+    - name: FLINK_S3_ENDPOINT
+      value: http://minio-headless:9000
+    - name: FLINK_S3_ACCESS_KEY
+      value: minioaccesskey
+    - name: FLINK_S3_SECRET_KEY
+      value: miniosecretkey
+    - name: FLINK_S3_PATH_STYLE_ACCESS
+      value: "true"
     volumeMounts:
       - name: config-vol
         mountPath: /hadoop/etc/core-site.xml
@@ -183,6 +199,6 @@ spec:
         memory: 600Mi
   operator:
     savepointMode: Manual
-    savepointInterval: 60
-    savepointTargetPath: file:///var/savepoints
+    savepointInterval: 20
+    savepointTargetPath: s3a://flink/1/savepoints
     jobRestartPolicy: Always

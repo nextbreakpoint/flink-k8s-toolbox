@@ -117,6 +117,22 @@ data:
         echo "blob.server.port: 6124" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "query.server.port: 6125" >> "$FLINK_HOME/conf/flink-conf.yaml"
 
+        if [ -n "$FLINK_S3_ENDPOINT" ]; then
+          echo "s3.endpoint: $FLINK_S3_ENDPOINT" >> "$FLINK_HOME/conf/flink-conf.yaml"
+        fi
+
+        if [ -n "$FLINK_S3_ACCESS_KEY" ]; then
+          echo "s3.access-key: $FLINK_S3_ACCESS_KEY" >> "$FLINK_HOME/conf/flink-conf.yaml"
+        fi
+
+        if [ -n "$FLINK_S3_SECRET_KEY" ]; then
+          echo "s3.secret-key: $FLINK_S3_SECRET_KEY" >> "$FLINK_HOME/conf/flink-conf.yaml"
+        fi
+
+        if [ -n "$FLINK_S3_PATH_STYLE_ACCESS" ]; then
+          echo "s3.path.style.access: $FLINK_S3_PATH_STYLE_ACCESS" >> "$FLINK_HOME/conf/flink-conf.yaml"
+        fi
+
         echo "config file: " && grep '^[^\n#]' "$FLINK_HOME/conf/flink-conf.yaml"
         bash "$FLINK_HOME/bin/jobmanager.sh" start-foreground ${JOB_MANAGER_RPC_ADDRESS}
         exit 0
@@ -154,6 +170,22 @@ data:
         echo "taskmanager.numberOfTaskSlots: $TASK_MANAGER_NUMBER_OF_TASK_SLOTS" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "blob.server.port: 6124" >> "$FLINK_HOME/conf/flink-conf.yaml"
         echo "query.server.port: 6125" >> "$FLINK_HOME/conf/flink-conf.yaml"
+
+        if [ -n "$FLINK_S3_ENDPOINT" ]; then
+          echo "s3.endpoint: $FLINK_S3_ENDPOINT" >> "$FLINK_HOME/conf/flink-conf.yaml"
+        fi
+
+        if [ -n "$FLINK_S3_ACCESS_KEY" ]; then
+          echo "s3.access-key: $FLINK_S3_ACCESS_KEY" >> "$FLINK_HOME/conf/flink-conf.yaml"
+        fi
+
+        if [ -n "$FLINK_S3_SECRET_KEY" ]; then
+          echo "s3.secret-key: $FLINK_S3_SECRET_KEY" >> "$FLINK_HOME/conf/flink-conf.yaml"
+        fi
+
+        if [ -n "$FLINK_S3_PATH_STYLE_ACCESS" ]; then
+          echo "s3.path.style.access: $FLINK_S3_PATH_STYLE_ACCESS" >> "$FLINK_HOME/conf/flink-conf.yaml"
+        fi
 
         echo "config file: " && grep '^[^\n#]' "$FLINK_HOME/conf/flink-conf.yaml"
         bash "$FLINK_HOME/bin/taskmanager.sh" start-foreground
@@ -423,3 +455,5 @@ data:
 
     metrics.reporter.prometheus.class: org.apache.flink.metrics.prometheus.PrometheusReporter
     metrics.reporter.prometheus.port: 9999
+
+    web.timeout: 60000
