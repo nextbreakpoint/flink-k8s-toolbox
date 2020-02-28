@@ -138,6 +138,7 @@ class ClusterStopTest {
             ClusterTask.StoppingCluster,
             ClusterTask.StopJob,
             ClusterTask.TerminatePods,
+            ClusterTask.DeleteBootstrapJob,
             ClusterTask.SuspendCluster,
             ClusterTask.ClusterHalted
         ))
@@ -210,6 +211,7 @@ class ClusterStopTest {
             ClusterTask.StoppingCluster,
             ClusterTask.CancelJob,
             ClusterTask.TerminatePods,
+            ClusterTask.DeleteBootstrapJob,
             ClusterTask.SuspendCluster,
             ClusterTask.ClusterHalted
         ))

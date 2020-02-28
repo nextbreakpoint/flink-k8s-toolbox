@@ -121,6 +121,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                                 ClusterTask.StoppingCluster,
                                 ClusterTask.StopJob,
                                 ClusterTask.TerminatePods,
+                                ClusterTask.DeleteBootstrapJob,
                                 ClusterTask.SuspendCluster,
                                 ClusterTask.ClusterHalted
                             )
@@ -129,6 +130,7 @@ class ClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClie
                                 ClusterTask.StoppingCluster,
                                 ClusterTask.CancelJob,
                                 ClusterTask.TerminatePods,
+                                ClusterTask.DeleteBootstrapJob,
                                 ClusterTask.SuspendCluster,
                                 ClusterTask.ClusterHalted
                             )
