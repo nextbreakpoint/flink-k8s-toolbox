@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.TaskResult
@@ -34,6 +35,12 @@ class CreateResources : Task {
         if (!createResourcesResponse.isCompleted()) {
             return repeat(context.flinkCluster, "Retry creating resources...")
         }
+
+        val taskManagers = context.flinkCluster.spec?.taskManagers ?: 0
+        val taskSlots = context.flinkCluster.spec?.taskManager?.taskSlots ?: 1
+        Status.setTaskManagers(context.flinkCluster, taskManagers)
+        Status.setTaskSlots(context.flinkCluster, taskSlots)
+        Status.setJobParallelism(context.flinkCluster, taskManagers * taskSlots)
 
         updateDigests(context.flinkCluster)
         updateBootstrap(context.flinkCluster)

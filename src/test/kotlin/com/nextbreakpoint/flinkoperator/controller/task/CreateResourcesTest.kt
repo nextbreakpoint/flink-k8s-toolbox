@@ -47,6 +47,7 @@ class CreateResourcesTest {
         Status.setTaskManagerDigest(cluster, actualTaskManagerDigest)
         Status.setTaskManagers(cluster, 1)
         Status.setTaskSlots(cluster, 1)
+        Status.setJobParallelism(cluster, 1)
     }
 
     @Test
@@ -145,6 +146,32 @@ class CreateResourcesTest {
         verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
         verify(context, times(1)).createClusterResources(eq(clusterId), any())
         verifyNoMoreInteractions(context)
+        assertThat(result).isNotNull()
+        assertThat(result.action).isEqualTo(TaskAction.NEXT)
+        assertThat(result.output).isNotBlank()
+    }
+
+    @Test
+    fun `onExecuting should update relevant status when resources have changed`() {
+        cluster.spec.taskManagers = 4
+        cluster.spec.taskManager.taskSlots = 2
+        val resources = TestFactory.createResources(clusterId.uuid, cluster)
+        given(context.resources).thenReturn(resources)
+        given(context.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.RETRY, null))
+        given(context.createClusterResources(eq(clusterId), any())).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        assertThat(Status.getTaskManagers(cluster)).isEqualTo(1)
+        assertThat(Status.getTaskSlots(cluster)).isEqualTo(1)
+        assertThat(Status.getJobParallelism(cluster)).isEqualTo(1)
+        val result = task.onExecuting(context)
+        verify(context, atLeastOnce()).clusterId
+        verify(context, atLeastOnce()).flinkCluster
+        verify(context, atLeastOnce()).timeSinceLastUpdateInSeconds()
+        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+        verify(context, times(1)).createClusterResources(eq(clusterId), any())
+        verifyNoMoreInteractions(context)
+        assertThat(Status.getTaskManagers(cluster)).isEqualTo(4)
+        assertThat(Status.getTaskSlots(cluster)).isEqualTo(2)
+        assertThat(Status.getJobParallelism(cluster)).isEqualTo(8)
         assertThat(result).isNotNull()
         assertThat(result.action).isEqualTo(TaskAction.NEXT)
         assertThat(result.output).isNotBlank()
