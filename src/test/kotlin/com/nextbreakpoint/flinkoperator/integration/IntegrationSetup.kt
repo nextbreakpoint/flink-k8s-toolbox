@@ -51,6 +51,9 @@ open class IntegrationSetup {
             deleteCRD()
             deleteNamespace()
             createNamespace()
+            installMinio()
+            waitForMinio()
+            createBucket()
             installOperator()
             installResources()
             exposeOperator()
@@ -62,6 +65,7 @@ open class IntegrationSetup {
         fun teardown() {
             TimeUnit.SECONDS.sleep(5)
             uninstallOperator()
+            uninstallMinio()
             TimeUnit.SECONDS.sleep(5)
             deleteNamespace()
         }
@@ -106,6 +110,42 @@ open class IntegrationSetup {
             skipDockerImages = true
         }
 
+        fun installMinio() {
+            println("Installing Minio...")
+            if (installHelmChart(redirect = redirect, namespace = namespace, name = "minio", path = "integration/minio", args = listOf()) != 0) {
+                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "minio", path = "integration/minio", args = listOf()) != 0) {
+                    fail("Can't install or upgrade Helm chart")
+                }
+            }
+            println("Minio installed")
+        }
+
+        fun uninstallMinio() {
+            println("Uninstalling Minio...")
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "minio") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            println("Minio uninstalled")
+        }
+
+        fun waitForMinio() {
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(120))
+                .pollDelay(Duration.ofSeconds(20))
+                .pollInterval(Duration.ofSeconds(10))
+                .until {
+                    isMinioReady(redirect = redirect, namespace = namespace)
+                }
+        }
+
+        fun createBucket() {
+            println("Creating bucket...")
+            if (createBucket(redirect = redirect, namespace = namespace, bucketName = "flink") != 0) {
+                fail("Can't create bucket")
+            }
+            println("Bucker created")
+        }
+
         fun installOperator() {
             println("Installing operator...")
             if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd", path = "helm/flink-k8s-toolbox-crd") != 0) {
@@ -137,6 +177,27 @@ open class IntegrationSetup {
             println("Operator started")
         }
 
+        fun uninstallOperator() {
+            println("Stopping operator...")
+            if (scaleOperator(redirect = redirect, namespace = namespace, replicas = 0) != 0) {
+                println("Can't scale the operator")
+            }
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(60))
+                .until {
+                    !isOperatorRunning(redirect = redirect, namespace = namespace)
+                }
+            println("Operator terminated")
+            println("Uninstalling operator...")
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            println("Operator uninstalled")
+        }
+
         fun exposeOperator() {
             println("Exposing operator...")
             if (exposeOperator(redirect = redirect, namespace = namespace) != 0) {
@@ -166,28 +227,6 @@ open class IntegrationSetup {
                 }
             }
             println("Resources installed")
-        }
-
-        fun uninstallOperator() {
-            val redirect = Redirect.INHERIT
-            println("Stopping operator...")
-            if (scaleOperator(redirect = redirect, namespace = namespace, replicas = 0) != 0) {
-                println("Can't scale the operator")
-            }
-            Awaitility.await()
-                .atMost(Duration.ofSeconds(60))
-                .until {
-                    !isOperatorRunning(redirect = redirect, namespace = namespace)
-                }
-            println("Operator terminated")
-            println("Uninstalling operator...")
-            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator") != 0) {
-                println("Can't uninstall Helm chart")
-            }
-            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
-                println("Can't uninstall Helm chart")
-            }
-            println("Operator uninstalled")
         }
 
         fun deleteNamespace() {
@@ -536,6 +575,33 @@ open class IntegrationSetup {
                 "--namespace",
                 namespace,
                 name
+            )
+            return executeCommand(redirect, command)
+        }
+
+        fun isMinioReady(redirect: Redirect?, namespace: String): Boolean {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace get pod -l app=minio -o json | jq --exit-status -r '.items[0].status | select(.phase==\"Running\")' >/dev/null"
+            )
+            return executeCommand(redirect, command) == 0
+        }
+
+        private fun createBucket(redirect: Redirect?, namespace: String, bucketName: String): Int {
+            val command = listOf(
+                "kubectl",
+                "-n",
+                namespace,
+                "run",
+                "minio-client",
+                "--image=minio/mc:latest",
+                "--restart=Never",
+                "--command=true",
+                "--",
+                "sh",
+                "-c",
+                "mc config host add minio http://minio-headless:9000 minioaccesskey miniosecretkey && mc mb --region=eu-west-1 minio/$bucketName"
             )
             return executeCommand(redirect, command)
         }

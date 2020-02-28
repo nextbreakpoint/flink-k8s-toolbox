@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import kotlin.test.fail
 
 @Tag("IntegrationTest")
 class SavepointTest : IntegrationSetup() {
@@ -60,6 +61,9 @@ class SavepointTest : IntegrationSetup() {
     @Test
     fun `should create savepoint periodically`() {
         println("Should create savepoint automatically...")
+        if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-1", patch = "[{\"op\":\"replace\",\"path\":\"/spec/operator/savepointMode\",\"value\":\"Automatic\"}]") != 0) {
+            fail("Can't update cluster")
+        }
         val response = getClusterStatus(name = "cluster-2", port = port)
         println(response)
         assertThat(response["status"] as String?).isEqualTo("COMPLETED")
