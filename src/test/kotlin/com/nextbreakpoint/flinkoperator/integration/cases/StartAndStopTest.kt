@@ -22,28 +22,30 @@ class StartAndStopTest : IntegrationSetup() {
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
             awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isTrue()
-            }
-            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isTrue()
             }
             println("Clusters created")
         }
 
+//        @AfterAll
+//        @JvmStatic
+//        fun deleteClusters() {
+//            println("Deleting clusters...")
+//            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
+//            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
+//            awaitUntilAsserted(timeout = 300) {
+//                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
+//                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
+//            }
+//            println("Clusters deleted")
+//        }
+
         @AfterAll
         @JvmStatic
-        fun deleteClusters() {
-            describePods(redirect = redirect, namespace = namespace)
-            describeClusters(redirect = redirect, namespace = namespace)
-            println("Deleting clusters...")
-            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
-            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
-            awaitUntilAsserted(timeout = 30) {
-                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
-            }
-            awaitUntilAsserted(timeout = 30) {
-                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
-            }
-            println("Clusters deleted")
+        fun removeFinalizers() {
+            println("Removing finalizers...")
+            removeFinalizers(name = "cluster-1")
+            removeFinalizers(name = "cluster-2")
         }
     }
 
@@ -53,8 +55,6 @@ class StartAndStopTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
         }
@@ -66,8 +66,6 @@ class StartAndStopTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Suspended)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Suspended)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
         }
@@ -80,8 +78,6 @@ class StartAndStopTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
         }
@@ -94,8 +90,6 @@ class StartAndStopTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Terminated)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Terminated)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
         }

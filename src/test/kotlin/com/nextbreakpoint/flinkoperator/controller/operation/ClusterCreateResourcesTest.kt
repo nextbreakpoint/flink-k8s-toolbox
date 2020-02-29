@@ -10,9 +10,7 @@ import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import io.kubernetes.client.models.V1ServiceBuilder
-import io.kubernetes.client.models.V1ServiceList
 import io.kubernetes.client.models.V1StatefulSetBuilder
-import io.kubernetes.client.models.V1StatefulSetList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

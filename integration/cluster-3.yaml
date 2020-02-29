@@ -16,10 +16,10 @@ spec:
     arguments:
       - --CONSOLE_OUTPUT
       - "true"
-      - --SOURCE_BUCKET_NAME
-      - file:///tmp/source
-      - --OUTPUT_BUCKET_NAME
-      - file:///tmp/output
+      - --SOURCE_FS_PATH
+      - file:///tmp/workshop/sensor-events
+      - --OUTPUT_FS_PATH
+      - file:///tmp/workshop/report-events
   jobManager:
     serviceMode: ClusterIP
     maxHeapMemory: 256

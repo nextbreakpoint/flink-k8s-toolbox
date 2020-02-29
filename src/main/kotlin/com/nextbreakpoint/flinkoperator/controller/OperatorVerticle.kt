@@ -17,7 +17,6 @@ import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Command
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
-import com.nextbreakpoint.flinkoperator.controller.core.TaskExecutor
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
@@ -47,11 +46,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.TerminatePods
 import com.nextbreakpoint.flinkoperator.controller.task.TriggerSavepoint
 import com.nextbreakpoint.flinkoperator.controller.task.UpdatingCluster
 import io.kubernetes.client.JSON
-import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1ObjectMeta
-import io.kubernetes.client.models.V1PersistentVolumeClaim
-import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 import io.micrometer.core.instrument.ImmutableTag
 import io.micrometer.core.instrument.MeterRegistry
 import io.vertx.core.eventbus.DeliveryOptions
@@ -81,30 +76,30 @@ class OperatorVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(OperatorVerticle::class.simpleName)
 
-        private val taskHandlers = mapOf(
-            ClusterTask.InitialiseCluster to InitialiseCluster(),
-            ClusterTask.TerminatedCluster to TerminateCluster(),
-            ClusterTask.SuspendCluster to SuspendCluster(),
-            ClusterTask.ClusterHalted to ClusterHalted(),
-            ClusterTask.ClusterRunning to ClusterRunning(),
-            ClusterTask.StartingCluster to StartingCluster(),
-            ClusterTask.StoppingCluster to StoppingCluster(),
-            ClusterTask.UpdatingCluster to UpdatingCluster(),
-            ClusterTask.RescaleCluster to RescaleCluster(),
-            ClusterTask.RefreshStatus to RefreshStatus(),
-            ClusterTask.CreatingSavepoint to CreatingSavepoint(),
-            ClusterTask.TriggerSavepoint to TriggerSavepoint(),
-            ClusterTask.EraseSavepoint to EraseSavepoint(),
-            ClusterTask.CreateResources to CreateResources(),
-            ClusterTask.DeleteResources to DeleteResources(),
-            ClusterTask.TerminatePods to TerminatePods(),
-            ClusterTask.RestartPods to RestartPods(),
-            ClusterTask.DeleteBootstrapJob to DeleteBootstrapJob(),
-            ClusterTask.CreateBootstrapJob to CreateBootstrapJob(),
-            ClusterTask.CancelJob to CancelJob(),
-            ClusterTask.StartJob to StartJob(),
-            ClusterTask.StopJob to StopJob()
-        )
+//        private val taskHandlers = mapOf(
+//            ClusterTask.InitialiseCluster to InitialiseCluster(),
+//            ClusterTask.TerminatedCluster to TerminateCluster(),
+//            ClusterTask.SuspendCluster to SuspendCluster(),
+//            ClusterTask.ClusterHalted to ClusterHalted(),
+//            ClusterTask.ClusterRunning to ClusterRunning(),
+//            ClusterTask.StartingCluster to StartingCluster(),
+//            ClusterTask.StoppingCluster to StoppingCluster(),
+//            ClusterTask.UpdatingCluster to UpdatingCluster(),
+//            ClusterTask.RescaleCluster to RescaleCluster(),
+//            ClusterTask.RefreshStatus to RefreshStatus(),
+//            ClusterTask.CreatingSavepoint to CreatingSavepoint(),
+//            ClusterTask.TriggerSavepoint to TriggerSavepoint(),
+//            ClusterTask.EraseSavepoint to EraseSavepoint(),
+//            ClusterTask.CreateResources to CreateResources(),
+//            ClusterTask.DeleteResources to DeleteResources(),
+//            ClusterTask.TerminatePods to TerminatePods(),
+//            ClusterTask.RestartPods to RestartPods(),
+//            ClusterTask.DeleteBootstrapJob to DeleteBootstrapJob(),
+//            ClusterTask.CreateBootstrapJob to CreateBootstrapJob(),
+//            ClusterTask.CancelJob to CancelJob(),
+//            ClusterTask.StartJob to StartJob(),
+//            ClusterTask.StopJob to StopJob()
+//        )
     }
 
     override fun rxStart(): Completable {
@@ -157,8 +152,6 @@ class OperatorVerticle : AbstractVerticle() {
         val registry = BackendRegistries.getNow("flink-operator")
 
         val gauges = registerMetrics(registry, namespace)
-
-        val taskExecutor = TaskExecutor(controller, taskHandlers)
 
         mainRouter.route().handler(LoggerHandler.create(true, LoggerFormat.DEFAULT))
         mainRouter.route().handler(BodyHandler.create())
@@ -466,132 +459,132 @@ class OperatorVerticle : AbstractVerticle() {
             cache.onFlinkClusterDeleteAll()
         }
 
-        vertx.eventBus().consumer<String>("/resource/service/change") { message ->
-            processMessage<V1Service>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1Service::class.java
-                    )
-                },
-                Consumer {
-                    cache.onServiceChanged(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/service/delete") { message ->
-            processMessage<V1Service>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1Service::class.java
-                    )
-                },
-                Consumer {
-                    cache.onServiceDeleted(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/service/deleteAll") {
-            cache.onServiceDeleteAll()
-        }
-
-        vertx.eventBus().consumer<String>("/resource/job/change") { message ->
-            processMessage<V1Job>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1Job::class.java
-                    )
-                },
-                Consumer {
-                    cache.onJobChanged(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/job/delete") { message ->
-            processMessage<V1Job>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1Job::class.java
-                    )
-                },
-                Consumer {
-                    cache.onJobDeleted(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/job/deleteAll") {
-            cache.onJobDeleteAll()
-        }
-
-        vertx.eventBus().consumer<String>("/resource/statefulset/change") { message ->
-            processMessage<V1StatefulSet>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1StatefulSet::class.java
-                    )
-                },
-                Consumer {
-                    cache.onStatefulSetChanged(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/statefulset/delete") { message ->
-            processMessage<V1StatefulSet>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1StatefulSet::class.java)
-                },
-                Consumer {
-                    cache.onStatefulSetDeleted(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/statefulset/deleteAll") {
-            cache.onStatefulSetDeleteAll()
-        }
-
-        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/change") { message ->
-            processMessage<V1PersistentVolumeClaim>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1PersistentVolumeClaim::class.java
-                    )
-                },
-                Consumer {
-                    cache.onPersistentVolumeClaimChanged(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/delete") { message ->
-            processMessage<V1PersistentVolumeClaim>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1PersistentVolumeClaim::class.java
-                    )
-                },
-                Consumer {
-                    cache.onPersistentVolumeClaimDeleted(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/deleteAll") {
-            cache.onPersistentVolumeClaimDeleteAll()
-        }
+//        vertx.eventBus().consumer<String>("/resource/service/change") { message ->
+//            processMessage<V1Service>(
+//                message,
+//                Function {
+//                    json.deserialize(
+//                        it.body(), V1Service::class.java
+//                    )
+//                },
+//                Consumer {
+//                    cache.onServiceChanged(it)
+//                }
+//            )
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/service/delete") { message ->
+//            processMessage<V1Service>(
+//                message,
+//                Function {
+//                    json.deserialize(
+//                        it.body(), V1Service::class.java
+//                    )
+//                },
+//                Consumer {
+//                    cache.onServiceDeleted(it)
+//                }
+//            )
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/service/deleteAll") {
+//            cache.onServiceDeleteAll()
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/job/change") { message ->
+//            processMessage<V1Job>(
+//                message,
+//                Function {
+//                    json.deserialize(
+//                        it.body(), V1Job::class.java
+//                    )
+//                },
+//                Consumer {
+//                    cache.onJobChanged(it)
+//                }
+//            )
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/job/delete") { message ->
+//            processMessage<V1Job>(
+//                message,
+//                Function {
+//                    json.deserialize(
+//                        it.body(), V1Job::class.java
+//                    )
+//                },
+//                Consumer {
+//                    cache.onJobDeleted(it)
+//                }
+//            )
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/job/deleteAll") {
+//            cache.onJobDeleteAll()
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/statefulset/change") { message ->
+//            processMessage<V1StatefulSet>(
+//                message,
+//                Function {
+//                    json.deserialize(
+//                        it.body(), V1StatefulSet::class.java
+//                    )
+//                },
+//                Consumer {
+//                    cache.onStatefulSetChanged(it)
+//                }
+//            )
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/statefulset/delete") { message ->
+//            processMessage<V1StatefulSet>(
+//                message,
+//                Function {
+//                    json.deserialize(
+//                        it.body(), V1StatefulSet::class.java)
+//                },
+//                Consumer {
+//                    cache.onStatefulSetDeleted(it)
+//                }
+//            )
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/statefulset/deleteAll") {
+//            cache.onStatefulSetDeleteAll()
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/change") { message ->
+//            processMessage<V1PersistentVolumeClaim>(
+//                message,
+//                Function {
+//                    json.deserialize(
+//                        it.body(), V1PersistentVolumeClaim::class.java
+//                    )
+//                },
+//                Consumer {
+//                    cache.onPersistentVolumeClaimChanged(it)
+//                }
+//            )
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/delete") { message ->
+//            processMessage<V1PersistentVolumeClaim>(
+//                message,
+//                Function {
+//                    json.deserialize(
+//                        it.body(), V1PersistentVolumeClaim::class.java
+//                    )
+//                },
+//                Consumer {
+//                    cache.onPersistentVolumeClaimDeleted(it)
+//                }
+//            )
+//        }
+//
+//        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/deleteAll") {
+//            cache.onPersistentVolumeClaimDeleteAll()
+//        }
 
 
         vertx.eventBus().consumer<String>("/resource/cluster/update") { message ->
@@ -603,7 +596,7 @@ class OperatorVerticle : AbstractVerticle() {
                     )
                 },
                 Function {
-                    updateCluster(taskExecutor, it.clusterId, cache)
+                    updateCluster(kubeClient, flinkClient, flinkOptions, it.clusterId)
 
                     null
                 }
@@ -635,21 +628,21 @@ class OperatorVerticle : AbstractVerticle() {
             watch.watchFlinkClusters(context, namespace)
         }
 
-        context.runOnContext {
-            watch.watchServices(context, namespace)
-        }
-
-        context.runOnContext {
-            watch.watchJobs(context, namespace)
-        }
-
-        context.runOnContext {
-            watch.watchStatefulSets(context, namespace)
-        }
-
-        context.runOnContext {
-            watch.watchPersistentVolumeClaims(context, namespace)
-        }
+//        context.runOnContext {
+//            watch.watchServices(context, namespace)
+//        }
+//
+//        context.runOnContext {
+//            watch.watchJobs(context, namespace)
+//        }
+//
+//        context.runOnContext {
+//            watch.watchStatefulSets(context, namespace)
+//        }
+//
+//        context.runOnContext {
+//            watch.watchPersistentVolumeClaims(context, namespace)
+//        }
 
         // TODO parameterize loop delay
         vertx.setPeriodic(5000L) {
@@ -667,9 +660,10 @@ class OperatorVerticle : AbstractVerticle() {
             .rxListen(port)
     }
 
-    private fun updateCluster(executor: TaskExecutor, clusterId: ClusterId, cache: Cache) {
+    private fun updateCluster(kubeClient: KubeClient, flinkClient: FlinkClient, flinkOptions: FlinkOptions, clusterId: ClusterId) {
         try {
-            executor.update(clusterId, cache.getFlinkCluster(clusterId), cache.getCachedResources())
+            ClusterSupervisor(kubeClient, flinkClient).reconcile(flinkOptions, clusterId.namespace, clusterId.name)
+//            executor.update(clusterId, cache.getFlinkCluster(clusterId), cache.getCachedResources())
         } catch (e : Exception) {
             logger.error("Error occurred while updating cluster ${clusterId.name}", e)
         }

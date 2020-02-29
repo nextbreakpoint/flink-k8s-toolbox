@@ -5,6 +5,7 @@ enum class ClusterStatus {
     Starting,
     Stopping,
     Updating,
+    Scaling,
     Running,
     Failed,
     Suspended,

@@ -55,7 +55,7 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
 
             logger.info("Job started")
         } catch (e: Exception) {
-            logger.error("An error occurred while starting the job", e)
+            logger.error("An error occurred while starting job", e)
         }
     }
 

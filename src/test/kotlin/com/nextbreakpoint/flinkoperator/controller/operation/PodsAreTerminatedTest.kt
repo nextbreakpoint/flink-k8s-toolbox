@@ -59,10 +59,10 @@ class PodsAreTerminatedTest {
     @Test
     fun `should return expected result when there are job manager still running`() {
         val containerStatus = V1ContainerStatusBuilder()
-            .withNewLastState()
+            .withNewState()
             .withNewRunning()
             .endRunning()
-            .endLastState()
+            .endState()
             .build()
         val podStatus = V1PodStatusBuilder()
             .addToContainerStatuses(containerStatus)
@@ -88,10 +88,10 @@ class PodsAreTerminatedTest {
     @Test
     fun `should return expected result when there are task manager still running`() {
         val containerStatus = V1ContainerStatusBuilder()
-            .withNewLastState()
+            .withNewState()
             .withNewRunning()
             .endRunning()
-            .endLastState()
+            .endState()
             .build()
         val podStatus = V1PodStatusBuilder()
             .addToContainerStatuses(containerStatus)

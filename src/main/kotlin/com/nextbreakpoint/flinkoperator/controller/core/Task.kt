@@ -145,7 +145,7 @@ interface Task {
             return false
         }
 
-        val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
+        val withoutSavepoint = Annotations.isWithoutSavepoint(context.flinkCluster)
         val options = StartOptions(withoutSavepoint = withoutSavepoint)
         val result = context.startCluster(context.clusterId, options)
         return result.isCompleted()
@@ -158,7 +158,7 @@ interface Task {
             return false
         }
 
-        val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
+        val withoutSavepoint = Annotations.isWithoutSavepoint(context.flinkCluster)
         val deleteResources = Annotations.isDeleteResources(context.flinkCluster)
         val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = deleteResources)
         val result = context.stopCluster(context.clusterId, options)

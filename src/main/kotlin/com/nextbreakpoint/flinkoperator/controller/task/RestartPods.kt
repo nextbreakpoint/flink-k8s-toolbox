@@ -14,9 +14,12 @@ class RestartPods : Task {
             return fail(context.flinkCluster, "Operation timeout after $seconds seconds!")
         }
 
-        val resources = makeClusterResources(context.clusterId, context.flinkCluster)
+        val clusterScaling = ClusterScaling(
+            taskManagers = context.flinkCluster.status.taskManagers,
+            taskSlots = context.flinkCluster.status.taskSlots
+        )
 
-        val response = context.restartPods(context.clusterId, resources)
+        val response = context.restartPods(context.clusterId, clusterScaling)
 
         if (!response.isCompleted()) {
             return repeat(context.flinkCluster, "Retry restarting pods...")
