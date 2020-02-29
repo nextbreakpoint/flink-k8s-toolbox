@@ -65,7 +65,7 @@ class SavepointTest : IntegrationSetup() {
         println(response)
         assertThat(response["status"] as String?).isEqualTo("COMPLETED")
         val initialStatus = JSON().deserialize<V1FlinkClusterStatus>(response["output"] as String, statusTypeToken.type)
-        assertThat(initialStatus.savepointMode).isEqualTo("Automatic")
+        assertThat(initialStatus.savepointMode).isEqualTo("Manual")
         if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-1", patch = "[{\"op\":\"replace\",\"path\":\"/spec/operator/savepointMode\",\"value\":\"Automatic\"}]") != 0) {
             fail("Can't update cluster")
         }
