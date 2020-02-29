@@ -18,6 +18,7 @@ import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import java.lang.ProcessBuilder.Redirect
 import java.time.Duration
@@ -26,6 +27,12 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.fail
 
 open class IntegrationSetup {
+    @AfterEach
+    fun describeResources() {
+//        describePods(redirect = redirect, namespace = namespace)
+        describeClusters(redirect = redirect, namespace = namespace)
+    }
+
     companion object {
         val redirect = Redirect.INHERIT
         val version = "1.2.6-beta"
@@ -45,6 +52,7 @@ open class IntegrationSetup {
         @BeforeAll
         @JvmStatic
         fun setup() {
+            cleanDockerImages()
             buildDockerImages()
             TimeUnit.SECONDS.sleep(5)
             printInfo()
@@ -64,6 +72,7 @@ open class IntegrationSetup {
         @JvmStatic
         fun teardown() {
             TimeUnit.SECONDS.sleep(5)
+            printOperatorLogs()
             uninstallOperator()
             uninstallMinio()
             TimeUnit.SECONDS.sleep(5)
@@ -81,6 +90,10 @@ open class IntegrationSetup {
             if (createNamespace(redirect = redirect, namespace = namespace) != 0) {
                 fail("Can't create namespace")
             }
+        }
+
+        fun cleanDockerImages() {
+            cleanDockerImages(redirect = redirect)
         }
 
         fun buildDockerImages() {
@@ -146,6 +159,10 @@ open class IntegrationSetup {
             println("Bucker created")
         }
 
+        fun removeFinalizers(name: String) {
+            removeFinalizers(redirect = redirect, namespace = namespace, name = name)
+        }
+
         fun installOperator() {
             println("Installing operator...")
             if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd", path = "helm/flink-k8s-toolbox-crd") != 0) {
@@ -209,6 +226,14 @@ open class IntegrationSetup {
             println("Operator exposed")
         }
 
+        fun printOperatorLogs() {
+            println("Printing operator logs...")
+            if (printOperatorLogs(redirect = redirect, namespace = namespace) != 0) {
+                fail("Can't expose the operator")
+            }
+            println("Operator logs printed")
+        }
+
         fun installResources() {
             println("Install resources...")
             if (createResources(redirect = redirect, namespace = namespace, path = "example/config.yaml") != 0) {
@@ -244,16 +269,16 @@ open class IntegrationSetup {
         fun awaitUntilAsserted(timeout: Long, assertion: () -> Unit) {
             Awaitility.await()
                 .atMost(Duration.ofSeconds(timeout))
-                .pollDelay(Duration.ofSeconds(5))
-                .pollInterval(Duration.ofSeconds(5))
+                .pollDelay(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(10))
                 .untilAsserted(assertion)
         }
 
         fun awaitUntilCondition(timeout: Long, condition: () -> Boolean) {
             Awaitility.await()
                 .atMost(Duration.ofSeconds(timeout))
-                .pollDelay(Duration.ofSeconds(5))
-                .pollInterval(Duration.ofSeconds(5))
+                .pollDelay(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(10))
                 .until(condition)
         }
 
@@ -514,6 +539,15 @@ open class IntegrationSetup {
             return executeCommand(redirect, command)
         }
 
+        private fun printOperatorLogs(redirect: Redirect?, namespace: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace logs -l app=flink-operator"
+            )
+            return executeCommand(redirect, command)
+        }
+
         private fun saveOperatorPort(redirect: Redirect?, namespace: String): Int {
             val command = listOf(
                 "sh",
@@ -706,6 +740,15 @@ open class IntegrationSetup {
                 "sh",
                 "-c",
                 "eval $(minikube docker-env) && docker rmi $(docker images -f dangling=true -q)"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun removeFinalizers(redirect: Redirect?, namespace: String, name: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace patch fc $name --type=json -p '[{\"op\":\"remove\",\"path\":\"/metadata/finalizers\"}]'"
             )
             return executeCommand(redirect, command)
         }

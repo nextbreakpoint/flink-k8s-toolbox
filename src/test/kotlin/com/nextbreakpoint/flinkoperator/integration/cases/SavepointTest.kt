@@ -23,8 +23,6 @@ class SavepointTest : IntegrationSetup() {
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
             awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isTrue()
-            }
-            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isTrue()
             }
             println("Clusters created")
@@ -32,29 +30,31 @@ class SavepointTest : IntegrationSetup() {
             awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
                 assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
-            }
-            awaitUntilAsserted(timeout = 300) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
                 assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
             }
             println("Clusters started")
         }
 
+//        @AfterAll
+//        @JvmStatic
+//        fun deleteClusters() {
+//            println("Deleting clusters...")
+//            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
+//            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
+//            awaitUntilAsserted(timeout = 300) {
+//                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
+//                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
+//            }
+//            println("Clusters deleted")
+//        }
+
         @AfterAll
         @JvmStatic
-        fun deleteClusters() {
-            describePods(redirect = redirect, namespace = namespace)
-            describeClusters(redirect = redirect, namespace = namespace)
-            println("Deleting clusters...")
-            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
-            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
-            awaitUntilAsserted(timeout = 30) {
-                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
-            }
-            awaitUntilAsserted(timeout = 30) {
-                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
-            }
-            println("Clusters deleted")
+        fun removeFinalizers() {
+            println("Removing finalizers...")
+            removeFinalizers(name = "cluster-1")
+            removeFinalizers(name = "cluster-2")
         }
     }
 
@@ -69,7 +69,7 @@ class SavepointTest : IntegrationSetup() {
         if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/operator/savepointMode\",\"value\":\"Automatic\"}]") != 0) {
             fail("Can't update cluster")
         }
-        awaitUntilAsserted(timeout = 40) {
+        awaitUntilAsserted(timeout = 120) {
             val pollResponse = getClusterStatus(name = "cluster-2", port = port)
             println(pollResponse)
             assertThat(pollResponse["status"] as String?).isEqualTo("COMPLETED")
@@ -83,7 +83,7 @@ class SavepointTest : IntegrationSetup() {
         val currentStatus = JSON().deserialize<V1FlinkClusterStatus>(nextResponse["output"] as String, statusTypeToken.type)
         assertThat(currentStatus.savepointPath).isNotBlank()
         assertThat(currentStatus.savepointTimestamp).isNotNull()
-        awaitUntilAsserted(timeout = 60) {
+        awaitUntilAsserted(timeout = 120) {
             val pollResponse = getClusterStatus(name = "cluster-2", port = port)
             println(pollResponse)
             assertThat(pollResponse["status"] as String?).isEqualTo("COMPLETED")
@@ -106,7 +106,7 @@ class SavepointTest : IntegrationSetup() {
         assertThat(initialStatus.savepointPath).isBlank()
         assertThat(initialStatus.savepointTimestamp).isNull()
         triggerSavepoint(name = "cluster-1", port = port)
-        awaitUntilAsserted(timeout = 60) {
+        awaitUntilAsserted(timeout = 120) {
             val pollResponse = getClusterStatus(name = "cluster-1", port = port)
             println(pollResponse)
             assertThat(pollResponse["status"] as String?).isEqualTo("COMPLETED")

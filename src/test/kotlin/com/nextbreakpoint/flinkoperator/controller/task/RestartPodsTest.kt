@@ -52,7 +52,7 @@ class RestartPodsTest {
     @Test
     fun `onExecuting should return expected result when pods can't be restarted`() {
         val resources = TestFactory.createClusterResources(clusterId.uuid, cluster)
-        given(context.restartPods(eq(clusterId), eq(resources))).thenReturn(OperationResult(OperationStatus.FAILED, null))
+        given(context.restartPods(eq(clusterId), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.FAILED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster
@@ -67,7 +67,7 @@ class RestartPodsTest {
     @Test
     fun `onExecuting should return expected result when pods have been restarted`() {
         val resources = TestFactory.createClusterResources(clusterId.uuid, cluster)
-        given(context.restartPods(eq(clusterId), eq(resources))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
+        given(context.restartPods(eq(clusterId), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.COMPLETED, null))
         val result = task.onExecuting(context)
         verify(context, atLeastOnce()).clusterId
         verify(context, atLeastOnce()).flinkCluster

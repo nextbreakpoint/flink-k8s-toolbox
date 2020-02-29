@@ -54,7 +54,7 @@ class RequestClusterStartTest {
         assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).isNull()
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
-        assertThat(Annotations.isWithSavepoint(cluster)).isEqualTo(true)
+        assertThat(Annotations.isWithoutSavepoint(cluster)).isEqualTo(true)
         assertThat(Annotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
     }
 
@@ -71,7 +71,7 @@ class RequestClusterStartTest {
         assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
         assertThat(result.output).isNull()
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
-        assertThat(Annotations.isWithSavepoint(cluster)).isEqualTo(false)
+        assertThat(Annotations.isWithoutSavepoint(cluster)).isEqualTo(false)
         assertThat(Annotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
     }
 }

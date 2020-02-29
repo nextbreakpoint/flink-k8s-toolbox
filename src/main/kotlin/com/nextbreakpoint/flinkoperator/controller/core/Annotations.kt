@@ -39,7 +39,7 @@ object Annotations {
         flinkCluster.metadata?.annotations = annotations
     }
 
-    fun isWithSavepoint(flinkCluster: V1FlinkCluster): Boolean {
+    fun isWithoutSavepoint(flinkCluster: V1FlinkCluster): Boolean {
         return flinkCluster.metadata?.annotations?.get(WITHOUT_SAVEPOINT)?.toUpperCase() == "TRUE"
     }
 

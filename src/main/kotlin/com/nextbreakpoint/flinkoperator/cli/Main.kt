@@ -8,14 +8,18 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.options.required
+import com.github.ajalt.clikt.parameters.types.choice
+import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.int
 import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 import com.nextbreakpoint.flinkoperator.common.model.ConnectionConfig
+import com.nextbreakpoint.flinkoperator.common.model.ExecutionMode
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
+import com.nextbreakpoint.flinkoperator.common.model.SupervisorOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import org.apache.log4j.Logger
@@ -67,6 +71,9 @@ class Main(private val factory: CommandFactory) {
             Bootstrap().subcommands(
                 BootstrapCommand(factory)
             ),
+            Supervisor().subcommands(
+                SupervisorCommand(factory)
+            ),
             Job().subcommands(
                 GetJobDetailsCommand(factory),
                 GetJobMetricsCommand(factory)
@@ -105,6 +112,10 @@ class Main(private val factory: CommandFactory) {
     }
 
     class Bootstrap: CliktCommand(name = "bootstrap", help = "Access bootstrap subcommands") {
+        override fun run() = Unit
+    }
+
+    class Supervisor: CliktCommand(name = "supervisor", help = "Access supervisor subcommands") {
         override fun run() = Unit
     }
 
@@ -531,6 +542,28 @@ class Main(private val factory: CommandFactory) {
                 useNodePort = kubeConfig != null
             )
             factory.createBootstrapCommand().run(flinkOptions, namespace, clusterName, params)
+        }
+    }
+
+    class SupervisorCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Create supervisor process") {
+        private val flinkHostname: String? by option(help="The hostname of the JobManager")
+        private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
+        private val kubeConfig: String? by option(help="The path of kuke config")
+        private val namespace: String by option(help="The namespace of the resources").default("default")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val executionMode: ExecutionMode by option(help="The execution mode").choice("stream", "batch").enum<ExecutionMode>().required()
+
+        override fun run() {
+            val params = SupervisorOptions(
+                executionMode = executionMode
+            )
+            KubeClient.configure(kubeConfig)
+            val flinkOptions = FlinkOptions(
+                hostname = flinkHostname,
+                portForward = portForward,
+                useNodePort = kubeConfig != null
+            )
+            factory.createSupervisorCommand().run(flinkOptions, namespace, clusterName, params)
         }
     }
 }

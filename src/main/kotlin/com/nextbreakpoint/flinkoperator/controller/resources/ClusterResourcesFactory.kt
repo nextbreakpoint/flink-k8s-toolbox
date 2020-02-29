@@ -10,19 +10,19 @@ interface ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1Service?
+    ): V1Service
 
     fun createJobManagerStatefulSet(
         namespace: String,
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet?
+    ): V1StatefulSet
 
     fun createTaskManagerStatefulSet(
         namespace: String,
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet?
+    ): V1StatefulSet
 }

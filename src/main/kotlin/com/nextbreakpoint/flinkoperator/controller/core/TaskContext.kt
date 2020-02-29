@@ -57,8 +57,8 @@ class TaskContext(
     fun terminatePods(clusterId: ClusterId) : OperationResult<Void?> =
         controller.terminatePods(clusterId)
 
-    fun restartPods(clusterId: ClusterId, clusterResources: ClusterResources): OperationResult<Void?> =
-        controller.restartPods(clusterId, clusterResources)
+    fun restartPods(clusterId: ClusterId, options: ClusterScaling): OperationResult<Void?> =
+        controller.restartPods(clusterId, options)
 
     fun arePodsTerminated(clusterId: ClusterId): OperationResult<Void?> =
         controller.arePodsTerminated(clusterId)
@@ -89,6 +89,9 @@ class TaskContext(
 
     fun isJobRunning(clusterId: ClusterId): OperationResult<Void?> =
         controller.isJobRunning(clusterId)
+
+    fun isJobFinished(clusterId: ClusterId): OperationResult<Void?> =
+        controller.isJobFinished(clusterId)
 
     fun setTaskManagersReplicas(clusterId: ClusterId, taskManagers: Int) : OperationResult<Void?> =
         controller.setTaskManagersReplicas(clusterId, taskManagers)

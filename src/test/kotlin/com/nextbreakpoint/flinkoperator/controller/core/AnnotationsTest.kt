@@ -37,11 +37,11 @@ class AnnotationsTest {
     fun `cluster should store without savepoint`() {
         val timestamp1 = DateTime(System.currentTimeMillis())
         Annotations.setWithoutSavepoint(flinkCluster, true)
-        Assertions.assertThat(Annotations.isWithSavepoint(flinkCluster)).isTrue()
+        Assertions.assertThat(Annotations.isWithoutSavepoint(flinkCluster)).isTrue()
         Assertions.assertThat(Annotations.getActionTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp1)
         val timestamp2 = DateTime(System.currentTimeMillis())
         Annotations.setWithoutSavepoint(flinkCluster, false)
-        Assertions.assertThat(Annotations.isWithSavepoint(flinkCluster)).isFalse()
+        Assertions.assertThat(Annotations.isWithoutSavepoint(flinkCluster)).isFalse()
         Assertions.assertThat(Annotations.getActionTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp2)
     }
 }

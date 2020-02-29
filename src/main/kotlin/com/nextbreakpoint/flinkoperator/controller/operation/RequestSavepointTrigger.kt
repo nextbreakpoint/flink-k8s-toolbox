@@ -1,35 +1,33 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
+import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import org.apache.log4j.Logger
 
-class PodsScaleUp(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<ClusterScaling, Void?>(flinkOptions, flinkClient, kubeClient) {
+class RequestSavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val adapter: CacheAdapter) : Operation<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(PodsScaleUp::class.simpleName)
+        private val logger = Logger.getLogger(RequestSavepointTrigger::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: ClusterScaling): OperationResult<Void?> {
+    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
         try {
-            logger.debug("[name=${clusterId.name}] Restarting pods...")
+            adapter.setManualAction(ManualAction.TRIGGER_SAVEPOINT)
 
-            kubeClient.restartJobManagerStatefulSets(clusterId, 1)
-
-            kubeClient.restartTaskManagerStatefulSets(clusterId, params.taskManagers)
+            kubeClient.updateAnnotations(clusterId, adapter.getAnnotations())
 
             return OperationResult(
                 OperationStatus.COMPLETED,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't restart pods", e)
+            logger.error("[name=${clusterId.name}] Can't trigger savepoint", e)
 
             return OperationResult(
                 OperationStatus.FAILED,
