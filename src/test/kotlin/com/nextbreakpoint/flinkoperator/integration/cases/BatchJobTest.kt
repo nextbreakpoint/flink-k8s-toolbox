@@ -19,12 +19,12 @@ class BatchJobTest : IntegrationSetup() {
         }
         println("Cluster created")
         println("Should start cluster automatically...")
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster started")
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Suspended)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
         }
@@ -53,12 +53,12 @@ class BatchJobTest : IntegrationSetup() {
         }
         println("Cluster created")
         println("Should start cluster automatically...")
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster started")
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Failed)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()
         }

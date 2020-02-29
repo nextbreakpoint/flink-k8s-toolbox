@@ -80,7 +80,7 @@ class ResourceStatusTest : IntegrationSetup() {
         val status2 = JSON().deserialize<V1FlinkClusterStatus>(response2["output"] as String, statusTypeToken.type)
         assertThat(status2.clusterStatus).isEqualTo(ClusterStatus.Running.toString())
         assertThat(status2.taskStatus).isEqualTo(TaskStatus.Idle.toString())
-        assertThat(status2.savepointMode).isEqualTo("Automatic")
+        assertThat(status2.savepointMode).isEqualTo("Manual")
         assertThat(status2.taskManagers).isEqualTo(2)
         assertThat(status2.activeTaskManagers).isEqualTo(2)
         assertThat(status2.serviceMode).isEqualTo("ClusterIP")
