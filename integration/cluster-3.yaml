@@ -84,7 +84,7 @@ spec:
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
       - name: data-vol
-        mountPath: /tmp/source/sensor-events.csv
+        mountPath: /tmp/workshop/sensor-events/data.csv
         subPath: sensor-events.csv
     volumes:
       - name: config-vol
