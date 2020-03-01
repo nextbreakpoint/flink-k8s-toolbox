@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
@@ -11,91 +10,6 @@ import org.junit.jupiter.api.Test
 
 class StatusTest {
     private val flinkCluster = TestFactory.aCluster(name = "test", namespace = "flink")
-
-    @Test
-    fun `initially a cluster doesn't have a current task`() {
-        assertThat(Status.hasCurrentTask(flinkCluster)).isFalse()
-        assertThat(Status.getCurrentTask(flinkCluster)).isEqualTo(ClusterTask.ClusterHalted)
-    }
-
-    @Test
-    fun `cluster should have a current task after appending a new task`() {
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        assertThat(Status.hasCurrentTask(flinkCluster)).isTrue()
-    }
-
-    @Test
-    fun `should return default task`() {
-        assertThat(Status.getCurrentTask(flinkCluster)).isEqualTo(ClusterTask.ClusterHalted)
-    }
-
-    @Test
-    fun `should remain on default task`() {
-        Status.selectNextTask(flinkCluster)
-        assertThat(Status.getCurrentTask(flinkCluster)).isEqualTo(ClusterTask.ClusterHalted)
-    }
-
-    @Test
-    fun `should return current task`() {
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.StartingCluster))
-        assertThat(Status.getCurrentTask(flinkCluster)).isEqualTo(ClusterTask.InitialiseCluster)
-    }
-
-    @Test
-    fun `should return next task`() {
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.StartingCluster))
-        assertThat(Status.getNextOperatorTask(flinkCluster)).isEqualTo(ClusterTask.StartingCluster)
-    }
-
-    @Test
-    fun `should advance to next task`() {
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.StartingCluster))
-        Status.selectNextTask(flinkCluster)
-        assertThat(Status.getCurrentTask(flinkCluster)).isEqualTo(ClusterTask.StartingCluster)
-    }
-
-    @Test
-    fun `should remain on last task`() {
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.StartingCluster))
-        Status.selectNextTask(flinkCluster)
-        Status.selectNextTask(flinkCluster)
-        assertThat(Status.getCurrentTask(flinkCluster)).isEqualTo(ClusterTask.StartingCluster)
-    }
-
-    @Test
-    fun `should reset tasks`() {
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        Status.resetTasks(flinkCluster, listOf(ClusterTask.StartingCluster))
-        assertThat(Status.getCurrentTask(flinkCluster)).isEqualTo(ClusterTask.StartingCluster)
-    }
-
-    @Test
-    fun `should update timestamp when appending tasks`() {
-        val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(Status.getOperatorTimestamp(flinkCluster)).isEqualTo(DateTime(0))
-        Status.appendTasks(flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        assertThat(Status.getOperatorTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
-    }
-
-    @Test
-    fun `should update timestamp when advancing tasks`() {
-        val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(Status.getOperatorTimestamp(flinkCluster)).isEqualTo(DateTime(0))
-        Status.selectNextTask(flinkCluster)
-        assertThat(Status.getOperatorTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
-    }
-
-    @Test
-    fun `should update timestamp when resetting tasks`() {
-        val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(Status.getOperatorTimestamp(flinkCluster)).isEqualTo(DateTime(0))
-        Status.resetTasks(flinkCluster, listOf(ClusterTask.InitialiseCluster))
-        assertThat(Status.getOperatorTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
-    }
 
     @Test
     fun `should store savepoint path and update timestamp`() {

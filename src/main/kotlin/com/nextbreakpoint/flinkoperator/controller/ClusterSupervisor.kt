@@ -4,7 +4,6 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
@@ -53,12 +52,12 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
         val taskmanagerPVCs = kubeClient.listTaskManagerPVCs(clusterId)
 
         val resources = CachedResources(
-            bootstrapJobs = bootstrapJobs.items.map { Pair(clusterId, it) }.toMap(),
-            jobmanagerServices = jobmanagerServices.items.map { Pair(clusterId, it) }.toMap(),
-            jobmanagerStatefulSets = jobmanagerStatefulSets.items.map { Pair(clusterId, it) }.toMap(),
-            taskmanagerStatefulSets = taskmanagerStatefulSets.items.map { Pair(clusterId, it) }.toMap(),
-            jobmanagerPersistentVolumeClaims = jobmanagerPVCs.items.map { Pair(clusterId, it) }.toMap(),
-            taskmanagerPersistentVolumeClaims = taskmanagerPVCs.items.map { Pair(clusterId, it) }.toMap()
+            bootstrapJob = bootstrapJobs.items.firstOrNull(),
+            jobmanagerService = jobmanagerServices.items.firstOrNull(),
+            jobmanagerStatefulSet = jobmanagerStatefulSets.items.firstOrNull(),
+            taskmanagerStatefulSet = taskmanagerStatefulSets.items.firstOrNull(),
+            jobmanagerPVC = jobmanagerPVCs.items.firstOrNull(),
+            taskmanagerPVC = taskmanagerPVCs.items.firstOrNull()
         )
 
         val context = TaskContext(clusterId, cluster, resources, controller)
@@ -180,9 +179,9 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
             return
         }
 
-        val jobmanagerServiceExists = context.resources.jobmanagerServices.containsKey(context.clusterId)
-        val jobmanagerStatefuleSetExists = context.resources.jobmanagerStatefulSets.containsKey(context.clusterId)
-        val taskmanagerStatefulSetExists = context.resources.taskmanagerStatefulSets.containsKey(context.clusterId)
+        val jobmanagerServiceExists = context.resources.jobmanagerService != null
+        val jobmanagerStatefuleSetExists = context.resources.jobmanagerStatefulSet != null
+        val taskmanagerStatefulSetExists = context.resources.taskmanagerStatefulSet != null
 
         if (!jobmanagerServiceExists || !jobmanagerStatefuleSetExists || !taskmanagerStatefulSetExists) {
             Status.resetSavepointRequest(context.flinkCluster)
@@ -382,8 +381,8 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
             logger.info("Suspending cluster...")
         }
 
-        val jobmanagerStatefuleSetExists = context.resources.jobmanagerStatefulSets.containsKey(context.clusterId)
-        val taskmanagerStatefulSetExists = context.resources.taskmanagerStatefulSets.containsKey(context.clusterId)
+        val jobmanagerStatefuleSetExists = context.resources.jobmanagerStatefulSet != null
+        val taskmanagerStatefulSetExists = context.resources.taskmanagerStatefulSet != null
 
         if (!jobmanagerStatefuleSetExists || !taskmanagerStatefulSetExists) {
             Annotations.setManualAction(context.flinkCluster, ManualAction.NONE)
@@ -499,10 +498,10 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
             return
         }
 
-        val bootstrapExists = context.resources.bootstrapJobs.containsKey(context.clusterId)
-        val jobmanagerServiceExists = context.resources.jobmanagerServices.containsKey(context.clusterId)
-        val jobmanagerStatefuleSetExists = context.resources.jobmanagerStatefulSets.containsKey(context.clusterId)
-        val taskmanagerStatefuleSetExists = context.resources.taskmanagerStatefulSets.containsKey(context.clusterId)
+        val bootstrapExists = context.resources.bootstrapJob != null
+        val jobmanagerServiceExists = context.resources.jobmanagerService != null
+        val jobmanagerStatefuleSetExists = context.resources.jobmanagerStatefulSet != null
+        val taskmanagerStatefuleSetExists = context.resources.taskmanagerStatefulSet != null
 
         if (!jobmanagerServiceExists) {
             val jobmanagerService = DefaultClusterResourcesFactory.createJobManagerService(
@@ -540,8 +539,8 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
                 taskSlots = Status.getTaskSlots(context.flinkCluster)
             )
 
-            val jobmanagerReplicas = context.resources.jobmanagerStatefulSets[context.clusterId]?.status?.replicas
-            val taskmanagerReplicas = context.resources.taskmanagerStatefulSets[context.clusterId]?.status?.replicas
+            val jobmanagerReplicas = context.resources.jobmanagerStatefulSet?.status?.replicas
+            val taskmanagerReplicas = context.resources.taskmanagerStatefulSet?.status?.replicas
 
             if (jobmanagerReplicas != 1 || taskmanagerReplicas != options.taskManagers) {
                 logger.info("Restating pods...")
@@ -684,7 +683,6 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
         Status.setClusterStatus(cluster, ClusterStatus.Starting)
         Status.setTaskAttempts(cluster, 0)
 
-        Status.appendTasks(cluster, listOf(ClusterTask.InitialiseCluster))
         Status.setTaskStatus(cluster, TaskStatus.Idle)
 
         val bootstrap = cluster.spec?.bootstrap
@@ -777,7 +775,7 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
     }
 
     private fun cancel(context: TaskContext): Boolean {
-        val bootstrapExists = context.resources.bootstrapJobs.containsKey(context.clusterId)
+        val bootstrapExists = context.resources.bootstrapJob != null
 
         if (bootstrapExists) {
             kubeClient.deleteBootstrapJobs(context.clusterId)
@@ -849,8 +847,8 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
     }
 
     private fun suspend(context: TaskContext): Boolean {
-        val bootstrapExists = context.resources.bootstrapJobs.containsKey(context.clusterId)
-        val jobmanagerServiceExists = context.resources.jobmanagerServices.containsKey(context.clusterId)
+        val bootstrapExists = context.resources.bootstrapJob != null
+        val jobmanagerServiceExists = context.resources.jobmanagerService != null
 
         val terminatedResult = context.arePodsTerminated(context.clusterId)
 
@@ -877,12 +875,12 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
     }
 
     private fun terminate(context: TaskContext): Boolean {
-        val bootstrapExists = context.resources.bootstrapJobs.containsKey(context.clusterId)
-        val jobmanagerServiceExists = context.resources.jobmanagerServices.containsKey(context.clusterId)
-        val jobmanagerStatefuleSetExists = context.resources.jobmanagerStatefulSets.containsKey(context.clusterId)
-        val taskmanagerStatefulSetExists = context.resources.taskmanagerStatefulSets.containsKey(context.clusterId)
-        val jomanagerPVCExists = context.resources.jobmanagerPersistentVolumeClaims.containsKey(context.clusterId)
-        val taskmanagerPVCExists = context.resources.taskmanagerPersistentVolumeClaims.containsKey(context.clusterId)
+        val bootstrapExists = context.resources.bootstrapJob != null
+        val jobmanagerServiceExists = context.resources.jobmanagerService != null
+        val jobmanagerStatefuleSetExists = context.resources.jobmanagerStatefulSet != null
+        val taskmanagerStatefulSetExists = context.resources.taskmanagerStatefulSet != null
+        val jomanagerPVCExists = context.resources.jobmanagerPVC != null
+        val taskmanagerPVCExists = context.resources.taskmanagerPVC != null
 
         if (bootstrapExists) {
             kubeClient.deleteBootstrapJobs(context.clusterId)

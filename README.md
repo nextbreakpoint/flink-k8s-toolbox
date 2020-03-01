@@ -465,6 +465,7 @@ Create a Flink Cluster file:
         pullPolicy: Always
         image: some-registry/flink:1.9.2
       bootstrap:
+        executionMode: Stream
         pullPolicy: Always
         image: some-registry/flink-jobs:1
         jarPath: /flink-jobs.jar
@@ -669,6 +670,7 @@ Create a JSON file:
         "image": "some-registry/flink:1.9.2"
       },
       "bootstrap": {
+        "executionMode": "Stream",
         "pullPolicy": "Always",
         "image": "some-registry/flink-jobs:1",
         "jarPath": "/flink-jobs.jar",

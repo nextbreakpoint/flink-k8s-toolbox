@@ -3,11 +3,8 @@ package com.nextbreakpoint.flinkoperator.controller.core
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
-import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.model.StartOptions
-import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import io.kubernetes.client.models.V1Job
 
@@ -20,15 +17,6 @@ class TaskContext(
     fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - Status.getOperatorTimestamp(flinkCluster).millis) / 1000L
 
     fun timeSinceLastSavepointRequestInSeconds() = (controller.currentTimeMillis() - Status.getSavepointRequestTimestamp(flinkCluster).millis) / 1000L
-
-    fun startCluster(clusterId: ClusterId, options: StartOptions) : OperationResult<List<ClusterTask>> =
-        controller.startCluster(clusterId, options, CacheAdapter(flinkCluster, resources))
-
-    fun stopCluster(clusterId: ClusterId, options: StopOptions) : OperationResult<List<ClusterTask>> =
-        controller.stopCluster(clusterId, options, CacheAdapter(flinkCluster, resources))
-
-    fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling) : OperationResult<List<ClusterTask>> =
-        controller.scaleCluster(clusterId, clusterScaling, CacheAdapter(flinkCluster, resources))
 
     fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : OperationResult<Void?> =
         controller.createClusterResources(clusterId, clusterResources)

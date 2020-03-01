@@ -3,7 +3,6 @@ package com.nextbreakpoint.flinkoperator.controller
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
@@ -23,28 +22,6 @@ import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersList
-import com.nextbreakpoint.flinkoperator.controller.task.CancelJob
-import com.nextbreakpoint.flinkoperator.controller.task.ClusterHalted
-import com.nextbreakpoint.flinkoperator.controller.task.ClusterRunning
-import com.nextbreakpoint.flinkoperator.controller.task.CreateBootstrapJob
-import com.nextbreakpoint.flinkoperator.controller.task.CreateResources
-import com.nextbreakpoint.flinkoperator.controller.task.CreatingSavepoint
-import com.nextbreakpoint.flinkoperator.controller.task.DeleteBootstrapJob
-import com.nextbreakpoint.flinkoperator.controller.task.DeleteResources
-import com.nextbreakpoint.flinkoperator.controller.task.EraseSavepoint
-import com.nextbreakpoint.flinkoperator.controller.task.InitialiseCluster
-import com.nextbreakpoint.flinkoperator.controller.task.RefreshStatus
-import com.nextbreakpoint.flinkoperator.controller.task.RescaleCluster
-import com.nextbreakpoint.flinkoperator.controller.task.RestartPods
-import com.nextbreakpoint.flinkoperator.controller.task.StartJob
-import com.nextbreakpoint.flinkoperator.controller.task.StartingCluster
-import com.nextbreakpoint.flinkoperator.controller.task.StopJob
-import com.nextbreakpoint.flinkoperator.controller.task.StoppingCluster
-import com.nextbreakpoint.flinkoperator.controller.task.SuspendCluster
-import com.nextbreakpoint.flinkoperator.controller.task.TerminateCluster
-import com.nextbreakpoint.flinkoperator.controller.task.TerminatePods
-import com.nextbreakpoint.flinkoperator.controller.task.TriggerSavepoint
-import com.nextbreakpoint.flinkoperator.controller.task.UpdatingCluster
 import io.kubernetes.client.JSON
 import io.kubernetes.client.models.V1ObjectMeta
 import io.micrometer.core.instrument.ImmutableTag
@@ -75,31 +52,6 @@ import java.util.function.Function
 class OperatorVerticle : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(OperatorVerticle::class.simpleName)
-
-//        private val taskHandlers = mapOf(
-//            ClusterTask.InitialiseCluster to InitialiseCluster(),
-//            ClusterTask.TerminatedCluster to TerminateCluster(),
-//            ClusterTask.SuspendCluster to SuspendCluster(),
-//            ClusterTask.ClusterHalted to ClusterHalted(),
-//            ClusterTask.ClusterRunning to ClusterRunning(),
-//            ClusterTask.StartingCluster to StartingCluster(),
-//            ClusterTask.StoppingCluster to StoppingCluster(),
-//            ClusterTask.UpdatingCluster to UpdatingCluster(),
-//            ClusterTask.RescaleCluster to RescaleCluster(),
-//            ClusterTask.RefreshStatus to RefreshStatus(),
-//            ClusterTask.CreatingSavepoint to CreatingSavepoint(),
-//            ClusterTask.TriggerSavepoint to TriggerSavepoint(),
-//            ClusterTask.EraseSavepoint to EraseSavepoint(),
-//            ClusterTask.CreateResources to CreateResources(),
-//            ClusterTask.DeleteResources to DeleteResources(),
-//            ClusterTask.TerminatePods to TerminatePods(),
-//            ClusterTask.RestartPods to RestartPods(),
-//            ClusterTask.DeleteBootstrapJob to DeleteBootstrapJob(),
-//            ClusterTask.CreateBootstrapJob to CreateBootstrapJob(),
-//            ClusterTask.CancelJob to CancelJob(),
-//            ClusterTask.StartJob to StartJob(),
-//            ClusterTask.StopJob to StopJob()
-//        )
     }
 
     override fun rxStart(): Completable {
@@ -243,7 +195,7 @@ class OperatorVerticle : AbstractVerticle() {
                     controller.getClusterStatus(
                         cache.getClusterId(namespace, context.pathParam("name")),
                         CacheAdapter(
-                            cache.getFlinkCluster(cache.getClusterId(namespace, context.pathParam("name"))), cache.getCachedResources()
+                            cache.getFlinkCluster(cache.getClusterId(namespace, context.pathParam("name")))
                         )
                     )
                 )
@@ -322,7 +274,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.requestStartCluster(
-                            it.clusterId, json.deserialize(it.json, StartOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                            it.clusterId, json.deserialize(it.json, StartOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -340,7 +292,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.requestStopCluster(
-                            it.clusterId, json.deserialize(it.json, StopOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                            it.clusterId, json.deserialize(it.json, StopOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -402,7 +354,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.createSavepoint(
-                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -420,7 +372,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.forgetSavepoint(
-                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId), cache.getCachedResources())
+                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -459,133 +411,6 @@ class OperatorVerticle : AbstractVerticle() {
             cache.onFlinkClusterDeleteAll()
         }
 
-//        vertx.eventBus().consumer<String>("/resource/service/change") { message ->
-//            processMessage<V1Service>(
-//                message,
-//                Function {
-//                    json.deserialize(
-//                        it.body(), V1Service::class.java
-//                    )
-//                },
-//                Consumer {
-//                    cache.onServiceChanged(it)
-//                }
-//            )
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/service/delete") { message ->
-//            processMessage<V1Service>(
-//                message,
-//                Function {
-//                    json.deserialize(
-//                        it.body(), V1Service::class.java
-//                    )
-//                },
-//                Consumer {
-//                    cache.onServiceDeleted(it)
-//                }
-//            )
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/service/deleteAll") {
-//            cache.onServiceDeleteAll()
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/job/change") { message ->
-//            processMessage<V1Job>(
-//                message,
-//                Function {
-//                    json.deserialize(
-//                        it.body(), V1Job::class.java
-//                    )
-//                },
-//                Consumer {
-//                    cache.onJobChanged(it)
-//                }
-//            )
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/job/delete") { message ->
-//            processMessage<V1Job>(
-//                message,
-//                Function {
-//                    json.deserialize(
-//                        it.body(), V1Job::class.java
-//                    )
-//                },
-//                Consumer {
-//                    cache.onJobDeleted(it)
-//                }
-//            )
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/job/deleteAll") {
-//            cache.onJobDeleteAll()
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/statefulset/change") { message ->
-//            processMessage<V1StatefulSet>(
-//                message,
-//                Function {
-//                    json.deserialize(
-//                        it.body(), V1StatefulSet::class.java
-//                    )
-//                },
-//                Consumer {
-//                    cache.onStatefulSetChanged(it)
-//                }
-//            )
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/statefulset/delete") { message ->
-//            processMessage<V1StatefulSet>(
-//                message,
-//                Function {
-//                    json.deserialize(
-//                        it.body(), V1StatefulSet::class.java)
-//                },
-//                Consumer {
-//                    cache.onStatefulSetDeleted(it)
-//                }
-//            )
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/statefulset/deleteAll") {
-//            cache.onStatefulSetDeleteAll()
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/change") { message ->
-//            processMessage<V1PersistentVolumeClaim>(
-//                message,
-//                Function {
-//                    json.deserialize(
-//                        it.body(), V1PersistentVolumeClaim::class.java
-//                    )
-//                },
-//                Consumer {
-//                    cache.onPersistentVolumeClaimChanged(it)
-//                }
-//            )
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/delete") { message ->
-//            processMessage<V1PersistentVolumeClaim>(
-//                message,
-//                Function {
-//                    json.deserialize(
-//                        it.body(), V1PersistentVolumeClaim::class.java
-//                    )
-//                },
-//                Consumer {
-//                    cache.onPersistentVolumeClaimDeleted(it)
-//                }
-//            )
-//        }
-//
-//        vertx.eventBus().consumer<String>("/resource/persistentvolumeclaim/deleteAll") {
-//            cache.onPersistentVolumeClaimDeleteAll()
-//        }
-
 
         vertx.eventBus().consumer<String>("/resource/cluster/update") { message ->
             processCommand<Command>(
@@ -603,22 +428,6 @@ class OperatorVerticle : AbstractVerticle() {
             )
         }
 
-        vertx.eventBus().consumer<String>("/resource/cluster/forget") { message ->
-            processCommand<Command>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                Function {
-                    forgetCluster(controller, it.clusterId)
-
-                    null
-                }
-            )
-        }
-
 
         vertx.exceptionHandler {
             error -> logger.error("An error occurred while processing the request", error)
@@ -628,31 +437,11 @@ class OperatorVerticle : AbstractVerticle() {
             watch.watchFlinkClusters(context, namespace)
         }
 
-//        context.runOnContext {
-//            watch.watchServices(context, namespace)
-//        }
-//
-//        context.runOnContext {
-//            watch.watchJobs(context, namespace)
-//        }
-//
-//        context.runOnContext {
-//            watch.watchStatefulSets(context, namespace)
-//        }
-//
-//        context.runOnContext {
-//            watch.watchPersistentVolumeClaims(context, namespace)
-//        }
-
         // TODO parameterize loop delay
         vertx.setPeriodic(5000L) {
-            logger.debug("Updating...")
-
             updateMetrics(cache, gauges)
 
             doUpdateClusters(cache)
-
-            doDeleteOrphans(cache)
         }
 
         return vertx.createHttpServer(serverOptions)
@@ -663,25 +452,8 @@ class OperatorVerticle : AbstractVerticle() {
     private fun updateCluster(kubeClient: KubeClient, flinkClient: FlinkClient, flinkOptions: FlinkOptions, clusterId: ClusterId) {
         try {
             ClusterSupervisor(kubeClient, flinkClient).reconcile(flinkOptions, clusterId.namespace, clusterId.name)
-//            executor.update(clusterId, cache.getFlinkCluster(clusterId), cache.getCachedResources())
         } catch (e : Exception) {
             logger.error("Error occurred while updating cluster ${clusterId.name}", e)
-        }
-    }
-
-    private fun forgetCluster(controller: OperationController, clusterId: ClusterId) {
-        try {
-            controller.deleteBootstrapJob(clusterId)
-
-            controller.terminatePods(clusterId)
-
-            val result = controller.arePodsTerminated(clusterId)
-
-            if (result.isCompleted()) {
-                controller.deleteClusterResources(clusterId)
-            }
-        } catch (e : Exception) {
-            logger.error("Error occurred while forgetting cluster ${clusterId.name}", e)
         }
     }
 
@@ -854,14 +626,6 @@ class OperatorVerticle : AbstractVerticle() {
         cache.getCachedClusters().forEach {
             vertx.eventBus().publish(
                 "/resource/cluster/update", JSON().serialize(Command(it, "{}"))
-            )
-        }
-    }
-
-    private fun doDeleteOrphans(cache: Cache) {
-        cache.getOrphanedClusters().forEach {
-            vertx.eventBus().publish(
-                "/resource/cluster/forget", JSON().serialize(Command(it, "{}"))
             )
         }
     }

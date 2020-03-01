@@ -4,7 +4,6 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterList
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
-import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
@@ -21,9 +20,6 @@ import com.nextbreakpoint.flinkoperator.controller.operation.ClusterGetStatus
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsReady
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsRunning
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsTerminated
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterScale
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStart
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterStop
 import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterCreate
 import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterDelete
 import com.nextbreakpoint.flinkoperator.controller.operation.JarIsReady
@@ -63,15 +59,6 @@ class OperationController(
 
     fun requestStopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : OperationResult<Void?> =
         RequestClusterStop(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
-
-    fun startCluster(clusterId: ClusterId, options: StartOptions, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
-        ClusterStart(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
-
-    fun stopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
-        ClusterStop(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
-
-    fun scaleCluster(clusterId: ClusterId, clusterScaling: ClusterScaling, adapter: CacheAdapter) : OperationResult<List<ClusterTask>> =
-        ClusterScale(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, clusterScaling)
 
     fun createSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<Void?> =
         RequestSavepointTrigger(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
@@ -169,13 +156,9 @@ class OperationController(
         kubeClient.updateFinalizers(clusterId, flinkCluster.metadata.finalizers)
     }
 
-    fun currentTimeMillis() = System.currentTimeMillis()
-
-    fun findCluster(namespace: String, clusterName: String): V1FlinkCluster {
-        return kubeClient.getFlinkCluster(namespace, clusterName)
-    }
-
     fun findClusters(namespace: String, clusterName: String): V1FlinkClusterList {
         return kubeClient.findFlinkClusters(namespace, clusterName)
     }
+
+    fun currentTimeMillis() = System.currentTimeMillis()
 }

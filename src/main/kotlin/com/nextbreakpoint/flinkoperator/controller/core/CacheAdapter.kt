@@ -1,11 +1,10 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 
 // flinkCluster property must not be exposed in order to avoid uncontrolled modifications
-class CacheAdapter(private val flinkCluster: V1FlinkCluster, val cacheResources: CachedResources) {
+class CacheAdapter(private val flinkCluster: V1FlinkCluster) {
     fun setTaskManagers(taskManagers: Int) {
         Status.setTaskManagers(flinkCluster, taskManagers)
     }
@@ -16,10 +15,6 @@ class CacheAdapter(private val flinkCluster: V1FlinkCluster, val cacheResources:
 
     fun setJobParallelism(parallelism: Int) {
         Status.setJobParallelism(flinkCluster, parallelism)
-    }
-
-    fun appendTasks(tasks: List<ClusterTask>) {
-        Status.appendTasks(flinkCluster, tasks)
     }
 
     fun setWithoutSavepoint(withoutSavepoint: Boolean) {

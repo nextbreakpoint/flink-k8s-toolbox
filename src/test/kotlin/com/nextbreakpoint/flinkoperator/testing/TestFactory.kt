@@ -318,44 +318,6 @@ object TestFactory {
         .endMetadata()
         .build()
 
-    fun createResources(uid: String, cluster: V1FlinkCluster): CachedResources {
-        val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
-        val resources = createClusterResources(uid, cluster)
-        val bootstrapJob = createBootstrapJob(uid, cluster)
-        return CachedResources(
-            mapOf(clusterId to bootstrapJob),
-            mapOf(clusterId to (resources.jobmanagerService ?: throw RuntimeException())),
-            mapOf(clusterId to (resources.jobmanagerStatefulSet ?: throw RuntimeException())),
-            mapOf(clusterId to (resources.taskmanagerStatefulSet ?: throw RuntimeException())),
-            mapOf(),
-            mapOf()
-        )
-    }
-
-    fun createResourcesWithoutJob(uid: String, cluster: V1FlinkCluster): CachedResources {
-        val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
-        val resources = createClusterResources(uid, cluster)
-        return CachedResources(
-            mapOf(),
-            mapOf(clusterId to (resources.jobmanagerService ?: throw RuntimeException())),
-            mapOf(clusterId to (resources.jobmanagerStatefulSet ?: throw RuntimeException())),
-            mapOf(clusterId to (resources.taskmanagerStatefulSet ?: throw RuntimeException())),
-            mapOf(),
-            mapOf()
-        )
-    }
-
-    fun createEmptyResources(): CachedResources {
-        return CachedResources(
-            mapOf(),
-            mapOf(),
-            mapOf(),
-            mapOf(),
-            mapOf(),
-            mapOf()
-        )
-    }
-
     fun createClusterResources(uid: String, cluster: V1FlinkCluster): ClusterResources {
         return ClusterResourcesBuilder(
             DefaultClusterResourcesFactory,
