@@ -7,28 +7,24 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
-import io.kubernetes.client.models.V1Job
+import io.kubernetes.client.models.V1Service
 import org.apache.log4j.Logger
 
-class BootstrapCreateJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<V1Job, String?>(flinkOptions, flinkClient, kubeClient) {
+class ClusterCreateService(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<V1Service, String?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(BootstrapCreateJob::class.simpleName)
+        private val logger = Logger.getLogger(ClusterCreateService::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: V1Job): OperationResult<String?> {
+    override fun execute(clusterId: ClusterId, params: V1Service): OperationResult<String?> {
         try {
-            logger.info("[name=${clusterId.name}] Creating bootstrap job...")
-
-            val jobOut = kubeClient.createBootstrapJob(clusterId, params)
-
-            logger.info("[name=${clusterId.name}] Bootstrap job created: ${jobOut.metadata.name}")
+            val serviceOut = kubeClient.createService(clusterId, params)
 
             return OperationResult(
                 OperationStatus.COMPLETED,
-                jobOut.metadata.name
+                serviceOut.metadata.name
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't create bootstrap job", e)
+            logger.error("[name=${clusterId.name}] Can't create resources", e)
 
             return OperationResult(
                 OperationStatus.FAILED,

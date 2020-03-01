@@ -4,15 +4,11 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
-import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
-import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.core.Configuration
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
@@ -22,105 +18,89 @@ import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJob
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 import org.apache.log4j.Logger
 
-class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient) {
-    companion object {
-        private val logger = Logger.getLogger(ClusterSupervisor::class.simpleName)
-    }
+class ClusterSupervisor(val controller: OperationController, val clusterId: ClusterId) {
+    private val logger = Logger.getLogger(ClusterSupervisor::class.simpleName + "-" + clusterId.name)
 
-    fun reconcile(flinkOptions: FlinkOptions, namespace: String, clusterName: String) {
-        val controller = OperationController(flinkOptions, flinkClient, kubeClient)
+    fun reconcile() {
+        try {
+            val clusters = controller.findClusters(clusterId.namespace, clusterId.name)
 
-        val clusters = controller.findClusters(namespace, clusterName)
+            if (clusters.items.size != 1) {
+                logger.error("Can't find cluster resource ${clusterId.name}")
 
-        if (clusters.items.size != 1) {
-            logger.error("Expected one resource $clusterName")
-
-            return
-        }
-
-        val cluster = clusters.items.first()
-
-        logger.info("Resource $clusterName version: ${cluster.metadata.resourceVersion}")
-
-        val clusterId = ClusterId(namespace = namespace, name = clusterName, uuid = cluster.metadata.uid)
-
-        val bootstrapJobs = kubeClient.listBootstrapJobs(clusterId)
-        val jobmanagerServices = kubeClient.listJobManagerServices(clusterId)
-        val jobmanagerStatefulSets = kubeClient.listJobManagerStatefulSets(clusterId)
-        val taskmanagerStatefulSets = kubeClient.listTaskManagerStatefulSets(clusterId)
-        val jobmanagerPVCs = kubeClient.listJobManagerPVCs(clusterId)
-        val taskmanagerPVCs = kubeClient.listTaskManagerPVCs(clusterId)
-
-        val resources = CachedResources(
-            bootstrapJob = bootstrapJobs.items.firstOrNull(),
-            jobmanagerService = jobmanagerServices.items.firstOrNull(),
-            jobmanagerStatefulSet = jobmanagerStatefulSets.items.firstOrNull(),
-            taskmanagerStatefulSet = taskmanagerStatefulSets.items.firstOrNull(),
-            jobmanagerPVC = jobmanagerPVCs.items.firstOrNull(),
-            taskmanagerPVC = taskmanagerPVCs.items.firstOrNull()
-        )
-
-        val context = TaskContext(clusterId, cluster, resources, controller)
-
-        if (cluster.status != null) {
-            val clusterStatus = Status.getClusterStatus(cluster)
-
-            val actionTimestamp = Annotations.getActionTimestamp(cluster)
-
-            val operatorTimestamp = Status.getOperatorTimestamp(cluster)
-
-            logger.info("Cluster status: $clusterStatus")
-
-            when (clusterStatus) {
-                ClusterStatus.Starting -> onStarting(context)
-                ClusterStatus.Stopping -> onStopping(context)
-                ClusterStatus.Updating -> onUpdating(context)
-                ClusterStatus.Scaling -> onScaling(context)
-                ClusterStatus.Running -> onRunning(context)
-                ClusterStatus.Failed -> onFailed(context)
-                ClusterStatus.Suspended -> onSuspended(context)
-                ClusterStatus.Terminated -> onTerminated(context)
-                ClusterStatus.Checkpointing -> onCheckpointing(context)
-                else -> {}
+                return
             }
 
-            val taskManagers = taskmanagerStatefulSets.items.firstOrNull()?.status?.readyReplicas ?: 0
-            if (Status.getActiveTaskManagers(cluster) != taskManagers) {
-                Status.setActiveTaskManagers(cluster, taskManagers)
+            val cluster = clusters.items.first()
+
+            logger.info("Resource version: ${cluster.metadata.resourceVersion}")
+
+            val resources = controller.findClusterResources(clusterId)
+
+            val context = TaskContext(clusterId, cluster, resources, controller)
+
+            if (cluster.status != null) {
+                val clusterStatus = Status.getClusterStatus(cluster)
+
+                val actionTimestamp = Annotations.getActionTimestamp(cluster)
+
+                val operatorTimestamp = Status.getOperatorTimestamp(cluster)
+
+                logger.info("Cluster status: $clusterStatus")
+
+                when (clusterStatus) {
+                    ClusterStatus.Starting -> onStarting(context)
+                    ClusterStatus.Stopping -> onStopping(context)
+                    ClusterStatus.Updating -> onUpdating(context)
+                    ClusterStatus.Scaling -> onScaling(context)
+                    ClusterStatus.Running -> onRunning(context)
+                    ClusterStatus.Failed -> onFailed(context)
+                    ClusterStatus.Suspended -> onSuspended(context)
+                    ClusterStatus.Terminated -> onTerminated(context)
+                    ClusterStatus.Checkpointing -> onCheckpointing(context)
+                    else -> {}
+                }
+
+                val taskManagers = resources.taskmanagerStatefulSet?.status?.readyReplicas ?: 0
+                if (Status.getActiveTaskManagers(cluster) != taskManagers) {
+                    Status.setActiveTaskManagers(cluster, taskManagers)
+                }
+
+                val taskSlots = cluster.status?.taskSlots ?: 1
+                if (Status.getTotalTaskSlots(cluster) != taskManagers * taskSlots) {
+                    Status.setTotalTaskSlots(cluster, taskManagers * taskSlots)
+                }
+
+                val savepointMode = cluster.spec?.operator?.savepointMode
+                if (Status.getSavepointMode(cluster) != savepointMode) {
+                    Status.setSavepointMode(cluster, savepointMode)
+                }
+
+                val jobRestartPolicy = cluster.spec?.operator?.jobRestartPolicy
+                if (Status.getJobRestartPolicy(cluster) != jobRestartPolicy) {
+                    Status.setJobRestartPolicy(cluster, jobRestartPolicy)
+                }
+
+                val newOperatorTimestamp = Status.getOperatorTimestamp(cluster)
+
+                if (operatorTimestamp != newOperatorTimestamp) {
+                    controller.updateStatus(clusterId, cluster)
+                }
+
+                val newActionTimestamp = Annotations.getActionTimestamp(cluster)
+
+                if (actionTimestamp != newActionTimestamp) {
+                    controller.updateAnnotations(clusterId, cluster)
+                }
+
+                if (hasBeenDeleted(clusterStatus, context)) {
+                    doFinalize(context, controller)
+                }
+            } else {
+                doInitialise(context, controller)
             }
-
-            val taskSlots = cluster.status?.taskSlots ?: 1
-            if (Status.getTotalTaskSlots(cluster) != taskManagers * taskSlots) {
-                Status.setTotalTaskSlots(cluster, taskManagers * taskSlots)
-            }
-
-            val savepointMode = cluster.spec?.operator?.savepointMode
-            if (Status.getSavepointMode(cluster) != savepointMode) {
-                Status.setSavepointMode(cluster, savepointMode)
-            }
-
-            val jobRestartPolicy = cluster.spec?.operator?.jobRestartPolicy
-            if (Status.getJobRestartPolicy(cluster) != jobRestartPolicy) {
-                Status.setJobRestartPolicy(cluster, jobRestartPolicy)
-            }
-
-            val newOperatorTimestamp = Status.getOperatorTimestamp(cluster)
-
-            if (operatorTimestamp != newOperatorTimestamp) {
-                controller.updateStatus(clusterId, cluster)
-            }
-
-            val newActionTimestamp = Annotations.getActionTimestamp(cluster)
-
-            if (actionTimestamp != newActionTimestamp) {
-                controller.updateAnnotations(clusterId, cluster)
-            }
-
-            if (hasBeenDeleted(clusterStatus, context)) {
-                doFinalize(context, controller)
-            }
-        } else {
-            doInitialise(context, controller)
+        } catch (e : Exception) {
+            logger.error("Error occurred while reconciling cluster ${clusterId.name}", e)
         }
     }
 
@@ -508,9 +488,11 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
                 context.clusterId.namespace, context.clusterId.uuid, "flink-operator", context.flinkCluster
             )
 
-            val jobmanagerServiceOut = kubeClient.createService(context.clusterId, jobmanagerService)
+            val serviceResult = context.createJobManagerService(context.clusterId, jobmanagerService)
 
-            logger.info("JobManager service created: ${jobmanagerServiceOut.metadata.name}")
+            if (serviceResult.isCompleted()) {
+                logger.info("JobManager service created: ${serviceResult.output}")
+            }
         }
 
         if (!jobmanagerStatefuleSetExists) {
@@ -518,9 +500,11 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
                 context.clusterId.namespace, context.clusterId.uuid, "flink-operator", context.flinkCluster
             )
 
-            val jobmanagerStatefuleSetOut = kubeClient.createStatefulSet(context.clusterId, jobmanagerStatefulSet)
+            val statefulSetResult = context.createStatefulSet(context.clusterId, jobmanagerStatefulSet)
 
-            logger.info("JobManager statefulset created: ${jobmanagerStatefuleSetOut.metadata.name}")
+            if (statefulSetResult.isCompleted()) {
+                logger.info("JobManager statefulset created: ${statefulSetResult.output}")
+            }
         }
 
         if (!taskmanagerStatefuleSetExists) {
@@ -528,9 +512,11 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
                 context.clusterId.namespace, context.clusterId.uuid, "flink-operator", context.flinkCluster
             )
 
-            val taskmanagerStatefuleSetOut = kubeClient.createStatefulSet(context.clusterId, taskmanagerStatefulSet)
+            val statefulSetResult = context.createStatefulSet(context.clusterId, taskmanagerStatefulSet)
 
-            logger.info("TaskManager statefulset created: ${taskmanagerStatefuleSetOut.metadata.name}")
+            if (statefulSetResult.isCompleted()) {
+                logger.info("TaskManager statefulset created: ${statefulSetResult.output}")
+            }
         }
 
         if (jobmanagerServiceExists && jobmanagerStatefuleSetExists && taskmanagerStatefuleSetExists) {
@@ -596,9 +582,11 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
                         )
                 }
 
-                val bootstrapJobOut = kubeClient.createBootstrapJob(context.clusterId, bootstrapJob)
+                val bootstrapResult = context.createBootstrapJob(context.clusterId, bootstrapJob)
 
-                logger.info("Bootstrap job created: ${bootstrapJobOut.metadata.name}")
+                if (bootstrapResult.isCompleted()) {
+                    logger.info("Bootstrap job created: ${bootstrapResult.output}")
+                }
 
                 return
             } else {
@@ -618,8 +606,11 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
             }
         } else {
             if (bootstrapExists) {
-                kubeClient.deleteBootstrapJobs(context.clusterId)
-                kubeClient.deleteBootstrapJobPods(context.clusterId)
+                val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
+
+                if (bootstrapResult.isCompleted()) {
+                    logger.info("Bootstrap job deleted")
+                }
             }
 
             return
@@ -778,10 +769,11 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
         val bootstrapExists = context.resources.bootstrapJob != null
 
         if (bootstrapExists) {
-            kubeClient.deleteBootstrapJobs(context.clusterId)
-            kubeClient.deleteBootstrapJobPods(context.clusterId)
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
 
-            logger.info("Bootstrap job deleted")
+            if (bootstrapResult.isCompleted()) {
+                logger.info("Bootstrap job deleted")
+            }
 
             return false
         }
@@ -859,16 +851,19 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
         }
 
         if (bootstrapExists) {
-            kubeClient.deleteBootstrapJobs(context.clusterId)
-            kubeClient.deleteBootstrapJobPods(context.clusterId)
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
 
-            logger.info("Bootstrap job deleted")
+            if (bootstrapResult.isCompleted()) {
+                logger.info("Bootstrap job deleted")
+            }
         }
 
         if (jobmanagerServiceExists) {
-            kubeClient.deleteJobManagerServices(context.clusterId)
+            val serviceResult = context.deleteJobManagerService(context.clusterId)
 
-            logger.info("JobManager service deleted")
+            if (serviceResult.isCompleted()) {
+                logger.info("JobManager service deleted")
+            }
         }
 
         return !bootstrapExists && !jobmanagerServiceExists
@@ -883,28 +878,35 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
         val taskmanagerPVCExists = context.resources.taskmanagerPVC != null
 
         if (bootstrapExists) {
-            kubeClient.deleteBootstrapJobs(context.clusterId)
-            kubeClient.deleteBootstrapJobPods(context.clusterId)
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
 
-            logger.info("Bootstrap job deleted")
+            if (bootstrapResult.isCompleted()) {
+                logger.info("Bootstrap job deleted")
+            }
         }
 
         if (jobmanagerServiceExists) {
-            kubeClient.deleteJobManagerServices(context.clusterId)
+            val serviceResult = context.deleteJobManagerService(context.clusterId)
 
-            logger.info("JobManager service deleted")
+            if (serviceResult.isCompleted()) {
+                logger.info("JobManager service deleted")
+            }
         }
 
         if (jobmanagerStatefuleSetExists || taskmanagerStatefulSetExists) {
-            kubeClient.deleteStatefulSets(context.clusterId)
+            val statefulSetsResult = context.deleteStatefulSets(context.clusterId)
 
-            logger.info("JobManager and TaskManager statefulset deleted")
+            if (statefulSetsResult.isCompleted()) {
+                logger.info("JobManager and TaskManager statefulset deleted")
+            }
         }
 
         if (jomanagerPVCExists || taskmanagerPVCExists) {
-            kubeClient.deletePersistentVolumeClaims(context.clusterId)
+            val persistenVolumeClaimsResult = context.deletePersistentVolumeClaims(context.clusterId)
 
-            logger.info("JobManager and TaskManager PVC deleted")
+            if (persistenVolumeClaimsResult.isCompleted()) {
+                logger.info("JobManager and TaskManager PVC deleted")
+            }
         }
 
         return !bootstrapExists && !jobmanagerServiceExists && !jobmanagerStatefuleSetExists && !taskmanagerStatefulSetExists && !jomanagerPVCExists && !taskmanagerPVCExists

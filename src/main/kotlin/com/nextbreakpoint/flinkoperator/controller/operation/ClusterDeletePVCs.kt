@@ -7,28 +7,23 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
-import io.kubernetes.client.models.V1Job
 import org.apache.log4j.Logger
 
-class BootstrapCreateJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<V1Job, String?>(flinkOptions, flinkClient, kubeClient) {
+class ClusterDeletePVCs(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(BootstrapCreateJob::class.simpleName)
+        private val logger = Logger.getLogger(ClusterDeletePVCs::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: V1Job): OperationResult<String?> {
+    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
         try {
-            logger.info("[name=${clusterId.name}] Creating bootstrap job...")
-
-            val jobOut = kubeClient.createBootstrapJob(clusterId, params)
-
-            logger.info("[name=${clusterId.name}] Bootstrap job created: ${jobOut.metadata.name}")
+            kubeClient.deletePersistentVolumeClaims(clusterId)
 
             return OperationResult(
                 OperationStatus.COMPLETED,
-                jobOut.metadata.name
+                null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't create bootstrap job", e)
+            logger.error("[name=${clusterId.name}] Can't delete resources", e)
 
             return OperationResult(
                 OperationStatus.FAILED,
