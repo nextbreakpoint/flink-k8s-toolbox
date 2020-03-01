@@ -82,6 +82,13 @@ spec:
                     - Never
                     - Always
                     - IfNotPresent
+                executionMode:
+                  description: Execution mode of the job.
+                  type: string
+                  nullable: false
+                  enum:
+                    - Stream
+                    - Batch
                 image:
                   description: Image to use for bootstrapping Flink job.
                   type: string
@@ -8357,34 +8364,6 @@ spec:
             timestamp:
               type: string
               nullable: false
-            tasks:
-              type: array
-              nullable: false
-              items:
-                type: string
-                enum:
-                  - InitialiseCluster
-                  - TerminatedCluster
-                  - SuspendCluster
-                  - ClusterHalted
-                  - ClusterRunning
-                  - StartingCluster
-                  - StoppingCluster
-                  - UpdatingCluster
-                  - RescaleCluster
-                  - RefreshStatus
-                  - CreatingSavepoint
-                  - TriggerSavepoint
-                  - EraseSavepoint
-                  - CreateResources
-                  - DeleteResources
-                  - CreateBootstrapJob
-                  - DeleteBootstrapJob
-                  - TerminatePods
-                  - RestartPods
-                  - CancelJob
-                  - StartJob
-                  - StopJob
             taskStatus:
               type: string
               nullable: false
@@ -8444,6 +8423,12 @@ spec:
                     - Never
                     - Always
                     - IfNotPresent
+                executionMode:
+                  type: string
+                  nullable: false
+                  enum:
+                    - Stream
+                    - Batch
                 image:
                   type: string
                   nullable: false
@@ -8464,7 +8449,6 @@ spec:
                 - jarPath
           required:
             - timestamp
-            - tasks
             - taskStatus
             - taskAttempts
             - clusterStatus
@@ -8483,9 +8467,6 @@ spec:
     - name: TASK-STATUS
       type: string
       JSONPath: .status.taskStatus
-    - name: TASK
-      type: string
-      JSONPath: .status.tasks[0]
     - name: TASK-MANAGERS
       type: integer
       JSONPath: .status.taskManagers

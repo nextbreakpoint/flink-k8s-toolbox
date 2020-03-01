@@ -21,8 +21,6 @@ public class V1FlinkClusterStatus {
     private Integer totalTaskSlots;
     @SerializedName("timestamp")
     private DateTime timestamp;
-    @SerializedName("tasks")
-    private String[] tasks;
     @SerializedName("taskStatus")
     private String taskStatus;
     @SerializedName("taskAttempts")
@@ -104,14 +102,6 @@ public class V1FlinkClusterStatus {
 
     public void setTimestamp(DateTime timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public String[] getTasks() {
-        return tasks;
-    }
-
-    public void setTasks(String[] tasks) {
-        this.tasks = tasks;
     }
 
     public String getTaskStatus() {
@@ -230,7 +220,6 @@ public class V1FlinkClusterStatus {
                 Objects.equals(getActiveTaskManagers(), that.getActiveTaskManagers()) &&
                 Objects.equals(getTotalTaskSlots(), that.getTotalTaskSlots()) &&
                 Objects.equals(getTimestamp(), that.getTimestamp()) &&
-                Arrays.equals(getTasks(), that.getTasks()) &&
                 Objects.equals(getTaskStatus(), that.getTaskStatus()) &&
                 Objects.equals(getTaskAttempts(), that.getTaskAttempts()) &&
                 Objects.equals(getClusterStatus(), that.getClusterStatus()) &&
@@ -249,7 +238,6 @@ public class V1FlinkClusterStatus {
     @Override
     public int hashCode() {
         int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getSavepointRequestTimestamp(), getDigest(), getBootstrap(), getSavepointMode(), getServiceMode(), getJobRestartPolicy());
-        result = 31 * result + Arrays.hashCode(getTasks());
         return result;
     }
 
@@ -263,7 +251,6 @@ public class V1FlinkClusterStatus {
                 ", activeTaskManagers=" + activeTaskManagers +
                 ", totalTaskSlots=" + totalTaskSlots +
                 ", timestamp=" + timestamp +
-                ", tasks=" + Arrays.toString(tasks) +
                 ", taskStatus='" + taskStatus + '\'' +
                 ", taskAttempts=" + taskAttempts +
                 ", clusterStatus='" + clusterStatus + '\'' +
