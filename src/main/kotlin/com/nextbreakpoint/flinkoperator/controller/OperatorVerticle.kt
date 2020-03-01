@@ -421,7 +421,7 @@ class OperatorVerticle : AbstractVerticle() {
                     )
                 },
                 Function {
-                    updateCluster(kubeClient, flinkClient, flinkOptions, it.clusterId)
+                    ClusterSupervisor(controller, it.clusterId).reconcile()
 
                     null
                 }
@@ -447,14 +447,6 @@ class OperatorVerticle : AbstractVerticle() {
         return vertx.createHttpServer(serverOptions)
             .requestHandler(mainRouter)
             .rxListen(port)
-    }
-
-    private fun updateCluster(kubeClient: KubeClient, flinkClient: FlinkClient, flinkOptions: FlinkOptions, clusterId: ClusterId) {
-        try {
-            ClusterSupervisor(kubeClient, flinkClient).reconcile(flinkOptions, clusterId.namespace, clusterId.name)
-        } catch (e : Exception) {
-            logger.error("Error occurred while updating cluster ${clusterId.name}", e)
-        }
     }
 
     private fun createServerOptions(

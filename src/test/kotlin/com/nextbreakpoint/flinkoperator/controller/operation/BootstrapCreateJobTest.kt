@@ -52,6 +52,6 @@ class BootstrapCreateJobTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isEqualTo("xxx")
     }
 }

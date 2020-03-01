@@ -7,6 +7,8 @@ import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import io.kubernetes.client.models.V1Job
+import io.kubernetes.client.models.V1Service
+import io.kubernetes.client.models.V1StatefulSet
 
 class TaskContext(
     val clusterId: ClusterId,
@@ -17,12 +19,6 @@ class TaskContext(
     fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - Status.getOperatorTimestamp(flinkCluster).millis) / 1000L
 
     fun timeSinceLastSavepointRequestInSeconds() = (controller.currentTimeMillis() - Status.getSavepointRequestTimestamp(flinkCluster).millis) / 1000L
-
-    fun createClusterResources(clusterId: ClusterId, clusterResources: ClusterResources) : OperationResult<Void?> =
-        controller.createClusterResources(clusterId, clusterResources)
-
-    fun deleteClusterResources(clusterId: ClusterId) : OperationResult<Void?> =
-        controller.deleteClusterResources(clusterId)
 
     fun removeJar(clusterId: ClusterId) : OperationResult<Void?> =
         controller.removeJar(clusterId)
@@ -36,7 +32,7 @@ class TaskContext(
     fun getLatestSavepoint(clusterId: ClusterId, savepointRequest: SavepointRequest) : OperationResult<String> =
         controller.getLatestSavepoint(clusterId, savepointRequest)
 
-    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): OperationResult<Void?> =
+    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): OperationResult<String?> =
         controller.createBootstrapJob(clusterId, bootstrapJob)
 
     fun deleteBootstrapJob(clusterId: ClusterId) : OperationResult<Void?> =
@@ -86,4 +82,19 @@ class TaskContext(
 
     fun getTaskManagersReplicas(clusterId: ClusterId) : OperationResult<Int> =
         controller.getTaskManagersReplicas(clusterId)
+
+    fun createJobManagerService(clusterId: ClusterId, service: V1Service): OperationResult<String?> =
+        controller.createJobManagerService(clusterId, service)
+
+    fun deleteJobManagerService(clusterId: ClusterId): OperationResult<Void?> =
+        controller.deleteJobManagerService(clusterId)
+
+    fun createStatefulSet(clusterId: ClusterId, statefulSet: V1StatefulSet): OperationResult<String?> =
+        controller.createStatefulSet(clusterId, statefulSet)
+
+    fun deleteStatefulSets(clusterId: ClusterId): OperationResult<Void?> =
+        controller.deleteStatefulSets(clusterId)
+
+    fun deletePersistentVolumeClaims(clusterId: ClusterId): OperationResult<Void?> =
+        controller.deletePersistentVolumeClaims(clusterId)
 }
