@@ -339,9 +339,9 @@ class ClusterSupervisor(val kubeClient: KubeClient, val flinkClient: FlinkClient
             Status.setTaskSlots(context.flinkCluster, currentTaskSlots)
             Status.setJobParallelism(context.flinkCluster, desiredTaskManagers * currentTaskSlots)
             if (desiredTaskManagers == 0) {
-                Status.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
-            } else {
                 Status.setClusterStatus(context.flinkCluster, ClusterStatus.Stopping)
+            } else {
+                Status.setClusterStatus(context.flinkCluster, ClusterStatus.Starting)
             }
         }
     }
