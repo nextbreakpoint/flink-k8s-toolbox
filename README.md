@@ -20,6 +20,7 @@ Main features:
 
 - Automatic creation of JobManager and TaskManagers using StatefulSets
 - Automatic creation of service for accessing JobManager
+- Support for batch and stream jobs
 - Support for bare cluster or single job cluster
 - Support for init containers and side containers for JobManager and TaskManagers
 - Support for mounted volumes and persistent volumes claims
@@ -30,9 +31,9 @@ Main features:
 - Support for pull secrets and private registries
 - Support for public Flink images or custom images
 - Support for single job cluster or cluster without job
-- Support for bootstrap from single JAR file
-- Support for configurable task slots and heap memory
-- Support for configurable savepoints location
+- Support separate image for bootstrap (with single JAR file)
+- Configurable task slots and heap memory
+- Configurable savepoints location
 - Configurable service accounts
 - Configurable periodic savepoints
 - Automatic detection of failure and configurable job restart
