@@ -76,11 +76,11 @@ class ResourceUpdatedTest : IntegrationSetup() {
         if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-1", patch = "[{\"op\":\"replace\",\"path\":\"/spec/jobManager/serviceMode\",\"value\":\"ClusterIP\"}]") != 0) {
             fail("Can't update cluster")
         }
-        if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/taskManager/taskSlots\",\"value\":1}]") != 0) {
-            fail("Can't update cluster")
-        }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Updating)).isTrue()
+        }
+        if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/taskManager/taskSlots\",\"value\":1}]") != 0) {
+            fail("Can't update cluster")
         }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Updating)).isTrue()
@@ -130,11 +130,11 @@ class ResourceUpdatedTest : IntegrationSetup() {
         if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-1", patch = "[{\"op\":\"replace\",\"path\":\"/spec/bootstrap/arguments\",\"value\":[]}]") != 0) {
             fail("Can't update cluster")
         }
-        if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/bootstrap/arguments\",\"value\":[\"--TEST=true\"]}]") != 0) {
-            fail("Can't update cluster")
-        }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Updating)).isTrue()
+        }
+        if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/bootstrap/arguments\",\"value\":[\"--TEST=true\"]}]") != 0) {
+            fail("Can't update cluster")
         }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Updating)).isTrue()
@@ -169,11 +169,11 @@ class ResourceUpdatedTest : IntegrationSetup() {
         if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-1", patch = "[{\"op\":\"replace\",\"path\":\"/spec/bootstrap/image\",\"value\":\"integration/wrongimage\"}]") != 0) {
             fail("Can't update cluster")
         }
-        if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/bootstrap/className\",\"value\":\"wrongclassname\"}]") != 0) {
-            fail("Can't update cluster")
-        }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Updating)).isTrue()
+        }
+        if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/bootstrap/className\",\"value\":\"wrongclassname\"}]") != 0) {
+            fail("Can't update cluster")
         }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Updating)).isTrue()

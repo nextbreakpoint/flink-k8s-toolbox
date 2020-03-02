@@ -12,29 +12,6 @@ import java.util.concurrent.TimeUnit
 @Tag("IntegrationTest")
 class BatchJobTest : IntegrationSetup() {
     companion object {
-        @BeforeAll
-        @JvmStatic
-        fun createClusters() {
-            println("Creating clusters...")
-            createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-3.yaml")
-            createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-4.yaml")
-            awaitUntilAsserted(timeout = 30) {
-                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-3")).isTrue()
-            }
-            awaitUntilAsserted(timeout = 30) {
-                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-4")).isTrue()
-            }
-            println("Clusters created")
-            println("Waiting for clusters...")
-            awaitUntilAsserted(timeout = 360) {
-                assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Running)).isTrue()
-            }
-            awaitUntilAsserted(timeout = 360) {
-                assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Running)).isTrue()
-            }
-            println("Clusters started")
-        }
-
         @AfterAll
         @JvmStatic
         fun removeFinalizers() {
@@ -54,6 +31,17 @@ class BatchJobTest : IntegrationSetup() {
 
     @Test
     fun `should suspend cluster when job finished`() {
+        println("Creating cluster...")
+        createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-3.yaml")
+        awaitUntilAsserted(timeout = 30) {
+            assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-3")).isTrue()
+        }
+        println("Cluster created")
+        println("Waiting for cluster...")
+        awaitUntilAsserted(timeout = 360) {
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Running)).isTrue()
+        }
+        println("Cluster started")
         println("Cluster should be suspended after batch job has finished")
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Suspended)).isTrue()
@@ -68,6 +56,17 @@ class BatchJobTest : IntegrationSetup() {
 
     @Test
     fun `should halt cluster when job failed`() {
+        println("Creating cluster...")
+        createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-4.yaml")
+        awaitUntilAsserted(timeout = 30) {
+            assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-4")).isTrue()
+        }
+        println("Cluster created")
+        println("Waiting for cluster...")
+        awaitUntilAsserted(timeout = 360) {
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Running)).isTrue()
+        }
+        println("Cluster started")
         println("Cluster should fail when batch job fails")
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Failed)).isTrue()
