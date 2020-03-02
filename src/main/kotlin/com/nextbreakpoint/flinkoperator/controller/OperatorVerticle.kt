@@ -17,6 +17,7 @@ import com.nextbreakpoint.flinkoperator.controller.core.Command
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.controller.core.TaskController
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
@@ -449,8 +450,7 @@ class OperatorVerticle : AbstractVerticle() {
 //            worker.close()
 //        }
 
-        // TODO parameterize loop delay
-        vertx.setPeriodic(5000L) {
+        vertx.setPeriodic(Timeout.POLLING_INTERVAL) {
             onUpdateMetrics(cache, gauges)
 
             onUpdateClusters(cache)

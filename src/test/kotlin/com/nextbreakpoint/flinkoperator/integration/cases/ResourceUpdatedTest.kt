@@ -37,7 +37,7 @@ class ResourceUpdatedTest : IntegrationSetup() {
         }
         println("Clusters created")
         println("Waiting for clusters...")
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
@@ -173,7 +173,7 @@ class ResourceUpdatedTest : IntegrationSetup() {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Updating)).isTrue()
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Updating)).isTrue()
         }
-        awaitUntilAsserted(timeout = 600) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Failed)).isTrue()
             assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Failed)).isTrue()

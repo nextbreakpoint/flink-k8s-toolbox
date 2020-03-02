@@ -35,3 +35,6 @@ keystore:
 truststore:
   pathKey: truststore.jks
   secretKey: truststore-secret
+
+taskTimeout: 300
+pollingInterval: 5

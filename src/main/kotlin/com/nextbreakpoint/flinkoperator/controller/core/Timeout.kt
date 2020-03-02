@@ -1,8 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
-// TODO parameterize?
 object Timeout {
-    val STARTING_JOB_TIMEOUT = 300L
-    val STOPPING_JOB_TIMEOUT = 600L
-    val CREATING_SAVEPOINT_TIMEOUT = 600L
+    val POLLING_INTERVAL = System.getenv("POLLING_INTERVAL").toLongOrNull() ?: 5L
+    val TASK_TIMEOUT = System.getenv("TASK_TIMEOUT").toLongOrNull() ?: 300L
 }
