@@ -11,7 +11,7 @@ class OnStopping(logger: Logger) : Task(logger) {
     override fun execute(context: TaskContext) {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
-        if (seconds > Timeout.STOPPING_JOB_TIMEOUT) {
+        if (seconds > Timeout.TASK_TIMEOUT) {
             logger.error("Cluster not stopped after $seconds seconds")
 
             context.resetSavepointRequest()

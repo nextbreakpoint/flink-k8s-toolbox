@@ -91,7 +91,7 @@ class OnRunning(logger: Logger) : Task(logger) {
 
             val seconds = context.timeSinceLastSavepointRequestInSeconds()
 
-            if (seconds > Timeout.CREATING_SAVEPOINT_TIMEOUT) {
+            if (seconds > Timeout.TASK_TIMEOUT) {
                 logger.error("Savepoint not created after $seconds seconds")
 
                 context.resetSavepointRequest()

@@ -10,7 +10,7 @@ class OnStarting(logger: Logger) : Task(logger) {
     override fun execute(context: TaskContext) {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
-        if (seconds > Timeout.STARTING_JOB_TIMEOUT) {
+        if (seconds > Timeout.TASK_TIMEOUT) {
             logger.error("Cluster not started after $seconds seconds")
 
             context.resetSavepointRequest()
