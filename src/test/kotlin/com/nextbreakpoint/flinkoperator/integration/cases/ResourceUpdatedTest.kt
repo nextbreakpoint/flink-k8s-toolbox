@@ -27,6 +27,8 @@ class ResourceUpdatedTest : IntegrationSetup() {
         println("Waiting for clusters...")
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         println("Clusters started")
@@ -49,6 +51,8 @@ class ResourceUpdatedTest : IntegrationSetup() {
         removeFinalizers(name = "cluster-2")
         awaitUntilAsserted(timeout = 30) {
             assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
+        }
+        awaitUntilAsserted(timeout = 30) {
             assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
         }
     }
@@ -75,11 +79,15 @@ class ResourceUpdatedTest : IntegrationSetup() {
         }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Updating)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Updating)).isTrue()
         }
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
             assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-1", taskManagers = 1)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
             assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-2", taskManagers = 2)).isTrue()
         }
@@ -97,6 +105,8 @@ class ResourceUpdatedTest : IntegrationSetup() {
         TimeUnit.SECONDS.sleep(10)
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         println("Clusters updated")
@@ -123,10 +133,14 @@ class ResourceUpdatedTest : IntegrationSetup() {
         }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Updating)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Updating)).isTrue()
         }
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         val response1 = getClusterStatus(name = "cluster-1", port = port)
@@ -158,10 +172,14 @@ class ResourceUpdatedTest : IntegrationSetup() {
         }
         awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Updating)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 60) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Updating)).isTrue()
         }
-        awaitUntilAsserted(timeout = 600) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Failed)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Failed)).isTrue()
         }
         println("Clusters updated. Status is failed because bootstrap contains invalid configuration")

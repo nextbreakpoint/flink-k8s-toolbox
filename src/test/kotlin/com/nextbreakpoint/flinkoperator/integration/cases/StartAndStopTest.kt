@@ -21,6 +21,8 @@ class StartAndStopTest : IntegrationSetup() {
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
             awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isTrue()
+            }
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isTrue()
             }
             println("Clusters created")
@@ -34,6 +36,8 @@ class StartAndStopTest : IntegrationSetup() {
             removeFinalizers(name = "cluster-2")
             awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
+            }
+            awaitUntilAsserted(timeout = 30) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
             }
         }
@@ -44,6 +48,8 @@ class StartAndStopTest : IntegrationSetup() {
         println("Should start clusters automatically...")
         awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 300) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         println("Clusters started")
@@ -53,6 +59,8 @@ class StartAndStopTest : IntegrationSetup() {
         stopCluster(name = "cluster-2", options = stopOptions, port = port)
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Suspended)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Suspended)).isTrue()
         }
         println("Clusters suspended")
@@ -63,6 +71,8 @@ class StartAndStopTest : IntegrationSetup() {
         startCluster(name = "cluster-2", options = startWithoutSavepointOptions, port = port)
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         println("Clusters resumed")
@@ -73,6 +83,8 @@ class StartAndStopTest : IntegrationSetup() {
         stopCluster(name = "cluster-2", options = terminateWithoutSavepointOptions, port = port)
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Terminated)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Terminated)).isTrue()
         }
         println("Clusters terminated")
