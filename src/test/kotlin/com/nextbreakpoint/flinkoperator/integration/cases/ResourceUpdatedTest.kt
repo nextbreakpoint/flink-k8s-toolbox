@@ -16,16 +16,6 @@ import kotlin.test.fail
 
 @Tag("IntegrationTest")
 class ResourceUpdatedTest : IntegrationSetup() {
-    companion object {
-        @AfterAll
-        @JvmStatic
-        fun removeFinalizers() {
-            println("Removing finalizers...")
-            removeFinalizers(name = "cluster-1")
-            removeFinalizers(name = "cluster-2")
-        }
-    }
-
     @BeforeEach
     fun createClusters() {
         println("Creating clusters...")
@@ -56,6 +46,13 @@ class ResourceUpdatedTest : IntegrationSetup() {
             assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
         }
         println("Clusters deleted")
+    }
+
+    @AfterEach
+    fun removeFinalizers() {
+        println("Removing finalizers...")
+        removeFinalizers(name = "cluster-1")
+        removeFinalizers(name = "cluster-2")
     }
 
     @Test
