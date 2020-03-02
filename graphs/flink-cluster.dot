@@ -3,7 +3,7 @@ digraph state_machine {
   center=true;
   margin=0;
   rankdir=LR;
-  node [shape=circle, style="filled", fillcolor=skyblue];
+  node [shape=circle style=filled fillcolor=skyblue width=1.8 heigth=1.8 fixedsize=true];
   UNKNOWN [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
@@ -189,11 +189,14 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
+  CHECKPOINTING [ fillcolor=yellow ];
   STOPPING [ fillcolor=yellow ];
   STARTING [ fillcolor=yellow ];
   UPDATING [ fillcolor=yellow ];
   SCALING [ fillcolor=yellow ];
-  RUNNING [ fillcolor=green ];
-  FAILED [ fillcolor=red ];
-  CHECKPOINTING [ fillcolor=skyblue ];
+  RUNNING [ fillcolor=green width=2.0 ];
+  FAILED [ fillcolor=red width=2.0 ];
+  SUSPENDED [ fillcolor=lightblue width=2.0 ];
+  TERMINATED [ fillcolor=lightblue width=2.0 ];
+  UNKNOWN [ fillcolor=grey width=1.5 ];
 }
