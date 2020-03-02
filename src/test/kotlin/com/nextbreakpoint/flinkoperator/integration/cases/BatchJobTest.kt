@@ -39,10 +39,10 @@ class BatchJobTest : IntegrationSetup() {
         @JvmStatic
         fun removeFinalizers() {
             println("Removing finalizers...")
-            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-3.yaml")
-            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-4.yaml")
             removeFinalizers(name = "cluster-3")
             removeFinalizers(name = "cluster-4")
+            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-3.yaml")
+            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-4.yaml")
             awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-3")).isFalse()
             }
