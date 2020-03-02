@@ -37,18 +37,20 @@ class ResourceUpdatedTest : IntegrationSetup() {
         println("Deleting clusters...")
         deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
         deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
-        awaitUntilAsserted(timeout = 300) {
-            assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
-            assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
+        awaitUntilCondition(timeout = 360) {
+            hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Terminated)
+        }
+        awaitUntilCondition(timeout = 360) {
+            hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Terminated)
         }
         println("Clusters deleted")
-    }
-
-    @AfterEach
-    fun removeFinalizers() {
         println("Removing finalizers...")
         removeFinalizers(name = "cluster-1")
         removeFinalizers(name = "cluster-2")
+        awaitUntilAsserted(timeout = 30) {
+            assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
+            assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
+        }
     }
 
     @Test

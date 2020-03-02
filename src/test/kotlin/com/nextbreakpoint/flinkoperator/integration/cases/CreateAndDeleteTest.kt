@@ -18,6 +18,9 @@ class CreateAndDeleteTest : IntegrationSetup() {
         fun removeFinalizers() {
             println("Removing finalizers...")
             removeFinalizers(name = "cluster-0")
+            awaitUntilAsserted(timeout = 30) {
+                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-0")).isFalse()
+            }
         }
     }
 
