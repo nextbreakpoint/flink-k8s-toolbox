@@ -8,6 +8,14 @@ import org.apache.log4j.Logger
 
 class OnStarting(logger: Logger) : Task(logger) {
     override fun execute(context: TaskContext) {
+        if (context.hasBeenDeleted()) {
+            context.setDeleteResources(true)
+            context.resetManualAction()
+            context.setClusterStatus(ClusterStatus.Stopping)
+
+            return
+        }
+
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TASK_TIMEOUT) {

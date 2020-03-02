@@ -1,5 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.controller.task.OnCancelling
@@ -32,18 +33,8 @@ class TaskController(val controller: OperationController, val clusterId: Cluster
         ClusterStatus.Checkpointing to OnCheckpointing(logger)
     )
 
-    fun execute() {
+    fun execute(cluster: V1FlinkCluster) {
         try {
-            val clusters = controller.findClusters(clusterId.namespace, clusterId.name)
-
-            if (clusters.items.size != 1) {
-                logger.error("Can't find cluster resource ${clusterId.name}")
-
-                return
-            }
-
-            val cluster = clusters.items.first()
-
             logger.info("Resource version: ${cluster.metadata.resourceVersion}")
 
             val resources = controller.findClusterResources(clusterId)
