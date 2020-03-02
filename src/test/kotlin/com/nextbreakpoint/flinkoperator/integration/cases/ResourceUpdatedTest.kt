@@ -46,6 +46,8 @@ class ResourceUpdatedTest : IntegrationSetup() {
             hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Terminated)
         }
         println("Clusters deleted")
+        // we must terminate the clusters otherwise some resources might stick around and cause next test to fail.
+        // we should remove any cluster resource just in case, to make sure nothing is left after each test
         println("Removing finalizers...")
         removeFinalizers(name = "cluster-1")
         removeFinalizers(name = "cluster-2")

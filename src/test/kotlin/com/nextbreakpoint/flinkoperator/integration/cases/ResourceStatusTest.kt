@@ -40,10 +40,10 @@ class ResourceStatusTest : IntegrationSetup() {
         @JvmStatic
         fun removeFinalizers() {
             println("Removing finalizers...")
-            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
-            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
             removeFinalizers(name = "cluster-1")
             removeFinalizers(name = "cluster-2")
+            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
+            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
             awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
             }
