@@ -31,25 +31,16 @@ class BatchJobTest : IntegrationSetup() {
             println("Clusters started")
         }
 
-//        @AfterAll
-//        @JvmStatic
-//        fun deleteClusters() {
-//            println("Deleting clusters...")
-//            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-3.yaml")
-//            deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-4.yaml")
-//            awaitUntilAsserted(timeout = 300) {
-//                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-3")).isFalse()
-//                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-4")).isFalse()
-//            }
-//            println("Clusters deleted")
-//        }
-
         @AfterAll
         @JvmStatic
         fun removeFinalizers() {
             println("Removing finalizers...")
             removeFinalizers(name = "cluster-3")
             removeFinalizers(name = "cluster-4")
+            awaitUntilAsserted(timeout = 30) {
+                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-3")).isFalse()
+                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-4")).isFalse()
+            }
         }
     }
 
