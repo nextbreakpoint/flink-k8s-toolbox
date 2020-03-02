@@ -98,7 +98,7 @@ The possible states of a FlinkCluster resource are represented in this graph:
 
 - **STOPPING**
 
-  This status means that the cluster is going to stop. The Flink job will be canceled (creating a new savepoint) or stopped (without creating a new savepoint), and the secondary resources will be deleted (optional).
+  This status means that the cluster is going to stop. The Flink job will be canceled (creating a new savepoint) or stopped (without creating a new savepoint), and the secondary resources will be stopped or deleted (optional).
 
 - **SUSPENDED**
 
@@ -116,115 +116,17 @@ The possible states of a FlinkCluster resource are represented in this graph:
 
   This status means that the cluster is updating the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator might need to destroy and recreate some resources.
 
+- **SCALING**
+
+  This status means that the cluster is scaling the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator might need to destroy and recreate some resources.
+
 - **FAILED**
 
   This status means that the cluster is not running properly. The secondary resources might not work or the job might have failed (or it has been canceled manually). When the cluster is in this state but a running job is detected, the status is automatically changed to RUNNING.
 
 - **CHECKPOINTING**
 
-  This status means that the cluster is creating a savepoint. The status is automatically changed to RUNNING when the savepoint is completed, otherwise the status is changed to FAILED (when the savepoint is not completed in the expected time).
-
-Each arrow in this graph above represents a specific sequence of tasks which are executed in order to transition from one status to another. Each task of the sequence is processed according to this state machine:
-
-![Task executor graph](/graphs/task-executor.png "Task executor graph")
-
-- **EXECUTING**
-
-  This is the initial status of a task. The task is executing some operation against Kubernetes resources or Flink server. The task might repeat the operation several times before succeeding or timing out and generating a failure.
-
-- **AWAITING**
-
-  The task has executed some operations and it is now awaiting for a result. The task might check for results several times before succeeding or timing out and generating a failure.
-
-- **IDLE**
-
-  The task has received the expected result and it is now completed. The task is idle but it keeps checking for new tasks to execute and it can eventually schedule a new task.
-
-- **FAILED**
-
-  The task didn't received the expected result or some error occurred. The cluster status is changed to FAILED and the CLUSTER_HALTED task is scheduled for execution.
-
-All the possible tasks which the operator can execute to transition from one status to another are:
-
-- **INITIALISE CLUSTER**
-
-  Initialise primary resource status and change cluster status to starting.    
-
-- **CLUSTER RUNNING**
-
-  Detect changes in the primary resource and restart cluster if needed. Change cluster status to FAILED if the job stops running. Periodically triggers a new savepoint.     
-
-- **CLUSTER HALTED**
-
-  Detect changes in the primary resource and restart cluster if needed. Change cluster status to RUNNING if there is a running job.    
-
-- **STARTING CLUSTER**
-
-  Set cluster status to STARTING.
-
-- **STOPPING CLUSTER**
-
-  Set cluster status to STOPPING.
-
-- **UPDATING CLUSTER**
-
-  Set cluster status to UPDATING.
-
-- **RESCALE CLUSTER**
-
-  Rescale cluster updating number of Task Managers.
-
-- **CREATE RESOURCES**
-
-  Create secondary resources and wait until resources reach expected status.
-
-- **DELETE RESOURCES**
-
-  Delete secondary resources and wait until resources reach expected status.
-
-- **REFRESH STATUS**
-
-  Copy relevant values from resource specification to resource status.
-
-- **CREATE BOOTSTRAP JOB**
-
-  Schedule batch job which upload JAR file to Flink.  
-
-- **DELETE BOOTSTRAP JOB**
-
-  Remove batch job previously used to upload JAR file.
-
-- **TERMINATE PODS**
-
-  Terminate pods scaling down resources (set replicas to 0).
-
-- **RESTART PODS**
-
-  Restart pods scaling up resources (set replicas to expected number of Task Managers).
-
-- **CANCEL JOB**
-
-  Cancel job creating a new savepoint and wait until savepoint is completed.  
-
-- **START JOB**
-
-  Start job using bootstrap configuration from primary resource. Restart job from savepoint when savepoint path is provided.   
-
-- **STOP JOB**
-
-  Cancel job without creating a savepoint.  
-
-- **CREATING SAVEPOINT**
-
-  Set cluster status to CHECKPOINTING.
-
-- **TRIGGER SAVEPOINT**
-
-  Trigger new savepoint and wait until savepoint is completed.
-
-- **ERASE SAVEPOINT**
-
-  Delete savepoint from status of primary resource.
+  This status means that the cluster is creating a savepoint. The status is automatically changed to RUNNING when the savepoint request has been created.
 
 ## Flink Operator REST API
 
@@ -555,8 +457,8 @@ List custom objects of type FlinkCluster with command:
 
 The command should produce an output like:
 
-    NAME   CLUSTER-STATUS   TASK-STATUS   TASK             TASK-MANAGERS   TASK-SLOTS   ACTIVE-TASK-MANAGERS   TOTAL-TASK-SLOTS   JOB-PARALLELISM   JOB-RESTART   SERVICE-MODE   SAVEPOINT-MODE   SAVEPOINT-PATH                                       SAVEPOINT-AGE   AGE
-    test   Running          Idle          ClusterRunning   1               1            1                      1                  1                 Always        NodePort       Manual           file:/var/savepoints/savepoint-e0e430-7a6d1c33dee3   42s             3m55s
+    NAME   CLUSTER-STATUS   TASK-STATUS   TASK-MANAGERS   TASK-SLOTS   ACTIVE-TASK-MANAGERS   TOTAL-TASK-SLOTS   JOB-PARALLELISM   JOB-RESTART   SERVICE-MODE   SAVEPOINT-MODE   SAVEPOINT-PATH                                       SAVEPOINT-AGE   AGE
+    test   Running          Idle          1               1            1                      1                  1                 Always        NodePort       Manual           file:/var/savepoints/savepoint-e0e430-7a6d1c33dee3   42s             3m55s
 
 ## Build Flink Operator from source code
 
@@ -937,3 +839,13 @@ Run the operator with a given namespace and Kubernetes config using the JAR file
 Run the operator with a given namespace and Kubernetes config using the Docker image:
 
     docker run --rm -it -v ~/.kube/config:/kube/config flink-k8s-toolbox:1.2.6-beta operator run --namespace=test --kube-config=/kube/config
+
+## Configure task timeout
+
+The Flink Operator uses timeouts to recover for anomalies. 
+The duration of the timeout has a default value of 300 seconds and can be changed setting the environment variable TASK_TIMEOUT (number of seconds).   
+
+## Configure polling interval
+
+The Flink Operator polls periodically the status of the resources. 
+The polling interval has a default value of 5 seconds and can be changed setting the environment variable POLLING_INTERVAL (number of seconds).   
