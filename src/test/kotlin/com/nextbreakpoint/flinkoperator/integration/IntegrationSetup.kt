@@ -477,6 +477,17 @@ open class IntegrationSetup {
             return executeCommand(redirect, command)
         }
 
+        fun deleteClusterByName(redirect: Redirect?, namespace: String, name: String): Int {
+            val command = listOf(
+                "kubectl",
+                "-n",
+                namespace,
+                "delete",
+                name
+            )
+            return executeCommand(redirect, command)
+        }
+
         fun describeClusters(redirect: Redirect?, namespace: String): Int {
             val command = listOf(
                 "kubectl",
