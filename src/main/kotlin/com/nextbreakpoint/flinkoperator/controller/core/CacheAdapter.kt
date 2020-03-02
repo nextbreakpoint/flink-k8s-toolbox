@@ -19,6 +19,6 @@ class CacheAdapter(private val flinkCluster: V1FlinkCluster) {
     // the returned map must be immutable to avoid side effects
     fun getAnnotations() = flinkCluster.metadata?.annotations?.toMap().orEmpty()
 
-    // TODO we should make copy of status to avoid side effects
+    // we should make copy of status to avoid side effects
     fun getStatus() = flinkCluster.status
 }
