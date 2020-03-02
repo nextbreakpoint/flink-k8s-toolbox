@@ -85,7 +85,7 @@ spec:
                 executionMode:
                   description: Execution mode of the job.
                   type: string
-                  nullable: false
+                  nullable: true
                   enum:
                     - Stream
                     - Batch
