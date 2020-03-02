@@ -450,7 +450,7 @@ class OperatorVerticle : AbstractVerticle() {
 //            worker.close()
 //        }
 
-        vertx.setPeriodic(Timeout.POLLING_INTERVAL) {
+        vertx.setPeriodic(Timeout.POLLING_INTERVAL * 1000) {
             onUpdateMetrics(cache, gauges)
 
             onUpdateClusters(cache)
