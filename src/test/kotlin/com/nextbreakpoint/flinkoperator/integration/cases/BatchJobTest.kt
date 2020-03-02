@@ -41,10 +41,10 @@ class BatchJobTest : IntegrationSetup() {
             println("Removing finalizers...")
             removeFinalizers(name = "cluster-3")
             removeFinalizers(name = "cluster-4")
-            awaitUntilAsserted(timeout = 30) {
+            awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-3")).isFalse()
             }
-            awaitUntilAsserted(timeout = 30) {
+            awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-4")).isFalse()
             }
         }

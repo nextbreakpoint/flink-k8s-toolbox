@@ -34,10 +34,10 @@ class StartAndStopTest : IntegrationSetup() {
             println("Removing finalizers...")
             removeFinalizers(name = "cluster-1")
             removeFinalizers(name = "cluster-2")
-            awaitUntilAsserted(timeout = 30) {
+            awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
             }
-            awaitUntilAsserted(timeout = 30) {
+            awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
             }
         }

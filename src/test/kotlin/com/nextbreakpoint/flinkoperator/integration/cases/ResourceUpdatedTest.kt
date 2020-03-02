@@ -49,10 +49,10 @@ class ResourceUpdatedTest : IntegrationSetup() {
         println("Removing finalizers...")
         removeFinalizers(name = "cluster-1")
         removeFinalizers(name = "cluster-2")
-        awaitUntilAsserted(timeout = 30) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
         }
-        awaitUntilAsserted(timeout = 30) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
         }
     }
@@ -182,6 +182,6 @@ class ResourceUpdatedTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Failed)).isTrue()
         }
-        println("Clusters updated. Status is failed because bootstrap contains invalid configuration")
+        println("Clusters updated. The cluster failed as expected because of invalid bootstrap configuration")
     }
 }
