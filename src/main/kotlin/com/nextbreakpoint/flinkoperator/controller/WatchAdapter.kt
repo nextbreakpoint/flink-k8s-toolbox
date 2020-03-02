@@ -1,57 +1,56 @@
 package com.nextbreakpoint.flinkoperator.controller
 
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import io.kubernetes.client.JSON
 import io.kubernetes.client.util.Watch
-import io.vertx.core.Context
 import org.apache.log4j.Logger
 import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
 
-class WatchAdapter(val json: JSON, val kubeClient: KubeClient) {
+class WatchAdapter(val json: JSON, val kubeClient: KubeClient, val cache: Cache) {
     companion object {
         private val logger: Logger = Logger.getLogger(WatchAdapter::class.simpleName)
     }
 
-    fun watchFlinkClusters(context: Context, namespace: String) {
+    fun watchClusters(namespace: String) {
         thread {
-            watchResources(namespace, {
-                kubeClient.watchFlickClusters(it)
+            watchResources(namespace, { namespace ->
+                kubeClient.watchFlickClusters(namespace)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/flinkcluster/change", json.serialize(resource))
-                }
+                cache.onFlinkClusterChanged(resource)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/flinkcluster/delete", json.serialize(resource))
-                }
-            }, { namespace ->
-                logger.debug("Refresh FlinkClusters resources...")
-                context.runOnContext {
-                    try {
-                        context.owner().eventBus().publish("/resource/flinkcluster/deleteAll", "")
-                        val resources = kubeClient.listFlinkClusters(namespace)
-                        resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/flinkcluster/change", json.serialize(resource))
-                        }
-                    } catch (e: Exception) {
-                        logger.error("An error occurred while listing resources", e)
-                    }
-                }
+                cache.onFlinkClusterDeleted(resource)
+            }, {
+                cache.onFlinkClusterDeleteAll()
             })
         }
     }
+
+//    fun watchServices(namespace: String) {
+//        thread {
+//            watchResources(namespace, { namespace ->
+//                kubeClient.watchServices(namespace)
+//            }, { resource ->
+//                cache.onFlinkClusterChanged(resource)
+//            }, { resource ->
+//                cache.onFlinkClusterDeleted(resource)
+//            }, {
+//                cache.onFlinkClusterDeleteAll()
+//            })
+//        }
+//    }
 
     private fun <T> watchResources(
         namespace: String,
         createResourceWatch: (String) -> Watch<T>,
         onChangeResource: (T) -> Unit,
         onDeleteResource: (T) -> Unit,
-        onReloadResources: (String) -> Unit
+        onReloadResources: () -> Unit
     ) {
         while (true) {
             try {
-                onReloadResources(namespace)
+                onReloadResources()
                 createResourceWatch(namespace).use {
                     it.forEach { resource ->
                         when (resource.type) {

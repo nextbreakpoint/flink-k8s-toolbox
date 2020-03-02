@@ -27,9 +27,9 @@ import kotlin.test.fail
 
 open class IntegrationSetup {
     @AfterEach
-    fun describeResources() {
-//        describePods(redirect = redirect, namespace = namespace)
-        describeClusters(redirect = redirect, namespace = namespace)
+    fun printSomeInfo() {
+        describeResources()
+        printOperatorLogs()
     }
 
     companion object {
@@ -71,11 +71,15 @@ open class IntegrationSetup {
         @JvmStatic
         fun teardown() {
             TimeUnit.SECONDS.sleep(5)
-            printOperatorLogs()
             uninstallOperator()
             uninstallMinio()
             TimeUnit.SECONDS.sleep(5)
             deleteNamespace()
+        }
+
+        fun describeResources() {
+//        describePods(redirect = redirect, namespace = namespace)
+            describeClusters(redirect = redirect, namespace = namespace)
         }
 
         fun printInfo() {

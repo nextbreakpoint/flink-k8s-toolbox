@@ -36,6 +36,7 @@ import io.vertx.core.net.JksOptions
 import io.vertx.ext.web.handler.LoggerFormat
 import io.vertx.micrometer.backends.BackendRegistries
 import io.vertx.rxjava.core.AbstractVerticle
+import io.vertx.rxjava.core.WorkerExecutor
 import io.vertx.rxjava.core.eventbus.Message
 import io.vertx.rxjava.core.http.HttpServer
 import io.vertx.rxjava.ext.web.Router
@@ -49,7 +50,6 @@ import rx.Single
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
-import java.util.function.Consumer
 import java.util.function.Function
 
 class OperatorVerticle : AbstractVerticle() {
@@ -96,9 +96,9 @@ class OperatorVerticle : AbstractVerticle() {
 
         val json = JSON()
 
-        val watch = WatchAdapter(json, kubeClient)
-
         val cache = Cache()
+
+        val watch = WatchAdapter(json, kubeClient, cache)
 
         val controller = OperationController(flinkOptions, flinkClient, kubeClient)
 
@@ -384,76 +384,18 @@ class OperatorVerticle : AbstractVerticle() {
             )
         }
 
-        vertx.eventBus().consumer<String>("/resource/flinkcluster/change") { message ->
-            processMessage<V1FlinkCluster>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1FlinkCluster::class.java
-                    )
-                },
-                Consumer {
-                    cache.onFlinkClusterChanged(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/flinkcluster/delete") { message ->
-            processMessage<V1FlinkCluster>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), V1FlinkCluster::class.java
-                    )
-                },
-                Consumer {
-                    cache.onFlinkClusterDeleted(it)
-                }
-            )
-        }
-
-        vertx.eventBus().consumer<String>("/resource/flinkcluster/deleteAll") {
-            cache.onFlinkClusterDeleteAll()
-        }
-
-
-        vertx.eventBus().consumer<String>("/resource/cluster/update") { message ->
-            processCommand<Command>(
-                message,
-                Function {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                Function {
-                    worker.rxExecuteBlocking<Void?> { promise ->
-                        TaskController(controller, it.clusterId).execute()
-
-                        promise.complete()
-                    }.subscribe()
-
-                    null
-                }
-            )
-        }
-
 
         vertx.exceptionHandler {
             error -> logger.error("An error occurred while processing the request", error)
         }
 
         context.runOnContext {
-            watch.watchFlinkClusters(context, namespace)
+            watch.watchClusters(namespace)
         }
-
-//        context.addCloseHook {
-//            worker.close()
-//        }
 
         vertx.setPeriodic(Timeout.POLLING_INTERVAL * 1000) {
             onUpdateMetrics(cache, gauges)
-
-            onUpdateClusters(cache)
+            onUpdateClusters(cache, worker, controller)
         }
 
         return vertx.createHttpServer(serverOptions)
@@ -495,8 +437,8 @@ class OperatorVerticle : AbstractVerticle() {
         }.toMap()
     }
 
-    private fun onUpdateMetrics(resourcesCache: Cache, gauges: Map<ClusterStatus, AtomicInteger>) {
-        val counters = resourcesCache.getFlinkClusters()
+    private fun onUpdateMetrics(cache: Cache, gauges: Map<ClusterStatus, AtomicInteger>) {
+        val counters = cache.getFlinkClusters()
             .foldRight(mutableMapOf<ClusterStatus, Int>()) { flinkCluster, counters ->
                 val status = Status.getClusterStatus(flinkCluster)
                 counters.compute(status) { _, value ->
@@ -590,47 +532,57 @@ class OperatorVerticle : AbstractVerticle() {
             .subscribe()
     }
 
-    private fun <T> processCommand(
-        message: Message<String>,
-        converter: Function<Message<String>, T>,
-        handler: Function<T, Void?>
-    ) {
-        Single.just(message)
-            .map {
-                converter.apply(it)
-            }
-            .map {
-                handler.apply(it)
-            }
-            .doOnError {
-                logger.error("Can't process command [address=${message.address()}]", it)
-            }
-            .subscribe()
-    }
+//    private fun <T> processCommand(
+//        message: Message<String>,
+//        converter: Function<Message<String>, T>,
+//        handler: Function<T, Void?>
+//    ) {
+//        Single.just(message)
+//            .map {
+//                converter.apply(it)
+//            }
+//            .map {
+//                handler.apply(it)
+//            }
+//            .doOnError {
+//                logger.error("Can't process command [address=${message.address()}]", it)
+//            }
+//            .subscribe()
+//    }
+//
+//    private fun <T> processMessage(
+//        message: Message<String>,
+//        converter: Function<Message<String>, T>,
+//        handler: Consumer<T>
+//    ) {
+//        Single.just(message)
+//            .map {
+//                converter.apply(it)
+//            }
+//            .map {
+//                handler.accept(it)
+//            }
+//            .doOnError {
+//                logger.error("Can't process message [address=${message.address()}]", it)
+//            }
+//            .subscribe()
+//    }
 
-    private fun <T> processMessage(
-        message: Message<String>,
-        converter: Function<Message<String>, T>,
-        handler: Consumer<T>
-    ) {
-        Single.just(message)
-            .map {
-                converter.apply(it)
-            }
-            .map {
-                handler.accept(it)
-            }
-            .doOnError {
-                logger.error("Can't process message [address=${message.address()}]", it)
-            }
-            .subscribe()
-    }
+    private fun onUpdateClusters(cache: Cache, worker: WorkerExecutor, controller: OperationController) {
+        cache.getCachedClusters().map {
+            clusterId -> clusterId to cache.getFlinkCluster(clusterId)
+        }.forEach { pair ->
+            worker.rxExecuteBlocking<Void?> { promise ->
+                try {
+                    TaskController(controller, pair.first).execute(pair.second)
 
-    private fun onUpdateClusters(cache: Cache) {
-        cache.getCachedClusters().forEach {
-            vertx.eventBus().publish(
-                "/resource/cluster/update", JSON().serialize(Command(it, "{}"))
-            )
+                    promise.complete()
+                } catch (e: Exception) {
+                    promise.fail(e)
+                }
+            }.doOnError {
+                logger.warn("Can't update cluster", it)
+            }.subscribe()
         }
     }
 }

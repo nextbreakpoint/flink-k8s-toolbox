@@ -2,18 +2,20 @@ package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import java.util.concurrent.ConcurrentHashMap
 
 class Cache {
-    private val flinkClusters = mutableMapOf<ClusterId, V1FlinkCluster>()
+    private val clusters = ConcurrentHashMap<ClusterId, V1FlinkCluster>()
+    private val resources = ConcurrentHashMap<ClusterId, CachedResources>()
 
-    fun getFlinkClusters(): List<V1FlinkCluster> = flinkClusters.values.toList()
+    fun getFlinkClusters(): List<V1FlinkCluster> = clusters.values.toList()
 
-    fun getCachedClusters(): List<ClusterId> = flinkClusters.keys.toList()
+    fun getCachedClusters(): List<ClusterId> = clusters.keys.toList()
 
-    fun getFlinkCluster(clusterId: ClusterId) = flinkClusters[clusterId] ?: throw RuntimeException("Cluster not found ${clusterId.name}")
+    fun getFlinkCluster(clusterId: ClusterId) = clusters[clusterId] ?: throw RuntimeException("Cluster not found ${clusterId.name}")
 
     fun getClusterId(namespace: String, name: String) =
-        flinkClusters.keys.firstOrNull { it.namespace == namespace && it.name == name } ?: throw RuntimeException("Cluster not found")
+        clusters.keys.firstOrNull { it.namespace == namespace && it.name == name } ?: throw RuntimeException("Cluster not found")
 
     fun onFlinkClusterChanged(resource: V1FlinkCluster) {
         val clusterId = ClusterId(
@@ -22,7 +24,7 @@ class Cache {
             uuid = resource.metadata.uid
         )
 
-        flinkClusters[clusterId] = resource
+        clusters[clusterId] = resource
     }
 
     fun onFlinkClusterDeleted(resource: V1FlinkCluster) {
@@ -32,10 +34,10 @@ class Cache {
             uuid = resource.metadata.uid
         )
 
-        flinkClusters.remove(clusterId)
+        clusters.remove(clusterId)
     }
 
     fun onFlinkClusterDeleteAll() {
-        flinkClusters.clear()
+        clusters.clear()
     }
 }
