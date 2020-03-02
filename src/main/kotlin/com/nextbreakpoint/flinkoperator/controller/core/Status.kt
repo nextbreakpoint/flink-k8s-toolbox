@@ -6,15 +6,9 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.crd.V1ResourceDigest
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import org.joda.time.DateTime
 
 object Status {
-    fun getCurrentTaskStatus(flinkCluster: V1FlinkCluster) : TaskStatus {
-        val status = flinkCluster.status?.taskStatus
-        return if (status.isNullOrBlank()) TaskStatus.Executing else TaskStatus.valueOf(status)
-    }
-
     fun getClusterStatus(flinkCluster: V1FlinkCluster) : ClusterStatus {
         val status = flinkCluster.status?.clusterStatus
         return if (status.isNullOrBlank()) ClusterStatus.Unknown else ClusterStatus.valueOf(status)
@@ -43,14 +37,6 @@ object Status {
 
     fun getSavepointRequestTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
         flinkCluster.status?.savepointRequestTimestamp ?: DateTime(0)
-
-    fun setTaskStatus(flinkCluster: V1FlinkCluster, status: TaskStatus) {
-        ensureState(flinkCluster)
-
-        flinkCluster.status?.taskStatus = status.toString()
-
-        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
-    }
 
     fun setSavepointPath(flinkCluster: V1FlinkCluster, path: String) {
         ensureState(flinkCluster)

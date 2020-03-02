@@ -9,7 +9,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.squareup.okhttp.MediaType
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
@@ -437,15 +436,6 @@ open class IntegrationSetup {
                 "sh",
                 "-c",
                 "kubectl -n $namespace get fc $name -o json | jq --exit-status -r '.status | select(.clusterStatus == \"$status\")' >/dev/null"
-            )
-            return executeCommand(redirect, command) == 0
-        }
-
-        fun hasTaskStatus(redirect: Redirect?, namespace: String, name: String, status: TaskStatus): Boolean {
-            val command = listOf(
-                "sh",
-                "-c",
-                "kubectl -n $namespace get fc $name -o json | jq --exit-status -r '.status | select(.taskStatus == \"$status\")' >/dev/null"
             )
             return executeCommand(redirect, command) == 0
         }

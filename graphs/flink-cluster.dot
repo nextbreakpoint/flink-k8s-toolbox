@@ -133,6 +133,27 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
+  STOPPING -> CANCELLING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job running</TD>
+          </TR>
+      </TABLE>
+  > ];
+  CANCELLING -> FAILED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Failed cancelling</TD>
+          </TR>
+      </TABLE>
+  > ];
+  CANCELLING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job stopped</TD>
+          </TR>
+      </TABLE>
+  > ];
   CHECKPOINTING -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
@@ -190,6 +211,7 @@ digraph state_machine {
       </TABLE>
   > ];
   CHECKPOINTING [ fillcolor=yellow ];
+  CANCELLING [ fillcolor=yellow ];
   STOPPING [ fillcolor=yellow ];
   STARTING [ fillcolor=yellow ];
   UPDATING [ fillcolor=yellow ];

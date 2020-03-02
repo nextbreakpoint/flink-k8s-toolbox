@@ -7,7 +7,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
@@ -171,8 +170,6 @@ class TaskContext(
 
         val jobRestartPolicy = cluster.spec?.operator?.jobRestartPolicy
         Status.setJobRestartPolicy(cluster, jobRestartPolicy)
-
-        Status.setTaskStatus(cluster, TaskStatus.Idle)
     }
 
     fun initializeAnnotations() {
@@ -249,12 +246,6 @@ class TaskContext(
     fun setDeleteResources(value: Boolean) {
         Annotations.setDeleteResources(cluster, value)
     }
-
-    fun setTaskStatus(status: TaskStatus) {
-        Status.setTaskStatus(cluster, status)
-    }
-
-    fun getTaskStatus(): TaskStatus = Status.getCurrentTaskStatus(cluster)
 
     fun resetSavepointRequest() {
         Status.resetSavepointRequest(cluster)

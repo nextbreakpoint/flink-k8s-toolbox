@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import org.apache.log4j.Logger
 
 abstract class Task(val logger: Logger) {
@@ -10,40 +9,12 @@ abstract class Task(val logger: Logger) {
         val changes = context.computeChanges()
 
         if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
-            val taskStatus = context.getTaskStatus()
-
-            when (taskStatus) {
-                TaskStatus.Idle -> {
-                    context.setTaskStatus(TaskStatus.Awaiting)
-                }
-                TaskStatus.Awaiting -> {
-                    if (terminate(context)) {
-                        context.setTaskStatus(TaskStatus.Executing)
-                    }
-                }
-                TaskStatus.Executing -> {
-                    context.setTaskStatus(TaskStatus.Idle)
-                    return true
-                }
-                else -> {}
+            if (terminate(context)) {
+                return true
             }
         } else if (changes.contains("BOOTSTRAP")) {
-            val taskStatus = context.getTaskStatus()
-
-            when (taskStatus) {
-                TaskStatus.Idle -> {
-                    context.setTaskStatus(TaskStatus.Awaiting)
-                }
-                TaskStatus.Awaiting -> {
-                    if (cancel(context)) {
-                        context.setTaskStatus(TaskStatus.Executing)
-                    }
-                }
-                TaskStatus.Executing -> {
-                    context.setTaskStatus(TaskStatus.Idle)
-                    return true
-                }
-                else -> {}
+            if (cancel(context)) {
+                return true
             }
         }
 

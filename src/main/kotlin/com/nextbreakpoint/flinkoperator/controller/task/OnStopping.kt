@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
@@ -20,45 +19,28 @@ class OnStopping(logger: Logger) : Task(logger) {
             return
         }
 
-        if (!context.isBootstrapPresent()) {
-            context.setTaskStatus(TaskStatus.Executing)
+        val runningResult = context.isJobRunning(context.clusterId)
+
+        if (runningResult.isCompleted()) {
+            context.setClusterStatus(ClusterStatus.Cancelling)
 
             return
         }
 
-        val taskStatus = context.getTaskStatus()
+        if (context.isDeleteResources()) {
+            if (terminate(context)) {
+                context.resetSavepointRequest()
+                context.setClusterStatus(ClusterStatus.Terminated)
 
-        when (taskStatus) {
-            TaskStatus.Idle -> {
-                val runningResult = context.isJobRunning(context.clusterId)
+                return
+            }
+        } else {
+            if (suspend(context)) {
+                context.resetSavepointRequest()
+                context.setClusterStatus(ClusterStatus.Suspended)
 
-                if (runningResult.isCompleted()) {
-                    context.setTaskStatus(TaskStatus.Awaiting)
-                } else {
-                    context.setTaskStatus(TaskStatus.Executing)
-                }
+                return
             }
-            TaskStatus.Awaiting -> {
-                if (cancel(context)) {
-                    context.setTaskStatus(TaskStatus.Executing)
-                }
-            }
-            TaskStatus.Executing -> {
-                if (context.isDeleteResources()) {
-                    if (terminate(context)) {
-                        context.resetSavepointRequest()
-                        context.setTaskStatus(TaskStatus.Idle)
-                        context.setClusterStatus(ClusterStatus.Terminated)
-                    }
-                } else {
-                    if (suspend(context)) {
-                        context.resetSavepointRequest()
-                        context.setTaskStatus(TaskStatus.Idle)
-                        context.setClusterStatus(ClusterStatus.Suspended)
-                    }
-                }
-            }
-            else -> {}
         }
     }
 }
