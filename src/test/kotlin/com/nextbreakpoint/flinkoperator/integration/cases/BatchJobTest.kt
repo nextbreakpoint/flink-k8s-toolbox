@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.integration.cases
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -27,9 +26,7 @@ class BatchJobTest : IntegrationSetup() {
             println("Waiting for clusters...")
             awaitUntilAsserted(timeout = 360) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Running)).isTrue()
-                assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Running)).isTrue()
-                assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()
             }
             println("Clusters started")
         }
@@ -61,13 +58,11 @@ class BatchJobTest : IntegrationSetup() {
         println("Cluster should be suspended after batch job has finished")
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Suspended)).isTrue()
-            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster suspended")
         TimeUnit.SECONDS.sleep(10)
         awaitUntilAsserted(timeout = 20) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Suspended)).isTrue()
-            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster still suspended")
     }
@@ -77,13 +72,11 @@ class BatchJobTest : IntegrationSetup() {
         println("Cluster should fail when batch job fails")
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Failed)).isTrue()
-            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster failed")
         TimeUnit.SECONDS.sleep(10)
         awaitUntilAsserted(timeout = 20) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Failed)).isTrue()
-            assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = TaskStatus.Idle)).isTrue()
         }
         println("Cluster still failed")
     }

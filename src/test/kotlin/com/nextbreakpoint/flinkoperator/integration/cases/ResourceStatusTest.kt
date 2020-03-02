@@ -2,7 +2,6 @@ package com.nextbreakpoint.flinkoperator.integration.cases
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
@@ -28,9 +27,7 @@ class ResourceStatusTest : IntegrationSetup() {
             println("Waiting for clusters...")
             awaitUntilAsserted(timeout = 360) {
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
-                assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = TaskStatus.Idle)).isTrue()
                 assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
-                assertThat(hasTaskStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = TaskStatus.Idle)).isTrue()
             }
             println("Clusters started")
         }
@@ -65,7 +62,6 @@ class ResourceStatusTest : IntegrationSetup() {
         assertThat(response1["status"] as String?).isEqualTo("COMPLETED")
         val status1 = JSON().deserialize<V1FlinkClusterStatus>(response1["output"] as String, statusTypeToken.type)
         assertThat(status1.clusterStatus).isEqualTo(ClusterStatus.Running.toString())
-        assertThat(status1.taskStatus).isEqualTo(TaskStatus.Idle.toString())
         assertThat(status1.savepointMode).isEqualTo("Manual")
         assertThat(status1.taskManagers).isEqualTo(1)
         assertThat(status1.activeTaskManagers).isEqualTo(1)
@@ -79,7 +75,6 @@ class ResourceStatusTest : IntegrationSetup() {
         assertThat(response2["status"] as String?).isEqualTo("COMPLETED")
         val status2 = JSON().deserialize<V1FlinkClusterStatus>(response2["output"] as String, statusTypeToken.type)
         assertThat(status2.clusterStatus).isEqualTo(ClusterStatus.Running.toString())
-        assertThat(status2.taskStatus).isEqualTo(TaskStatus.Idle.toString())
         assertThat(status2.savepointMode).isEqualTo("Manual")
         assertThat(status2.taskManagers).isEqualTo(2)
         assertThat(status2.activeTaskManagers).isEqualTo(2)

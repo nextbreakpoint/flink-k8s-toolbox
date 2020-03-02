@@ -2,7 +2,6 @@ package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.joda.time.DateTime
@@ -43,15 +42,6 @@ class StatusTest {
         assertThat(Status.getSavepointRequest(flinkCluster)).isNull()
         assertThat(Status.getStatusTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
         assertThat(Status.getSavepointRequestTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
-    }
-
-    @Test
-    fun `should store operator status and update timestamp`() {
-        val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(Status.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
-        Status.setTaskStatus(flinkCluster, TaskStatus.Awaiting)
-        assertThat(Status.getCurrentTaskStatus(flinkCluster)).isEqualTo(TaskStatus.Awaiting)
-        assertThat(Status.getStatusTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
     }
 
     @Test

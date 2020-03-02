@@ -2,6 +2,7 @@ package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.controller.task.OnCancelling
 import com.nextbreakpoint.flinkoperator.controller.task.OnCheckpointing
 import com.nextbreakpoint.flinkoperator.controller.task.OnFailed
 import com.nextbreakpoint.flinkoperator.controller.task.OnInitialize
@@ -15,7 +16,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.OnUpdating
 import org.apache.log4j.Logger
 
 class TaskController(val controller: OperationController, val clusterId: ClusterId) {
-    private val logger = Logger.getLogger("cluster-" + clusterId.name)
+    private val logger = Logger.getLogger("TaskController (" + clusterId.name + ")")
 
     private val tasks = mapOf(
         ClusterStatus.Unknown to OnInitialize(logger),
@@ -27,6 +28,7 @@ class TaskController(val controller: OperationController, val clusterId: Cluster
         ClusterStatus.Failed to OnFailed(logger),
         ClusterStatus.Suspended to OnSuspended(logger),
         ClusterStatus.Terminated to OnTerminated(logger),
+        ClusterStatus.Cancelling to OnCancelling(logger),
         ClusterStatus.Checkpointing to OnCheckpointing(logger)
     )
 

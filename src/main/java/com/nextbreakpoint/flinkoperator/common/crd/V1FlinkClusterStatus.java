@@ -20,8 +20,6 @@ public class V1FlinkClusterStatus {
     private Integer totalTaskSlots;
     @SerializedName("timestamp")
     private DateTime timestamp;
-    @SerializedName("taskStatus")
-    private String taskStatus;
     @SerializedName("clusterStatus")
     private String clusterStatus;
     @SerializedName("savepointPath")
@@ -99,14 +97,6 @@ public class V1FlinkClusterStatus {
 
     public void setTimestamp(DateTime timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public String getTaskStatus() {
-        return taskStatus;
-    }
-
-    public void setTaskStatus(String taskStatus) {
-        this.taskStatus = taskStatus;
     }
 
     public String getClusterStatus() {
@@ -209,7 +199,6 @@ public class V1FlinkClusterStatus {
                 Objects.equals(getActiveTaskManagers(), that.getActiveTaskManagers()) &&
                 Objects.equals(getTotalTaskSlots(), that.getTotalTaskSlots()) &&
                 Objects.equals(getTimestamp(), that.getTimestamp()) &&
-                Objects.equals(getTaskStatus(), that.getTaskStatus()) &&
                 Objects.equals(getClusterStatus(), that.getClusterStatus()) &&
                 Objects.equals(getSavepointPath(), that.getSavepointPath()) &&
                 Objects.equals(getSavepointJobId(), that.getSavepointJobId()) &&
@@ -225,7 +214,7 @@ public class V1FlinkClusterStatus {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getSavepointRequestTimestamp(), getDigest(), getBootstrap(), getSavepointMode(), getServiceMode(), getJobRestartPolicy());
+        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getSavepointRequestTimestamp(), getDigest(), getBootstrap(), getSavepointMode(), getServiceMode(), getJobRestartPolicy());
         return result;
     }
 
@@ -239,7 +228,6 @@ public class V1FlinkClusterStatus {
                 ", activeTaskManagers=" + activeTaskManagers +
                 ", totalTaskSlots=" + totalTaskSlots +
                 ", timestamp=" + timestamp +
-                ", taskStatus='" + taskStatus + '\'' +
                 ", clusterStatus='" + clusterStatus + '\'' +
                 ", savepointPath='" + savepointPath + '\'' +
                 ", savepointJobId='" + savepointJobId + '\'' +

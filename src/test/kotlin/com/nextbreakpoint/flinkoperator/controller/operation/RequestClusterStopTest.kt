@@ -5,7 +5,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
@@ -35,12 +34,10 @@ class RequestClusterStopTest {
     @BeforeEach
     fun configure() {
         Status.setClusterStatus(cluster, ClusterStatus.Terminated)
-        Status.setTaskStatus(cluster, TaskStatus.Idle)
     }
 
     @Test
     fun `should return expected result when stopping without savepoint and not deleting resources`() {
-        Status.setTaskStatus(cluster, TaskStatus.Idle)
         Status.setClusterStatus(cluster, ClusterStatus.Stopping)
         val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = false))
@@ -58,7 +55,6 @@ class RequestClusterStopTest {
 
     @Test
     fun `should return expected result when stopping with savepoint and deleting resources`() {
-        Status.setTaskStatus(cluster, TaskStatus.Idle)
         Status.setClusterStatus(cluster, ClusterStatus.Stopping)
         val actionTimestamp = Annotations.getActionTimestamp(cluster)
         val result = command.execute(clusterId, StopOptions(withoutSavepoint = false, deleteResources = true))

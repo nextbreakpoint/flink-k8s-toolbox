@@ -8364,14 +8364,6 @@ spec:
             timestamp:
               type: string
               nullable: false
-            taskStatus:
-              type: string
-              nullable: false
-              enum:
-                - Executing
-                - Awaiting
-                - Idle
-                - Failed
             clusterStatus:
               type: string
               nullable: false
@@ -8385,6 +8377,7 @@ spec:
                 - Failed
                 - Suspended
                 - Terminated
+                - Cancelling
                 - Checkpointing
             savepointPath:
               type: string
@@ -8445,7 +8438,6 @@ spec:
                 - jarPath
           required:
             - timestamp
-            - taskStatus
             - clusterStatus
       required:
         - spec
@@ -8459,9 +8451,6 @@ spec:
     - name: CLUSTER-STATUS
       type: string
       JSONPath: .status.clusterStatus
-    - name: TASK-STATUS
-      type: string
-      JSONPath: .status.taskStatus
     - name: TASK-MANAGERS
       type: integer
       JSONPath: .status.taskManagers
