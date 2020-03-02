@@ -4,7 +4,6 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
-import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory

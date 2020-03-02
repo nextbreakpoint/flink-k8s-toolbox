@@ -3,7 +3,6 @@ package com.nextbreakpoint.flinkoperator.common.crd;
 import com.google.gson.annotations.SerializedName;
 import org.joda.time.DateTime;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 public class V1FlinkClusterStatus {
@@ -23,8 +22,6 @@ public class V1FlinkClusterStatus {
     private DateTime timestamp;
     @SerializedName("taskStatus")
     private String taskStatus;
-    @SerializedName("taskAttempts")
-    private Integer taskAttempts;
     @SerializedName("clusterStatus")
     private String clusterStatus;
     @SerializedName("savepointPath")
@@ -110,14 +107,6 @@ public class V1FlinkClusterStatus {
 
     public void setTaskStatus(String taskStatus) {
         this.taskStatus = taskStatus;
-    }
-
-    public Integer getTaskAttempts() {
-        return taskAttempts;
-    }
-
-    public void setTaskAttempts(Integer taskAttempts) {
-        this.taskAttempts = taskAttempts;
     }
 
     public String getClusterStatus() {
@@ -221,7 +210,6 @@ public class V1FlinkClusterStatus {
                 Objects.equals(getTotalTaskSlots(), that.getTotalTaskSlots()) &&
                 Objects.equals(getTimestamp(), that.getTimestamp()) &&
                 Objects.equals(getTaskStatus(), that.getTaskStatus()) &&
-                Objects.equals(getTaskAttempts(), that.getTaskAttempts()) &&
                 Objects.equals(getClusterStatus(), that.getClusterStatus()) &&
                 Objects.equals(getSavepointPath(), that.getSavepointPath()) &&
                 Objects.equals(getSavepointJobId(), that.getSavepointJobId()) &&
@@ -237,7 +225,7 @@ public class V1FlinkClusterStatus {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getTaskAttempts(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getSavepointRequestTimestamp(), getDigest(), getBootstrap(), getSavepointMode(), getServiceMode(), getJobRestartPolicy());
+        int result = Objects.hash(getLabelSelector(), getTaskManagers(), getTaskSlots(), getJobParallelism(), getActiveTaskManagers(), getTotalTaskSlots(), getTimestamp(), getTaskStatus(), getClusterStatus(), getSavepointPath(), getSavepointJobId(), getSavepointTriggerId(), getSavepointTimestamp(), getSavepointRequestTimestamp(), getDigest(), getBootstrap(), getSavepointMode(), getServiceMode(), getJobRestartPolicy());
         return result;
     }
 
@@ -252,7 +240,6 @@ public class V1FlinkClusterStatus {
                 ", totalTaskSlots=" + totalTaskSlots +
                 ", timestamp=" + timestamp +
                 ", taskStatus='" + taskStatus + '\'' +
-                ", taskAttempts=" + taskAttempts +
                 ", clusterStatus='" + clusterStatus + '\'' +
                 ", savepointPath='" + savepointPath + '\'' +
                 ", savepointJobId='" + savepointJobId + '\'' +

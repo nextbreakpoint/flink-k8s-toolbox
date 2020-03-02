@@ -21,15 +21,10 @@ import com.nextbreakpoint.flinkoperator.controller.operation.ClusterDeleteServic
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterDeleteStatefulSets
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterGetStatus
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsReady
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsRunning
-import com.nextbreakpoint.flinkoperator.controller.operation.ClusterIsTerminated
 import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterCreate
 import com.nextbreakpoint.flinkoperator.controller.operation.FlinkClusterDelete
-import com.nextbreakpoint.flinkoperator.controller.operation.JarIsReady
 import com.nextbreakpoint.flinkoperator.controller.operation.JarRemove
 import com.nextbreakpoint.flinkoperator.controller.operation.JobCancel
-import com.nextbreakpoint.flinkoperator.controller.operation.JobHasStarted
-import com.nextbreakpoint.flinkoperator.controller.operation.JobHasStopped
 import com.nextbreakpoint.flinkoperator.controller.operation.JobIsFinished
 import com.nextbreakpoint.flinkoperator.controller.operation.JobIsRunning
 import com.nextbreakpoint.flinkoperator.controller.operation.JobStart
@@ -40,12 +35,10 @@ import com.nextbreakpoint.flinkoperator.controller.operation.PodsScaleUp
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterScale
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStart
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStop
-import com.nextbreakpoint.flinkoperator.controller.operation.RequestSavepointTrigger
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestSavepointForget
+import com.nextbreakpoint.flinkoperator.controller.operation.RequestSavepointTrigger
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetLatest
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
-import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersGetReplicas
-import com.nextbreakpoint.flinkoperator.controller.operation.TaskManagersSetReplicas
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
@@ -99,9 +92,6 @@ class OperationController(
     fun removeJar(clusterId: ClusterId) : OperationResult<Void?> =
         JarRemove(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
-    fun isJarReady(clusterId: ClusterId) : OperationResult<Void?> =
-        JarIsReady(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
-
     fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : OperationResult<SavepointRequest> =
         SavepointTrigger(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
@@ -135,29 +125,11 @@ class OperationController(
     fun isClusterReady(clusterId: ClusterId, options: ClusterScaling): OperationResult<Void?> =
         ClusterIsReady(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
-    fun isClusterRunning(clusterId: ClusterId): OperationResult<Boolean> =
-        ClusterIsRunning(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
-
-    fun isClusterTerminated(clusterId: ClusterId): OperationResult<Void?> =
-        ClusterIsTerminated(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
-
-    fun isJobStarted(clusterId: ClusterId): OperationResult<Void?> =
-        JobHasStarted(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
-
-    fun isJobStopped(clusterId: ClusterId): OperationResult<Void?> =
-        JobHasStopped(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
-
     fun isJobRunning(clusterId: ClusterId): OperationResult<Void?> =
         JobIsRunning(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
     fun isJobFinished(clusterId: ClusterId): OperationResult<Void?> =
         JobIsFinished(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
-
-    fun setTaskManagersReplicas(clusterId: ClusterId, taskManagers: Int) : OperationResult<Void?> =
-        TaskManagersSetReplicas(flinkOptions, flinkClient, kubeClient).execute(clusterId, taskManagers)
-
-    fun getTaskManagersReplicas(clusterId: ClusterId) : OperationResult<Int> =
-        TaskManagersGetReplicas(flinkOptions, flinkClient, kubeClient).execute(clusterId, null)
 
     fun updateStatus(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
         kubeClient.updateStatus(clusterId, flinkCluster.status)

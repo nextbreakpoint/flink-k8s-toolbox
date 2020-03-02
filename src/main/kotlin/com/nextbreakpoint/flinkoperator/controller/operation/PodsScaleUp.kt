@@ -8,7 +8,6 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import org.apache.log4j.Logger
 
 class PodsScaleUp(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<ClusterScaling, Void?>(flinkOptions, flinkClient, kubeClient) {

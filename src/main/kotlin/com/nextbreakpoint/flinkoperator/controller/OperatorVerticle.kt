@@ -16,6 +16,7 @@ import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Command
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.TaskController
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
@@ -44,6 +45,7 @@ import io.vertx.rxjava.ext.web.handler.TimeoutHandler
 import org.apache.log4j.Logger
 import rx.Completable
 import rx.Single
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
 import java.util.function.Consumer
@@ -113,6 +115,8 @@ class OperatorVerticle : AbstractVerticle() {
             routingContext.response().setStatusCode(204).end()
         }
 
+
+        val worker = vertx.createSharedWorkerExecutor("reconcile", 20, 60, TimeUnit.SECONDS)
 
         mainRouter.put("/cluster/:name/start").handler { routingContext ->
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/start", BiFunction { context, namespace ->
@@ -421,7 +425,11 @@ class OperatorVerticle : AbstractVerticle() {
                     )
                 },
                 Function {
-                    ClusterSupervisor(controller, it.clusterId).reconcile()
+                    worker.rxExecuteBlocking<Void?> { promise ->
+                        TaskController(controller, it.clusterId).execute()
+
+                        promise.complete()
+                    }.subscribe()
 
                     null
                 }
@@ -437,11 +445,15 @@ class OperatorVerticle : AbstractVerticle() {
             watch.watchFlinkClusters(context, namespace)
         }
 
+//        context.addCloseHook {
+//            worker.close()
+//        }
+
         // TODO parameterize loop delay
         vertx.setPeriodic(5000L) {
-            updateMetrics(cache, gauges)
+            onUpdateMetrics(cache, gauges)
 
-            doUpdateClusters(cache)
+            onUpdateClusters(cache)
         }
 
         return vertx.createHttpServer(serverOptions)
@@ -483,7 +495,7 @@ class OperatorVerticle : AbstractVerticle() {
         }.toMap()
     }
 
-    private fun updateMetrics(resourcesCache: Cache, gauges: Map<ClusterStatus, AtomicInteger>) {
+    private fun onUpdateMetrics(resourcesCache: Cache, gauges: Map<ClusterStatus, AtomicInteger>) {
         val counters = resourcesCache.getFlinkClusters()
             .foldRight(mutableMapOf<ClusterStatus, Int>()) { flinkCluster, counters ->
                 val status = Status.getClusterStatus(flinkCluster)
@@ -614,7 +626,7 @@ class OperatorVerticle : AbstractVerticle() {
             .subscribe()
     }
 
-    private fun doUpdateClusters(cache: Cache) {
+    private fun onUpdateClusters(cache: Cache) {
         cache.getCachedClusters().forEach {
             vertx.eventBus().publish(
                 "/resource/cluster/update", JSON().serialize(Command(it, "{}"))
