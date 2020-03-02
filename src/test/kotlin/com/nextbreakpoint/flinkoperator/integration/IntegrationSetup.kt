@@ -35,7 +35,7 @@ open class IntegrationSetup {
 
     companion object {
         val redirect = Redirect.INHERIT
-        val version = "1.2.6-beta"
+        val version = "1.3.0-beta"
         val timestamp = System.currentTimeMillis()
 //        val namespace = "integration-$timestamp"
         val namespace = "integration"
