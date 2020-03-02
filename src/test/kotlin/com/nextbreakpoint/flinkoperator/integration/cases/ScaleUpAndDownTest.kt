@@ -59,11 +59,11 @@ class ScaleUpAndDownTest : IntegrationSetup() {
         println("Should rescale clusters...")
         val scaleOptions1 = ScaleOptions(taskManagers = 2)
         scaleCluster(name = "cluster-1", options = scaleOptions1, port = port)
-        val scaleOptions2 = ScaleOptions(taskManagers = 1)
-        scaleCluster(name = "cluster-2", options = scaleOptions2, port = port)
         awaitUntilAsserted(timeout = 30) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Scaling)).isTrue()
         }
+        val scaleOptions2 = ScaleOptions(taskManagers = 1)
+        scaleCluster(name = "cluster-2", options = scaleOptions2, port = port)
         awaitUntilAsserted(timeout = 30) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Scaling)).isTrue()
         }
@@ -95,10 +95,10 @@ class ScaleUpAndDownTest : IntegrationSetup() {
         println("Should scale down...")
         val scaleOptions0 = ScaleOptions(taskManagers = 0)
         scaleCluster(name = "cluster-1", options = scaleOptions0, port = port)
-        scaleCluster(name = "cluster-2", options = scaleOptions0, port = port)
         awaitUntilAsserted(timeout = 30) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Scaling)).isTrue()
         }
+        scaleCluster(name = "cluster-2", options = scaleOptions0, port = port)
         awaitUntilAsserted(timeout = 30) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Scaling)).isTrue()
         }
