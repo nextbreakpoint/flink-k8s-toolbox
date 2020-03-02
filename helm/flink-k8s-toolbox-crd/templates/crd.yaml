@@ -8372,10 +8372,6 @@ spec:
                 - Awaiting
                 - Idle
                 - Failed
-            taskAttempts:
-              type: integer
-              nullable: false
-              minimum: 0
             clusterStatus:
               type: string
               nullable: false
@@ -8450,7 +8446,6 @@ spec:
           required:
             - timestamp
             - taskStatus
-            - taskAttempts
             - clusterStatus
       required:
         - spec

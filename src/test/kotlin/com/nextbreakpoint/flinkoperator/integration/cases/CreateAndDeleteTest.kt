@@ -1,14 +1,10 @@
 package com.nextbreakpoint.flinkoperator.integration.cases
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.io.File

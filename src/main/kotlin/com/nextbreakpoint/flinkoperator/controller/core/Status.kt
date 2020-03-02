@@ -20,7 +20,7 @@ object Status {
         return if (status.isNullOrBlank()) ClusterStatus.Unknown else ClusterStatus.valueOf(status)
     }
 
-    fun getOperatorTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
+    fun getStatusTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
         flinkCluster.status?.timestamp ?: DateTime(0)
 
     fun getSavepointPath(flinkCluster: V1FlinkCluster) : String? =
@@ -145,17 +145,6 @@ object Status {
 
     fun getBootstrapDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.digest?.bootstrap
-
-    fun setTaskAttempts(flinkCluster: V1FlinkCluster, attempts: Int) {
-        ensureState(flinkCluster)
-
-        flinkCluster.status?.taskAttempts = attempts
-
-        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
-    }
-
-    fun getTaskAttempts(flinkCluster: V1FlinkCluster): Int =
-        flinkCluster.status?.taskAttempts ?: 0
 
     fun setTaskManagers(flinkCluster: V1FlinkCluster, taskManagers: Int) {
         ensureState(flinkCluster)
