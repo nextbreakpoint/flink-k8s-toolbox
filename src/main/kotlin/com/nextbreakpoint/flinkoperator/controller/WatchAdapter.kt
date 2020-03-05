@@ -27,19 +27,61 @@ class WatchAdapter(val json: JSON, val kubeClient: KubeClient, val cache: Cache)
         }
     }
 
-//    fun watchServices(namespace: String) {
-//        thread {
-//            watchResources(namespace, { namespace ->
-//                kubeClient.watchServices(namespace)
-//            }, { resource ->
-//                cache.onFlinkClusterChanged(resource)
-//            }, { resource ->
-//                cache.onFlinkClusterDeleted(resource)
-//            }, {
-//                cache.onFlinkClusterDeleteAll()
-//            })
-//        }
-//    }
+    fun watchJobs(namespace: String) {
+        thread {
+            watchResources(namespace, { namespace ->
+                kubeClient.watchJobs(namespace)
+            }, { resource ->
+                cache.onJobChanged(resource)
+            }, { resource ->
+                cache.onJobDeleted(resource)
+            }, {
+                cache.onJobDeleteAll()
+            })
+        }
+    }
+
+    fun watchServices(namespace: String) {
+        thread {
+            watchResources(namespace, { namespace ->
+                kubeClient.watchServices(namespace)
+            }, { resource ->
+                cache.onServiceChanged(resource)
+            }, { resource ->
+                cache.onServiceDeleted(resource)
+            }, {
+                cache.onServiceDeletedAll()
+            })
+        }
+    }
+
+    fun watchStatefuleSets(namespace: String) {
+        thread {
+            watchResources(namespace, { namespace ->
+                kubeClient.watchStatefulSets(namespace)
+            }, { resource ->
+                cache.onStatefulSetChanged(resource)
+            }, { resource ->
+                cache.onStatefulSetDeleted(resource)
+            }, {
+                cache.onStatefulSetDeletedAll()
+            })
+        }
+    }
+
+    fun watchPersistentVolumeClaims(namespace: String) {
+        thread {
+            watchResources(namespace, { namespace ->
+                kubeClient.watchPermanentVolumeClaims(namespace)
+            }, { resource ->
+                cache.onPersistentVolumeClaimChanged(resource)
+            }, { resource ->
+                cache.onPersistentVolumeClaimDeleted(resource)
+            }, {
+                cache.onPersistentVolumeClaimDeletedAll()
+            })
+        }
+    }
 
     private fun <T> watchResources(
         namespace: String,
