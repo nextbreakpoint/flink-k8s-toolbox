@@ -181,15 +181,15 @@ Create a secret which contain the keystore and the truststore files:
 
 Install the operator's CRD resource with Helm command:
 
-    helm install --name flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
+    helm install flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
 
 Install the operator's resources with SSL enabled:
 
-    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set secretName=flink-operator-ssl  
+    helm install flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set secretName=flink-operator-ssl  
 
 Or if you prefer install the operator's resources with SSL disabled:
 
-    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
+    helm install flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
 
 Run the operator with command:
 
@@ -203,11 +203,11 @@ Stop the operator with command:
 
 Remove the operator's resources with command:    
 
-    helm delete --purge flink-k8s-toolbox-operator
+    helm uninstall flink-k8s-toolbox-operator
 
 Remove the operator's CRD resource with command:    
 
-    helm delete --purge flink-k8s-toolbox-crd
+    helm uninstall flink-k8s-toolbox-crd
 
 Remove secret with command:    
 
@@ -215,7 +215,7 @@ Remove secret with command:
 
 Remove namespace with command:    
 
-    helm delete namespace flink
+    kubectl delete namespace flink
 
 ## Upgrade Flink Operator from previous version
 
@@ -266,7 +266,7 @@ Please note that you **MUST** run only one operator for each namespace to avoid 
 
 A service account is created when installing the operator Helm chart:
 
-    helm install --name flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
+    helm install flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
 
 Verify that the pod has been created:
 
@@ -312,7 +312,7 @@ FlinkCluster resources can be created or deleted as any other resource in Kubern
 
 The Custom Resource Definition is installed with a separate Helm chart:
 
-    helm install --name flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
+    helm install flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
 
 The complete definition with the validation schema is defined in the Helm template:
 
