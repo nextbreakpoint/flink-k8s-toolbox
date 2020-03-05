@@ -147,21 +147,21 @@ class OperationController(
         return kubeClient.findFlinkClusters(namespace, clusterName)
     }
 
-    fun findClusterResources(clusterId: ClusterId): CachedResources {
-        val bootstrapJobs = kubeClient.listBootstrapJobs(clusterId)
-        val jobmanagerServices = kubeClient.listJobManagerServices(clusterId)
-        val jobmanagerStatefulSets = kubeClient.listJobManagerStatefulSets(clusterId)
-        val taskmanagerStatefulSets = kubeClient.listTaskManagerStatefulSets(clusterId)
-        val jobmanagerPVCs = kubeClient.listJobManagerPVCs(clusterId)
-        val taskmanagerPVCs = kubeClient.listTaskManagerPVCs(clusterId)
-
-        return CachedResources(
-            bootstrapJob = bootstrapJobs.items.firstOrNull(),
-            jobmanagerService = jobmanagerServices.items.firstOrNull(),
-            jobmanagerStatefulSet = jobmanagerStatefulSets.items.firstOrNull(),
-            taskmanagerStatefulSet = taskmanagerStatefulSets.items.firstOrNull(),
-            jobmanagerPVC = jobmanagerPVCs.items.firstOrNull(),
-            taskmanagerPVC = taskmanagerPVCs.items.firstOrNull()
-        )
-    }
+//    fun findClusterResources(clusterId: ClusterId): CachedResources {
+//        val bootstrapJobs = kubeClient.listBootstrapJobs(clusterId)
+//        val jobmanagerServices = kubeClient.listJobManagerServices(clusterId)
+//        val jobmanagerStatefulSets = kubeClient.listJobManagerStatefulSets(clusterId)
+//        val taskmanagerStatefulSets = kubeClient.listTaskManagerStatefulSets(clusterId)
+//        val jobmanagerPVCs = kubeClient.listJobManagerPVCs(clusterId)
+//        val taskmanagerPVCs = kubeClient.listTaskManagerPVCs(clusterId)
+//
+//        return CachedResources(
+//            bootstrapJob = bootstrapJobs.items.firstOrNull(),
+//            jobmanagerService = jobmanagerServices.items.firstOrNull(),
+//            jobmanagerStatefulSet = jobmanagerStatefulSets.items.firstOrNull(),
+//            taskmanagerStatefulSet = taskmanagerStatefulSets.items.firstOrNull(),
+//            jobmanagerPVC = jobmanagerPVCs.items.firstOrNull(),
+//            taskmanagerPVC = taskmanagerPVCs.items.firstOrNull()
+//        )
+//    }
 }

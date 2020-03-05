@@ -6,8 +6,11 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.SupervisorOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.WatchAdapter
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.TaskController
+import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 import java.util.concurrent.TimeUnit
 
@@ -16,7 +19,6 @@ class Supervisor : BootstrapCommand<SupervisorOptions> {
         private val logger = Logger.getLogger(Supervisor::class.simpleName)
 
         private val kubeClient = KubeClient
-
         private val flinkClient = FlinkClient
     }
 
@@ -27,20 +29,24 @@ class Supervisor : BootstrapCommand<SupervisorOptions> {
 
         val supervisor = TaskController(controller, clusterId)
 
+        val cache = Cache()
+
+        val json = JSON()
+
+        val watch = WatchAdapter(json, kubeClient, cache)
+
+        watch.watchClusters(namespace)
+        watch.watchJobs(namespace)
+        watch.watchServices(namespace)
+        watch.watchStatefuleSets(namespace)
+        watch.watchPersistentVolumeClaims(namespace)
+
         while (!Thread.interrupted()) {
-            val clusters = controller.findClusters(clusterId.namespace, clusterId.name)
-
-            if (clusters.items.size != 1) {
-                logger.error("Can't find cluster resource ${clusterId.name}")
-
-                return
-            }
-
             logger.debug("Reconcile resource status...")
 
-            val cluster = clusters.items.first()
+            val resources = cache.getCachedResources(clusterId)
 
-            supervisor.execute(cluster)
+            supervisor.execute(resources)
 
             TimeUnit.SECONDS.sleep(5)
         }

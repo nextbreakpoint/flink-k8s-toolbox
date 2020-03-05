@@ -189,7 +189,7 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.get("/clusters").handler { routingContext ->
             processRequest(routingContext, Function { context ->
                 json.serialize(
-                    cache.getCachedClusters().map { it.name }.toList()
+                    cache.getClusterIds().map { it.name }.toList()
                 )
             })
         }
@@ -391,6 +391,10 @@ class OperatorVerticle : AbstractVerticle() {
 
         context.runOnContext {
             watch.watchClusters(namespace)
+            watch.watchJobs(namespace)
+            watch.watchServices(namespace)
+            watch.watchStatefuleSets(namespace)
+            watch.watchPersistentVolumeClaims(namespace)
         }
 
         vertx.setPeriodic(Timeout.POLLING_INTERVAL * 1000) {
@@ -532,45 +536,9 @@ class OperatorVerticle : AbstractVerticle() {
             .subscribe()
     }
 
-//    private fun <T> processCommand(
-//        message: Message<String>,
-//        converter: Function<Message<String>, T>,
-//        handler: Function<T, Void?>
-//    ) {
-//        Single.just(message)
-//            .map {
-//                converter.apply(it)
-//            }
-//            .map {
-//                handler.apply(it)
-//            }
-//            .doOnError {
-//                logger.error("Can't process command [address=${message.address()}]", it)
-//            }
-//            .subscribe()
-//    }
-//
-//    private fun <T> processMessage(
-//        message: Message<String>,
-//        converter: Function<Message<String>, T>,
-//        handler: Consumer<T>
-//    ) {
-//        Single.just(message)
-//            .map {
-//                converter.apply(it)
-//            }
-//            .map {
-//                handler.accept(it)
-//            }
-//            .doOnError {
-//                logger.error("Can't process message [address=${message.address()}]", it)
-//            }
-//            .subscribe()
-//    }
-
     private fun onUpdateClusters(cache: Cache, worker: WorkerExecutor, controller: OperationController) {
-        cache.getCachedClusters().map {
-            clusterId -> clusterId to cache.getFlinkCluster(clusterId)
+        cache.getClusterIds().map {
+            clusterId -> clusterId to cache.getCachedResources(clusterId)
         }.forEach { pair ->
             worker.rxExecuteBlocking<Void?> { promise ->
                 try {

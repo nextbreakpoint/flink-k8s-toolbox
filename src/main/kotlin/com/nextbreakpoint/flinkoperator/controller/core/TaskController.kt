@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.controller.task.OnCancelling
@@ -15,6 +14,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.OnSuspended
 import com.nextbreakpoint.flinkoperator.controller.task.OnTerminated
 import com.nextbreakpoint.flinkoperator.controller.task.OnUpdating
 import org.apache.log4j.Logger
+import java.lang.RuntimeException
 
 class TaskController(val controller: OperationController, val clusterId: ClusterId) {
     private val logger = Logger.getLogger("TaskController (" + clusterId.name + ")")
@@ -33,11 +33,11 @@ class TaskController(val controller: OperationController, val clusterId: Cluster
         ClusterStatus.Checkpointing to OnCheckpointing(logger)
     )
 
-    fun execute(cluster: V1FlinkCluster) {
+    fun execute(resources: CachedResources) {
         try {
-            logger.info("Resource version: ${cluster.metadata.resourceVersion}")
+            val cluster = resources.flinkCluter ?: throw RuntimeException("Cluster not present")
 
-            val resources = controller.findClusterResources(clusterId)
+            logger.info("Resource version: ${cluster.metadata?.resourceVersion}")
 
             val context = TaskContext(clusterId, cluster, resources, controller)
 
