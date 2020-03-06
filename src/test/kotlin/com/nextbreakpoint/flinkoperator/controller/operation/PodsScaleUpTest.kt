@@ -1,14 +1,15 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
+import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
-import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1ServiceBuilder
 import io.kubernetes.client.models.V1StatefulSetBuilder
 import org.assertj.core.api.Assertions.assertThat
@@ -25,7 +26,6 @@ class PodsScaleUpTest {
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
     private val command = PodsScaleUp(flinkOptions, flinkClient, kubeClient)
-    private val v1Job = V1JobBuilder().withNewMetadata().withName("test").endMetadata().build()
     private val v1Service = V1ServiceBuilder().withNewMetadata().withName("test").endMetadata().build()
     private val v1StatefulSet = V1StatefulSetBuilder().withNewMetadata().withName("test").endMetadata().build()
     private val resources = ClusterResources(
@@ -40,9 +40,9 @@ class PodsScaleUpTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.restartJobManagerStatefulSets(eq(clusterId), eq(resources))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, resources)
-        verify(kubeClient, times(1)).restartJobManagerStatefulSets(eq(clusterId), eq(resources))
+        given(kubeClient.restartJobManagerStatefulSets(eq(clusterId), eq(1))).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterId, ClusterScaling(taskManagers = 1, taskSlots = 2))
+        verify(kubeClient, times(1)).restartJobManagerStatefulSets(eq(clusterId), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -52,9 +52,9 @@ class PodsScaleUpTest {
 
     @Test
     fun `should return expected result`() {
-        val result = command.execute(clusterId, resources)
-        verify(kubeClient, times(1)).restartJobManagerStatefulSets(eq(clusterId), eq(resources))
-        verify(kubeClient, times(1)).restartTaskManagerStatefulSets(eq(clusterId), eq(resources))
+        val result = command.execute(clusterId, ClusterScaling(taskManagers = 1, taskSlots = 2))
+        verify(kubeClient, times(1)).restartJobManagerStatefulSets(eq(clusterId), any())
+        verify(kubeClient, times(1)).restartTaskManagerStatefulSets(eq(clusterId), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()

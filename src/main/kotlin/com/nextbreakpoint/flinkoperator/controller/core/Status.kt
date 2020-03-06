@@ -5,28 +5,16 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.crd.V1ResourceDigest
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ClusterTask
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import org.joda.time.DateTime
 
 object Status {
-    fun hasCurrentTask(flinkCluster: V1FlinkCluster) : Boolean = flinkCluster.status?.tasks?.isNotEmpty() ?: false
-
-    fun getCurrentTask(flinkCluster: V1FlinkCluster) : ClusterTask =
-        flinkCluster.status?.tasks?.filter { it.isNotBlank() }?.map { ClusterTask.valueOf(it) }?.firstOrNull() ?: ClusterTask.ClusterHalted
-
-    fun getCurrentTaskStatus(flinkCluster: V1FlinkCluster) : TaskStatus {
-        val status = flinkCluster.status?.taskStatus
-        return if (status.isNullOrBlank()) TaskStatus.Executing else TaskStatus.valueOf(status)
-    }
-
     fun getClusterStatus(flinkCluster: V1FlinkCluster) : ClusterStatus {
         val status = flinkCluster.status?.clusterStatus
         return if (status.isNullOrBlank()) ClusterStatus.Unknown else ClusterStatus.valueOf(status)
     }
 
-    fun getOperatorTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
+    fun getStatusTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
         flinkCluster.status?.timestamp ?: DateTime(0)
 
     fun getSavepointPath(flinkCluster: V1FlinkCluster) : String? =
@@ -49,51 +37,6 @@ object Status {
 
     fun getSavepointRequestTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
         flinkCluster.status?.savepointRequestTimestamp ?: DateTime(0)
-
-    fun getNextOperatorTask(flinkCluster: V1FlinkCluster) : ClusterTask? =
-        flinkCluster.status?.tasks?.drop(1)?.map { ClusterTask.valueOf(it) }?.firstOrNull()
-
-    fun selectNextTask(flinkCluster: V1FlinkCluster) {
-        ensureState(flinkCluster)
-
-        val task = flinkCluster.status?.tasks?.firstOrNull() ?: ClusterTask.ClusterHalted.toString()
-
-        val tasks = flinkCluster.status?.tasks?.drop(1).orEmpty()
-
-        flinkCluster.status?.tasks = if (tasks.isEmpty()) arrayOf(task) else tasks.toTypedArray()
-
-        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
-    }
-
-    fun appendTasks(flinkCluster: V1FlinkCluster, tasks: List<ClusterTask>) {
-        ensureState(flinkCluster)
-
-        val currentTask = flinkCluster.status?.tasks?.toList().orEmpty().toMutableList()
-
-        val newTasks = tasks.map { it.toString() }.toList()
-
-        flinkCluster.status?.tasks = currentTask.plus(newTasks).toTypedArray()
-
-        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
-    }
-
-    fun resetTasks(flinkCluster: V1FlinkCluster, tasks: List<ClusterTask>) {
-        ensureState(flinkCluster)
-
-        val newTasks = tasks.map { it.toString() }.toList()
-
-        flinkCluster.status?.tasks = newTasks.toTypedArray()
-
-        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
-    }
-
-    fun setTaskStatus(flinkCluster: V1FlinkCluster, status: TaskStatus) {
-        ensureState(flinkCluster)
-
-        flinkCluster.status?.taskStatus = status.toString()
-
-        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
-    }
 
     fun setSavepointPath(flinkCluster: V1FlinkCluster, path: String) {
         ensureState(flinkCluster)
@@ -188,17 +131,6 @@ object Status {
 
     fun getBootstrapDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.digest?.bootstrap
-
-    fun setTaskAttempts(flinkCluster: V1FlinkCluster, attempts: Int) {
-        ensureState(flinkCluster)
-
-        flinkCluster.status?.taskAttempts = attempts
-
-        flinkCluster.status?.timestamp = DateTime(currentTimeMillis())
-    }
-
-    fun getTaskAttempts(flinkCluster: V1FlinkCluster): Int =
-        flinkCluster.status?.taskAttempts ?: 0
 
     fun setTaskManagers(flinkCluster: V1FlinkCluster, taskManagers: Int) {
         ensureState(flinkCluster)

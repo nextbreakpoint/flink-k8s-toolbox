@@ -14,6 +14,7 @@ import com.nextbreakpoint.flinkoperator.cli.command.JobMetrics
 import com.nextbreakpoint.flinkoperator.cli.command.LaunchOperator
 import com.nextbreakpoint.flinkoperator.cli.command.SavepointForget
 import com.nextbreakpoint.flinkoperator.cli.command.SavepointTrigger
+import com.nextbreakpoint.flinkoperator.cli.command.Supervisor
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagerDetails
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagerMetrics
 import com.nextbreakpoint.flinkoperator.cli.command.TaskManagersList
@@ -22,6 +23,8 @@ object DefaultCommandFactory : CommandFactory {
     override fun createRunOperatorCommand() = LaunchOperator()
 
     override fun createBootstrapCommand() = Bootstrap()
+
+    override fun createSupervisorCommand() = Supervisor()
 
     override fun createListClustersCommand() = ClustersList()
 

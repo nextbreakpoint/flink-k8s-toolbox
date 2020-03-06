@@ -70,6 +70,10 @@ spec:
             - $(TRUSTSTORE_SECRET)
             {{- end}}
           env:
+            - name: TASK_TIMEOUT
+              value: "{{ $root.Values.taskTimeout }}"
+            - name: POLLING_INTERVAL
+              value: "{{ $root.Values.pollingInterval }}"
             - name: POD_NAME
               valueFrom:
                 fieldRef:

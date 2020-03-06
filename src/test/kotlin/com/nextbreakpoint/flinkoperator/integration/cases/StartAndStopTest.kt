@@ -30,19 +30,18 @@ class StartAndStopTest : IntegrationSetup() {
 
         @AfterAll
         @JvmStatic
-        fun deleteClusters() {
-            describePods(redirect = redirect, namespace = namespace)
-            describeClusters(redirect = redirect, namespace = namespace)
-            println("Deleting clusters...")
+        fun removeFinalizers() {
+            println("Removing finalizers...")
+            removeFinalizers(name = "cluster-1")
+            removeFinalizers(name = "cluster-2")
             deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
             deleteCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
-            awaitUntilAsserted(timeout = 30) {
+            awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-1")).isFalse()
             }
-            awaitUntilAsserted(timeout = 30) {
+            awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
             }
-            println("Clusters deleted")
         }
     }
 
@@ -60,10 +59,10 @@ class StartAndStopTest : IntegrationSetup() {
         val stopOptions = StopOptions(withoutSavepoint = false, deleteResources = false)
         stopCluster(name = "cluster-1", options = stopOptions, port = port)
         stopCluster(name = "cluster-2", options = stopOptions, port = port)
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Suspended)).isTrue()
         }
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Suspended)).isTrue()
         }
         println("Clusters suspended")
@@ -72,10 +71,10 @@ class StartAndStopTest : IntegrationSetup() {
         val startWithoutSavepointOptions = StartOptions(withoutSavepoint = true)
         startCluster(name = "cluster-1", options = startOptions, port = port)
         startCluster(name = "cluster-2", options = startWithoutSavepointOptions, port = port)
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
         }
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         println("Clusters resumed")
@@ -84,10 +83,10 @@ class StartAndStopTest : IntegrationSetup() {
         val terminateWithoutSavepointOptions = StopOptions(withoutSavepoint = true, deleteResources = true)
         stopCluster(name = "cluster-1", options = terminateOptions, port = port)
         stopCluster(name = "cluster-2", options = terminateWithoutSavepointOptions, port = port)
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Terminated)).isTrue()
         }
-        awaitUntilAsserted(timeout = 300) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Terminated)).isTrue()
         }
         println("Clusters terminated")

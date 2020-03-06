@@ -1,161 +1,170 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.StartOptions
-import com.nextbreakpoint.flinkoperator.common.model.StopOptions
-import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
-import io.kubernetes.client.models.V1Job
+import org.apache.log4j.Logger
 
-interface Task {
-    fun onExecuting(context: TaskContext): TaskResult<String>
+abstract class Task(val logger: Logger) {
+    abstract fun execute(context: TaskContext)
 
-    fun onAwaiting(context: TaskContext): TaskResult<String> {
-        return next(context.flinkCluster, "Nothing to do")
-    }
+    protected fun update(context: TaskContext): Boolean {
+        val changes = context.computeChanges()
 
-    fun onFailed(context: TaskContext): TaskResult<String> {
-        return repeat(context.flinkCluster, "Not healthy")
-    }
-
-    fun onIdle(context: TaskContext): TaskResult<String> {
-        return repeat(context.flinkCluster, "Idle")
-    }
-
-    fun isBootstrapJobDefined(cluster: V1FlinkCluster) = cluster.status?.bootstrap != null
-
-    fun repeat(cluster: V1FlinkCluster, output: String): TaskResult<String> =
-        TaskResult(TaskAction.REPEAT, "[name=${cluster.metadata.name}] $output")
-
-    fun next(cluster: V1FlinkCluster, output: String): TaskResult<String> =
-        TaskResult(TaskAction.NEXT, "[name=${cluster.metadata.name}] $output")
-
-    fun skip(cluster: V1FlinkCluster, output: String): TaskResult<String> =
-        TaskResult(TaskAction.SKIP, "[name=${cluster.metadata.name}] $output")
-
-    fun fail(cluster: V1FlinkCluster, output: String): TaskResult<String> =
-        TaskResult(TaskAction.FAIL, "[name=${cluster.metadata.name}] $output")
-
-    fun makeClusterResources(clusterId: ClusterId, cluster: V1FlinkCluster): ClusterResources {
-        return ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
-            clusterId.namespace,
-            clusterId.uuid,
-            "flink-operator",
-            cluster
-        ).build()
-    }
-
-    fun makeBootstrapJob(clusterId: ClusterId, cluster: V1FlinkCluster): V1Job {
-        return DefaultBootstrapJobFactory.createBootstrapJob(
-            clusterId,
-            "flink-operator",
-            cluster.status.bootstrap,
-            cluster.status.savepointPath,
-            cluster.status.jobParallelism
-        )
-    }
-
-    fun resourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
-        val bootstrapJob = resources.bootstrapJobs[clusterId]
-        val jobmnagerService = resources.jobmanagerServices[clusterId]
-        val jobmanagerStatefulSet = resources.jobmanagerStatefulSets[clusterId]
-        val taskmanagerStatefulSet = resources.taskmanagerStatefulSets[clusterId]
-        val jobmanagerPersistentVolumeClaim = resources.jobmanagerPersistentVolumeClaims[clusterId]
-        val taskmanagerPersistentVolumeClaim = resources.taskmanagerPersistentVolumeClaims[clusterId]
-
-        return bootstrapJob == null &&
-                jobmnagerService == null &&
-                jobmanagerStatefulSet == null &&
-                taskmanagerStatefulSet == null &&
-                jobmanagerPersistentVolumeClaim == null &&
-                taskmanagerPersistentVolumeClaim == null
-    }
-
-    fun bootstrapResourcesHaveBeenRemoved(clusterId: ClusterId, resources: CachedResources): Boolean {
-        val bootstrapJob = resources.bootstrapJobs[clusterId]
-
-        return bootstrapJob == null
-    }
-
-    fun computeChanges(flinkCluster: V1FlinkCluster): MutableList<String> {
-        val jobManagerDigest = Status.getJobManagerDigest(flinkCluster)
-        val taskManagerDigest = Status.getTaskManagerDigest(flinkCluster)
-        val runtimeDigest = Status.getRuntimeDigest(flinkCluster)
-        val bootstrapDigest = Status.getBootstrapDigest(flinkCluster)
-
-        val actualJobManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.jobManager)
-        val actualTaskManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.taskManager)
-        val actualRuntimeDigest = ClusterResource.computeDigest(flinkCluster.spec?.runtime)
-        val actualBootstrapDigest = ClusterResource.computeDigest(flinkCluster.spec?.bootstrap)
-
-        val changes = mutableListOf<String>()
-
-        if (jobManagerDigest != actualJobManagerDigest) {
-            changes.add("JOB_MANAGER")
+        if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
+            if (terminate(context)) {
+                return true
+            }
+        } else if (changes.contains("BOOTSTRAP")) {
+            if (cancel(context)) {
+                return true
+            }
         }
 
-        if (taskManagerDigest != actualTaskManagerDigest) {
-            changes.add("TASK_MANAGER")
-        }
-
-        if (runtimeDigest != actualRuntimeDigest) {
-            changes.add("RUNTIME")
-        }
-
-        if (bootstrapDigest != actualBootstrapDigest) {
-            changes.add("BOOTSTRAP")
-        }
-
-        return changes
+        return false
     }
 
-    fun updateDigests(flinkCluster: V1FlinkCluster) {
-        val actualJobManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.jobManager)
-        val actualTaskManagerDigest = ClusterResource.computeDigest(flinkCluster.spec?.taskManager)
-        val actualRuntimeDigest = ClusterResource.computeDigest(flinkCluster.spec?.runtime)
-        val actualBootstrapDigest = ClusterResource.computeDigest(flinkCluster.spec?.bootstrap)
+    protected fun cancel(context: TaskContext): Boolean {
+        val bootstrapExists = context.doesBootstrapExists()
 
-        Status.setJobManagerDigest(flinkCluster, actualJobManagerDigest)
-        Status.setTaskManagerDigest(flinkCluster, actualTaskManagerDigest)
-        Status.setRuntimeDigest(flinkCluster, actualRuntimeDigest)
-        Status.setBootstrapDigest(flinkCluster, actualBootstrapDigest)
-    }
+        if (bootstrapExists) {
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
 
-    fun updateBootstrap(flinkCluster: V1FlinkCluster) {
-        val bootstrap = flinkCluster.spec?.bootstrap
-        Status.setBootstrap(flinkCluster, bootstrap)
-    }
+            if (bootstrapResult.isCompleted()) {
+                logger.info("Bootstrap job deleted")
+            }
 
-    fun isStartingCluster(context: TaskContext): Boolean {
-        val manualAction = Annotations.getManualAction(context.flinkCluster)
-
-        if (manualAction != ManualAction.START) {
             return false
         }
 
-        val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
-        val options = StartOptions(withoutSavepoint = withoutSavepoint)
-        val result = context.startCluster(context.clusterId, options)
-        return result.isCompleted()
+        if (context.isSavepointRequired()) {
+            val savepointRequest = context.getSavepointRequest()
+
+            if (savepointRequest == null) {
+                val options = context.getSavepointOtions()
+
+                val cancelResult = context.cancelJob(context.clusterId, options)
+
+                if (cancelResult.isFailed()) {
+                    logger.error("Failed to cancel job...")
+
+                    return true
+                }
+
+                if (cancelResult.isCompleted()) {
+                    logger.info("Cancelling job with savepoint...")
+
+                    context.setSavepointRequest(cancelResult.output)
+
+                    return false
+                }
+            } else {
+                val savepointResult = context.getLatestSavepoint(context.clusterId, savepointRequest)
+
+                if (savepointResult.isFailed()) {
+                    logger.error("Failed to cancel job...")
+
+                    return true
+                }
+
+                if (savepointResult.isCompleted()) {
+                    logger.info("Savepoint created for job ${savepointRequest.jobId} (${savepointResult.output})")
+
+                    context.setSavepointPath(savepointResult.output)
+                    context.resetSavepointRequest()
+
+                    return true
+                }
+            }
+        } else {
+            logger.info("Savepoint not required")
+
+            val stopResult = context.stopJob(context.clusterId)
+
+            if (stopResult.isFailed()) {
+                logger.error("Failed to stop job...")
+
+                return true
+            }
+
+            if (stopResult.isCompleted()) {
+                logger.info("Stopping job without savepoint...")
+
+                return true
+            }
+        }
+
+        return false
     }
 
-    fun isStoppingCluster(context: TaskContext): Boolean {
-        val manualAction = Annotations.getManualAction(context.flinkCluster)
+    protected fun suspend(context: TaskContext): Boolean {
+        val bootstrapExists = context.doesBootstrapExists()
+        val jobmanagerServiceExists = context.doesJobManagerServiceExists()
 
-        if (manualAction != ManualAction.STOP) {
+        val terminatedResult = context.arePodsTerminated(context.clusterId)
+
+        if (!terminatedResult.isCompleted()) {
+            context.terminatePods(context.clusterId)
+
             return false
         }
 
-        val withoutSavepoint = Annotations.isWithSavepoint(context.flinkCluster)
-        val deleteResources = Annotations.isDeleteResources(context.flinkCluster)
-        val options = StopOptions(withoutSavepoint = withoutSavepoint, deleteResources = deleteResources)
-        val result = context.stopCluster(context.clusterId, options)
-        return result.isCompleted()
+        if (bootstrapExists) {
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
+
+            if (bootstrapResult.isCompleted()) {
+                logger.info("Bootstrap job deleted")
+            }
+        }
+
+        if (jobmanagerServiceExists) {
+            val serviceResult = context.deleteJobManagerService(context.clusterId)
+
+            if (serviceResult.isCompleted()) {
+                logger.info("JobManager service deleted")
+            }
+        }
+
+        return !bootstrapExists && !jobmanagerServiceExists
+    }
+
+    protected fun terminate(context: TaskContext): Boolean {
+        val bootstrapExists = context.doesBootstrapExists()
+        val jobmanagerServiceExists = context.doesJobManagerServiceExists()
+        val jobmanagerStatefuleSetExists = context.doesJobManagerStatefulSetExists()
+        val taskmanagerStatefulSetExists = context.doesTaskManagerStatefulSetExists()
+        val jomanagerPVCExists = context.doesJobManagerPVCExists()
+        val taskmanagerPVCExists = context.doesTaskManagerPVCExists()
+
+        if (bootstrapExists) {
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
+
+            if (bootstrapResult.isCompleted()) {
+                logger.info("Bootstrap job deleted")
+            }
+        }
+
+        if (jobmanagerServiceExists) {
+            val serviceResult = context.deleteJobManagerService(context.clusterId)
+
+            if (serviceResult.isCompleted()) {
+                logger.info("JobManager service deleted")
+            }
+        }
+
+        if (jobmanagerStatefuleSetExists || taskmanagerStatefulSetExists) {
+            val statefulSetsResult = context.deleteStatefulSets(context.clusterId)
+
+            if (statefulSetsResult.isCompleted()) {
+                logger.info("JobManager and TaskManager statefulset deleted")
+            }
+        }
+
+        if (jomanagerPVCExists || taskmanagerPVCExists) {
+            val persistenVolumeClaimsResult = context.deletePersistentVolumeClaims(context.clusterId)
+
+            if (persistenVolumeClaimsResult.isCompleted()) {
+                logger.info("JobManager and TaskManager PVC deleted")
+            }
+        }
+
+        return !bootstrapExists && !jobmanagerServiceExists && !jobmanagerStatefuleSetExists && !taskmanagerStatefulSetExists && !jomanagerPVCExists && !taskmanagerPVCExists
     }
 }

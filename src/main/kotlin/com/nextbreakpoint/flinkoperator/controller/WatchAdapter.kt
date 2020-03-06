@@ -1,188 +1,84 @@
 package com.nextbreakpoint.flinkoperator.controller
 
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import io.kubernetes.client.JSON
 import io.kubernetes.client.util.Watch
-import io.vertx.core.Context
 import org.apache.log4j.Logger
 import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
 
-class WatchAdapter(val json: JSON, val kubeClient: KubeClient) {
+class WatchAdapter(val json: JSON, val kubeClient: KubeClient, val cache: Cache) {
     companion object {
         private val logger: Logger = Logger.getLogger(WatchAdapter::class.simpleName)
     }
 
-    fun watchFlinkClusters(context: Context, namespace: String) {
+    fun watchClusters(namespace: String) {
         thread {
-            watchResources(namespace, {
-                kubeClient.watchFlickClusters(it)
+            watchResources(namespace, { namespace ->
+                kubeClient.watchFlickClusters(namespace)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/flinkcluster/change", json.serialize(resource))
-                }
+                cache.onFlinkClusterChanged(resource)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/flinkcluster/delete", json.serialize(resource))
-                }
-            }, { namespace ->
-                logger.debug("Refresh FlinkClusters resources...")
-                context.runOnContext {
-                    try {
-                        context.owner().eventBus().publish("/resource/flinkcluster/deleteAll", "")
-                        val resources = kubeClient.listFlinkClusters(namespace)
-                        resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/flinkcluster/change", json.serialize(resource))
-                        }
-                    } catch (e: Exception) {
-                        logger.error("An error occurred while listing resources", e)
-                    }
-                }
+                cache.onFlinkClusterDeleted(resource)
+            }, {
+                cache.onFlinkClusterDeleteAll()
             })
         }
     }
 
-    fun watchServices(context: Context, namespace: String) {
+    fun watchJobs(namespace: String) {
         thread {
-            watchResources(namespace, {
-                kubeClient.watchServices(it)
+            watchResources(namespace, { namespace ->
+                kubeClient.watchJobs(namespace)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/service/change", json.serialize(resource))
-                }
+                cache.onJobChanged(resource)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/service/delete", json.serialize(resource))
-                }
-            }, { namespace ->
-                logger.debug("Refresh Services resources...")
-                context.runOnContext {
-                    try {
-                        context.owner().eventBus().publish("/resource/service/deleteAll", "")
-                        val resources = kubeClient.listServiceResources(namespace)
-                        resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/service/change", json.serialize(resource))
-                        }
-                    } catch (e: Exception) {
-                        logger.error("An error occurred while listing resources", e)
-                    }
-                }
+                cache.onJobDeleted(resource)
+            }, {
+                cache.onJobDeleteAll()
             })
         }
     }
 
-    fun watchDeployments(context: Context, namespace: String) {
+    fun watchServices(namespace: String) {
         thread {
-            watchResources(namespace, {
-                kubeClient.watchDeployments(it)
+            watchResources(namespace, { namespace ->
+                kubeClient.watchServices(namespace)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/deployment/change", json.serialize(resource))
-                }
+                cache.onServiceChanged(resource)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/deployment/delete", json.serialize(resource))
-                }
-            }, { namespace ->
-                logger.debug("Refresh Deployments resources...")
-                context.runOnContext {
-                    try {
-                        context.owner().eventBus().publish("/resource/deployment/deleteAll", "")
-                        val resources = kubeClient.listDeploymentResources(namespace)
-                        resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/deployment/change", json.serialize(resource))
-                        }
-                    } catch (e: Exception) {
-                        logger.error("An error occurred while listing resources", e)
-                    }
-                }
+                cache.onServiceDeleted(resource)
+            }, {
+                cache.onServiceDeletedAll()
             })
         }
     }
 
-    fun watchJobs(context: Context, namespace: String) {
+    fun watchStatefuleSets(namespace: String) {
         thread {
-            watchResources(namespace, {
-                kubeClient.watchJobs(it)
+            watchResources(namespace, { namespace ->
+                kubeClient.watchStatefulSets(namespace)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/job/change", json.serialize(resource))
-                }
+                cache.onStatefulSetChanged(resource)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/job/delete", json.serialize(resource))
-                }
-            }, { namespace ->
-                logger.debug("Refresh Jobs resources...")
-                context.runOnContext {
-                    try {
-                        context.owner().eventBus().publish("/resource/job/deleteAll", "")
-                        val resources = kubeClient.listJobResources(namespace)
-                        resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/job/change", json.serialize(resource))
-                        }
-                    } catch (e: Exception) {
-                        logger.error("An error occurred while listing resources", e)
-                    }
-                }
+                cache.onStatefulSetDeleted(resource)
+            }, {
+                cache.onStatefulSetDeletedAll()
             })
         }
     }
 
-    fun watchStatefulSets(context: Context, namespace: String) {
+    fun watchPersistentVolumeClaims(namespace: String) {
         thread {
-            watchResources(namespace, {
-                kubeClient.watchStatefulSets(it)
+            watchResources(namespace, { namespace ->
+                kubeClient.watchPermanentVolumeClaims(namespace)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/statefulset/change", json.serialize(resource))
-                }
+                cache.onPersistentVolumeClaimChanged(resource)
             }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/statefulset/delete", json.serialize(resource))
-                }
-            }, { namespace ->
-                logger.debug("Refresh StatefulSets resources...")
-                context.runOnContext {
-                    try {
-                        context.owner().eventBus().publish("/resource/statefulset/deleteAll", "")
-                        val resources = kubeClient.listStatefulSetResources(namespace)
-                        resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/statefulset/change", json.serialize(resource))
-                        }
-                    } catch (e: Exception) {
-                        logger.error("An error occurred while listing resources", e)
-                    }
-                }
-            })
-        }
-    }
-
-    fun watchPersistentVolumeClaims(context: Context, namespace: String) {
-        thread {
-            watchResources(namespace, {
-                kubeClient.watchPermanentVolumeClaims(it)
-            }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", json.serialize(resource))
-                }
-            }, { resource ->
-                context.runOnContext {
-                    context.owner().eventBus().publish("/resource/persistentvolumeclaim/delete", json.serialize(resource))
-                }
-            }, { namespace ->
-                logger.debug("Refresh PersistentVolumeClaims resources...")
-                context.runOnContext {
-                    try {
-                        context.owner().eventBus().publish("/resource/persistentvolumeclaim/deleteAll", "")
-                        val resources = kubeClient.listPermanentVolumeClaimResources(namespace)
-                        resources.forEach { resource ->
-                            context.owner().eventBus().publish("/resource/persistentvolumeclaim/change", json.serialize(resource))
-                        }
-                    } catch (e: Exception) {
-                        logger.error("An error occurred while listing resources", e)
-                    }
-                }
+                cache.onPersistentVolumeClaimDeleted(resource)
+            }, {
+                cache.onPersistentVolumeClaimDeletedAll()
             })
         }
     }
@@ -192,11 +88,11 @@ class WatchAdapter(val json: JSON, val kubeClient: KubeClient) {
         createResourceWatch: (String) -> Watch<T>,
         onChangeResource: (T) -> Unit,
         onDeleteResource: (T) -> Unit,
-        onReloadResources: (String) -> Unit
+        onReloadResources: () -> Unit
     ) {
         while (true) {
             try {
-                onReloadResources(namespace)
+                onReloadResources()
                 createResourceWatch(namespace).use {
                     it.forEach { resource ->
                         when (resource.type) {

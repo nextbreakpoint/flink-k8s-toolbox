@@ -2,17 +2,16 @@
   "taskManagers": 1,
   "runtime": {
     "pullPolicy": "Never",
-    "image": "example/flink:1.9.2"
+    "image": "integration/flink:1.9.2"
   },
   "bootstrap": {
+    "executionMode": "Stream",
     "serviceAccount": "flink-bootstrap",
     "pullPolicy": "Never",
-    "image": "example/flink-jobs:1",
+    "image": "integration/flink-jobs:1",
     "jarPath": "/flink-jobs.jar",
     "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
     "arguments": [
-      "--DEVELOP_MODE",
-      "disabled"
     ]
   },
   "jobManager": {

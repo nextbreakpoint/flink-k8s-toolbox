@@ -48,14 +48,14 @@ class Bootstrap : BootstrapCommand<BootstrapOptions> {
             logger.info("Running job with parallelism $parallelism")
 
             if (savepointPath != null) {
-                logger.info("Resuming from savepoint $parallelism")
+                logger.info("Resuming from savepoint $savepointPath")
             }
 
             FlinkClient.runJar(address, jarFile, className, parallelism, savepointPath, arguments)
 
             logger.info("Job started")
         } catch (e: Exception) {
-            throw RuntimeException(e)
+            logger.error("An error occurred while starting job", e)
         }
     }
 
