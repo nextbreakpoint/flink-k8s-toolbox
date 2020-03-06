@@ -8,6 +8,7 @@ spec:
     pullPolicy: Never
     image: integration/flink:1.9.2
   bootstrap:
+    executionMode: Stream
     serviceAccount: flink-bootstrap
     pullPolicy: Never
     image: integration/flink-jobs:1
@@ -25,11 +26,19 @@ spec:
     - name: FLINK_ENVIRONMENT
       value: test
     - name: FLINK_SAVEPOINTS_LOCATION
-      value: file:///var/savepoints
+      value: s3a://flink/2/savepoints
     - name: FLINK_CHECKPOINTS_LOCATION
       value: file:///var/checkpoints
     - name: FLINK_FS_CHECKPOINTS_LOCATION
       value: file:///var/fs_checkpoints
+    - name: FLINK_S3_ENDPOINT
+      value: http://minio-headless:9000
+    - name: FLINK_S3_ACCESS_KEY
+      value: minioaccesskey
+    - name: FLINK_S3_SECRET_KEY
+      value: miniosecretkey
+    - name: FLINK_S3_PATH_STYLE_ACCESS
+      value: "true"
     environmentFrom:
     - secretRef:
         name: flink-secrets
@@ -43,11 +52,23 @@ spec:
       - name: config-vol
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
+      - name: jobmanager
+        mountPath: /var
     volumes:
       - name: config-vol
         configMap:
           name: flink-config
           defaultMode: 0777
+    persistentVolumeClaimsTemplates:
+      - metadata:
+          name: jobmanager
+        spec:
+          storageClassName: standard
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
     resources:
       limits:
         cpu: '0.2'
@@ -64,11 +85,19 @@ spec:
     - name: FLINK_ENVIRONMENT
       value: test
     - name: FLINK_SAVEPOINTS_LOCATION
-      value: file:///var/savepoints
+      value: s3a://flink/2/savepoints
     - name: FLINK_CHECKPOINTS_LOCATION
       value: file:///var/checkpoints
     - name: FLINK_FS_CHECKPOINTS_LOCATION
       value: file:///var/fs_checkpoints
+    - name: FLINK_S3_ENDPOINT
+      value: http://minio-headless:9000
+    - name: FLINK_S3_ACCESS_KEY
+      value: minioaccesskey
+    - name: FLINK_S3_SECRET_KEY
+      value: miniosecretkey
+    - name: FLINK_S3_PATH_STYLE_ACCESS
+      value: "true"
     volumeMounts:
       - name: config-vol
         mountPath: /hadoop/etc/core-site.xml
@@ -79,11 +108,23 @@ spec:
       - name: config-vol
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
+      - name: taskmanager
+        mountPath: /var
     volumes:
       - name: config-vol
         configMap:
           name: flink-config
           defaultMode: 0777
+    persistentVolumeClaimsTemplates:
+      - metadata:
+          name: taskmanager
+        spec:
+          storageClassName: standard
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     resources:
       limits:
         cpu: '0.2'
@@ -92,7 +133,7 @@ spec:
         cpu: '0.1'
         memory: 600Mi
   operator:
-    savepointMode: Automatic
+    savepointMode: Manual
     savepointInterval: 20
-    savepointTargetPath: file:///var/savepoints
+    savepointTargetPath: s3a://flink/2/savepoints
     jobRestartPolicy: Never

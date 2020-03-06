@@ -31,7 +31,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1Service? {
+    ): V1Service {
         if (flinkCluster.metadata.name == null) {
             throw RuntimeException("name is required")
         }
@@ -86,7 +86,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet? {
+    ): V1StatefulSet {
         if (flinkCluster.metadata.name == null) {
             throw RuntimeException("name is required")
         }
@@ -267,7 +267,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         clusterId: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet? {
+    ): V1StatefulSet {
         if (flinkCluster.metadata.name == null) {
             throw RuntimeException("name is required")
         }

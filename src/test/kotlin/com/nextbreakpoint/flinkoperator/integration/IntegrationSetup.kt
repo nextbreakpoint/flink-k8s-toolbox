@@ -9,7 +9,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
-import com.nextbreakpoint.flinkoperator.common.model.TaskStatus
 import com.squareup.okhttp.MediaType
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
@@ -18,6 +17,7 @@ import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import java.lang.ProcessBuilder.Redirect
 import java.time.Duration
@@ -26,9 +26,15 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.fail
 
 open class IntegrationSetup {
+    @AfterEach
+    fun printSomeInfo() {
+        describeResources()
+        printOperatorLogs()
+    }
+
     companion object {
         val redirect = Redirect.INHERIT
-        val version = "1.2.5-beta"
+        val version = "1.3.0-beta"
         val timestamp = System.currentTimeMillis()
 //        val namespace = "integration-$timestamp"
         val namespace = "integration"
@@ -45,10 +51,16 @@ open class IntegrationSetup {
         @BeforeAll
         @JvmStatic
         fun setup() {
-            printInfo()
-            TimeUnit.SECONDS.sleep(5)
-            createNamespace()
+            cleanDockerImages()
             buildDockerImages()
+            TimeUnit.SECONDS.sleep(5)
+            printInfo()
+            deleteCRD()
+            deleteNamespace()
+            createNamespace()
+            installMinio()
+            waitForMinio()
+            createBucket()
             installOperator()
             installResources()
             exposeOperator()
@@ -60,8 +72,14 @@ open class IntegrationSetup {
         fun teardown() {
             TimeUnit.SECONDS.sleep(5)
             uninstallOperator()
+            uninstallMinio()
             TimeUnit.SECONDS.sleep(5)
             deleteNamespace()
+        }
+
+        fun describeResources() {
+//        describePods(redirect = redirect, namespace = namespace)
+            describeClusters(redirect = redirect, namespace = namespace)
         }
 
         fun printInfo() {
@@ -75,6 +93,10 @@ open class IntegrationSetup {
             if (createNamespace(redirect = redirect, namespace = namespace) != 0) {
                 fail("Can't create namespace")
             }
+        }
+
+        fun cleanDockerImages() {
+            cleanDockerImages(redirect = redirect)
         }
 
         fun buildDockerImages() {
@@ -102,6 +124,46 @@ open class IntegrationSetup {
             }
             println("Images created")
             skipDockerImages = true
+        }
+
+        fun installMinio() {
+            println("Installing Minio...")
+            if (installHelmChart(redirect = redirect, namespace = namespace, name = "minio", path = "integration/minio", args = listOf()) != 0) {
+                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "minio", path = "integration/minio", args = listOf()) != 0) {
+                    fail("Can't install or upgrade Helm chart")
+                }
+            }
+            println("Minio installed")
+        }
+
+        fun uninstallMinio() {
+            println("Uninstalling Minio...")
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "minio") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            println("Minio uninstalled")
+        }
+
+        fun waitForMinio() {
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(120))
+                .pollDelay(Duration.ofSeconds(20))
+                .pollInterval(Duration.ofSeconds(10))
+                .until {
+                    isMinioReady(redirect = redirect, namespace = namespace)
+                }
+        }
+
+        fun createBucket() {
+            println("Creating bucket...")
+            if (createBucket(redirect = redirect, namespace = namespace, bucketName = "flink") != 0) {
+                fail("Can't create bucket")
+            }
+            println("Bucker created")
+        }
+
+        fun removeFinalizers(name: String) {
+            removeFinalizers(redirect = redirect, namespace = namespace, name = name)
         }
 
         fun installOperator() {
@@ -135,6 +197,27 @@ open class IntegrationSetup {
             println("Operator started")
         }
 
+        fun uninstallOperator() {
+            println("Stopping operator...")
+            if (scaleOperator(redirect = redirect, namespace = namespace, replicas = 0) != 0) {
+                println("Can't scale the operator")
+            }
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(60))
+                .until {
+                    !isOperatorRunning(redirect = redirect, namespace = namespace)
+                }
+            println("Operator terminated")
+            println("Uninstalling operator...")
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            println("Operator uninstalled")
+        }
+
         fun exposeOperator() {
             println("Exposing operator...")
             if (exposeOperator(redirect = redirect, namespace = namespace) != 0) {
@@ -144,6 +227,14 @@ open class IntegrationSetup {
                 assertThat(listClusters(port = port)).isEmpty()
             }
             println("Operator exposed")
+        }
+
+        fun printOperatorLogs() {
+            println("Printing operator logs...")
+            if (printOperatorLogs(redirect = redirect, namespace = namespace) != 0) {
+                fail("Can't expose the operator")
+            }
+            println("Operator logs printed")
         }
 
         fun installResources() {
@@ -166,47 +257,31 @@ open class IntegrationSetup {
             println("Resources installed")
         }
 
-        fun uninstallOperator() {
-            val redirect = Redirect.INHERIT
-            println("Stopping operator...")
-            if (scaleOperator(redirect = redirect, namespace = namespace, replicas = 0) != 0) {
-                println("Can't scale the operator")
-            }
-            Awaitility.await()
-                .atMost(Duration.ofSeconds(60))
-                .until {
-                    !isOperatorRunning(redirect = redirect, namespace = namespace)
-                }
-            println("Operator terminated")
-            println("Uninstalling operator...")
-            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator") != 0) {
-                println("Can't uninstall Helm chart")
-            }
-            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
-                println("Can't uninstall Helm chart")
-            }
-            println("Operator uninstalled")
-        }
-
         fun deleteNamespace() {
             if (deleteNamespace(redirect = redirect, namespace = namespace) != 0) {
                 println("Can't delete namespace")
             }
         }
 
+        fun deleteCRD() {
+            if (deleteCRD(redirect = redirect, name = "flinkclusters.nextbreakpoint.com") != 0) {
+                println("Can't delete CRD")
+            }
+        }
+
         fun awaitUntilAsserted(timeout: Long, assertion: () -> Unit) {
             Awaitility.await()
                 .atMost(Duration.ofSeconds(timeout))
-                .pollDelay(Duration.ofSeconds(5))
-                .pollInterval(Duration.ofSeconds(5))
+                .pollDelay(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(10))
                 .untilAsserted(assertion)
         }
 
         fun awaitUntilCondition(timeout: Long, condition: () -> Boolean) {
             Awaitility.await()
                 .atMost(Duration.ofSeconds(timeout))
-                .pollDelay(Duration.ofSeconds(5))
-                .pollInterval(Duration.ofSeconds(5))
+                .pollDelay(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(10))
                 .until(condition)
         }
 
@@ -369,15 +444,6 @@ open class IntegrationSetup {
             return executeCommand(redirect, command) == 0
         }
 
-        fun hasTaskStatus(redirect: Redirect?, namespace: String, name: String, status: TaskStatus): Boolean {
-            val command = listOf(
-                "sh",
-                "-c",
-                "kubectl -n $namespace get fc $name -o json | jq --exit-status -r '.status | select(.taskStatus == \"$status\")' >/dev/null"
-            )
-            return executeCommand(redirect, command) == 0
-        }
-
         fun hasActiveTaskManagers(redirect: Redirect?, namespace: String, name: String, taskManagers: Int): Boolean {
             val command = listOf(
                 "sh",
@@ -407,6 +473,17 @@ open class IntegrationSetup {
                 "delete",
                 "-f",
                 path
+            )
+            return executeCommand(redirect, command)
+        }
+
+        fun deleteClusterByName(redirect: Redirect?, namespace: String, name: String): Int {
+            val command = listOf(
+                "kubectl",
+                "-n",
+                namespace,
+                "delete",
+                name
             )
             return executeCommand(redirect, command)
         }
@@ -463,6 +540,15 @@ open class IntegrationSetup {
                 "sh",
                 "-c",
                 "kubectl -n $namespace expose service flink-operator --type=LoadBalancer --name=flink-operator-lb --port=4444 --external-ip=\$(minikube ip)"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun printOperatorLogs(redirect: Redirect?, namespace: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace logs -l app=flink-operator"
             )
             return executeCommand(redirect, command)
         }
@@ -528,6 +614,33 @@ open class IntegrationSetup {
                 "--namespace",
                 namespace,
                 name
+            )
+            return executeCommand(redirect, command)
+        }
+
+        fun isMinioReady(redirect: Redirect?, namespace: String): Boolean {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace get pod -l app=minio -o json | jq --exit-status -r '.items[0].status | select(.phase==\"Running\")' >/dev/null"
+            )
+            return executeCommand(redirect, command) == 0
+        }
+
+        private fun createBucket(redirect: Redirect?, namespace: String, bucketName: String): Int {
+            val command = listOf(
+                "kubectl",
+                "-n",
+                namespace,
+                "run",
+                "minio-client",
+                "--image=minio/mc:latest",
+                "--restart=Never",
+                "--command=true",
+                "--",
+                "sh",
+                "-c",
+                "mc config host add minio http://minio-headless:9000 minioaccesskey miniosecretkey && mc mb --region=eu-west-1 minio/$bucketName"
             )
             return executeCommand(redirect, command)
         }
@@ -608,11 +721,39 @@ open class IntegrationSetup {
             return executeCommand(redirect, command)
         }
 
+        private fun deleteCRD(redirect: Redirect?, name: String): Int {
+            val command = listOf(
+                "kubectl",
+                "delete",
+                "crd",
+                name
+            )
+            return executeCommand(redirect, command)
+        }
+
         private fun buildDockerImage(redirect: Redirect?, path: String, name: String, args: List<String>? = emptyList()): Int {
             val command = listOf(
                 "sh",
                 "-c",
                 "eval $(minikube docker-env) && docker build -t $name $path ${args?.asSequence().orEmpty().joinToString(" ")}"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun cleanDockerImages(redirect: Redirect?): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "eval $(minikube docker-env) && docker rmi $(docker images -f dangling=true -q)"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun removeFinalizers(redirect: Redirect?, namespace: String, name: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace patch fc $name --type=json -p '[{\"op\":\"remove\",\"path\":\"/metadata/finalizers\"}]'"
             )
             return executeCommand(redirect, command)
         }

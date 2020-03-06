@@ -3,6 +3,7 @@ package com.nextbreakpoint.flinkoperator.common.utils
 import com.google.common.io.ByteStreams
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
+import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterList
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
@@ -24,6 +25,7 @@ import io.kubernetes.client.models.V1Deployment
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1JobList
 import io.kubernetes.client.models.V1PersistentVolumeClaim
+import io.kubernetes.client.models.V1PersistentVolumeClaimList
 import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1PodList
 import io.kubernetes.client.models.V1Service
@@ -218,6 +220,32 @@ object KubeClient {
         }
     }
 
+    fun updateFinalizers(clusterId: ClusterId, finalizers: List<String>) {
+        val patch = mapOf<String, Any?>(
+            "metadata" to mapOf<String, Any?>(
+                "finalizers" to finalizers
+            )
+        )
+
+        val response = objectApi.patchNamespacedCustomObjectCall(
+            "nextbreakpoint.com",
+            "v1",
+            clusterId.namespace,
+            "flinkclusters",
+            clusterId.name,
+            patch,
+            null,
+            null
+        ).execute()
+
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't update finalizers of cluster ${clusterId.name}")
+            }
+        }
+    }
+
     fun updateStatus(clusterId: ClusterId, status: V1FlinkClusterStatus) {
         val patch = V1FlinkCluster().status(status)
 
@@ -406,6 +434,34 @@ object KubeClient {
         }
     }
 
+    fun findFlinkClusters(namespace: String, name: String): V1FlinkClusterList {
+        val response = objectApi.listNamespacedCustomObjectCall(
+            "nextbreakpoint.com",
+            "v1",
+            namespace,
+            "flinkclusters",
+            null,
+            "metadata.name=${name}",
+            null,
+            null,
+            5,
+            null,
+            null,
+            null
+        ).execute()
+
+        response.body().use { body ->
+            if (!response.isSuccessful) {
+                body.source().use { source -> logger.error(source.readUtf8Line()) }
+                throw RuntimeException("Can't fetch custom objects")
+            }
+
+            return body.source().use { source ->
+                ClusterResource.parseV1FlinkClusterList(source.readUtf8Line())
+            }
+        }
+    }
+
     fun listJobResources(namespace: String): List<V1Job> {
         return batchApi.listNamespacedJob(
             namespace,
@@ -518,6 +574,34 @@ object KubeClient {
         )
     }
 
+    fun listJobManagerPVCs(clusterId: ClusterId): V1PersistentVolumeClaimList {
+        return coreApi.listNamespacedPersistentVolumeClaim(
+            clusterId.namespace,
+            null,
+            null,
+            null,
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
+            null,
+            null,
+            5,
+            null
+        )
+    }
+
+    fun listTaskManagerPVCs(clusterId: ClusterId): V1PersistentVolumeClaimList {
+        return coreApi.listNamespacedPersistentVolumeClaim(
+            clusterId.namespace,
+            null,
+            null,
+            null,
+            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+            null,
+            null,
+            5,
+            null
+        )
+    }
+
     fun createJobManagerService(
         clusterId: ClusterId,
         resources: ClusterResources
@@ -526,6 +610,24 @@ object KubeClient {
             return coreApi.createNamespacedService(
                 clusterId.namespace,
                 resources.jobmanagerService,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
+    }
+
+    fun createService(
+        clusterId: ClusterId,
+        resource: V1Service
+    ): V1Service {
+        try {
+            return coreApi.createNamespacedService(
+                clusterId.namespace,
+                resource,
                 null,
                 null,
                 null
@@ -562,6 +664,24 @@ object KubeClient {
             return appsApi.createNamespacedStatefulSet(
                 clusterId.namespace,
                 resources.taskmanagerStatefulSet,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
+    }
+
+    fun createStatefulSet(
+        clusterId: ClusterId,
+        resource: V1StatefulSet
+    ): V1StatefulSet {
+        try {
+            return appsApi.createNamespacedStatefulSet(
+                clusterId.namespace,
+                resource,
                 null,
                 null,
                 null
@@ -919,7 +1039,7 @@ object KubeClient {
 
     fun restartJobManagerStatefulSets(
         clusterId: ClusterId,
-        resources: ClusterResources
+        replicas: Int?
     ) {
         val statefulSets = appsApi.listNamespacedStatefulSet(
             clusterId.namespace,
@@ -941,7 +1061,7 @@ object KubeClient {
                     mapOf<String, Any?>(
                         "op" to "add",
                         "path" to "/spec/replicas",
-                        "value" to (resources.jobmanagerStatefulSet?.spec?.replicas ?: 1)
+                        "value" to (replicas ?: 1)
                     )
                 )
 
@@ -973,7 +1093,7 @@ object KubeClient {
 
     fun restartTaskManagerStatefulSets(
         clusterId: ClusterId,
-        resources: ClusterResources
+        replicas: Int?
     ) {
         val statefulSets = appsApi.listNamespacedStatefulSet(
             clusterId.namespace,
@@ -995,7 +1115,7 @@ object KubeClient {
                     mapOf<String, Any?>(
                         "op" to "add",
                         "path" to "/spec/replicas",
-                        "value" to (resources.taskmanagerStatefulSet?.spec?.replicas ?: 1)
+                        "value" to (replicas ?: 1)
                     )
                 )
 

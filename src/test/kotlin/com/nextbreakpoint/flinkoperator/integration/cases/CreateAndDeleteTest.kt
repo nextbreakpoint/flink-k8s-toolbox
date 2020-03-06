@@ -4,6 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -11,6 +12,19 @@ import java.nio.file.Files
 
 @Tag("IntegrationTest")
 class CreateAndDeleteTest : IntegrationSetup() {
+    companion object {
+        @AfterAll
+        @JvmStatic
+        fun removeFinalizers() {
+            println("Removing finalizers...")
+            removeFinalizers(name = "cluster-0")
+            deleteClusterByName(redirect = redirect, namespace = namespace, name = "cluster-0")
+            awaitUntilAsserted(timeout = 360) {
+                assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-0")).isFalse()
+            }
+        }
+    }
+
     @Test
     fun `should create and delete clusters`() {
         println("Should create cluster...")
@@ -25,7 +39,7 @@ class CreateAndDeleteTest : IntegrationSetup() {
         println("Cluster created")
         println("Should delete cluster...")
         deleteCluster(name = "cluster-0", port = port)
-        awaitUntilAsserted(timeout = 30) {
+        awaitUntilAsserted(timeout = 300) {
             assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-0")).isFalse()
         }
         println("Cluster delete")

@@ -2,11 +2,11 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
-import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
+import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
+import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import org.apache.log4j.Logger
 
 class PodsAreTerminated(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
@@ -20,14 +20,14 @@ class PodsAreTerminated(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
 
             val taskmanagerPods = kubeClient.listTaskManagerPods(clusterId)
 
-            if (jobmanagerPods.items.filter { it.status?.containerStatuses?.filter { it.lastState.running != null }?.isNotEmpty() == true }.isNotEmpty()) {
+            if (jobmanagerPods.items.filter { it.status?.containerStatuses?.filter { it.state.running != null }?.isNotEmpty() == true }.isNotEmpty()) {
                 return OperationResult(
                     OperationStatus.RETRY,
                     null
                 )
             }
 
-            if (taskmanagerPods.items.filter { it.status?.containerStatuses?.filter { it.lastState.running != null }?.isNotEmpty() == true }.isNotEmpty()) {
+            if (taskmanagerPods.items.filter { it.status?.containerStatuses?.filter { it.state.running != null }?.isNotEmpty() == true }.isNotEmpty()) {
                 return OperationResult(
                     OperationStatus.RETRY,
                     null
