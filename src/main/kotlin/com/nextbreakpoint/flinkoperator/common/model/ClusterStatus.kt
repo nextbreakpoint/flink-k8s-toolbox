@@ -10,6 +10,5 @@ enum class ClusterStatus {
     Failed,
     Suspended,
     Terminated,
-    Cancelling,
-    Checkpointing
+    Cancelling
 }

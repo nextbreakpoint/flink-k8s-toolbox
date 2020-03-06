@@ -48,8 +48,8 @@ class StatusTest {
     fun `should store cluster status and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
         assertThat(Status.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
-        Status.setClusterStatus(flinkCluster, ClusterStatus.Checkpointing)
-        assertThat(Status.getClusterStatus(flinkCluster)).isEqualTo(ClusterStatus.Checkpointing)
+        Status.setClusterStatus(flinkCluster, ClusterStatus.Cancelling)
+        assertThat(Status.getClusterStatus(flinkCluster)).isEqualTo(ClusterStatus.Cancelling)
         assertThat(Status.getStatusTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp)
     }
 

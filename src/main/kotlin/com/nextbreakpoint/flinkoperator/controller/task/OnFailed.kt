@@ -68,15 +68,17 @@ class OnFailed(logger: Logger) : Task(logger) {
             context.resetManualAction()
         }
 
-        if (context.getJobRestartPolicy() == "Always") {
-            val changes = context.computeChanges()
+        if (!context.isBatchMode()) {
+            if (context.getJobRestartPolicy() == "Always") {
+                val changes = context.computeChanges()
 
-            if (changes.isNotEmpty()) {
-                logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
+                if (changes.isNotEmpty()) {
+                    logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
 
-                context.setClusterStatus(ClusterStatus.Updating)
+                    context.setClusterStatus(ClusterStatus.Updating)
 
-                return
+                    return
+                }
             }
         }
     }

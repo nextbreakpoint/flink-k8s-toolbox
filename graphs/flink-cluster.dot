@@ -24,7 +24,7 @@ digraph state_machine {
   STARTING -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources created<BR/>and job running<BR/>or job not defined</TD>
+              <TD>Resources created<BR/>and job running or not defined</TD>
           </TR>
       </TABLE>
   > ];
@@ -32,13 +32,6 @@ digraph state_machine {
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>Failed starting</TD>
-          </TR>
-      </TABLE>
-  > ];
-  RUNNING -> CHECKPOINTING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Automatic savepoint<BR/>or manual savepoint</TD>
           </TR>
       </TABLE>
   > ];
@@ -52,21 +45,21 @@ digraph state_machine {
   RUNNING -> SCALING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster rescaled</TD>
+              <TD>Replicas changed</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Job is defined<BR/>but it is no<BR/>longer running</TD>
+              <TD>Job is defined<BR/>but not running</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped<BR/>the cluster or<BR/> cluster deleted</TD>
+              <TD>User stopped the cluster<BR/>or cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
@@ -115,14 +108,14 @@ digraph state_machine {
   STOPPING -> SUSPENDED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped<BR/>the cluster</TD>
+              <TD>User stopped the cluster</TD>
           </TR>
       </TABLE>
   > ];
   STOPPING -> TERMINATED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User terminated<BR/>the cluster or<BR/>specification modified or<BR/>cluster deleted</TD>
+              <TD>User terminated the cluster<BR/>or specification modified<BR/>or cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
@@ -154,52 +147,38 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
-  CHECKPOINTING -> RUNNING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Savepoint request created</TD>
-          </TR>
-      </TABLE>
-  > ];
-  CHECKPOINTING -> FAILED [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Job not running or<BR/>savepoint request failed</TD>
-          </TR>
-      </TABLE>
-  > ];
   SUSPENDED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User started<BR/>the cluster</TD>
+              <TD>User started the cluster</TD>
           </TR>
       </TABLE>
   > ];
   SUSPENDED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User terminated<BR/>the cluster or<BR/>specification modified or<BR/>cluster deleted</TD>
+              <TD>User terminated the cluster<BR/>or specification modified<BR/>or cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
   TERMINATED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User started<BR/>the cluster</TD>
+              <TD>User started the cluster</TD>
           </TR>
       </TABLE>
   > ];
   FAILED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped<BR/>the cluster or<BR/>cluster deleted</TD>
+              <TD>User stopped the cluster<BR/>or cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
   FAILED -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Job has been<BR/>running for a while</TD>
+              <TD>Job is running</TD>
           </TR>
       </TABLE>
   > ];
@@ -210,7 +189,6 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
-  CHECKPOINTING [ fillcolor=yellow ];
   CANCELLING [ fillcolor=yellow ];
   STOPPING [ fillcolor=yellow ];
   STARTING [ fillcolor=yellow ];
