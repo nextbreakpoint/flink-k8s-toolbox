@@ -64,15 +64,17 @@ class OnRunning(logger: Logger) : Task(logger) {
             return
         }
 
-        val changes = context.computeChanges()
+        if (!context.isBatchMode()) {
+            val changes = context.computeChanges()
 
-        if (changes.isNotEmpty()) {
-            logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
+            if (changes.isNotEmpty()) {
+                logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
 
-            context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Updating)
+                context.resetManualAction()
+                context.setClusterStatus(ClusterStatus.Updating)
 
-            return
+                return
+            }
         }
 
         val savepointRequest = context.getSavepointRequest()
@@ -105,10 +107,20 @@ class OnRunning(logger: Logger) : Task(logger) {
                 val savepointIntervalInSeconds = context.getSavepointInterval()
 
                 if (context.timeSinceLastSavepointRequestInSeconds() >= savepointIntervalInSeconds) {
-                    context.resetManualAction()
-                    context.setClusterStatus(ClusterStatus.Checkpointing)
+                    val options = context.getSavepointOtions()
 
-                    return
+                    val response = context.triggerSavepoint(context.clusterId, options)
+
+                    if (response.isCompleted()) {
+                        logger.info("Savepoint requested created")
+
+                        context.resetManualAction()
+                        context.setSavepointRequest(response.output)
+
+                        return
+                    }
+
+                    logger.error("Savepoint request failed. Skipping automatic savepoint")
                 }
             }
         }
@@ -123,10 +135,22 @@ class OnRunning(logger: Logger) : Task(logger) {
         }
 
         if (manualAction == ManualAction.TRIGGER_SAVEPOINT) {
-            context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Checkpointing)
+            if (savepointRequest == null) {
+                val options = context.getSavepointOtions()
 
-            return
+                val response = context.triggerSavepoint(context.clusterId, options)
+
+                if (response.isCompleted()) {
+                    logger.info("Savepoint requested created")
+
+                    context.resetManualAction()
+                    context.setSavepointRequest(response.output)
+
+                    return
+                }
+
+                logger.error("Savepoint request failed. Skipping manual savepoint")
+            }
         }
 
         if (manualAction == ManualAction.FORGET_SAVEPOINT) {
@@ -142,14 +166,16 @@ class OnRunning(logger: Logger) : Task(logger) {
             context.resetManualAction()
         }
 
-        val desiredTaskManagers = context.getDesiredTaskManagers()
-        val currentTaskManagers = context.getTaskManagers()
+        if (!context.isBatchMode()) {
+            val desiredTaskManagers = context.getDesiredTaskManagers()
+            val currentTaskManagers = context.getTaskManagers()
 
-        if (currentTaskManagers != desiredTaskManagers) {
-            context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Scaling)
+            if (currentTaskManagers != desiredTaskManagers) {
+                context.resetManualAction()
+                context.setClusterStatus(ClusterStatus.Scaling)
 
-            return
+                return
+            }
         }
     }
 }

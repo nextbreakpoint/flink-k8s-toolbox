@@ -11,7 +11,7 @@ class OnCancelling(logger: Logger) : Task(logger) {
         val seconds = context.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TASK_TIMEOUT) {
-            logger.error("Cluster not cancelled after $seconds seconds")
+            logger.error("Job not cancelled after $seconds seconds")
 
             context.resetSavepointRequest()
             context.setClusterStatus(ClusterStatus.Failed)

@@ -3,7 +3,6 @@ package com.nextbreakpoint.flinkoperator.controller.core
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.controller.task.OnCancelling
-import com.nextbreakpoint.flinkoperator.controller.task.OnCheckpointing
 import com.nextbreakpoint.flinkoperator.controller.task.OnFailed
 import com.nextbreakpoint.flinkoperator.controller.task.OnInitialize
 import com.nextbreakpoint.flinkoperator.controller.task.OnRunning
@@ -29,8 +28,7 @@ class TaskController(val controller: OperationController, val clusterId: Cluster
         ClusterStatus.Failed to OnFailed(logger),
         ClusterStatus.Suspended to OnSuspended(logger),
         ClusterStatus.Terminated to OnTerminated(logger),
-        ClusterStatus.Cancelling to OnCancelling(logger),
-        ClusterStatus.Checkpointing to OnCheckpointing(logger)
+        ClusterStatus.Cancelling to OnCancelling(logger)
     )
 
     fun execute(resources: CachedResources) {

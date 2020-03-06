@@ -1,12 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
-import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
+import com.nextbreakpoint.flinkoperator.common.model.*
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
@@ -363,4 +358,6 @@ class TaskContext(
     fun getJobManagerReplicas(): Int = resources.jobmanagerStatefulSet?.status?.replicas ?: 0
 
     fun getTaskManagerReplicas(): Int = resources.taskmanagerStatefulSet?.status?.replicas ?: 0
+
+    fun isBatchMode() = cluster.status.bootstrap.executionMode?.toUpperCase() == ExecutionMode.BATCH.toString()
 }
