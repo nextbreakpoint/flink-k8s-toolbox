@@ -15,7 +15,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.OnUpdating
 import org.apache.log4j.Logger
 import java.lang.RuntimeException
 
-class TaskController(val controller: OperationController, val clusterId: ClusterId) {
+class TaskController(private val controller: OperationController, private val clusterId: ClusterId) {
     private val logger = Logger.getLogger("TaskController (" + clusterId.name + ")")
 
     private val tasks = mapOf(

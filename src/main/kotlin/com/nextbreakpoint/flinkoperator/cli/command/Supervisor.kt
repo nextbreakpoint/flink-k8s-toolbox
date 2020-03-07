@@ -6,11 +6,10 @@ import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.SupervisorOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.WatchAdapter
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.TaskController
-import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 import java.util.concurrent.TimeUnit
 
@@ -31,9 +30,7 @@ class Supervisor : BootstrapCommand<SupervisorOptions> {
 
         val cache = Cache()
 
-        val json = JSON()
-
-        val watch = WatchAdapter(json, kubeClient, cache)
+        val watch = CacheAdapter(kubeClient, cache)
 
         watch.watchClusters(namespace)
         watch.watchJobs(namespace)

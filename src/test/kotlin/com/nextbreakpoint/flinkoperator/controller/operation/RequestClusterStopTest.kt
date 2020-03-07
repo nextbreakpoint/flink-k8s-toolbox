@@ -4,7 +4,7 @@ import com.nextbreakpoint.flinkoperator.common.model.*
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
+import com.nextbreakpoint.flinkoperator.controller.core.CacheBridge
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito
@@ -24,7 +24,7 @@ class RequestClusterStopTest {
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
-    private val adapter = CacheAdapter(cluster)
+    private val adapter = CacheBridge(cluster)
     private val command = RequestClusterStop(flinkOptions, flinkClient, kubeClient, adapter)
 
     @BeforeEach
