@@ -196,7 +196,7 @@ class TaskContext(
         Status.setJobParallelism(cluster, taskManagers * taskSlots)
     }
 
-    fun computeChanges(): MutableList<String> {
+    fun computeChanges(): List<String> {
         val jobManagerDigest = Status.getJobManagerDigest(cluster)
         val taskManagerDigest = Status.getTaskManagerDigest(cluster)
         val runtimeDigest = Status.getRuntimeDigest(cluster)
@@ -313,11 +313,8 @@ class TaskContext(
     }
 
     fun getClusterScale(): ClusterScaling {
-        val taskManagers = Status.getTaskManagers(cluster)
-        val taskSlots = Status.getTaskSlots(cluster)
-
         return ClusterScaling(
-            taskManagers = taskManagers, taskSlots = taskSlots
+            taskManagers = Status.getTaskManagers(cluster), taskSlots = Status.getTaskSlots(cluster)
         )
     }
 
