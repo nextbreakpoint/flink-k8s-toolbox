@@ -9,19 +9,15 @@ import org.apache.log4j.Logger
 class OnTerminated(logger: Logger) : Task(logger) {
     override fun execute(context: TaskContext) {
         if (context.hasBeenDeleted()) {
+            logger.info("Removing finalizer from cluster ${context.clusterId.name}")
+
             context.removeFinalizer()
 
             return
         }
 
-        val bootstrapExists = context.doesBootstrapExists()
-
-        if (bootstrapExists) {
-            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
-
-            if (bootstrapResult.isCompleted()) {
-                logger.info("Bootstrap job deleted")
-            }
+        if (!terminate(context)) {
+            logger.info("Terminating cluster...")
 
             return
         }
@@ -31,17 +27,11 @@ class OnTerminated(logger: Logger) : Task(logger) {
         if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
             logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
 
-            if (update(context)) {
-                context.updateStatus()
-                context.updateDigests()
-                context.setClusterStatus(ClusterStatus.Terminated)
-            }
+            context.updateStatus()
+            context.updateDigests()
+            context.setClusterStatus(ClusterStatus.Terminated)
 
             return
-        }
-
-        if (!terminate(context)) {
-            logger.info("Terminating cluster...")
         }
 
         val manualAction = context.getManualAction()
@@ -64,6 +54,8 @@ class OnTerminated(logger: Logger) : Task(logger) {
 
         if (manualAction != ManualAction.NONE) {
             context.resetManualAction()
+
+            return
         }
     }
 }

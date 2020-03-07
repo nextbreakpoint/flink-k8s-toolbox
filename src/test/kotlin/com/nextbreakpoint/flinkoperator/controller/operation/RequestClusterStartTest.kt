@@ -1,22 +1,20 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.StartOptions
+import com.nextbreakpoint.flinkoperator.common.model.*
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
 import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.testing.KotlinMockito
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -34,6 +32,18 @@ class RequestClusterStartTest {
     @BeforeEach
     fun configure() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
+    }
+
+    @Test
+    fun `should fail when kubeClient throws exception`() {
+        KotlinMockito.given(kubeClient.updateAnnotations(eq(clusterId), any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
+        verify(kubeClient, times(1)).updateAnnotations(eq(clusterId), any())
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.output).isNull()
     }
 
     @Test

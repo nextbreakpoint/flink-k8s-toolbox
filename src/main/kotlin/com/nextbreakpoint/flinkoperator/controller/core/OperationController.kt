@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterList
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -142,26 +141,4 @@ class OperationController(
     fun updateFinalizers(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
         kubeClient.updateFinalizers(clusterId, flinkCluster.metadata.finalizers)
     }
-
-    fun findClusters(namespace: String, clusterName: String): V1FlinkClusterList {
-        return kubeClient.findFlinkClusters(namespace, clusterName)
-    }
-
-//    fun findClusterResources(clusterId: ClusterId): CachedResources {
-//        val bootstrapJobs = kubeClient.listBootstrapJobs(clusterId)
-//        val jobmanagerServices = kubeClient.listJobManagerServices(clusterId)
-//        val jobmanagerStatefulSets = kubeClient.listJobManagerStatefulSets(clusterId)
-//        val taskmanagerStatefulSets = kubeClient.listTaskManagerStatefulSets(clusterId)
-//        val jobmanagerPVCs = kubeClient.listJobManagerPVCs(clusterId)
-//        val taskmanagerPVCs = kubeClient.listTaskManagerPVCs(clusterId)
-//
-//        return CachedResources(
-//            bootstrapJob = bootstrapJobs.items.firstOrNull(),
-//            jobmanagerService = jobmanagerServices.items.firstOrNull(),
-//            jobmanagerStatefulSet = jobmanagerStatefulSets.items.firstOrNull(),
-//            taskmanagerStatefulSet = taskmanagerStatefulSets.items.firstOrNull(),
-//            jobmanagerPVC = jobmanagerPVCs.items.firstOrNull(),
-//            taskmanagerPVC = taskmanagerPVCs.items.firstOrNull()
-//        )
-//    }
 }

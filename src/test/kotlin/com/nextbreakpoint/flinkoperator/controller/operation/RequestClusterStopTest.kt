@@ -1,10 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.StopOptions
+import com.nextbreakpoint.flinkoperator.common.model.*
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
@@ -34,6 +30,18 @@ class RequestClusterStopTest {
     @BeforeEach
     fun configure() {
         Status.setClusterStatus(cluster, ClusterStatus.Terminated)
+    }
+
+    @Test
+    fun `should fail when kubeClient throws exception`() {
+        KotlinMockito.given(kubeClient.updateAnnotations(eq(clusterId), KotlinMockito.any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterId, StopOptions(withoutSavepoint = true, deleteResources = false))
+        verify(kubeClient, times(1)).updateAnnotations(eq(clusterId), KotlinMockito.any())
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.output).isNull()
     }
 
     @Test

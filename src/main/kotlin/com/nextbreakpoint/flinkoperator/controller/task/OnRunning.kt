@@ -17,9 +17,7 @@ class OnRunning(logger: Logger) : Task(logger) {
             return
         }
 
-        val bootstrapExists = context.doesBootstrapExists()
-
-        if (bootstrapExists) {
+        if (context.doesBootstrapExists()) {
             val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
 
             if (bootstrapResult.isCompleted()) {
@@ -56,7 +54,7 @@ class OnRunning(logger: Logger) : Task(logger) {
         val jobRunningResult = context.isJobRunning(context.clusterId)
 
         if (!jobRunningResult.isCompleted()) {
-            logger.info("Job not running")
+            logger.warn("Job not running")
 
             context.resetManualAction()
             context.setClusterStatus(ClusterStatus.Failed)
@@ -91,7 +89,7 @@ class OnRunning(logger: Logger) : Task(logger) {
                 return
             }
 
-            val seconds = context.timeSinceLastSavepointRequestInSeconds()
+            val seconds = context.timeSinceLastUpdateInSeconds()
 
             if (seconds > Timeout.TASK_TIMEOUT) {
                 logger.error("Savepoint not created after $seconds seconds")
@@ -164,6 +162,8 @@ class OnRunning(logger: Logger) : Task(logger) {
 
         if (manualAction != ManualAction.NONE) {
             context.resetManualAction()
+
+            return
         }
 
         if (!context.isBatchMode()) {
