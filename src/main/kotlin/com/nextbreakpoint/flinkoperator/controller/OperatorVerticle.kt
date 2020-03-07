@@ -11,13 +11,7 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.Cache
-import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
-import com.nextbreakpoint.flinkoperator.controller.core.Command
-import com.nextbreakpoint.flinkoperator.controller.core.OperationController
-import com.nextbreakpoint.flinkoperator.controller.core.Status
-import com.nextbreakpoint.flinkoperator.controller.core.TaskController
-import com.nextbreakpoint.flinkoperator.controller.core.Timeout
+import com.nextbreakpoint.flinkoperator.controller.core.*
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
@@ -98,7 +92,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         val cache = Cache()
 
-        val watch = WatchAdapter(json, kubeClient, cache)
+        val adapter = CacheAdapter(kubeClient, cache)
 
         val controller = OperationController(flinkOptions, flinkClient, kubeClient)
 
@@ -199,7 +193,7 @@ class OperatorVerticle : AbstractVerticle() {
                 json.serialize(
                     controller.getClusterStatus(
                         cache.getClusterId(namespace, context.pathParam("name")),
-                        CacheAdapter(
+                        CacheBridge(
                             cache.getFlinkCluster(cache.getClusterId(namespace, context.pathParam("name")))
                         )
                     )
@@ -279,7 +273,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.requestStartCluster(
-                            it.clusterId, json.deserialize(it.json, StartOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId))
+                            it.clusterId, json.deserialize(it.json, StartOptions::class.java), CacheBridge(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -297,7 +291,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.requestStopCluster(
-                            it.clusterId, json.deserialize(it.json, StopOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId))
+                            it.clusterId, json.deserialize(it.json, StopOptions::class.java), CacheBridge(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -359,7 +353,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.createSavepoint(
-                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId))
+                            it.clusterId, CacheBridge(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -377,7 +371,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.forgetSavepoint(
-                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId))
+                            it.clusterId, CacheBridge(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -390,11 +384,11 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         context.runOnContext {
-            watch.watchClusters(namespace)
-            watch.watchJobs(namespace)
-            watch.watchServices(namespace)
-            watch.watchStatefuleSets(namespace)
-            watch.watchPersistentVolumeClaims(namespace)
+            adapter.watchClusters(namespace)
+            adapter.watchJobs(namespace)
+            adapter.watchServices(namespace)
+            adapter.watchStatefuleSets(namespace)
+            adapter.watchPersistentVolumeClaims(namespace)
         }
 
         vertx.setPeriodic(Timeout.POLLING_INTERVAL * 1000) {
