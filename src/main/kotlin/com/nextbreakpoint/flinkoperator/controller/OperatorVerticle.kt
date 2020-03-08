@@ -11,7 +11,14 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.*
+import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
+import com.nextbreakpoint.flinkoperator.controller.core.CacheBridge
+import com.nextbreakpoint.flinkoperator.controller.core.Command
+import com.nextbreakpoint.flinkoperator.controller.core.OperationController
+import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.controller.core.TaskController
+import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
 import com.nextbreakpoint.flinkoperator.controller.operation.JobMetrics
@@ -536,7 +543,7 @@ class OperatorVerticle : AbstractVerticle() {
         }.forEach { pair ->
             worker.rxExecuteBlocking<Void?> { promise ->
                 try {
-                    TaskController(controller, pair.first).execute(pair.second)
+                    TaskController.create(controller, pair.first).execute(pair.second)
 
                     promise.complete()
                 } catch (e: Exception) {
