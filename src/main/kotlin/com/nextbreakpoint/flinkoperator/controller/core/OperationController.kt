@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterList
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -44,29 +43,29 @@ import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
 
 class OperationController(
-    val flinkOptions: FlinkOptions,
-    val flinkClient: FlinkClient,
-    val kubeClient: KubeClient
+    private val flinkOptions: FlinkOptions,
+    private val flinkClient: FlinkClient,
+    private val kubeClient: KubeClient
 ) {
     fun currentTimeMillis() = System.currentTimeMillis()
 
     fun requestScaleCluster(clusterId: ClusterId, options: ScaleOptions): OperationResult<Void?> =
         RequestClusterScale(flinkOptions, flinkClient, kubeClient).execute(clusterId, options)
 
-    fun requestStartCluster(clusterId: ClusterId, options: StartOptions, adapter: CacheAdapter) : OperationResult<Void?> =
-        RequestClusterStart(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
+    fun requestStartCluster(clusterId: ClusterId, options: StartOptions, bridge: CacheBridge) : OperationResult<Void?> =
+        RequestClusterStart(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterId, options)
 
-    fun requestStopCluster(clusterId: ClusterId, options: StopOptions, adapter: CacheAdapter) : OperationResult<Void?> =
-        RequestClusterStop(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, options)
+    fun requestStopCluster(clusterId: ClusterId, options: StopOptions, bridge: CacheBridge) : OperationResult<Void?> =
+        RequestClusterStop(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterId, options)
 
-    fun createSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<Void?> =
-        RequestSavepointTrigger(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
+    fun createSavepoint(clusterId: ClusterId, bridge: CacheBridge) : OperationResult<Void?> =
+        RequestSavepointTrigger(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterId, null)
 
-    fun forgetSavepoint(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<Void?> =
-        RequestSavepointForget(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
+    fun forgetSavepoint(clusterId: ClusterId, bridge: CacheBridge) : OperationResult<Void?> =
+        RequestSavepointForget(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterId, null)
 
-    fun getClusterStatus(clusterId: ClusterId, adapter: CacheAdapter) : OperationResult<String> =
-        ClusterGetStatus(flinkOptions, flinkClient, kubeClient, adapter).execute(clusterId, null)
+    fun getClusterStatus(clusterId: ClusterId, bridge: CacheBridge) : OperationResult<String> =
+        ClusterGetStatus(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterId, null)
 
     fun createFlinkCluster(clusterId: ClusterId, flinkCluster: V1FlinkCluster) : OperationResult<Void?> =
         FlinkClusterCreate(flinkOptions, flinkClient, kubeClient).execute(clusterId, flinkCluster)
@@ -142,26 +141,4 @@ class OperationController(
     fun updateFinalizers(clusterId: ClusterId, flinkCluster: V1FlinkCluster) {
         kubeClient.updateFinalizers(clusterId, flinkCluster.metadata.finalizers)
     }
-
-    fun findClusters(namespace: String, clusterName: String): V1FlinkClusterList {
-        return kubeClient.findFlinkClusters(namespace, clusterName)
-    }
-
-//    fun findClusterResources(clusterId: ClusterId): CachedResources {
-//        val bootstrapJobs = kubeClient.listBootstrapJobs(clusterId)
-//        val jobmanagerServices = kubeClient.listJobManagerServices(clusterId)
-//        val jobmanagerStatefulSets = kubeClient.listJobManagerStatefulSets(clusterId)
-//        val taskmanagerStatefulSets = kubeClient.listTaskManagerStatefulSets(clusterId)
-//        val jobmanagerPVCs = kubeClient.listJobManagerPVCs(clusterId)
-//        val taskmanagerPVCs = kubeClient.listTaskManagerPVCs(clusterId)
-//
-//        return CachedResources(
-//            bootstrapJob = bootstrapJobs.items.firstOrNull(),
-//            jobmanagerService = jobmanagerServices.items.firstOrNull(),
-//            jobmanagerStatefulSet = jobmanagerStatefulSets.items.firstOrNull(),
-//            taskmanagerStatefulSet = taskmanagerStatefulSets.items.firstOrNull(),
-//            jobmanagerPVC = jobmanagerPVCs.items.firstOrNull(),
-//            taskmanagerPVC = taskmanagerPVCs.items.firstOrNull()
-//        )
-//    }
 }

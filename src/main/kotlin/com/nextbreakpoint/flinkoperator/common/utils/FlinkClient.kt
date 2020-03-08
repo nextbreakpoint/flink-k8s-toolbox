@@ -121,30 +121,6 @@ object FlinkClient {
         }
     }
 
-    fun listJobs(address: FlinkAddress): List<JobIdWithStatus> {
-        try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
-
-            val response = flinkApi.getJobsCall( null, null).execute()
-
-            response.body().use { body ->
-                if (!response.isSuccessful) {
-                    throw CallException("[$address] Can't get jobs")
-                }
-
-                body.source().use { source ->
-                    val jobsOverview = JSON().deserialize<JobIdsWithStatusOverview>(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
-
-                    return jobsOverview.jobs
-                }
-            }
-        } catch (e : CallException) {
-            throw e
-        } catch (e : Exception) {
-            throw RuntimeException(e)
-        }
-    }
-
     fun runJar(
         address: FlinkAddress,
         jarFile: JarFileInfo,
@@ -514,8 +490,26 @@ object FlinkClient {
         }
     }
 
-    fun triggerJobRescaling(address: FlinkAddress, parallelism: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    fun triggerJobRescaling(address: FlinkAddress, jobId: String, parallelism: Int): TriggerResponse {
+        try {
+            val flinkApi = createFlinkApiClient(address, TIMEOUT * 30)
+
+            val response = flinkApi.triggerJobRescalingCall(jobId, parallelism, null, null).execute();
+
+            response.body().use { body ->
+                if (!response.isSuccessful) {
+                    throw CallException("[$address] Can't rescale job")
+                }
+
+                body.source().use { source ->
+                    return JSON().deserialize(source.readUtf8Line(), object : TypeToken<TriggerResponse>() {}.type)
+                }
+            }
+        } catch (e : CallException) {
+            throw e
+        } catch (e : Exception) {
+            throw RuntimeException(e)
+        }
     }
 
     private fun createFlinkApiClient(address: FlinkAddress, timeout: Long): FlinkApi {

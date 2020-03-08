@@ -16,11 +16,9 @@ class BootstrapDeleteJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
 
     override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
         try {
-            logger.info("[name=${clusterId.name}] Deleting bootstrap job...")
-
             kubeClient.deleteBootstrapJobs(clusterId)
 
-            kubeClient.deleteBootstrapJobPods(clusterId)
+            kubeClient.deleteBootstrapPods(clusterId)
 
             return OperationResult(
                 OperationStatus.COMPLETED,

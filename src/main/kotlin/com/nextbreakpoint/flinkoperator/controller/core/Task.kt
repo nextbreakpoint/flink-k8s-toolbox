@@ -5,26 +5,8 @@ import org.apache.log4j.Logger
 abstract class Task(val logger: Logger) {
     abstract fun execute(context: TaskContext)
 
-    protected fun update(context: TaskContext): Boolean {
-        val changes = context.computeChanges()
-
-        if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
-            if (terminate(context)) {
-                return true
-            }
-        } else if (changes.contains("BOOTSTRAP")) {
-            if (cancel(context)) {
-                return true
-            }
-        }
-
-        return false
-    }
-
     protected fun cancel(context: TaskContext): Boolean {
-        val bootstrapExists = context.doesBootstrapExists()
-
-        if (bootstrapExists) {
+        if (context.doesBootstrapExists()) {
             val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
 
             if (bootstrapResult.isCompleted()) {
@@ -68,7 +50,6 @@ abstract class Task(val logger: Logger) {
                     logger.info("Savepoint created for job ${savepointRequest.jobId} (${savepointResult.output})")
 
                     context.setSavepointPath(savepointResult.output)
-                    context.resetSavepointRequest()
 
                     return true
                 }
@@ -95,9 +76,6 @@ abstract class Task(val logger: Logger) {
     }
 
     protected fun suspend(context: TaskContext): Boolean {
-        val bootstrapExists = context.doesBootstrapExists()
-        val jobmanagerServiceExists = context.doesJobManagerServiceExists()
-
         val terminatedResult = context.arePodsTerminated(context.clusterId)
 
         if (!terminatedResult.isCompleted()) {
@@ -106,6 +84,8 @@ abstract class Task(val logger: Logger) {
             return false
         }
 
+        val bootstrapExists = context.doesBootstrapExists()
+
         if (bootstrapExists) {
             val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
 
@@ -113,6 +93,8 @@ abstract class Task(val logger: Logger) {
                 logger.info("Bootstrap job deleted")
             }
         }
+
+        val jobmanagerServiceExists = context.doesJobManagerServiceExists()
 
         if (jobmanagerServiceExists) {
             val serviceResult = context.deleteJobManagerService(context.clusterId)
@@ -126,6 +108,14 @@ abstract class Task(val logger: Logger) {
     }
 
     protected fun terminate(context: TaskContext): Boolean {
+        val terminatedResult = context.arePodsTerminated(context.clusterId)
+
+        if (!terminatedResult.isCompleted()) {
+            context.terminatePods(context.clusterId)
+
+            return false
+        }
+
         val bootstrapExists = context.doesBootstrapExists()
         val jobmanagerServiceExists = context.doesJobManagerServiceExists()
         val jobmanagerStatefuleSetExists = context.doesJobManagerStatefulSetExists()

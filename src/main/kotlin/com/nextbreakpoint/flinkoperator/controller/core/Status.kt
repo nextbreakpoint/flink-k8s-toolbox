@@ -243,11 +243,17 @@ object Status {
         flinkCluster.status?.bootstrap
 
     private fun currentTimeMillis(): Long {
+        // this is a hack required for testing
+        ensureMillisecondPassed()
+
+        return System.currentTimeMillis()
+    }
+
+    private fun ensureMillisecondPassed() {
         try {
             Thread.sleep(1)
-        } catch (e : Exception) {
+        } catch (e: Exception) {
         }
-        return System.currentTimeMillis()
     }
 
     private fun ensureState(flinkCluster: V1FlinkCluster) {

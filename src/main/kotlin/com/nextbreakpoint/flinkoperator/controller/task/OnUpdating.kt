@@ -27,10 +27,28 @@ class OnUpdating(logger: Logger) : Task(logger) {
             return
         }
 
-        if (update(context)) {
-            context.updateStatus()
-            context.updateDigests()
+        val changes = context.computeChanges()
+
+        if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
+            if (terminate(context)) {
+                context.updateStatus()
+                context.updateDigests()
+                context.setClusterStatus(ClusterStatus.Starting)
+
+                return
+            }
+        } else if (changes.contains("BOOTSTRAP")) {
+            if (cancel(context)) {
+                context.updateStatus()
+                context.updateDigests()
+                context.setClusterStatus(ClusterStatus.Starting)
+
+                return
+            }
+        } else {
             context.setClusterStatus(ClusterStatus.Starting)
+
+            return
         }
     }
 }

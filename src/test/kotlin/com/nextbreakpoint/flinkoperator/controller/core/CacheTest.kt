@@ -30,6 +30,11 @@ class CacheTest {
     }
 
     @Test
+    fun `should return empty list of cluster ids initially`() {
+        assertThat(cache.getClusterIds()).isEmpty()
+    }
+
+    @Test
     fun `should update clusters when a cluster changed`() {
         val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
@@ -63,8 +68,7 @@ class CacheTest {
         cache.onFlinkClusterChanged(cluster2)
         val clusters = cache.getFlinkClusters()
         assertThat(clusters).hasSize(2)
-        assertThat(clusters.get(0).metadata.uid).isEqualTo("123")
-        assertThat(clusters.get(1).metadata.uid).isEqualTo("456")
+        assertThat(clusters).containsExactlyInAnyOrder(cluster1, cluster2)
     }
 
     @Test
@@ -78,7 +82,7 @@ class CacheTest {
         cache.onFlinkClusterDeleted(cluster1)
         val clusters = cache.getFlinkClusters()
         assertThat(clusters).hasSize(1)
-        assertThat(clusters.get(0).metadata.uid).isEqualTo("456")
+        assertThat(clusters).containsExactlyInAnyOrder(cluster2)
     }
 
     @Test
@@ -90,8 +94,23 @@ class CacheTest {
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
         assertThat(cache.getFlinkClusters()).hasSize(2)
-        cache.onFlinkClusterDeleteAll()
+        cache.onFlinkClusterDeletedAll()
         assertThat(cache.getFlinkClusters()).hasSize(0)
+    }
+
+    @Test
+    fun `should return non empty list of cluster ids when a cluster changed`() {
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster1.metadata.uid = "123"
+        cache.onFlinkClusterChanged(cluster1)
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster2.metadata.uid = "456"
+        cache.onFlinkClusterChanged(cluster2)
+        val clusterIds = cache.getClusterIds()
+        assertThat(clusterIds).hasSize(2)
+        val clusterId1 = ClusterId(namespace = "flink", name = "test", uuid = "123")
+        val clusterId2 = ClusterId(namespace = "flink", name = "test", uuid = "456")
+        assertThat(clusterIds).containsExactlyInAnyOrder(clusterId1, clusterId2)
     }
 
     @Test
@@ -107,5 +126,206 @@ class CacheTest {
         val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = null
         assertThatThrownBy { cache.onFlinkClusterChanged(cluster) }.isInstanceOf(IllegalStateException::class.java)
+    }
+
+    @Test
+    fun `should return empty resources initially`() {
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster.metadata.uid = "123"
+        cache.onFlinkClusterChanged(cluster)
+        val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+        val resources = cache.getCachedResources(clusterId = clusterId)
+        assertThat(resources.bootstrapJob).isNull()
+        assertThat(resources.jobmanagerService).isNull()
+        assertThat(resources.jobmanagerStatefulSet).isNull()
+        assertThat(resources.taskmanagerStatefulSet).isNull()
+        assertThat(resources.jobmanagerPVC).isNull()
+        assertThat(resources.taskmanagerPVC).isNull()
+    }
+
+    @Test
+    fun `should return resources when resources are changed`() {
+        val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster.metadata.uid = "123"
+        cache.onFlinkClusterChanged(cluster)
+        val bootstrapJob = TestFactory.aBootstrapJob(cluster)
+        val jobManagerService1 = TestFactory.aJobManagerService(cluster)
+        val jobManagerStatefulSet1 = TestFactory.aJobManagerStatefulSet(cluster)
+        val taskManagerStatefulSet1 = TestFactory.aTaskManagerStatefulSet(cluster)
+        val jobManagerPersistenVolumeClaim1 = TestFactory.aJobManagerPersistenVolumeClaim(cluster)
+        val taskManagerPersistenVolumeClaim1 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster)
+        cache.onJobChanged(bootstrapJob)
+        cache.onServiceChanged(jobManagerService1)
+        cache.onStatefulSetChanged(jobManagerStatefulSet1)
+        cache.onStatefulSetChanged(taskManagerStatefulSet1)
+        cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim1)
+        cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim1)
+        val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+        val resources = cache.getCachedResources(clusterId = clusterId)
+        assertThat(resources.bootstrapJob).isEqualTo(bootstrapJob)
+        assertThat(resources.jobmanagerService).isEqualTo(jobManagerService1)
+        assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobManagerStatefulSet1)
+        assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskManagerStatefulSet1)
+        assertThat(resources.jobmanagerPVC).isEqualTo(jobManagerPersistenVolumeClaim1)
+        assertThat(resources.taskmanagerPVC).isEqualTo(taskManagerPersistenVolumeClaim1)
+    }
+
+    @Test
+    fun `should update resources when resources are changed`() {
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster1.metadata.uid = "123"
+        cache.onFlinkClusterChanged(cluster1)
+        val bootstrapJob1 = TestFactory.aBootstrapJob(cluster1)
+        val jobManagerService1 = TestFactory.aJobManagerService(cluster1)
+        val jobManagerStatefulSet1 = TestFactory.aJobManagerStatefulSet(cluster1)
+        val taskManagerStatefulSet1 = TestFactory.aTaskManagerStatefulSet(cluster1)
+        val jobManagerPersistenVolumeClaim1 = TestFactory.aJobManagerPersistenVolumeClaim(cluster1)
+        val taskManagerPersistenVolumeClaim1 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster1)
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster2.metadata.uid = "456"
+        val bootstrapJob2 = TestFactory.aBootstrapJob(cluster2)
+        val jobManagerService2 = TestFactory.aJobManagerService(cluster2)
+        val jobManagerStatefulSet2 = TestFactory.aJobManagerStatefulSet(cluster2)
+        val taskManagerStatefulSet2 = TestFactory.aTaskManagerStatefulSet(cluster2)
+        val jobManagerPersistenVolumeClaim2 = TestFactory.aJobManagerPersistenVolumeClaim(cluster2)
+        val taskManagerPersistenVolumeClaim2 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster2)
+        cache.onJobChanged(bootstrapJob1)
+        cache.onServiceChanged(jobManagerService1)
+        cache.onStatefulSetChanged(jobManagerStatefulSet1)
+        cache.onStatefulSetChanged(taskManagerStatefulSet1)
+        cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim1)
+        cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim1)
+        cache.onJobChanged(bootstrapJob2)
+        cache.onServiceChanged(jobManagerService2)
+        cache.onStatefulSetChanged(jobManagerStatefulSet2)
+        cache.onStatefulSetChanged(taskManagerStatefulSet2)
+        cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim2)
+        cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim2)
+        val clusterId1 = ClusterId(namespace = "flink", name = "test", uuid = "123")
+        val resources1 = cache.getCachedResources(clusterId = clusterId1)
+        assertThat(resources1.bootstrapJob).isEqualTo(bootstrapJob1)
+        assertThat(resources1.jobmanagerService).isEqualTo(jobManagerService1)
+        assertThat(resources1.jobmanagerStatefulSet).isEqualTo(jobManagerStatefulSet1)
+        assertThat(resources1.taskmanagerStatefulSet).isEqualTo(taskManagerStatefulSet1)
+        assertThat(resources1.jobmanagerPVC).isEqualTo(jobManagerPersistenVolumeClaim1)
+        assertThat(resources1.taskmanagerPVC).isEqualTo(taskManagerPersistenVolumeClaim1)
+        val clusterId2 = ClusterId(namespace = "flink", name = "test", uuid = "456")
+        val resources2 = cache.getCachedResources(clusterId = clusterId2)
+        assertThat(resources2.bootstrapJob).isEqualTo(bootstrapJob2)
+        assertThat(resources2.jobmanagerService).isEqualTo(jobManagerService2)
+        assertThat(resources2.jobmanagerStatefulSet).isEqualTo(jobManagerStatefulSet2)
+        assertThat(resources2.taskmanagerStatefulSet).isEqualTo(taskManagerStatefulSet2)
+        assertThat(resources2.jobmanagerPVC).isEqualTo(jobManagerPersistenVolumeClaim2)
+        assertThat(resources2.taskmanagerPVC).isEqualTo(taskManagerPersistenVolumeClaim2)
+    }
+
+    @Test
+    fun `should update resources when resources are deleted`() {
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster1.metadata.uid = "123"
+        cache.onFlinkClusterChanged(cluster1)
+        val bootstrapJob1 = TestFactory.aBootstrapJob(cluster1)
+        val jobManagerService1 = TestFactory.aJobManagerService(cluster1)
+        val jobManagerStatefulSet1 = TestFactory.aJobManagerStatefulSet(cluster1)
+        val taskManagerStatefulSet1 = TestFactory.aTaskManagerStatefulSet(cluster1)
+        val jobManagerPersistenVolumeClaim1 = TestFactory.aJobManagerPersistenVolumeClaim(cluster1)
+        val taskManagerPersistenVolumeClaim1 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster1)
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster2.metadata.uid = "456"
+        val bootstrapJob2 = TestFactory.aBootstrapJob(cluster2)
+        val jobManagerService2 = TestFactory.aJobManagerService(cluster2)
+        val jobManagerStatefulSet2 = TestFactory.aJobManagerStatefulSet(cluster2)
+        val taskManagerStatefulSet2 = TestFactory.aTaskManagerStatefulSet(cluster2)
+        val jobManagerPersistenVolumeClaim2 = TestFactory.aJobManagerPersistenVolumeClaim(cluster2)
+        val taskManagerPersistenVolumeClaim2 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster2)
+        cache.onJobChanged(bootstrapJob1)
+        cache.onServiceChanged(jobManagerService1)
+        cache.onStatefulSetChanged(jobManagerStatefulSet1)
+        cache.onStatefulSetChanged(taskManagerStatefulSet1)
+        cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim1)
+        cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim1)
+        cache.onJobChanged(bootstrapJob2)
+        cache.onServiceChanged(jobManagerService2)
+        cache.onStatefulSetChanged(jobManagerStatefulSet2)
+        cache.onStatefulSetChanged(taskManagerStatefulSet2)
+        cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim2)
+        cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim2)
+        cache.onJobDeleted(bootstrapJob1)
+        cache.onServiceDeleted(jobManagerService1)
+        cache.onStatefulSetDeleted(jobManagerStatefulSet1)
+        cache.onStatefulSetDeleted(taskManagerStatefulSet1)
+        cache.onPersistentVolumeClaimDeleted(jobManagerPersistenVolumeClaim1)
+        cache.onPersistentVolumeClaimDeleted(taskManagerPersistenVolumeClaim1)
+        val clusterId1 = ClusterId(namespace = "flink", name = "test", uuid = "123")
+        val resources1 = cache.getCachedResources(clusterId = clusterId1)
+        assertThat(resources1.bootstrapJob).isNull()
+        assertThat(resources1.jobmanagerService).isNull()
+        assertThat(resources1.jobmanagerStatefulSet).isNull()
+        assertThat(resources1.taskmanagerStatefulSet).isNull()
+        assertThat(resources1.jobmanagerPVC).isNull()
+        assertThat(resources1.taskmanagerPVC).isNull()
+        val clusterId2 = ClusterId(namespace = "flink", name = "test", uuid = "456")
+        val resources2 = cache.getCachedResources(clusterId = clusterId2)
+        assertThat(resources2.bootstrapJob).isEqualTo(bootstrapJob2)
+        assertThat(resources2.jobmanagerService).isEqualTo(jobManagerService2)
+        assertThat(resources2.jobmanagerStatefulSet).isEqualTo(jobManagerStatefulSet2)
+        assertThat(resources2.taskmanagerStatefulSet).isEqualTo(taskManagerStatefulSet2)
+        assertThat(resources2.jobmanagerPVC).isEqualTo(jobManagerPersistenVolumeClaim2)
+        assertThat(resources2.taskmanagerPVC).isEqualTo(taskManagerPersistenVolumeClaim2)
+    }
+
+    @Test
+    fun `should update resources when all resources are deleted`() {
+        val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster1.metadata.uid = "123"
+        cache.onFlinkClusterChanged(cluster1)
+        val bootstrapJob1 = TestFactory.aBootstrapJob(cluster1)
+        val jobManagerService1 = TestFactory.aJobManagerService(cluster1)
+        val jobManagerStatefulSet1 = TestFactory.aJobManagerStatefulSet(cluster1)
+        val taskManagerStatefulSet1 = TestFactory.aTaskManagerStatefulSet(cluster1)
+        val jobManagerPersistenVolumeClaim1 = TestFactory.aJobManagerPersistenVolumeClaim(cluster1)
+        val taskManagerPersistenVolumeClaim1 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster1)
+        val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
+        cluster2.metadata.uid = "456"
+        val bootstrapJob2 = TestFactory.aBootstrapJob(cluster2)
+        val jobManagerService2 = TestFactory.aJobManagerService(cluster2)
+        val jobManagerStatefulSet2 = TestFactory.aJobManagerStatefulSet(cluster2)
+        val taskManagerStatefulSet2 = TestFactory.aTaskManagerStatefulSet(cluster2)
+        val jobManagerPersistenVolumeClaim2 = TestFactory.aJobManagerPersistenVolumeClaim(cluster2)
+        val taskManagerPersistenVolumeClaim2 = TestFactory.aTaskManagerPersistenVolumeClaim(cluster2)
+        cache.onJobChanged(bootstrapJob1)
+        cache.onServiceChanged(jobManagerService1)
+        cache.onStatefulSetChanged(jobManagerStatefulSet1)
+        cache.onStatefulSetChanged(taskManagerStatefulSet1)
+        cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim1)
+        cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim1)
+        cache.onJobChanged(bootstrapJob2)
+        cache.onServiceChanged(jobManagerService2)
+        cache.onStatefulSetChanged(jobManagerStatefulSet2)
+        cache.onStatefulSetChanged(taskManagerStatefulSet2)
+        cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim2)
+        cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim2)
+        cache.onJobDeletedAll()
+        cache.onServiceDeletedAll()
+        cache.onStatefulSetDeletedAll()
+        cache.onStatefulSetDeletedAll()
+        cache.onPersistentVolumeClaimDeletedAll()
+        cache.onPersistentVolumeClaimDeletedAll()
+        val clusterId1 = ClusterId(namespace = "flink", name = "test", uuid = "123")
+        val resources1 = cache.getCachedResources(clusterId = clusterId1)
+        assertThat(resources1.bootstrapJob).isNull()
+        assertThat(resources1.jobmanagerService).isNull()
+        assertThat(resources1.jobmanagerStatefulSet).isNull()
+        assertThat(resources1.taskmanagerStatefulSet).isNull()
+        assertThat(resources1.jobmanagerPVC).isNull()
+        assertThat(resources1.taskmanagerPVC).isNull()
+        val clusterId2 = ClusterId(namespace = "flink", name = "test", uuid = "456")
+        val resources2 = cache.getCachedResources(clusterId = clusterId2)
+        assertThat(resources2.bootstrapJob).isNull()
+        assertThat(resources2.jobmanagerService).isNull()
+        assertThat(resources2.jobmanagerStatefulSet).isNull()
+        assertThat(resources2.taskmanagerStatefulSet).isNull()
+        assertThat(resources2.jobmanagerPVC).isNull()
+        assertThat(resources2.taskmanagerPVC).isNull()
     }
 }

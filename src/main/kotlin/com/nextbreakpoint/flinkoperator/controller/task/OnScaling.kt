@@ -29,6 +29,7 @@ class OnScaling(logger: Logger) : Task(logger) {
 
         if (cancel(context)) {
             context.rescaleCluster()
+
             if (context.getTaskManagers() == 0) {
                 context.setClusterStatus(ClusterStatus.Stopping)
             } else {

@@ -38,7 +38,7 @@ class RequestClusterScaleTest {
     }
 
     @Test
-    fun `should fail when cluster doesn't exist`() {
+    fun `should fail when kubeClient throws exception`() {
         given(kubeClient.rescaleCluster(eq(clusterId), Mockito.eq(4))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, ScaleOptions(taskManagers = 4))
         verify(kubeClient, times(1)).rescaleCluster(eq(clusterId), Mockito.eq(4))

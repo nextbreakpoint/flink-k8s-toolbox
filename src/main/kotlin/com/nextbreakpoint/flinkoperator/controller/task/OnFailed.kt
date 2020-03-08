@@ -16,9 +16,7 @@ class OnFailed(logger: Logger) : Task(logger) {
             return
         }
 
-        val bootstrapExists = context.doesBootstrapExists()
-
-        if (bootstrapExists) {
+        if (context.doesBootstrapExists()) {
             val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
 
             if (bootstrapResult.isCompleted()) {
@@ -66,6 +64,8 @@ class OnFailed(logger: Logger) : Task(logger) {
 
         if (manualAction != ManualAction.NONE) {
             context.resetManualAction()
+
+            return
         }
 
         if (!context.isBatchMode()) {

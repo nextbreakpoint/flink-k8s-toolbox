@@ -17,11 +17,7 @@ class BootstrapCreateJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
 
     override fun execute(clusterId: ClusterId, params: V1Job): OperationResult<String?> {
         try {
-            logger.info("[name=${clusterId.name}] Creating bootstrap job...")
-
             val jobOut = kubeClient.createBootstrapJob(clusterId, params)
-
-            logger.info("[name=${clusterId.name}] Bootstrap job created: ${jobOut.metadata.name}")
 
             return OperationResult(
                 OperationStatus.COMPLETED,
