@@ -56,17 +56,15 @@ class OnStarting(logger: Logger) : Task(logger) {
         }
 
         if (jobmanagerServiceExists && jobmanagerStatefuleSetExists && taskmanagerStatefuleSetExists) {
-            val bootstrapExists = context.doesBootstrapExists()
-
-            val options = context.getClusterScale()
+            val clusterScaling = context.getClusterScale()
 
             val jobmanagerReplicas = context.getJobManagerReplicas()
             val taskmanagerReplicas = context.getTaskManagerReplicas()
 
-            if (jobmanagerReplicas != 1 || taskmanagerReplicas != options.taskManagers) {
+            if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScaling.taskManagers) {
                 logger.info("Restating pods...")
 
-                context.restartPods(context.clusterId, options)
+                context.restartPods(context.clusterId, clusterScaling)
 
                 return
             }
@@ -80,7 +78,7 @@ class OnStarting(logger: Logger) : Task(logger) {
                 return
             }
 
-            if (bootstrapExists) {
+            if (context.doesBootstrapExists()) {
                 val jobRunningResult = context.isJobRunning(context.clusterId)
 
                 if (!jobRunningResult.isCompleted()) {
@@ -94,9 +92,7 @@ class OnStarting(logger: Logger) : Task(logger) {
 
                 return
             } else {
-                val options = context.getClusterScale()
-
-                val clusterReadyResult = context.isClusterReady(context.clusterId, options)
+                val clusterReadyResult = context.isClusterReady(context.clusterId, clusterScaling)
 
                 if (!clusterReadyResult.isCompleted()) {
                     return

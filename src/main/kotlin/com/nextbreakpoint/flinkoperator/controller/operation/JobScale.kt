@@ -18,7 +18,8 @@ class JobScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient:
         try {
             val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
 
-            flinkClient.triggerJobRescaling(address, params)
+            // TODO missing jobid. need to pass as argument
+            val response = flinkClient.triggerJobRescaling(address, "", params)
 
             return OperationResult(
                 OperationStatus.COMPLETED,

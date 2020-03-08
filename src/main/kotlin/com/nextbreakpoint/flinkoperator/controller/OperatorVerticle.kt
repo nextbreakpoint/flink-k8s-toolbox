@@ -13,6 +13,7 @@ import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Cache
 import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
+import com.nextbreakpoint.flinkoperator.controller.core.CacheBridge
 import com.nextbreakpoint.flinkoperator.controller.core.Command
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
 import com.nextbreakpoint.flinkoperator.controller.core.Status
@@ -98,7 +99,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         val cache = Cache()
 
-        val watch = WatchAdapter(json, kubeClient, cache)
+        val adapter = CacheAdapter(kubeClient, cache)
 
         val controller = OperationController(flinkOptions, flinkClient, kubeClient)
 
@@ -199,7 +200,7 @@ class OperatorVerticle : AbstractVerticle() {
                 json.serialize(
                     controller.getClusterStatus(
                         cache.getClusterId(namespace, context.pathParam("name")),
-                        CacheAdapter(
+                        CacheBridge(
                             cache.getFlinkCluster(cache.getClusterId(namespace, context.pathParam("name")))
                         )
                     )
@@ -279,7 +280,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.requestStartCluster(
-                            it.clusterId, json.deserialize(it.json, StartOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId))
+                            it.clusterId, json.deserialize(it.json, StartOptions::class.java), CacheBridge(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -297,7 +298,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.requestStopCluster(
-                            it.clusterId, json.deserialize(it.json, StopOptions::class.java), CacheAdapter(cache.getFlinkCluster(it.clusterId))
+                            it.clusterId, json.deserialize(it.json, StopOptions::class.java), CacheBridge(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -359,7 +360,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.createSavepoint(
-                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId))
+                            it.clusterId, CacheBridge(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -377,7 +378,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.forgetSavepoint(
-                            it.clusterId, CacheAdapter(cache.getFlinkCluster(it.clusterId))
+                            it.clusterId, CacheBridge(cache.getFlinkCluster(it.clusterId))
                         )
                     )
                 }
@@ -390,11 +391,11 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         context.runOnContext {
-            watch.watchClusters(namespace)
-            watch.watchJobs(namespace)
-            watch.watchServices(namespace)
-            watch.watchStatefuleSets(namespace)
-            watch.watchPersistentVolumeClaims(namespace)
+            adapter.watchClusters(namespace)
+            adapter.watchJobs(namespace)
+            adapter.watchServices(namespace)
+            adapter.watchStatefuleSets(namespace)
+            adapter.watchPersistentVolumeClaims(namespace)
         }
 
         vertx.setPeriodic(Timeout.POLLING_INTERVAL * 1000) {
@@ -542,7 +543,7 @@ class OperatorVerticle : AbstractVerticle() {
         }.forEach { pair ->
             worker.rxExecuteBlocking<Void?> { promise ->
                 try {
-                    TaskController(controller, pair.first).execute(pair.second)
+                    TaskController.create(controller, pair.first).execute(pair.second)
 
                     promise.complete()
                 } catch (e: Exception) {

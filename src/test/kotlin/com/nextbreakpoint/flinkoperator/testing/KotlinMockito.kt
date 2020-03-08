@@ -11,8 +11,8 @@ object KotlinMockito {
     }
 
     fun <T> eq(value : T): T {
-        Mockito.eq<T>(value)
-        return uninitialized()
+        Mockito.eq(value)
+        return value ?: uninitialized()
     }
 
     fun <T> given(value : T): OngoingStubbing<T> = `when`(value)

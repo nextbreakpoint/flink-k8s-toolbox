@@ -1,7 +1,13 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.*
+import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.model.ExecutionMode
+import com.nextbreakpoint.flinkoperator.common.model.ManualAction
+import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
+import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
@@ -196,7 +202,7 @@ class TaskContext(
         Status.setJobParallelism(cluster, taskManagers * taskSlots)
     }
 
-    fun computeChanges(): MutableList<String> {
+    fun computeChanges(): List<String> {
         val jobManagerDigest = Status.getJobManagerDigest(cluster)
         val taskManagerDigest = Status.getTaskManagerDigest(cluster)
         val runtimeDigest = Status.getRuntimeDigest(cluster)
@@ -312,14 +318,10 @@ class TaskContext(
         return createStatefulSet(clusterId, resource)
     }
 
-    fun getClusterScale(): ClusterScaling {
-        val taskManagers = Status.getTaskManagers(cluster)
-        val taskSlots = Status.getTaskSlots(cluster)
-
-        return ClusterScaling(
-            taskManagers = taskManagers, taskSlots = taskSlots
+    fun getClusterScale() =
+        ClusterScaling(
+            taskManagers = Status.getTaskManagers(cluster), taskSlots = Status.getTaskSlots(cluster)
         )
-    }
 
     fun getActionTimestamp(): DateTime = Annotations.getActionTimestamp(cluster)
 
@@ -329,11 +331,10 @@ class TaskContext(
 
     fun isSavepointRequired(): Boolean = !Annotations.isWithoutSavepoint(cluster) && !Annotations.isDeleteResources(cluster)
 
-    fun getSavepointOtions(): SavepointOptions {
-        return SavepointOptions(
+    fun getSavepointOtions() =
+        SavepointOptions(
             targetPath = Configuration.getSavepointTargetPath(cluster)
         )
-    }
 
     fun doesBootstrapExists(): Boolean = resources.bootstrapJob != null
 
@@ -359,5 +360,5 @@ class TaskContext(
 
     fun getTaskManagerReplicas(): Int = resources.taskmanagerStatefulSet?.status?.replicas ?: 0
 
-    fun isBatchMode() = cluster.status.bootstrap.executionMode?.toUpperCase() == ExecutionMode.BATCH.toString()
+    fun isBatchMode() = cluster.status?.bootstrap?.executionMode?.toUpperCase() == ExecutionMode.BATCH.toString()
 }

@@ -2,7 +2,11 @@ package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
-import io.kubernetes.client.models.*
+import io.kubernetes.client.models.V1Job
+import io.kubernetes.client.models.V1ObjectMeta
+import io.kubernetes.client.models.V1PersistentVolumeClaim
+import io.kubernetes.client.models.V1Service
+import io.kubernetes.client.models.V1StatefulSet
 import java.util.concurrent.ConcurrentHashMap
 
 class Cache {
@@ -28,7 +32,7 @@ class Cache {
 
     fun getCachedResources(clusterId: ClusterId) =
             CachedResources(
-                    flinkCluter = flinkClusters[clusterId],
+                    flinkCluster = flinkClusters[clusterId],
                     bootstrapJob = bootstrapJobs[clusterId],
                     jobmanagerService = jobmanagerServices[clusterId],
                     jobmanagerStatefulSet = jobmanagerStatefulSets[clusterId],
@@ -57,7 +61,7 @@ class Cache {
         flinkClusters.remove(clusterId)
     }
 
-    fun onFlinkClusterDeleteAll() {
+    fun onFlinkClusterDeletedAll() {
         flinkClusters.clear()
     }
 
@@ -133,7 +137,7 @@ class Cache {
         }
     }
 
-    fun onJobDeleteAll() {
+    fun onJobDeletedAll() {
         bootstrapJobs.clear()
     }
 

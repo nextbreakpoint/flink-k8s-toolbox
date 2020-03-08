@@ -8,9 +8,10 @@ import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
+import com.nextbreakpoint.flinkoperator.controller.core.CacheBridge
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Status
+import com.nextbreakpoint.flinkoperator.testing.KotlinMockito
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
@@ -28,12 +29,24 @@ class RequestClusterStartTest {
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
-    private val adapter = CacheAdapter(cluster)
+    private val adapter = CacheBridge(cluster)
     private val command = RequestClusterStart(flinkOptions, flinkClient, kubeClient, adapter)
 
     @BeforeEach
     fun configure() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
+    }
+
+    @Test
+    fun `should fail when kubeClient throws exception`() {
+        KotlinMockito.given(kubeClient.updateAnnotations(eq(clusterId), any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
+        verify(kubeClient, times(1)).updateAnnotations(eq(clusterId), any())
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.output).isNull()
     }
 
     @Test

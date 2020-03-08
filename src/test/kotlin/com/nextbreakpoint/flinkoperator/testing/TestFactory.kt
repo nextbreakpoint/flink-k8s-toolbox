@@ -247,7 +247,7 @@ object TestFactory {
         return flinkCluster
     }
 
-    fun aUploadJob(cluster: V1FlinkCluster) = V1JobBuilder()
+    fun aBootstrapJob(cluster: V1FlinkCluster) = V1JobBuilder()
         .withNewMetadata()
         .withNamespace(cluster.metadata.namespace)
         .withName("${cluster.metadata.name}-job")
@@ -255,6 +255,7 @@ object TestFactory {
             "name" to cluster.metadata.name,
             "uid" to cluster.metadata.uid
         ))
+        .withUid(cluster.metadata.uid)
         .endMetadata()
         .build()
 
@@ -266,6 +267,7 @@ object TestFactory {
             "name" to cluster.metadata.name,
             "uid" to cluster.metadata.uid
         ))
+        .withUid(cluster.metadata.uid)
         .endMetadata()
         .build()
 
@@ -278,6 +280,7 @@ object TestFactory {
             "uid" to cluster.metadata.uid,
             "role" to "jobmanager"
         ))
+        .withUid(cluster.metadata.uid)
         .endMetadata()
         .build()
 
@@ -290,6 +293,7 @@ object TestFactory {
             "uid" to cluster.metadata.uid,
             "role" to "taskmanager"
         ))
+        .withUid(cluster.metadata.uid)
         .endMetadata()
         .build()
 
@@ -302,6 +306,7 @@ object TestFactory {
             "uid" to cluster.metadata.uid,
             "role" to "jobmanager"
         ))
+        .withUid(cluster.metadata.uid)
         .endMetadata()
         .build()
 
@@ -314,6 +319,7 @@ object TestFactory {
             "uid" to cluster.metadata.uid,
             "role" to "taskmanager"
         ))
+        .withUid(cluster.metadata.uid)
         .endMetadata()
         .build()
 

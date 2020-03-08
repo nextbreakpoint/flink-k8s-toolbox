@@ -11,11 +11,17 @@ object Annotations {
     val DELETE_RESOURCES    = "flink-operator/delete-resources"
 
     private fun currentTimeMillis(): Long {
-        try {
-            // this is a hack for testing
-            Thread.sleep(1)
-        } catch (e : Exception) {}
+        // this is a hack required for testing
+        ensureMillisecondPassed()
+
         return System.currentTimeMillis()
+    }
+
+    private fun ensureMillisecondPassed() {
+        try {
+            Thread.sleep(1)
+        } catch (e: Exception) {
+        }
     }
 
     fun getActionTimestamp(flinkCluster: V1FlinkCluster) : DateTime =

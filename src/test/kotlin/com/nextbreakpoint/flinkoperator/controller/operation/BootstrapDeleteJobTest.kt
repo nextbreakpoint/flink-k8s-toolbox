@@ -42,7 +42,7 @@ class BootstrapDeleteJobTest {
     fun `should delete bootstrap job and pods`() {
         val result = command.execute(clusterId, null)
         verify(kubeClient, times(1)).deleteBootstrapJobs(eq(clusterId))
-        verify(kubeClient, times(1)).deleteBootstrapJobPods(eq(clusterId))
+        verify(kubeClient, times(1)).deleteBootstrapPods(eq(clusterId))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()

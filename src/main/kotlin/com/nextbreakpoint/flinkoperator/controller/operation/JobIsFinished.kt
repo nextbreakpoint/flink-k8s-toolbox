@@ -20,7 +20,7 @@ class JobIsFinished(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCl
 
             val overview = flinkClient.getOverview(address)
 
-            if (overview.slotsTotal > 0 && overview.taskmanagers > 0 && overview.jobsRunning == 0 && overview.jobsFinished == 1) {
+            if (overview.slotsTotal > 0 && overview.taskmanagers > 0 && overview.jobsRunning == 0 && overview.jobsFinished >= 1) {
                 return OperationResult(
                     OperationStatus.COMPLETED,
                     null

@@ -16,14 +16,8 @@ class OnSuspended(logger: Logger) : Task(logger) {
             return
         }
 
-        val bootstrapExists = context.doesBootstrapExists()
-
-        if (bootstrapExists) {
-            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
-
-            if (bootstrapResult.isCompleted()) {
-                logger.info("Bootstrap job deleted")
-            }
+        if (!suspend(context)) {
+            logger.info("Suspending cluster...")
 
             return
         }
@@ -33,17 +27,13 @@ class OnSuspended(logger: Logger) : Task(logger) {
         if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
             logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
 
-            if (update(context)) {
+            if (terminate(context)) {
                 context.updateStatus()
                 context.updateDigests()
-                context.setClusterStatus(ClusterStatus.Suspended)
+                context.setClusterStatus(ClusterStatus.Terminated)
             }
 
             return
-        }
-
-        if (!suspend(context)) {
-            logger.info("Suspending cluster...")
         }
 
         val jobmanagerStatefuleSetExists = context.doesJobManagerStatefulSetExists()
@@ -83,6 +73,8 @@ class OnSuspended(logger: Logger) : Task(logger) {
 
         if (manualAction != ManualAction.NONE) {
             context.resetManualAction()
+
+            return
         }
     }
 }

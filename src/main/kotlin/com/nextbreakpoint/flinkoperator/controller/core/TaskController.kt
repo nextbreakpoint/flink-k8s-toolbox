@@ -13,27 +13,44 @@ import com.nextbreakpoint.flinkoperator.controller.task.OnSuspended
 import com.nextbreakpoint.flinkoperator.controller.task.OnTerminated
 import com.nextbreakpoint.flinkoperator.controller.task.OnUpdating
 import org.apache.log4j.Logger
-import java.lang.RuntimeException
 
-class TaskController(val controller: OperationController, val clusterId: ClusterId) {
-    private val logger = Logger.getLogger("TaskController (" + clusterId.name + ")")
+class TaskController(
+    private val controller: OperationController,
+    private val clusterId: ClusterId,
+    private val logger: Logger,
+    private val tasks: Map<ClusterStatus, Task>
+) {
+    companion object {
+        fun create(controller: OperationController, clusterId: ClusterId): TaskController {
+            val logger = Logger.getLogger("TaskController (" + clusterId.name + ")")
 
-    private val tasks = mapOf(
-        ClusterStatus.Unknown to OnInitialize(logger),
-        ClusterStatus.Starting to OnStarting(logger),
-        ClusterStatus.Stopping to OnStopping(logger),
-        ClusterStatus.Updating to OnUpdating(logger),
-        ClusterStatus.Scaling to OnScaling(logger),
-        ClusterStatus.Running to OnRunning(logger),
-        ClusterStatus.Failed to OnFailed(logger),
-        ClusterStatus.Suspended to OnSuspended(logger),
-        ClusterStatus.Terminated to OnTerminated(logger),
-        ClusterStatus.Cancelling to OnCancelling(logger)
-    )
+            val tasks = mapOf(
+                ClusterStatus.Unknown to OnInitialize(logger),
+                ClusterStatus.Starting to OnStarting(logger),
+                ClusterStatus.Stopping to OnStopping(logger),
+                ClusterStatus.Updating to OnUpdating(logger),
+                ClusterStatus.Scaling to OnScaling(logger),
+                ClusterStatus.Running to OnRunning(logger),
+                ClusterStatus.Failed to OnFailed(logger),
+                ClusterStatus.Suspended to OnSuspended(logger),
+                ClusterStatus.Terminated to OnTerminated(logger),
+                ClusterStatus.Cancelling to OnCancelling(logger)
+            )
+
+            return TaskController(controller, clusterId, logger, tasks)
+        }
+
+        // required for testing
+        fun create(controller: OperationController, clusterId: ClusterId, tasks: Map<ClusterStatus, Task>): TaskController {
+            val logger = Logger.getLogger("TaskController (" + clusterId.name + ")")
+
+            return TaskController(controller, clusterId, logger, tasks)
+        }
+    }
 
     fun execute(resources: CachedResources) {
         try {
-            val cluster = resources.flinkCluter ?: throw RuntimeException("Cluster not present")
+            val cluster = resources.flinkCluster ?: throw RuntimeException("Cluster not present")
 
             logger.info("Resource version: ${cluster.metadata?.resourceVersion}")
 
