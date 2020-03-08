@@ -6,7 +6,9 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
+import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
+import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import io.kubernetes.client.models.V1StatefulSetStatus
 import org.assertj.core.api.Assertions.assertThat
@@ -30,12 +32,15 @@ class TaskContextTest {
     )
     private val controller = mock(OperationController::class.java)
     private val context = TaskContext(clusterId, cluster, resources, controller)
+    private val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
+    private val savepointOptions = SavepointOptions(targetPath = "file:///tmp")
+    private val clusterScaling = ClusterScaling(taskManagers = 1, taskSlots = 1)
 
     @Test
     fun `should update savepoint request`() {
         val timestamp = DateTime(System.currentTimeMillis())
         assertThat(Status.getStatusTimestamp(cluster)).isEqualTo(DateTime(0))
-        val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
+        val savepointRequest = savepointRequest
         assertThat(Status.getSavepointRequest(cluster)).isNull()
         context.setSavepointRequest(savepointRequest)
         assertThat(Status.getSavepointRequest(cluster)).isEqualTo(savepointRequest)
@@ -44,7 +49,7 @@ class TaskContextTest {
 
     @Test
     fun `should return savepoint request`() {
-        val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
+        val savepointRequest = savepointRequest
         assertThat(context.getSavepointRequest()).isNull()
         Status.setSavepointRequest(cluster, savepointRequest)
         assertThat(Status.getSavepointRequest(cluster)).isEqualTo(savepointRequest)
@@ -54,7 +59,7 @@ class TaskContextTest {
     fun `should reset savepoint request`() {
         val timestamp = DateTime(System.currentTimeMillis())
         assertThat(Status.getStatusTimestamp(cluster)).isEqualTo(DateTime(0))
-        val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
+        val savepointRequest = savepointRequest
         Status.setSavepointRequest(cluster, savepointRequest)
         context.resetSavepointRequest()
         assertThat(Status.getSavepointRequest(cluster)).isNull()
@@ -112,7 +117,7 @@ class TaskContextTest {
     @Test
     fun `should return savepoint options`() {
         cluster.spec?.operator?.savepointTargetPath = "file:///tmp"
-        val savepointOptions = SavepointOptions(targetPath = "file:///tmp")
+        val savepointOptions = savepointOptions
         assertThat(context.getSavepointOtions()).isEqualTo(savepointOptions)
     }
 
@@ -465,5 +470,193 @@ class TaskContextTest {
         verify(controller, times(1)).updateStatus(eq(clusterId), eq(cluster))
         verify(controller, times(1)).updateFinalizers(eq(clusterId), eq(cluster))
         verify(controller, times(1)).updateAnnotations(eq(clusterId), eq(cluster))
+    }
+
+    @Test
+    fun `should create bootstrap resource`() {
+        context.initializeStatus()
+        given(controller.createBootstrapJob(eq(clusterId), any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "xxx"))
+        assertThat(context.createBootstrapJob(clusterId)).isNotNull()
+        verify(controller, times(1)).createBootstrapJob(eq(clusterId), any())
+    }
+
+    @Test
+    fun `should create jobmanager service resource`() {
+        context.initializeStatus()
+        given(controller.createJobManagerService(eq(clusterId), any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "xxx"))
+        assertThat(context.createJobManagerService(clusterId)).isNotNull()
+        verify(controller, times(1)).createJobManagerService(eq(clusterId), any())
+    }
+
+    @Test
+    fun `should create jobmanager statefulset resource`() {
+        context.initializeStatus()
+        given(controller.createStatefulSet(eq(clusterId), any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "xxx"))
+        assertThat(context.createJobManagerStatefulSet(clusterId)).isNotNull()
+        verify(controller, times(1)).createStatefulSet(eq(clusterId), any())
+    }
+
+    @Test
+    fun `should create taskmanager statefulset resource`() {
+        context.initializeStatus()
+        given(controller.createStatefulSet(eq(clusterId), any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "xxx"))
+        assertThat(context.createTaskManagerStatefulSet(clusterId)).isNotNull()
+        verify(controller, times(1)).createStatefulSet(eq(clusterId), any())
+    }
+
+    @Test
+    fun `should remove jar`() {
+        given(controller.removeJar(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.removeJar(clusterId)).isNotNull()
+        verify(controller, times(1)).removeJar(eq(clusterId))
+    }
+
+    @Test
+    fun `should trigger savepoint jar`() {
+        given(controller.triggerSavepoint(eq(clusterId), eq(savepointOptions))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = savepointRequest))
+        assertThat(context.triggerSavepoint(clusterId, savepointOptions)).isNotNull()
+        verify(controller, times(1)).triggerSavepoint(eq(clusterId), eq(savepointOptions))
+    }
+
+    @Test
+    fun `should get latest savepoint`() {
+        given(controller.getLatestSavepoint(eq(clusterId), eq(savepointRequest))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "file:///tmp/1"))
+        assertThat(context.getLatestSavepoint(clusterId, savepointRequest)).isNotNull()
+        verify(controller, times(1)).getLatestSavepoint(eq(clusterId), eq(savepointRequest))
+    }
+
+    @Test
+    fun `should create job`() {
+        val resource = TestFactory.aBootstrapJob(cluster)
+        given(controller.createBootstrapJob(eq(clusterId), eq(resource))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "xxx"))
+        assertThat(context.createBootstrapJob(clusterId, resource)).isNotNull()
+        verify(controller, times(1)).createBootstrapJob(eq(clusterId), eq(resource))
+    }
+
+    @Test
+    fun `should delete job`() {
+        given(controller.deleteBootstrapJob(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.deleteBootstrapJob(clusterId)).isNotNull()
+        verify(controller, times(1)).deleteBootstrapJob(eq(clusterId))
+    }
+
+    @Test
+    fun `should create service`() {
+        val resource = TestFactory.aJobManagerService(cluster)
+        given(controller.createJobManagerService(eq(clusterId), eq(resource))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "xxx"))
+        assertThat(context.createJobManagerService(clusterId, resource)).isNotNull()
+        verify(controller, times(1)).createJobManagerService(eq(clusterId), eq(resource))
+    }
+
+    @Test
+    fun `should delete service`() {
+        given(controller.deleteJobManagerService(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.deleteJobManagerService(clusterId)).isNotNull()
+        verify(controller, times(1)).deleteJobManagerService(eq(clusterId))
+    }
+
+    @Test
+    fun `should create statefulset`() {
+        val resource = TestFactory.aJobManagerStatefulSet(cluster)
+        given(controller.createStatefulSet(eq(clusterId), eq(resource))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "xxx"))
+        assertThat(context.createStatefulSet(clusterId, resource)).isNotNull()
+        verify(controller, times(1)).createStatefulSet(eq(clusterId), eq(resource))
+    }
+
+    @Test
+    fun `should delete statefulsets`() {
+        given(controller.deleteStatefulSets(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.deleteStatefulSets(clusterId)).isNotNull()
+        verify(controller, times(1)).deleteStatefulSets(eq(clusterId))
+    }
+
+    @Test
+    fun `should delete persistent volume claims`() {
+        given(controller.deletePersistentVolumeClaims(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.deletePersistentVolumeClaims(clusterId)).isNotNull()
+        verify(controller, times(1)).deletePersistentVolumeClaims(eq(clusterId))
+    }
+
+    @Test
+    fun `should terminate pods`() {
+        given(controller.terminatePods(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.terminatePods(clusterId)).isNotNull()
+        verify(controller, times(1)).terminatePods(eq(clusterId))
+    }
+
+    @Test
+    fun `should restart pods`() {
+        given(controller.restartPods(eq(clusterId), eq(clusterScaling))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.restartPods(clusterId, clusterScaling)).isNotNull()
+        verify(controller, times(1)).restartPods(eq(clusterId), eq(clusterScaling))
+    }
+
+    @Test
+    fun `should verify that pods are terminated`() {
+        given(controller.arePodsTerminated(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.arePodsTerminated(clusterId)).isNotNull()
+        verify(controller, times(1)).arePodsTerminated(eq(clusterId))
+    }
+
+    @Test
+    fun `should start job`() {
+        given(controller.startJob(eq(clusterId), eq(cluster))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.startJob(clusterId, cluster)).isNotNull()
+        verify(controller, times(1)).startJob(eq(clusterId), eq(cluster))
+    }
+
+    @Test
+    fun `should stop job`() {
+        given(controller.stopJob(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.stopJob(clusterId)).isNotNull()
+        verify(controller, times(1)).stopJob(eq(clusterId))
+    }
+
+    @Test
+    fun `should cancel job`() {
+        given(controller.cancelJob(eq(clusterId), eq(savepointOptions))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = savepointRequest))
+        assertThat(context.cancelJob(clusterId, savepointOptions)).isNotNull()
+        verify(controller, times(1)).cancelJob(eq(clusterId), eq(savepointOptions))
+    }
+
+    @Test
+    fun `should verify that cluster is ready`() {
+        given(controller.isClusterReady(eq(clusterId), eq(clusterScaling))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.isClusterReady(clusterId, clusterScaling)).isNotNull()
+        verify(controller, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
+    }
+
+    @Test
+    fun `should verify that job is running`() {
+        given(controller.isJobRunning(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.isJobRunning(clusterId)).isNotNull()
+        verify(controller, times(1)).isJobRunning(eq(clusterId))
+    }
+
+    @Test
+    fun `should verify that job is finished`() {
+        given(controller.isJobFinished(eq(clusterId))).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        assertThat(context.isJobFinished(clusterId)).isNotNull()
+        verify(controller, times(1)).isJobFinished(eq(clusterId))
+    }
+
+    @Test
+    fun `should return time passed since last update`() {
+        Status.setClusterStatus(cluster, ClusterStatus.Running)
+        given(controller.currentTimeMillis()).thenReturn(System.currentTimeMillis() + 5000)
+        assertThat(context.timeSinceLastUpdateInSeconds()).isGreaterThanOrEqualTo(5)
+        Status.setClusterStatus(cluster, ClusterStatus.Running)
+        given(controller.currentTimeMillis()).thenReturn(System.currentTimeMillis() + 10000)
+        assertThat(context.timeSinceLastUpdateInSeconds()).isGreaterThanOrEqualTo(10)
+    }
+
+    @Test
+    fun `should return time passed since last savepoint request`() {
+        Status.setSavepointRequest(cluster, savepointRequest)
+        given(controller.currentTimeMillis()).thenReturn(System.currentTimeMillis() + 5000)
+        assertThat(context.timeSinceLastSavepointRequestInSeconds()).isGreaterThanOrEqualTo(5)
+        Status.setSavepointRequest(cluster, savepointRequest)
+        given(controller.currentTimeMillis()).thenReturn(System.currentTimeMillis() + 10000)
+        assertThat(context.timeSinceLastSavepointRequestInSeconds()).isGreaterThanOrEqualTo(10)
     }
 }

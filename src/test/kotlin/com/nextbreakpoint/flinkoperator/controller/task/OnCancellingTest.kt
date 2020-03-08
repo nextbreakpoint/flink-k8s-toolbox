@@ -13,7 +13,11 @@ import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import org.apache.log4j.Logger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.*
+import org.mockito.Mockito.atLeast
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnCancellingTest {
     private val savepointOptions = SavepointOptions(targetPath = "file:///tmp")

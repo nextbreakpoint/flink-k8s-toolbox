@@ -8,7 +8,6 @@ import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
-import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1ServiceBuilder
 import org.assertj.core.api.Assertions.assertThat
