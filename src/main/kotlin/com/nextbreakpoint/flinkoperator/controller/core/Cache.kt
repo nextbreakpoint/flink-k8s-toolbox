@@ -28,7 +28,7 @@ class Cache {
 
     fun getCachedResources(clusterId: ClusterId) =
             CachedResources(
-                    flinkCluter = flinkClusters[clusterId],
+                    flinkCluster = flinkClusters[clusterId],
                     bootstrapJob = bootstrapJobs[clusterId],
                     jobmanagerService = jobmanagerServices[clusterId],
                     jobmanagerStatefulSet = jobmanagerStatefulSets[clusterId],
@@ -57,7 +57,7 @@ class Cache {
         flinkClusters.remove(clusterId)
     }
 
-    fun onFlinkClusterDeleteAll() {
+    fun onFlinkClusterDeletedAll() {
         flinkClusters.clear()
     }
 
@@ -133,7 +133,7 @@ class Cache {
         }
     }
 
-    fun onJobDeleteAll() {
+    fun onJobDeletedAll() {
         bootstrapJobs.clear()
     }
 

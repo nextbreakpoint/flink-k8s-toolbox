@@ -1,20 +1,16 @@
 package com.nextbreakpoint.flinkoperator.common.utils
 
-import com.google.common.io.ByteStreams
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterList
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterId
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import io.kubernetes.client.ApiClient
 import io.kubernetes.client.ApiException
 import io.kubernetes.client.ApiResponse
 import io.kubernetes.client.Configuration
 import io.kubernetes.client.JSON
-import io.kubernetes.client.PortForward
 import io.kubernetes.client.apis.AppsV1Api
 import io.kubernetes.client.apis.BatchV1Api
 import io.kubernetes.client.apis.CoreV1Api
@@ -23,23 +19,16 @@ import io.kubernetes.client.custom.V1Patch
 import io.kubernetes.client.models.V1DeleteOptions
 import io.kubernetes.client.models.V1Deployment
 import io.kubernetes.client.models.V1Job
-import io.kubernetes.client.models.V1JobList
 import io.kubernetes.client.models.V1PersistentVolumeClaim
-import io.kubernetes.client.models.V1PersistentVolumeClaimList
-import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1PodList
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1ServiceList
 import io.kubernetes.client.models.V1StatefulSet
-import io.kubernetes.client.models.V1StatefulSetList
 import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.Watch
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.Channel
+import io.kubernetes.client.util.Watchable
 import org.apache.log4j.Logger
 import java.io.File
 import java.io.FileInputStream
-import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 
 object KubeClient {
@@ -268,7 +257,7 @@ object KubeClient {
         }
     }
 
-    fun watchFlickClusters(namespace: String): Watch<V1FlinkCluster> =
+    fun watchFlickClusters(namespace: String): Watchable<V1FlinkCluster> =
         Watch.createWatch(
             objectApiWatch.apiClient,
             objectApiWatch.listNamespacedCustomObjectCall(
@@ -288,7 +277,7 @@ object KubeClient {
             object : TypeToken<Watch.Response<V1FlinkCluster>>() {}.type
         )
 
-    fun watchServices(namespace: String): Watch<V1Service> =
+    fun watchServices(namespace: String): Watchable<V1Service> =
         Watch.createWatch(
             coreApiWatch.apiClient,
             coreApiWatch.listNamespacedServiceCall(
@@ -307,7 +296,7 @@ object KubeClient {
             object : TypeToken<Watch.Response<V1Service>>() {}.type
         )
 
-    fun watchDeployments(namespace: String): Watch<V1Deployment> =
+    fun watchDeployments(namespace: String): Watchable<V1Deployment> =
         Watch.createWatch(
             appsApiWatch.apiClient,
             appsApiWatch.listNamespacedDeploymentCall(
@@ -326,7 +315,7 @@ object KubeClient {
             object : TypeToken<Watch.Response<V1Deployment>>() {}.type
         )
 
-    fun watchJobs(namespace: String): Watch<V1Job> =
+    fun watchJobs(namespace: String): Watchable<V1Job> =
         Watch.createWatch(
             batchApiWatch.apiClient,
             batchApiWatch.listNamespacedJobCall(
@@ -345,7 +334,7 @@ object KubeClient {
             object : TypeToken<Watch.Response<V1Job>>() {}.type
         )
 
-    fun watchStatefulSets(namespace: String): Watch<V1StatefulSet> =
+    fun watchStatefulSets(namespace: String): Watchable<V1StatefulSet> =
         Watch.createWatch(
             appsApiWatch.apiClient,
             appsApiWatch.listNamespacedStatefulSetCall(
@@ -364,7 +353,7 @@ object KubeClient {
             object : TypeToken<Watch.Response<V1StatefulSet>>() {}.type
         )
 
-    fun watchPermanentVolumeClaims(namespace: String): Watch<V1PersistentVolumeClaim> =
+    fun watchPersistentVolumeClaims(namespace: String): Watchable<V1PersistentVolumeClaim> =
         Watch.createWatch(
             coreApiWatch.apiClient,
             coreApiWatch.listNamespacedPersistentVolumeClaimCall(
@@ -383,242 +372,242 @@ object KubeClient {
             object : TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {}.type
         )
 
-    fun listFlinkClusters(namespace: String): List<V1FlinkCluster> {
-        val response = objectApi.listNamespacedCustomObjectCall(
-            "nextbreakpoint.com",
-            "v1",
-            namespace,
-            "flinkclusters",
-            null,
-            null,
-            null,
-            null,
-            5,
-            null,
-            null,
-            null
-        ).execute()
-
-        response.body().use { body ->
-            if (!response.isSuccessful) {
-                body.source().use { source -> logger.error(source.readUtf8Line()) }
-                throw RuntimeException("Can't fetch custom objects")
-            }
-
-            return body.source().use { source ->
-                ClusterResource.parseV1FlinkClusterList(source.readUtf8Line()).items
-            }
-        }
-    }
-
-    fun getFlinkCluster(namespace: String, name: String): V1FlinkCluster {
-        val response = objectApi.getNamespacedCustomObjectCall(
-            "nextbreakpoint.com",
-            "v1",
-            namespace,
-            "flinkclusters",
-            name,
-            null,
-            null
-        ).execute()
-
-        response.body().use { body ->
-            if (!response.isSuccessful) {
-                body.source().use { source -> logger.error(source.readUtf8Line()) }
-                throw RuntimeException("Can't fetch custom object $name")
-            }
-
-            return body.source().use { source ->
-                ClusterResource.parseV1FlinkCluster(source.readUtf8Line())
-            }
-        }
-    }
-
-    fun findFlinkClusters(namespace: String, name: String): V1FlinkClusterList {
-        val response = objectApi.listNamespacedCustomObjectCall(
-            "nextbreakpoint.com",
-            "v1",
-            namespace,
-            "flinkclusters",
-            null,
-            "metadata.name=${name}",
-            null,
-            null,
-            5,
-            null,
-            null,
-            null
-        ).execute()
-
-        response.body().use { body ->
-            if (!response.isSuccessful) {
-                body.source().use { source -> logger.error(source.readUtf8Line()) }
-                throw RuntimeException("Can't fetch custom objects")
-            }
-
-            return body.source().use { source ->
-                ClusterResource.parseV1FlinkClusterList(source.readUtf8Line())
-            }
-        }
-    }
-
-    fun listJobResources(namespace: String): List<V1Job> {
-        return batchApi.listNamespacedJob(
-            namespace,
-            null,
-            null,
-            null,
-            "component=flink,owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        ).items
-    }
-
-    fun listServiceResources(namespace: String): List<V1Service> {
-        return coreApi.listNamespacedService(
-            namespace,
-            null,
-            null,
-            null,
-            "component=flink,owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        ).items
-    }
-
-    fun listDeploymentResources(namespace: String): List<V1Deployment> {
-        return appsApi.listNamespacedDeployment(
-            namespace,
-            null,
-            null,
-            null,
-            "component=flink,owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        ).items
-    }
-
-    fun listStatefulSetResources(namespace: String): List<V1StatefulSet> {
-        return appsApi.listNamespacedStatefulSet(
-            namespace,
-            null,
-            null,
-            null,
-            "component=flink,owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        ).items
-    }
-
-    fun listPermanentVolumeClaimResources(namespace: String): List<V1PersistentVolumeClaim> {
-        return coreApi.listNamespacedPersistentVolumeClaim(
-            namespace,
-            null,
-            null,
-            null,
-            "component=flink,owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        ).items
-    }
-
-    fun listJobManagerServices(clusterId: ClusterId): V1ServiceList {
-        return coreApi.listNamespacedService(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        )
-    }
-
-    fun listJobManagerStatefulSets(clusterId: ClusterId): V1StatefulSetList {
-        return appsApi.listNamespacedStatefulSet(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
-            null,
-            null,
-            5,
-            null
-        )
-    }
-
-    fun listTaskManagerStatefulSets(clusterId: ClusterId): V1StatefulSetList {
-        return appsApi.listNamespacedStatefulSet(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
-            null,
-            null,
-            5,
-            null
-        )
-    }
-
-    fun listJobManagerPVCs(clusterId: ClusterId): V1PersistentVolumeClaimList {
-        return coreApi.listNamespacedPersistentVolumeClaim(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
-            null,
-            null,
-            5,
-            null
-        )
-    }
-
-    fun listTaskManagerPVCs(clusterId: ClusterId): V1PersistentVolumeClaimList {
-        return coreApi.listNamespacedPersistentVolumeClaim(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
-            null,
-            null,
-            5,
-            null
-        )
-    }
-
-    fun createJobManagerService(
-        clusterId: ClusterId,
-        resources: ClusterResources
-    ): V1Service {
-        try {
-            return coreApi.createNamespacedService(
-                clusterId.namespace,
-                resources.jobmanagerService,
-                null,
-                null,
-                null
-            )
-        } catch (e : ApiException) {
-            logger.error(e.responseBody)
-            throw e
-        }
-    }
+//    fun listFlinkClusters(namespace: String): List<V1FlinkCluster> {
+//        val response = objectApi.listNamespacedCustomObjectCall(
+//            "nextbreakpoint.com",
+//            "v1",
+//            namespace,
+//            "flinkclusters",
+//            null,
+//            null,
+//            null,
+//            null,
+//            5,
+//            null,
+//            null,
+//            null
+//        ).execute()
+//
+//        response.body().use { body ->
+//            if (!response.isSuccessful) {
+//                body.source().use { source -> logger.error(source.readUtf8Line()) }
+//                throw RuntimeException("Can't fetch custom objects")
+//            }
+//
+//            return body.source().use { source ->
+//                ClusterResource.parseV1FlinkClusterList(source.readUtf8Line()).items
+//            }
+//        }
+//    }
+//
+//    fun getFlinkCluster(namespace: String, name: String): V1FlinkCluster {
+//        val response = objectApi.getNamespacedCustomObjectCall(
+//            "nextbreakpoint.com",
+//            "v1",
+//            namespace,
+//            "flinkclusters",
+//            name,
+//            null,
+//            null
+//        ).execute()
+//
+//        response.body().use { body ->
+//            if (!response.isSuccessful) {
+//                body.source().use { source -> logger.error(source.readUtf8Line()) }
+//                throw RuntimeException("Can't fetch custom object $name")
+//            }
+//
+//            return body.source().use { source ->
+//                ClusterResource.parseV1FlinkCluster(source.readUtf8Line())
+//            }
+//        }
+//    }
+//
+//    fun findFlinkClusters(namespace: String, name: String): V1FlinkClusterList {
+//        val response = objectApi.listNamespacedCustomObjectCall(
+//            "nextbreakpoint.com",
+//            "v1",
+//            namespace,
+//            "flinkclusters",
+//            null,
+//            "metadata.name=${name}",
+//            null,
+//            null,
+//            5,
+//            null,
+//            null,
+//            null
+//        ).execute()
+//
+//        response.body().use { body ->
+//            if (!response.isSuccessful) {
+//                body.source().use { source -> logger.error(source.readUtf8Line()) }
+//                throw RuntimeException("Can't fetch custom objects")
+//            }
+//
+//            return body.source().use { source ->
+//                ClusterResource.parseV1FlinkClusterList(source.readUtf8Line())
+//            }
+//        }
+//    }
+//
+//    fun listJobResources(namespace: String): List<V1Job> {
+//        return batchApi.listNamespacedJob(
+//            namespace,
+//            null,
+//            null,
+//            null,
+//            "component=flink,owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        ).items
+//    }
+//
+//    fun listServiceResources(namespace: String): List<V1Service> {
+//        return coreApi.listNamespacedService(
+//            namespace,
+//            null,
+//            null,
+//            null,
+//            "component=flink,owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        ).items
+//    }
+//
+//    fun listDeploymentResources(namespace: String): List<V1Deployment> {
+//        return appsApi.listNamespacedDeployment(
+//            namespace,
+//            null,
+//            null,
+//            null,
+//            "component=flink,owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        ).items
+//    }
+//
+//    fun listStatefulSetResources(namespace: String): List<V1StatefulSet> {
+//        return appsApi.listNamespacedStatefulSet(
+//            namespace,
+//            null,
+//            null,
+//            null,
+//            "component=flink,owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        ).items
+//    }
+//
+//    fun listPermanentVolumeClaimResources(namespace: String): List<V1PersistentVolumeClaim> {
+//        return coreApi.listNamespacedPersistentVolumeClaim(
+//            namespace,
+//            null,
+//            null,
+//            null,
+//            "component=flink,owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        ).items
+//    }
+//
+//    fun listJobManagerServices(clusterId: ClusterId): V1ServiceList {
+//        return coreApi.listNamespacedService(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//    }
+//
+//    fun listJobManagerStatefulSets(clusterId: ClusterId): V1StatefulSetList {
+//        return appsApi.listNamespacedStatefulSet(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//    }
+//
+//    fun listTaskManagerStatefulSets(clusterId: ClusterId): V1StatefulSetList {
+//        return appsApi.listNamespacedStatefulSet(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//    }
+//
+//    fun listJobManagerPVCs(clusterId: ClusterId): V1PersistentVolumeClaimList {
+//        return coreApi.listNamespacedPersistentVolumeClaim(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//    }
+//
+//    fun listTaskManagerPVCs(clusterId: ClusterId): V1PersistentVolumeClaimList {
+//        return coreApi.listNamespacedPersistentVolumeClaim(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//    }
+//
+//    fun createJobManagerService(
+//        clusterId: ClusterId,
+//        resources: ClusterResources
+//    ): V1Service {
+//        try {
+//            return coreApi.createNamespacedService(
+//                clusterId.namespace,
+//                resources.jobmanagerService,
+//                null,
+//                null,
+//                null
+//            )
+//        } catch (e : ApiException) {
+//            logger.error(e.responseBody)
+//            throw e
+//        }
+//    }
 
     fun createService(
         clusterId: ClusterId,
@@ -638,41 +627,41 @@ object KubeClient {
         }
     }
 
-    fun createJobManagerStatefulSet(
-        clusterId: ClusterId,
-        resources: ClusterResources
-    ): V1StatefulSet {
-        try {
-            return appsApi.createNamespacedStatefulSet(
-                clusterId.namespace,
-                resources.jobmanagerStatefulSet,
-                null,
-                null,
-                null
-            )
-        } catch (e : ApiException) {
-            logger.error(e.responseBody)
-            throw e
-        }
-    }
-
-    fun createTaskManagerStatefulSet(
-        clusterId: ClusterId,
-        resources: ClusterResources
-    ): V1StatefulSet {
-        try {
-            return appsApi.createNamespacedStatefulSet(
-                clusterId.namespace,
-                resources.taskmanagerStatefulSet,
-                null,
-                null,
-                null
-            )
-        } catch (e : ApiException) {
-            logger.error(e.responseBody)
-            throw e
-        }
-    }
+//    fun createJobManagerStatefulSet(
+//        clusterId: ClusterId,
+//        resources: ClusterResources
+//    ): V1StatefulSet {
+//        try {
+//            return appsApi.createNamespacedStatefulSet(
+//                clusterId.namespace,
+//                resources.jobmanagerStatefulSet,
+//                null,
+//                null,
+//                null
+//            )
+//        } catch (e : ApiException) {
+//            logger.error(e.responseBody)
+//            throw e
+//        }
+//    }
+//
+//    fun createTaskManagerStatefulSet(
+//        clusterId: ClusterId,
+//        resources: ClusterResources
+//    ): V1StatefulSet {
+//        try {
+//            return appsApi.createNamespacedStatefulSet(
+//                clusterId.namespace,
+//                resources.taskmanagerStatefulSet,
+//                null,
+//                null,
+//                null
+//            )
+//        } catch (e : ApiException) {
+//            logger.error(e.responseBody)
+//            throw e
+//        }
+//    }
 
     fun createStatefulSet(
         clusterId: ClusterId,
@@ -692,64 +681,64 @@ object KubeClient {
         }
     }
 
-    fun replaceJobManagerService(
-        clusterId: ClusterId,
-        resources: ClusterResources
-    ): V1Service {
-        try {
-            return coreApi.replaceNamespacedService(
-                "flink-jobmanager-${clusterId.name}",
-                clusterId.namespace,
-                resources.jobmanagerService,
-                null,
-                null,
-                null
-            )
-        } catch (e : ApiException) {
-            logger.error(e.responseBody)
-            throw e
-        }
-    }
+//    fun replaceJobManagerService(
+//        clusterId: ClusterId,
+//        resources: ClusterResources
+//    ): V1Service {
+//        try {
+//            return coreApi.replaceNamespacedService(
+//                "flink-jobmanager-${clusterId.name}",
+//                clusterId.namespace,
+//                resources.jobmanagerService,
+//                null,
+//                null,
+//                null
+//            )
+//        } catch (e : ApiException) {
+//            logger.error(e.responseBody)
+//            throw e
+//        }
+//    }
+//
+//    fun replaceJobManagerStatefulSet(
+//        clusterId: ClusterId,
+//        resources: ClusterResources
+//    ): V1StatefulSet {
+//        try {
+//            return appsApi.replaceNamespacedStatefulSet(
+//                "flink-jobmanager-${clusterId.name}",
+//                clusterId.namespace,
+//                resources.jobmanagerStatefulSet,
+//                null,
+//                null,
+//                null
+//            )
+//        } catch (e : ApiException) {
+//            logger.error(e.responseBody)
+//            throw e
+//        }
+//    }
+//
+//    fun replaceTaskManagerStatefulSet(
+//        clusterId: ClusterId,
+//        resources: ClusterResources
+//    ): V1StatefulSet {
+//        try {
+//            return appsApi.replaceNamespacedStatefulSet(
+//                "flink-taskmanager-${clusterId.name}",
+//                clusterId.namespace,
+//                resources.taskmanagerStatefulSet,
+//                null,
+//                null,
+//                null
+//            )
+//        } catch (e : ApiException) {
+//            logger.error(e.responseBody)
+//            throw e
+//        }
+//    }
 
-    fun replaceJobManagerStatefulSet(
-        clusterId: ClusterId,
-        resources: ClusterResources
-    ): V1StatefulSet {
-        try {
-            return appsApi.replaceNamespacedStatefulSet(
-                "flink-jobmanager-${clusterId.name}",
-                clusterId.namespace,
-                resources.jobmanagerStatefulSet,
-                null,
-                null,
-                null
-            )
-        } catch (e : ApiException) {
-            logger.error(e.responseBody)
-            throw e
-        }
-    }
-
-    fun replaceTaskManagerStatefulSet(
-        clusterId: ClusterId,
-        resources: ClusterResources
-    ): V1StatefulSet {
-        try {
-            return appsApi.replaceNamespacedStatefulSet(
-                "flink-taskmanager-${clusterId.name}",
-                clusterId.namespace,
-                resources.taskmanagerStatefulSet,
-                null,
-                null,
-                null
-            )
-        } catch (e : ApiException) {
-            logger.error(e.responseBody)
-            throw e
-        }
-    }
-
-    fun deleteJobManagerServices(clusterId: ClusterId) {
+    fun deleteServices(clusterId: ClusterId) {
         val services = coreApi.listNamespacedService(
             clusterId.namespace,
             null,
@@ -905,35 +894,35 @@ object KubeClient {
         }
     }
 
-    fun updateSavepointPath(clusterId: ClusterId, savepointPath: String) {
-        val patch = mapOf<String, Any?>(
-            "spec" to mapOf<String, Any?>(
-                "operator" to mapOf<String, Any?>(
-                    "savepointPath" to savepointPath
-                )
-            )
-        )
-
-        val response = objectApi.patchNamespacedCustomObjectCall(
-            "nextbreakpoint.com",
-            "v1",
-            clusterId.namespace,
-            "flinkclusters",
-            clusterId.name,
-            patch,
-            null,
-            null
-        ).execute()
-
-        response.body().use { body ->
-            if (response.isSuccessful) {
-                logger.debug("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
-            } else {
-                body.source().use { source -> logger.error(source.readUtf8Line()) }
-                logger.error("Can't update savepoint of cluster ${clusterId.name}")
-            }
-        }
-    }
+//    fun updateSavepointPath(clusterId: ClusterId, savepointPath: String) {
+//        val patch = mapOf<String, Any?>(
+//            "spec" to mapOf<String, Any?>(
+//                "operator" to mapOf<String, Any?>(
+//                    "savepointPath" to savepointPath
+//                )
+//            )
+//        )
+//
+//        val response = objectApi.patchNamespacedCustomObjectCall(
+//            "nextbreakpoint.com",
+//            "v1",
+//            clusterId.namespace,
+//            "flinkclusters",
+//            clusterId.name,
+//            patch,
+//            null,
+//            null
+//        ).execute()
+//
+//        response.body().use { body ->
+//            if (response.isSuccessful) {
+//                logger.debug("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
+//            } else {
+//                body.source().use { source -> logger.error(source.readUtf8Line()) }
+//                logger.error("Can't update savepoint of cluster ${clusterId.name}")
+//            }
+//        }
+//    }
 
     fun createFlinkCluster(flinkCluster: V1FlinkCluster): ApiResponse<Any> {
         try {
@@ -972,19 +961,19 @@ object KubeClient {
         }
     }
 
-    fun listBootstrapJobs(clusterId: ClusterId): V1JobList {
-        return batchApi.listNamespacedJob(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        )
-    }
+//    fun listBootstrapJobs(clusterId: ClusterId): V1JobList {
+//        return batchApi.listNamespacedJob(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//    }
 
     fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): V1Job {
         return batchApi.createNamespacedJob(
@@ -996,16 +985,16 @@ object KubeClient {
         )
     }
 
-    fun replaceBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): V1Job {
-        return batchApi.replaceNamespacedJob(
-            "flink-bootstrap-${clusterId.name}",
-            clusterId.namespace,
-            bootstrapJob,
-            null,
-            null,
-            null
-        )
-    }
+//    fun replaceBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): V1Job {
+//        return batchApi.replaceNamespacedJob(
+//            "flink-bootstrap-${clusterId.name}",
+//            clusterId.namespace,
+//            bootstrapJob,
+//            null,
+//            null,
+//            null
+//        )
+//    }
 
     fun listTaskManagerPods(clusterId: ClusterId): V1PodList {
         val taskmanagerPods = coreApi.listNamespacedPod(
@@ -1196,7 +1185,7 @@ object KubeClient {
         }
     }
 
-    fun deleteBootstrapJobPods(clusterId: ClusterId) {
+    fun deleteBootstrapPods(clusterId: ClusterId) {
         val pods = coreApi.listNamespacedPod(
             clusterId.namespace,
             null,
@@ -1235,47 +1224,47 @@ object KubeClient {
         }
     }
 
-    fun deleteBootstrapJobs(
-        api: BatchV1Api,
-        clusterId: ClusterId
-    ) {
-        val jobs = batchApi.listNamespacedJob(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
-            null,
-            null,
-            5,
-            null
-        )
-
-        val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
-
-        jobs.items.forEach { job ->
-            try {
-                logger.debug("Removing Job ${job.metadata.name}...")
-
-                val status = batchApi.deleteNamespacedJob(
-                    job.metadata.name,
-                    clusterId.namespace,
-                    null,
-                    deleteOptions,
-                    null,
-                    5,
-                    null,
-                    null
-                )
-
-                logger.debug("Response status: ${status.reason}")
-
-//                status.details.causes.forEach { logger.debug(it.message) }
-            } catch (e: Exception) {
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
-            }
-        }
-    }
+//    fun deleteBootstrapJobs(
+//        api: BatchV1Api,
+//        clusterId: ClusterId
+//    ) {
+//        val jobs = batchApi.listNamespacedJob(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//
+//        val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
+//
+//        jobs.items.forEach { job ->
+//            try {
+//                logger.debug("Removing Job ${job.metadata.name}...")
+//
+//                val status = batchApi.deleteNamespacedJob(
+//                    job.metadata.name,
+//                    clusterId.namespace,
+//                    null,
+//                    deleteOptions,
+//                    null,
+//                    5,
+//                    null,
+//                    null
+//                )
+//
+//                logger.debug("Response status: ${status.reason}")
+//
+////                status.details.causes.forEach { logger.debug(it.message) }
+//            } catch (e: Exception) {
+//                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
+//            }
+//        }
+//    }
 
     fun rescaleCluster(clusterId: ClusterId, taskManagers: Int) {
         val patch = mapOf<String, Any?>(
@@ -1303,174 +1292,174 @@ object KubeClient {
         }
     }
 
-    fun setTaskManagerStatefulSetReplicas(clusterId: ClusterId, taskManagers: Int) {
-        val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
-            null,
-            null,
-            5,
-            null
-        )
+//    fun setTaskManagerStatefulSetReplicas(clusterId: ClusterId, taskManagers: Int) {
+//        val statefulSets = appsApi.listNamespacedStatefulSet(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//
+//        if (statefulSets.items.size == 0) {
+//            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
+//        }
+//
+//        statefulSets.items.forEach { statefulSet ->
+//            try {
+//                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
+//
+//                val patch = listOf(
+//                    mapOf<String, Any?>(
+//                        "op" to "replace",
+//                        "path" to "/spec/replicas",
+//                        "value" to taskManagers
+//                    )
+//                )
+//
+//                val response = appsApi.patchNamespacedStatefulSetScaleCall(
+//                    statefulSet.metadata.name,
+//                    clusterId.namespace,
+//                    V1Patch(JSON().serialize(patch)),
+//                    null,
+//                    null,
+//                    null,
+//                    null,
+//                    null,
+//                    null
+//                ).execute()
+//
+//                response.body().use { body ->
+//                    if (response.isSuccessful) {
+//                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
+//                    } else {
+//                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+//                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
+//            }
+//        }
+//    }
+//
+//    fun getTaskManagerStatefulSetReplicas(clusterId: ClusterId): Int {
+//        val statefulSets = appsApi.listNamespacedStatefulSet(
+//            clusterId.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//
+//        if (statefulSets.items.size == 0) {
+//            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
+//        }
+//
+//        return statefulSets.items.firstOrNull()?.status?.currentReplicas ?: 0
+//    }
 
-        if (statefulSets.items.size == 0) {
-            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
-        }
-
-        statefulSets.items.forEach { statefulSet ->
-            try {
-                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
-
-                val patch = listOf(
-                    mapOf<String, Any?>(
-                        "op" to "replace",
-                        "path" to "/spec/replicas",
-                        "value" to taskManagers
-                    )
-                )
-
-                val response = appsApi.patchNamespacedStatefulSetScaleCall(
-                    statefulSet.metadata.name,
-                    clusterId.namespace,
-                    V1Patch(JSON().serialize(patch)),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ).execute()
-
-                response.body().use { body ->
-                    if (response.isSuccessful) {
-                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
-                    } else {
-                        body.source().use { source -> logger.error(source.readUtf8Line()) }
-                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
-                    }
-                }
-            } catch (e: Exception) {
-                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-            }
-        }
-    }
-
-    fun getTaskManagerStatefulSetReplicas(clusterId: ClusterId): Int {
-        val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterId.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
-            null,
-            null,
-            5,
-            null
-        )
-
-        if (statefulSets.items.size == 0) {
-            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
-        }
-
-        return statefulSets.items.firstOrNull()?.status?.currentReplicas ?: 0
-    }
-
-    @ExperimentalCoroutinesApi
-    @Throws(InterruptedException::class)
-    fun forwardPort(
-        pod: V1Pod?,
-        localPort: Int,
-        port: Int,
-        stop: Channel<Int>
-    ): Thread {
-        return Thread(
-            Runnable {
-                var stdout : Thread? = null
-                var stdin : Thread? = null
-                try {
-                    val forwardResult = PortForward().forward(pod, listOf(port))
-                    val serverSocket = ServerSocket(localPort)
-                    val clientSocket = serverSocket.accept()
-                    stop.invokeOnClose {
-                        try {
-                            clientSocket.close()
-                        } catch (e: Exception) {
-                        }
-                        try {
-                            serverSocket.close()
-                        } catch (e: Exception) {
-                        }
-                    }
-                    stdout = Thread(
-                        Runnable {
-                            try {
-                                ByteStreams.copy(clientSocket.inputStream, forwardResult.getOutboundStream(port))
-                            } catch (ex: Exception) {
-                            }
-                        })
-                    stdin = Thread(
-                        Runnable {
-                            try {
-                                ByteStreams.copy(forwardResult.getInputStream(port), clientSocket.outputStream)
-                            } catch (ex: Exception) {
-                            }
-                        })
-                    stdout.start()
-                    stdin.start()
-                    stdout.join()
-                    stdin.interrupt()
-                    stdin.join()
-                    stdout = null
-                    stdin = null
-                } catch (e: Exception) {
-                    stdout?.interrupt()
-                    stdin?.interrupt()
-                    logger.error("An error occurred", e)
-                } finally {
-                    stdout?.join()
-                    stdin?.join()
-                }
-            })
-    }
-
-    @Throws(InterruptedException::class)
-    fun processExec(proc: Process) {
-        var stdout : Thread? = null
-        var stderr : Thread? = null
-        try {
-            stdout = Thread(
-                Runnable {
-                    try {
-                        ByteStreams.copy(proc.inputStream, System.out)
-                    } catch (ex: Exception) {
-                    }
-                })
-            stderr = Thread(
-                Runnable {
-                    try {
-                        ByteStreams.copy(proc.errorStream, System.out)
-                    } catch (ex: Exception) {
-                    }
-                })
-            stdout.start()
-            stderr.start()
-            proc.waitFor(60, TimeUnit.SECONDS)
-            stdout.join()
-            stderr.join()
-            stdout = null
-            stderr = null
-        } catch (e: Exception) {
-            stdout?.interrupt()
-            stderr?.interrupt()
-            logger.error("An error occurred", e)
-        } finally {
-            stdout?.join()
-            stderr?.join()
-        }
-    }
+//    @ExperimentalCoroutinesApi
+//    @Throws(InterruptedException::class)
+//    fun forwardPort(
+//        pod: V1Pod?,
+//        localPort: Int,
+//        port: Int,
+//        stop: Channel<Int>
+//    ): Thread {
+//        return Thread(
+//            Runnable {
+//                var stdout : Thread? = null
+//                var stdin : Thread? = null
+//                try {
+//                    val forwardResult = PortForward().forward(pod, listOf(port))
+//                    val serverSocket = ServerSocket(localPort)
+//                    val clientSocket = serverSocket.accept()
+//                    stop.invokeOnClose {
+//                        try {
+//                            clientSocket.close()
+//                        } catch (e: Exception) {
+//                        }
+//                        try {
+//                            serverSocket.close()
+//                        } catch (e: Exception) {
+//                        }
+//                    }
+//                    stdout = Thread(
+//                        Runnable {
+//                            try {
+//                                ByteStreams.copy(clientSocket.inputStream, forwardResult.getOutboundStream(port))
+//                            } catch (ex: Exception) {
+//                            }
+//                        })
+//                    stdin = Thread(
+//                        Runnable {
+//                            try {
+//                                ByteStreams.copy(forwardResult.getInputStream(port), clientSocket.outputStream)
+//                            } catch (ex: Exception) {
+//                            }
+//                        })
+//                    stdout.start()
+//                    stdin.start()
+//                    stdout.join()
+//                    stdin.interrupt()
+//                    stdin.join()
+//                    stdout = null
+//                    stdin = null
+//                } catch (e: Exception) {
+//                    stdout?.interrupt()
+//                    stdin?.interrupt()
+//                    logger.error("An error occurred", e)
+//                } finally {
+//                    stdout?.join()
+//                    stdin?.join()
+//                }
+//            })
+//    }
+//
+//    @Throws(InterruptedException::class)
+//    fun processExec(proc: Process) {
+//        var stdout : Thread? = null
+//        var stderr : Thread? = null
+//        try {
+//            stdout = Thread(
+//                Runnable {
+//                    try {
+//                        ByteStreams.copy(proc.inputStream, System.out)
+//                    } catch (ex: Exception) {
+//                    }
+//                })
+//            stderr = Thread(
+//                Runnable {
+//                    try {
+//                        ByteStreams.copy(proc.errorStream, System.out)
+//                    } catch (ex: Exception) {
+//                    }
+//                })
+//            stdout.start()
+//            stderr.start()
+//            proc.waitFor(60, TimeUnit.SECONDS)
+//            stdout.join()
+//            stderr.join()
+//            stdout = null
+//            stderr = null
+//        } catch (e: Exception) {
+//            stdout?.interrupt()
+//            stderr?.interrupt()
+//            logger.error("An error occurred", e)
+//        } finally {
+//            stdout?.join()
+//            stderr?.join()
+//        }
+//    }
 
     private fun createKubernetesApiClient(kubeConfig: String?, timeout: Long): ApiClient? {
         val client = if (kubeConfig?.isNotBlank() == true) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()

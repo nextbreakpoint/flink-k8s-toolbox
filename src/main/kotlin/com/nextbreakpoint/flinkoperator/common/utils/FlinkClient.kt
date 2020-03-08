@@ -121,30 +121,6 @@ object FlinkClient {
         }
     }
 
-    fun listJobs(address: FlinkAddress): List<JobIdWithStatus> {
-        try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
-
-            val response = flinkApi.getJobsCall( null, null).execute()
-
-            response.body().use { body ->
-                if (!response.isSuccessful) {
-                    throw CallException("[$address] Can't get jobs")
-                }
-
-                body.source().use { source ->
-                    val jobsOverview = JSON().deserialize<JobIdsWithStatusOverview>(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
-
-                    return jobsOverview.jobs
-                }
-            }
-        } catch (e : CallException) {
-            throw e
-        } catch (e : Exception) {
-            throw RuntimeException(e)
-        }
-    }
-
     fun runJar(
         address: FlinkAddress,
         jarFile: JarFileInfo,
