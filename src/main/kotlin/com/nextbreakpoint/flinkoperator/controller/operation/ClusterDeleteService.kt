@@ -16,7 +16,7 @@ class ClusterDeleteService(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
 
     override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
         try {
-            kubeClient.deleteJobManagerServices(clusterId)
+            kubeClient.deleteServices(clusterId)
 
             return OperationResult(
                 OperationStatus.COMPLETED,

@@ -28,9 +28,9 @@ class ClusterDeleteServiceTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.deleteJobManagerServices(eq(clusterId))).thenThrow(RuntimeException::class.java)
+        given(kubeClient.deleteServices(eq(clusterId))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteJobManagerServices(eq(clusterId))
+        verify(kubeClient, times(1)).deleteServices(eq(clusterId))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -41,7 +41,7 @@ class ClusterDeleteServiceTest {
     @Test
     fun `should delete jobmanager service`() {
         val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteJobManagerServices(eq(clusterId))
+        verify(kubeClient, times(1)).deleteServices(eq(clusterId))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()

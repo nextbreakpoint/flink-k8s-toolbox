@@ -33,7 +33,7 @@ class TaskController(private val controller: OperationController, private val cl
 
     fun execute(resources: CachedResources) {
         try {
-            val cluster = resources.flinkCluter ?: throw RuntimeException("Cluster not present")
+            val cluster = resources.flinkCluster ?: throw RuntimeException("Cluster not present")
 
             logger.info("Resource version: ${cluster.metadata?.resourceVersion}")
 

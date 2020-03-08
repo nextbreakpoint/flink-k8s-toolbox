@@ -312,11 +312,10 @@ class TaskContext(
         return createStatefulSet(clusterId, resource)
     }
 
-    fun getClusterScale(): ClusterScaling {
-        return ClusterScaling(
+    fun getClusterScale() =
+        ClusterScaling(
             taskManagers = Status.getTaskManagers(cluster), taskSlots = Status.getTaskSlots(cluster)
         )
-    }
 
     fun getActionTimestamp(): DateTime = Annotations.getActionTimestamp(cluster)
 
@@ -326,11 +325,10 @@ class TaskContext(
 
     fun isSavepointRequired(): Boolean = !Annotations.isWithoutSavepoint(cluster) && !Annotations.isDeleteResources(cluster)
 
-    fun getSavepointOtions(): SavepointOptions {
-        return SavepointOptions(
+    fun getSavepointOtions() =
+        SavepointOptions(
             targetPath = Configuration.getSavepointTargetPath(cluster)
         )
-    }
 
     fun doesBootstrapExists(): Boolean = resources.bootstrapJob != null
 
@@ -356,5 +354,5 @@ class TaskContext(
 
     fun getTaskManagerReplicas(): Int = resources.taskmanagerStatefulSet?.status?.replicas ?: 0
 
-    fun isBatchMode() = cluster.status.bootstrap.executionMode?.toUpperCase() == ExecutionMode.BATCH.toString()
+    fun isBatchMode() = cluster.status?.bootstrap?.executionMode?.toUpperCase() == ExecutionMode.BATCH.toString()
 }
