@@ -381,6 +381,8 @@ Create a Flink Cluster file:
         annotations:
           managed: true
         environment:
+        - name: FLINK_JM_HEAP
+          value: "256"
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
         environmentFrom:
@@ -408,6 +410,8 @@ Create a Flink Cluster file:
         annotations:
           managed: true
         environment:
+        - name: FLINK_TM_HEAP
+          value: "1024"
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
         volumeMounts:
@@ -428,13 +432,9 @@ Create a Flink Cluster file:
                 requests:
                   storage: 5Gi
       operator:
-        # savepointMode can be Automatic or Manual. Default value is Manual
         savepointMode: Automatic
-        # savepointInterval in seconds. Required when savepointMode is Automatic
         savepointInterval: 60
-        # savepointTargetPath can be any valid Hadoop filesystem (including S3)
         savepointTargetPath: file:///var/tmp/test
-        # jobRestartPolicy can be Always or Never. Default value is Never
         jobRestartPolicy: Always
     EOF
 
@@ -587,6 +587,10 @@ Create a JSON file:
         "serviceMode": "NodePort",
         "environment": [
           {
+            "name": "FLINK_JM_HEAP",
+            "value": "256"
+          },
+          {
             "name": "FLINK_GRAPHITE_HOST",
             "value": "graphite.default.svc.cluster.local"
           }
@@ -632,6 +636,10 @@ Create a JSON file:
       },
       "taskManager": {
         "environment": [
+          {
+            "name": "FLINK_TM_HEAP",
+            "value": "1024"
+          },
           {
             "name": "FLINK_GRAPHITE_HOST",
             "value": "graphite.default.svc.cluster.local"
