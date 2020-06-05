@@ -167,13 +167,17 @@ The operator exposes metrics to Prometheus on port 8080 by default:
 
 ## Install Flink Operator
 
-Create a namespace. Let's assume the namespace is flink, but you can use any name:
+Create a namespace for the operator:
 
-    kubectl create namespace flink
+    kubectl create namespace flink-operator
+
+Create a namespace for the clusters:
+
+    kubectl create namespace flink-jobs
 
 Create a secret which contain the keystore and the truststore files:
 
-    kubectl -n flink create secret generic flink-operator-ssl \
+    kubectl -n flink-operator create secret generic flink-operator-ssl \
         --from-file=keystore.jks=secrets/keystore-operator-api.jks \
         --from-file=truststore.jks=secrets/truststore-operator-api.jks \
         --from-literal=keystore-secret=keystore-password \
@@ -185,21 +189,21 @@ Install the operator's CRD resource with Helm command:
 
 Install the operator's resources with SSL enabled:
 
-    helm install flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set secretName=flink-operator-ssl  
+    helm install flink-k8s-toolbox-operator --namespace flink-operator helm/flink-k8s-toolbox-operator --set namespace=flink-jobs --set secretName=flink-operator-ssl
 
 Or if you prefer install the operator's resources with SSL disabled:
 
-    helm install flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
+    helm install flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set namespace=flink-jobs
 
 Run the operator with command:
 
-    kubectl -n flink scale deployment flink-operator --replicas=1
+    kubectl -n flink-operator scale deployment flink-operator --replicas=1
 
 ## Uninstall Flink Operator
 
 Stop the operator with command:
 
-    kubectl -n flink scale deployment flink-operator --replicas=0
+    kubectl -n flink-operator scale deployment flink-operator --replicas=0
 
 Remove the operator's resources with command:    
 
@@ -211,11 +215,11 @@ Remove the operator's CRD resource with command:
 
 Remove secret with command:    
 
-    kubectl -n flink delete secret flink-operator-ssl
+    kubectl -n flink-operator delete secret flink-operator-ssl
 
-Remove namespace with command:    
+Remove operator namespace with command:    
 
-    kubectl delete namespace flink
+    kubectl delete namespace flink-operator
 
 ## Upgrade Flink Operator from previous version
 
@@ -225,15 +229,15 @@ Before upgrading to a new release you must cancel all jobs creating a savepoint 
 
 Create a copy of your FlinkCluster resources:
 
-    kubectl -n flink get fc -o yaml > clusters-backup.yaml
+    kubectl -n flink-operator get fc -o yaml > clusters-backup.yaml
 
 Upgrade the CRD using Helm:
 
-    helm upgrade flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
+    helm upgrade flink-k8s-toolbox-crd --install helm/flink-k8s-toolbox-crd
 
 Upgrade the operator using Helm:
 
-    helm upgrade flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set secretName=flink-operator-ssl
+    helm upgrade flink-k8s-toolbox-operator --install helm/flink-k8s-toolbox-operator --namespace flink --set namespace=flink-jobs --set secretName=flink-operator-ssl
 
 After installing the new version, you can restart the jobs. However, the custom resources might not be compatible with the new CRD.
 If that is the case, then you have to fix the resource specification, perhaps you have to delete the resource and recreate it.
@@ -254,59 +258,37 @@ Tag and push the image into your private registry if needed:
 
 Run the operator using the image on Docker Hub:
 
-    kubectl run flink-operator --restart=Never -n flink --image=nextbreakpoint/flink-k8s-toolbox:1.3.2-beta \
-        --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink-operator --image=nextbreakpoint/flink-k8s-toolbox:1.3.2-beta \
+        --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink-jobs
 
 Or run the operator using your private registry and pull secrets:
 
-    kubectl run flink-operator --restart=Never -n flink --image=some-registry/flink-k8s-toolbox:1.3.2-beta \
-        --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink-operator --image=some-registry/flink-k8s-toolbox:1.3.2-beta \
+        --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=flink-jobs
 
 Please note that you **MUST** run only one operator for each namespace to avoid conflicts.
 
 A service account is created when installing the operator Helm chart:
 
-    helm install flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator
+    helm install flink-k8s-toolbox-operator --namespace flink-operator helm/flink-k8s-toolbox-operator
 
 Verify that the pod has been created:
 
-    kubectl -n flink get pod flink-operator -o yaml     
+    kubectl -n flink-operator get pod flink-operator -o yaml     
 
 Verify that there are no errors in the logs:
 
-    kubectl -n flink logs flink-operator
+    kubectl -n flink-operator logs flink-operator
 
 Check the events in case that the pod doesn't start:
 
-    kubectl -n flink get events
+    kubectl -n flink-operator get events
 
 Stop the operator with command:
 
-    kubectl -n flink delete pod flink-operator
+    kubectl -n flink-operator delete pod flink-operator
 
 ## Flink operator custom resources
-
-Flink Operator requires a Custom Resource Definition:
-
-    apiVersion: apiextensions.k8s.io/v1beta1
-    kind: CustomResourceDefinition
-    metadata:
-      name: flinkclusters.nextbreakpoint.com
-    spec:
-      preserveUnknownField: false
-      group: nextbreakpoint.com
-      versions:
-        - name: v1
-          served: true
-          storage: true
-      scope: Namespaced
-      names:
-        plural: flinkclusters
-        singular: flinkcluster
-        kind: FlinkCluster
-        shortNames:
-        - fc
-    [...]
 
 FlinkCluster resources can be created or deleted as any other resource in Kubernetes using kubectl command.
 
@@ -322,7 +304,66 @@ Do not delete the CRD unless you want to delete all custom resources depending o
 
 When updating the operator, upgrade the CRD with Helm instead of deleting and reinstalling:
 
-    helm upgrade flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd  
+    helm upgrade flink-k8s-toolbox-crd --install helm/flink-k8s-toolbox-crd  
+
+### Create service account for Flink cluster components
+
+JobManager and TaskManagers can be configured to use a different service account.
+Like Pod resources, you can specify a service account in the FlinkCluster resource:
+
+    jobManager:
+      serviceAcount: some-account
+    ...
+
+    taskManager:
+      serviceAcount: some-account
+    ...
+
+If not specified, the default service account will be used for JobManager and TaskManagers.
+
+There is another service account required for starting the cluster which is
+configured in the bootstrap section of the FlinkCluster resource:
+
+    bootstrap:
+      serviceAccount: flink-bootstrap
+    ...
+
+This account requires specific roles and permissions in the jobs namespace:
+
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: flink-bootstrap
+      namespace: flink-jobs
+    rules:
+      - apiGroups: [""]
+        resources: ["services", "pods"]
+        verbs: ["get", "list"]
+      - apiGroups: ["nextbreakpoint.com"]
+        resources: ["flinkclusters"]
+        verbs: ["get", "list"]
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: flink-bootstrap
+      namespace: flink-jobs
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: flink-bootstrap
+      namespace: flink-jobs
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: flink-bootstrap
+    subjects:
+      - kind: ServiceAccount
+        name: flink-bootstrap
+        namespace: flink-jobs
+
+The default name of the service account is flink-bootstrap, but it can be changed to any name.
 
 ### Create a Flink cluster
 
@@ -440,7 +481,7 @@ Create a Flink Cluster file:
 
 Create a FlinkCluster resource with command:
 
-    kubectl create -n flink -f test.yaml
+    kubectl create -n flink-jobs -f test.yaml
 
 Please note that you can use any image of Flink as far as the image implements the standard commands for running JobManager and TaskManager.
 
@@ -448,13 +489,13 @@ Please note that you can use any image of Flink as far as the image implements t
 
 Delete a FlinkCluster with command:
 
-    kubectl delete -n flink -f test.yaml
+    kubectl delete -n flink-jobs -f test.yaml
 
 ### List Flink clusters
 
 List custom objects of type FlinkCluster with command:
 
-    kubectl get -n flink flinkclusters
+    kubectl get -n flink-jobs flinkclusters
 
 The command should produce an output like:
 
@@ -851,10 +892,10 @@ Run the operator with a given namespace and Kubernetes config using the Docker i
 
 ## Configure task timeout
 
-The Flink Operator uses timeouts to recover for anomalies. 
+The Flink Operator uses timeouts to recover for anomalies.
 The duration of the timeout has a default value of 300 seconds and can be changed setting the environment variable TASK_TIMEOUT (number of seconds).   
 
 ## Configure polling interval
 
-The Flink Operator polls periodically the status of the resources. 
+The Flink Operator polls periodically the status of the resources.
 The polling interval has a default value of 5 seconds and can be changed setting the environment variable POLLING_INTERVAL (number of seconds).   
