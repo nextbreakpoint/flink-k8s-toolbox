@@ -1,0 +1,30 @@
+{{- $fullname := include "flink-k8s-toolbox.fullname" . -}}
+{{- $name := include "flink-k8s-toolbox.name" . -}}
+{{- $chart := include "flink-k8s-toolbox.chart" . -}}
+{{- $root := . }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $root.Values.name | default "flink-operator" | quote }}
+  namespace: {{ $root.Release.Namespace | quote }}
+  labels:
+    app: {{ $root.Values.name | default "flink-operator" | quote }}
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+spec:
+  type: {{ $root.Values.serviceType | default "ClusterIP" }}
+  ports:
+    - port: {{ $root.Values.controlPort | default 4444 }}
+      {{- if $root.Values.serviceNodePort}}
+      nodePort: {{ $root.Values.serviceNodePort }}
+      {{- end}}
+      targetPort: control
+      protocol: TCP
+      name: {{ $root.Values.controlPortName | default "control" }}
+    - port: {{ $root.Values.monitorPort | default 8080 }}
+      targetPort: monitor
+      protocol: TCP
+      name: {{ $root.Values.monitorPortName | default "monitor" }}
+  selector:
+    app: {{ $root.Values.name | default "flink-operator" | quote }}
