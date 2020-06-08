@@ -761,15 +761,11 @@ Show more options with the command:
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster create --help
 
-### How to get the list of clusters
-
-Execute the command:
+Get the list of clusters
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta clusters list --host=$OPERATOR_HOST --port=4444
 
-### How to get the status of a cluster
-
-Execute the command:
+Get the status of a cluster
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
@@ -777,111 +773,67 @@ Use jq to format the output:
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444 | jq -r
 
-Show more options with the command:
-
-     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster status --help
-
-### How to delete a cluster
-
-Execute the command:
+Delete a cluster
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster delete --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-Show more options with the command:
-
-    docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster delete --help
-
-### How to stop a running cluster
-
-Execute the command:
+Stop a running cluster
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster stop --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-Show more options with the command:
-
-    docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster stop --help
-
-### How to restart a stopped or failed cluster
-
-Execute the command:
+Restart a stopped or failed cluster
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster start --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-Show more options with the command:
-
-    docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster start --help
-
-### How to start a cluster and run the job without savepoint
-
-Execute the command:
+Start a cluster and run the job without savepoint
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster start --cluster-name=test --without-savepoint --host=$OPERATOR_HOST --port=4444
 
-### How to stop a cluster without creating a savepoint
-
-Execute the command:
+Stop a cluster without creating a savepoint
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster stop --cluster-name=test --without-savepoint --host=$OPERATOR_HOST --port=4444
 
-### How to create a new savepoint
-
-Execute the command:
+Create a new savepoint
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta savepoint trigger --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-### How to get the status of a cluster
-
-Execute the command:
+Get the status of a cluster
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-### How to scale a cluster
-
-Execute the command:
+Rescale a cluster (with savepoint)
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta cluster scale --cluster-name=test --task-managers=4 --host=$OPERATOR_HOST --port=4444
 
-### How to get the details of the running job
-
-Execute the command:
+Get the details of the running job
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta job details --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-### How to get the metrics of the running job
-
-Execute the command:
+Get the metrics of the running job
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta job metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-### How to get a list of Task Managers
-
-Execute the command:
+Get a list of Task Managers
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta taskmanagers list --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-### How to get the metrics of the Job Manager
-
-Execute the command:
+Get the metrics of the Job Manager
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta jobmanager metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
-### How to get the metrics of a Task Manager
-
-Execute the command:
+Get the metrics of a Task Manager
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta taskmanager metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 You will be asked to provide a Task Manager id which you can get from the list of Task Managers.   
 
-### How to get the details of a Task Manager
-
-Execute the command:
+Get the details of a Task Manager
 
     docker run --rm -it flink-k8s-toolbox:1.3.2-beta taskmanager details --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 You will be asked to provide a Task Manager id which you can get from the list of Task Managers.   
 
-### How to upload a JAR file and start a job
+## How to upload a JAR file and start a job
 
 Flink jobs must be packaged in a regular JAR file and uploaded to the JobManager.
 
@@ -893,7 +845,7 @@ When running outside Kubernetes use the command:
 
     java -jar flink-k8s-toolbox-1.3.2-beta.jar bootstrap run --kube-config=/your-kube-config --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
-### How to run the Operator for testing
+## How to run the Operator for testing
 
 The Flink Operator can be executed as Docker image or JAR file, pointing to a local or remote Kubernetes cluster.    
 
