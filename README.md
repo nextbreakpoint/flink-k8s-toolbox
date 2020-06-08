@@ -171,9 +171,13 @@ Create a namespace for the operator:
 
     kubectl create namespace flink-operator
 
+The name of the namespace can be any name you like.
+
 Create a namespace for the clusters:
 
     kubectl create namespace flink-jobs
+
+The name of the namespace can be any name you like.
 
 Create a secret which contain the keystore and the truststore files:
 
@@ -182,6 +186,8 @@ Create a secret which contain the keystore and the truststore files:
         --from-file=truststore.jks=secrets/truststore-operator-api.jks \
         --from-literal=keystore-secret=keystore-password \
         --from-literal=truststore-secret=truststore-password
+
+The name of the secret can be any name you like.
 
 Install the operator's CRD resource with Helm command:
 
@@ -193,11 +199,13 @@ Install the operator's resources with SSL enabled:
 
 Or if you prefer install the operator's resources with SSL disabled:
 
-    helm install flink-k8s-toolbox-operator --namespace flink helm/flink-k8s-toolbox-operator --set namespace=flink-jobs
+    helm install flink-k8s-toolbox-operator --namespace flink-operator helm/flink-k8s-toolbox-operator --set namespace=flink-jobs
 
 Run the operator with command:
 
     kubectl -n flink-operator scale deployment flink-operator --replicas=1
+
+Alternatively, you can add the argument --set replicas=1 when installing the operator with Helm.
 
 ## Uninstall Flink Operator
 
@@ -207,7 +215,7 @@ Stop the operator with command:
 
 Remove the operator's resources with command:    
 
-    helm uninstall flink-k8s-toolbox-operator
+    helm uninstall flink-k8s-toolbox-operator --namespace flink-operator
 
 Remove the operator's CRD resource with command:    
 
@@ -220,6 +228,10 @@ Remove secret with command:
 Remove operator namespace with command:    
 
     kubectl delete namespace flink-operator
+
+Remove clusters namespace with command:    
+
+    kubectl delete namespace flink-jobs
 
 ## Upgrade Flink Operator from previous version
 
@@ -237,7 +249,7 @@ Upgrade the CRD using Helm:
 
 Upgrade the operator using Helm:
 
-    helm upgrade flink-k8s-toolbox-operator --install helm/flink-k8s-toolbox-operator --namespace flink --set namespace=flink-jobs --set secretName=flink-operator-ssl
+    helm upgrade flink-k8s-toolbox-operator --install helm/flink-k8s-toolbox-operator --namespace flink-operator --set namespace=flink-jobs --set secretName=flink-operator-ssl --set replicas=1
 
 After installing the new version, you can restart the jobs. However, the custom resources might not be compatible with the new CRD.
 If that is the case, then you have to fix the resource specification, perhaps you have to delete the resource and recreate it.
@@ -246,7 +258,7 @@ If that is the case, then you have to fix the resource specification, perhaps yo
 
 The operator's Docker image can be downloaded from Docker Hub:
 
-    docker fetch nextbreakpoint/flink-k8s-toolbox:1.3.2-beta
+    docker pull nextbreakpoint/flink-k8s-toolbox:1.3.2-beta
 
 Tag and push the image into your private registry if needed:
 
@@ -268,7 +280,7 @@ Or run the operator using your private registry and pull secrets:
 
 Please note that you **MUST** run only one operator for each namespace to avoid conflicts.
 
-A service account is created when installing the operator Helm chart:
+The service account flink-operator is created when installing the Helm chart:
 
     helm install flink-k8s-toolbox-operator --namespace flink-operator helm/flink-k8s-toolbox-operator
 
@@ -296,15 +308,15 @@ The Custom Resource Definition is installed with a separate Helm chart:
 
     helm install flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
 
-The complete definition with the validation schema is defined in the Helm template:
+The CRD and its schema are defined in the Helm template:
 
     https://github.com/nextbreakpoint/flink-k8s-toolbox/blob/master/helm/flink-k8s-toolbox-crd/templates/crd.yaml
-
-Do not delete the CRD unless you want to delete all custom resources depending on it.
 
 When updating the operator, upgrade the CRD with Helm instead of deleting and reinstalling:
 
     helm upgrade flink-k8s-toolbox-crd --install helm/flink-k8s-toolbox-crd  
+
+Do not delete the CRD unless you want to delete all custom resources depending on it.
 
 ### Create service account for Flink cluster components
 
@@ -481,7 +493,7 @@ Create a Flink Cluster file:
 
 Create a FlinkCluster resource with command:
 
-    kubectl create -n flink-jobs -f test.yaml
+    kubectl -n flink-jobs apply -f test.yaml
 
 Please note that you can use any image of Flink as far as the image implements the standard commands for running JobManager and TaskManager.
 
@@ -489,13 +501,13 @@ Please note that you can use any image of Flink as far as the image implements t
 
 Delete a FlinkCluster with command:
 
-    kubectl delete -n flink-jobs -f test.yaml
+    kubectl -n flink-jobs delete -f test.yaml
 
 ### List Flink clusters
 
 List custom objects of type FlinkCluster with command:
 
-    kubectl get -n flink-jobs flinkclusters
+    kubectl -n flink-jobs get flinkclusters
 
 The command should produce an output like:
 
@@ -555,11 +567,14 @@ Please note that only Java 8 is supported. Define JAVA_HOME variable to specify 
 ## Automatic savepoints
 
 The operator automatically creates savepoints before stopping the cluster.
-This might happen when a change is applied to the cluster specification or the cluster is rescaled or manually stopped.
-This feature is very handy to avoid losing the status of the job.
-When the operator restarts the cluster, it uses the latest savepoint to recover the status of the job.
-However, for this feature to work properly, the savepoints must be created in a durable storage location such as HDFS or S3.
-Only a durable location can be used to recover the job after recreating the Job Manager and the Task Managers.
+This might happen when a change is applied to the cluster specification or
+the cluster is rescaled or manually stopped. This feature is very handy to
+avoid losing the status of the job.
+When the operator restarts the cluster, it uses the latest savepoint to
+recover the status of the job. However, for this feature to work properly,
+the savepoints must be created in a durable storage location such as HDFS or S3.
+Only a durable location can be used to recover the job after recreating
+the Job Manager and the Task Managers.
 
 ## How to use the Operator CLI
 
@@ -893,9 +908,11 @@ Run the operator with a given namespace and Kubernetes config using the Docker i
 ## Configure task timeout
 
 The Flink Operator uses timeouts to recover for anomalies.
+
 The duration of the timeout has a default value of 300 seconds and can be changed setting the environment variable TASK_TIMEOUT (number of seconds).   
 
 ## Configure polling interval
 
 The Flink Operator polls periodically the status of the resources.
+
 The polling interval has a default value of 5 seconds and can be changed setting the environment variable POLLING_INTERVAL (number of seconds).   
