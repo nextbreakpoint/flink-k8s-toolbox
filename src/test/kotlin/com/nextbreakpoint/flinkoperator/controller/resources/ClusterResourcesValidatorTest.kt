@@ -283,7 +283,7 @@ class ClusterResourcesValidatorTest {
         printStatus(actualStatus)
 
         assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jobmanagerStatefulSet.second).hasSize(5)
+        assertThat(actualStatus.jobmanagerStatefulSet.second).hasSize(4)
     }
 
     @Test
@@ -297,7 +297,7 @@ class ClusterResourcesValidatorTest {
         printStatus(actualStatus)
 
         assertThat(actualStatus.jobmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.jobmanagerStatefulSet.second).hasSize(5)
+        assertThat(actualStatus.jobmanagerStatefulSet.second).hasSize(4)
     }
 
     @Test
@@ -465,7 +465,7 @@ class ClusterResourcesValidatorTest {
         printStatus(actualStatus)
 
         assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(6)
+        assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(5)
     }
 
     @Test
@@ -479,7 +479,7 @@ class ClusterResourcesValidatorTest {
         printStatus(actualStatus)
 
         assertThat(actualStatus.taskmanagerStatefulSet.first).isEqualTo(ResourceStatus.DIVERGENT)
-        assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(6)
+        assertThat(actualStatus.taskmanagerStatefulSet.second).hasSize(5)
     }
 
     @Test

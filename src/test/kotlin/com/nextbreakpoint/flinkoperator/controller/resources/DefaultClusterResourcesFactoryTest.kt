@@ -96,18 +96,15 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.ports?.get(3)?.name).isEqualTo("query")
         assertThat(container?.args).hasSize(1)
         assertThat(container?.args?.get(0)).isEqualTo("jobmanager")
-        assertThat(container?.env).hasSize(5)
+        assertThat(container?.env).hasSize(4)
         assertThat(container?.env?.get(0)?.name).isEqualTo("POD_NAME")
         assertThat(container?.env?.get(1)?.name).isEqualTo("POD_NAMESPACE")
-        assertThat(container?.env?.get(2)?.name).isEqualTo("FLINK_JM_HEAP")
-        assertThat(container?.env?.get(3)?.name).isEqualTo("JOB_MANAGER_RPC_ADDRESS")
-        assertThat(container?.env?.get(4)?.name).isEqualTo("FLINK_GRAPHITE_HOST")
-        assertThat(container?.env?.get(4)?.value).isEqualTo("graphite.default.svc.cluster.local")
+        assertThat(container?.env?.get(2)?.name).isEqualTo("JOB_MANAGER_RPC_ADDRESS")
+        assertThat(container?.env?.get(3)?.name).isEqualTo("FLINK_GRAPHITE_HOST")
+        assertThat(container?.env?.get(3)?.value).isEqualTo("graphite.default.svc.cluster.local")
         assertThat(container?.volumeMounts).hasSize(4)
         assertThat(container?.volumeMounts?.get(3)?.name).isEqualTo("jobmanager")
         assertThat(container?.resources).isEqualTo(cluster.spec.jobManager.resources)
-
-        assertThat(container?.env?.get(2)?.value).isEqualTo("512")
     }
 
     @Test
@@ -163,19 +160,16 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(container?.ports?.get(1)?.name).isEqualTo("ipc")
         assertThat(container?.args).hasSize(1)
         assertThat(container?.args?.get(0)).isEqualTo("taskmanager")
-        assertThat(container?.env).hasSize(6)
+        assertThat(container?.env).hasSize(5)
         assertThat(container?.env?.get(0)?.name).isEqualTo("POD_NAME")
         assertThat(container?.env?.get(1)?.name).isEqualTo("POD_NAMESPACE")
-        assertThat(container?.env?.get(2)?.name).isEqualTo("FLINK_TM_HEAP")
-        assertThat(container?.env?.get(3)?.name).isEqualTo("JOB_MANAGER_RPC_ADDRESS")
-        assertThat(container?.env?.get(4)?.name).isEqualTo("TASK_MANAGER_NUMBER_OF_TASK_SLOTS")
-        assertThat(container?.env?.get(4)?.value).isEqualTo("2")
-        assertThat(container?.env?.get(5)?.name).isEqualTo("FLINK_GRAPHITE_HOST")
-        assertThat(container?.env?.get(5)?.value).isEqualTo("graphite.default.svc.cluster.local")
+        assertThat(container?.env?.get(2)?.name).isEqualTo("JOB_MANAGER_RPC_ADDRESS")
+        assertThat(container?.env?.get(3)?.name).isEqualTo("TASK_MANAGER_NUMBER_OF_TASK_SLOTS")
+        assertThat(container?.env?.get(3)?.value).isEqualTo("2")
+        assertThat(container?.env?.get(4)?.name).isEqualTo("FLINK_GRAPHITE_HOST")
+        assertThat(container?.env?.get(4)?.value).isEqualTo("graphite.default.svc.cluster.local")
         assertThat(container?.volumeMounts).hasSize(4)
         assertThat(container?.volumeMounts?.get(3)?.name).isEqualTo("taskmanager")
         assertThat(container?.resources).isEqualTo(cluster.spec.taskManager.resources)
-
-        assertThat(container?.env?.get(2)?.value).isEqualTo("2048")
     }
 }

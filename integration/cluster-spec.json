@@ -16,11 +16,14 @@
   },
   "jobManager": {
     "serviceMode": "NodePort",
-    "maxHeapMemory": 256,
     "annotations": {
       "managed": "true"
     },
     "environment": [
+      {
+        "name": "FLINK_JM_HEAP",
+        "value": "256"
+      },
       {
         "name": "FLINK_ENVIRONMENT",
         "value": "test"
@@ -95,11 +98,14 @@
   },
   "taskManager": {
     "taskSlots": 1,
-    "maxHeapMemory": 1024,
     "annotations": {
       "managed": "true"
     },
     "environment": [
+      {
+        "name": "FLINK_TM_HEAP",
+        "value": "1024"
+      },
       {
         "name": "FLINK_ENVIRONMENT",
         "value": "test"
