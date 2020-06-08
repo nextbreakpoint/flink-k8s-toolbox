@@ -123,11 +123,6 @@ spec:
                   enum:
                     - ClusterIP
                     - NodePort
-                maxHeapMemory:
-                  description: Value of environment variable FLINK_JM_HEAP in megabytes. Default is 256.
-                  type: integer
-                  nullable: true
-                  minimum: 256
                 serviceAccount:
                   description: Service account to use for running Job Manager.
                   type: string
@@ -4219,11 +4214,6 @@ spec:
                   type: integer
                   nullable: false
                   minimum: 1
-                maxHeapMemory:
-                  description: Value of environment variable FLINK_TM_HEAP in megabytes. Default is 1024.
-                  type: integer
-                  nullable: true
-                  minimum: 256
                 serviceAccount:
                   description: Service account to use for running Task Manager.
                   type: string

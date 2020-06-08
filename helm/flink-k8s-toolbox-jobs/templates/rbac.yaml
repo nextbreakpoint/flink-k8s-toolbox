@@ -5,7 +5,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: flink-operator
+  name: flink-bootstrap
   namespace: {{ $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
@@ -13,28 +13,16 @@ metadata:
     heritage: {{ $root.Release.Service }}
 rules:
   - apiGroups: [""]
-    resources: ["persistentvolumeclaims"]
-    verbs: ["get", "list", "watch", "delete"]
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list", "watch", "create", "delete"]
-  - apiGroups: [""]
-    resources: ["services"]
-    verbs: ["get", "list", "watch", "create", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["statefulsets", "statefulsets/scale"]
-    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
-  - apiGroups: ["batch"]
-    resources: ["jobs"]
-    verbs: ["get", "list", "watch", "create", "delete"]
+    resources: ["services", "pods"]
+    verbs: ["get", "list"]
   - apiGroups: ["nextbreakpoint.com"]
-    resources: ["flinkclusters", "flinkclusters/status", "flinkclusters/scale"]
-    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+    resources: ["flinkclusters"]
+    verbs: ["get", "list"]
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: flink-operator
+  name: flink-bootstrap
   namespace: {{ $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
@@ -44,7 +32,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: flink-operator
+  name: flink-bootstrap
   namespace: {{ $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
@@ -53,8 +41,8 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: flink-operator
+  name: flink-bootstrap
 subjects:
   - kind: ServiceAccount
-    name: flink-operator
+    name: flink-bootstrap
     namespace: {{ $root.Release.Namespace | quote }}

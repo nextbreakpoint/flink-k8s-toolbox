@@ -131,12 +131,6 @@ class ClusterResourcesValidator {
                 statusReport.add("missing or invalid environment variable JOB_MANAGER_RPC_ADDRESS")
             }
 
-            val jobmanagerMemoryEnvVar = container.env.filter { it.name == "FLINK_JM_HEAP" }.firstOrNull()
-
-            if (jobmanagerMemoryEnvVar?.value == null || jobmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.jobManager.maxHeapMemory ?: 256) {
-                statusReport.add("missing or invalid environment variable FLINK_JM_HEAP")
-            }
-
             val jobmanagerPodNamespaceEnvVar = container.env.filter { it.name == "POD_NAMESPACE" }.firstOrNull()
 
             if (jobmanagerPodNamespaceEnvVar?.valueFrom == null || jobmanagerPodNamespaceEnvVar.valueFrom.fieldRef.fieldPath != "metadata.namespace") {
@@ -151,7 +145,6 @@ class ClusterResourcesValidator {
 
             val jobmanagerEnvironmentVariables = container.env
                 .filter { it.name != "JOB_MANAGER_RPC_ADDRESS" }
-                .filter { it.name != "FLINK_JM_HEAP" }
                 .filter { it.name != "POD_NAMESPACE" }
                 .filter { it.name != "POD_NAME" }
                 .map { it }
@@ -248,12 +241,6 @@ class ClusterResourcesValidator {
                 statusReport.add("missing or invalid environment variable JOB_MANAGER_RPC_ADDRESS")
             }
 
-            val taskmanagerMemoryEnvVar = container.env.filter { it.name == "FLINK_TM_HEAP" }.firstOrNull()
-
-            if (taskmanagerMemoryEnvVar?.value == null || taskmanagerMemoryEnvVar.value.toInt() < flinkCluster.spec.taskManager.maxHeapMemory ?: 1024) {
-                statusReport.add("missing or invalid environment variable FLINK_TM_HEAP")
-            }
-
             val taskmanagerTaskSlotsEnvVar = container.env.filter { it.name == "TASK_MANAGER_NUMBER_OF_TASK_SLOTS" }.firstOrNull()
 
             if (taskmanagerTaskSlotsEnvVar?.value == null || taskmanagerTaskSlotsEnvVar.value.toInt() != flinkCluster.spec.taskManager.taskSlots ?: 1) {
@@ -274,7 +261,6 @@ class ClusterResourcesValidator {
 
             val taskmanagerEnvironmentVariables = container.env
                 .filter { it.name != "JOB_MANAGER_RPC_ADDRESS" }
-                .filter { it.name != "FLINK_TM_HEAP" }
                 .filter { it.name != "TASK_MANAGER_NUMBER_OF_TASK_SLOTS" }
                 .filter { it.name != "POD_NAMESPACE" }
                 .filter { it.name != "POD_NAME" }

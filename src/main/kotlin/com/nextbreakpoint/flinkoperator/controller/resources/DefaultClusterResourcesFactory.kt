@@ -144,11 +144,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
                 "POD_NAMESPACE", "metadata.namespace"
             )
 
-        val jobManagerHeapEnvVar =
-            createEnvVar(
-                "FLINK_JM_HEAP", flinkCluster.spec.jobManager?.maxHeapMemory?.toString() ?: "256"
-            )
-
         val rpcAddressEnvVar =
             createEnvVar(
                 "JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager-${flinkCluster.metadata.name}"
@@ -166,7 +161,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         val jobmanagerVariables = mutableListOf(
             podNameEnvVar,
             podNamespaceEnvVar,
-            jobManagerHeapEnvVar,
             rpcAddressEnvVar
         )
 
@@ -315,11 +309,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
                 "POD_NAMESPACE", "metadata.namespace"
             )
 
-        val taskManagerHeapEnvVar =
-            createEnvVar(
-                "FLINK_TM_HEAP", flinkCluster.spec.taskManager?.maxHeapMemory?.toString() ?: "1024"
-            )
-
         val rpcAddressEnvVar =
             createEnvVar(
                 "JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager-${flinkCluster.metadata.name}"
@@ -337,7 +326,6 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         val taskmanagerVariables = mutableListOf(
             podNameEnvVar,
             podNamespaceEnvVar,
-            taskManagerHeapEnvVar,
             rpcAddressEnvVar,
             numberOfTaskSlotsEnvVar
         )
