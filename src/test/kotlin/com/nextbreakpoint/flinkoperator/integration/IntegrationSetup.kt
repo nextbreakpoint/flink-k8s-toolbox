@@ -173,8 +173,13 @@ open class IntegrationSetup {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
+            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs", path = "helm/flink-k8s-toolbox-jobs") != 0) {
+                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs", path = "helm/flink-k8s-toolbox-jobs") != 0) {
+                    fail("Can't install or upgrade Helm chart")
+                }
+            }
             val args = listOf(
-                /*"--set", "namespace=$namespace",*/
+                "--set", "namespace=$namespace",
                 "--set", "image.pullPolicy=Never",
                 "--set", "image.repository=integration/flink-k8s-toolbox",
                 "--set", "image.version=$version",
@@ -210,6 +215,9 @@ open class IntegrationSetup {
             println("Operator terminated")
             println("Uninstalling operator...")
             if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs") != 0) {
                 println("Can't uninstall Helm chart")
             }
             if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
