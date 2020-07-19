@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -17,7 +17,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class FlinkClusterDeleteTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
@@ -29,13 +29,13 @@ class FlinkClusterDeleteTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.deleteFlinkCluster(eq(clusterId))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteFlinkCluster(eq(clusterId))
+        given(kubeClient.deleteFlinkCluster(eq(clusterSelector))).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).deleteFlinkCluster(eq(clusterSelector))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
@@ -43,13 +43,13 @@ class FlinkClusterDeleteTest {
     fun `should fail when cluster resource can't be deleted`() {
         val response = mock(ApiResponse::class.java) as ApiResponse<Any>
         given(response.statusCode).thenReturn(500)
-        given(kubeClient.deleteFlinkCluster(eq(clusterId))).thenReturn(response)
-        val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteFlinkCluster(eq(clusterId))
+        given(kubeClient.deleteFlinkCluster(eq(clusterSelector))).thenReturn(response)
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).deleteFlinkCluster(eq(clusterSelector))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
@@ -57,13 +57,13 @@ class FlinkClusterDeleteTest {
     fun `should delete cluster resource`() {
         val response = mock(ApiResponse::class.java) as ApiResponse<Any>
         given(response.statusCode).thenReturn(200)
-        given(kubeClient.deleteFlinkCluster(eq(clusterId))).thenReturn(response)
-        val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteFlinkCluster(eq(clusterId))
+        given(kubeClient.deleteFlinkCluster(eq(clusterSelector))).thenReturn(response)
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).deleteFlinkCluster(eq(clusterSelector))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
     }
 }

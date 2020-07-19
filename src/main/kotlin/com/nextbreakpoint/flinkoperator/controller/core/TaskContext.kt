@@ -1,10 +1,9 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ExecutionMode
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
@@ -14,10 +13,11 @@ import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResou
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1Service
 import io.kubernetes.client.models.V1StatefulSet
+import org.apache.log4j.Logger
 import org.joda.time.DateTime
 
 class TaskContext(
-    val clusterId: ClusterId,
+    val clusterSelector: ClusterSelector,
     private val cluster: V1FlinkCluster,
     private val resources: CachedResources,
     private val controller: OperationController
@@ -26,64 +26,67 @@ class TaskContext(
 
     fun timeSinceLastSavepointRequestInSeconds() = (controller.currentTimeMillis() - Status.getSavepointRequestTimestamp(cluster).millis) / 1000L
 
-    fun removeJar(clusterId: ClusterId) : OperationResult<Void?> =
-        controller.removeJar(clusterId)
+    fun removeJar(clusterSelector: ClusterSelector) : OperationResult<Void?> =
+        controller.removeJar(clusterSelector)
 
-    fun triggerSavepoint(clusterId: ClusterId, options: SavepointOptions) : OperationResult<SavepointRequest> =
-        controller.triggerSavepoint(clusterId, options)
+    fun triggerSavepoint(clusterSelector: ClusterSelector, options: SavepointOptions) : OperationResult<SavepointRequest> =
+        controller.triggerSavepoint(clusterSelector, options)
 
-    fun getLatestSavepoint(clusterId: ClusterId, savepointRequest: SavepointRequest) : OperationResult<String> =
-        controller.getLatestSavepoint(clusterId, savepointRequest)
+    fun getLatestSavepoint(clusterSelector: ClusterSelector, savepointRequest: SavepointRequest) : OperationResult<String> =
+        controller.getLatestSavepoint(clusterSelector, savepointRequest)
 
-    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): OperationResult<String?> =
-        controller.createBootstrapJob(clusterId, bootstrapJob)
+    fun createBootstrapJob(clusterSelector: ClusterSelector, bootstrapJob: V1Job): OperationResult<String?> =
+        controller.createBootstrapJob(clusterSelector, bootstrapJob)
 
-    fun deleteBootstrapJob(clusterId: ClusterId) : OperationResult<Void?> =
-        controller.deleteBootstrapJob(clusterId)
+    fun deleteBootstrapJob(clusterSelector: ClusterSelector) : OperationResult<Void?> =
+        controller.deleteBootstrapJob(clusterSelector)
 
-    fun terminatePods(clusterId: ClusterId) : OperationResult<Void?> =
-        controller.terminatePods(clusterId)
+    fun terminatePods(clusterSelector: ClusterSelector) : OperationResult<Void?> =
+        controller.terminatePods(clusterSelector)
 
-    fun restartPods(clusterId: ClusterId, options: ClusterScaling): OperationResult<Void?> =
-        controller.restartPods(clusterId, options)
+    fun restartPods(clusterSelector: ClusterSelector, options: ClusterScaling): OperationResult<Void?> =
+        controller.restartPods(clusterSelector, options)
 
-    fun arePodsTerminated(clusterId: ClusterId): OperationResult<Void?> =
-        controller.arePodsTerminated(clusterId)
+    fun arePodsTerminated(clusterSelector: ClusterSelector): OperationResult<Boolean> =
+        controller.arePodsTerminated(clusterSelector)
 
-    fun startJob(clusterId: ClusterId, cluster: V1FlinkCluster) : OperationResult<Void?> =
-        controller.startJob(clusterId, cluster)
+    fun startJob(clusterSelector: ClusterSelector, cluster: V1FlinkCluster) : OperationResult<Void?> =
+        controller.startJob(clusterSelector, cluster)
 
-    fun stopJob(clusterId: ClusterId): OperationResult<Void?> =
-        controller.stopJob(clusterId)
+    fun stopJob(clusterSelector: ClusterSelector): OperationResult<Void?> =
+        controller.stopJob(clusterSelector)
 
-    fun cancelJob(clusterId: ClusterId, options: SavepointOptions): OperationResult<SavepointRequest> =
-        controller.cancelJob(clusterId, options)
+    fun cancelJob(clusterSelector: ClusterSelector, options: SavepointOptions): OperationResult<SavepointRequest?> =
+        controller.cancelJob(clusterSelector, options)
 
-    fun isClusterReady(clusterId: ClusterId, options: ClusterScaling): OperationResult<Void?> =
-        controller.isClusterReady(clusterId, options)
+    fun isClusterReady(clusterSelector: ClusterSelector, options: ClusterScaling): OperationResult<Boolean> =
+        controller.isClusterReady(clusterSelector, options)
 
-    fun isJobRunning(clusterId: ClusterId): OperationResult<Void?> =
-        controller.isJobRunning(clusterId)
+    fun isJobFinished(clusterSelector: ClusterSelector): OperationResult<Boolean> =
+        controller.isJobFinished(clusterSelector)
 
-    fun isJobFinished(clusterId: ClusterId): OperationResult<Void?> =
-        controller.isJobFinished(clusterId)
+    fun isJobRunning(clusterSelector: ClusterSelector): OperationResult<Boolean> =
+        controller.isJobRunning(clusterSelector)
 
-    fun createJobManagerService(clusterId: ClusterId, service: V1Service): OperationResult<String?> =
-        controller.createJobManagerService(clusterId, service)
+    fun isJobFailed(clusterSelector: ClusterSelector): OperationResult<Boolean> =
+        controller.isJobFailed(clusterSelector)
 
-    fun deleteJobManagerService(clusterId: ClusterId): OperationResult<Void?> =
-        controller.deleteJobManagerService(clusterId)
+    fun createJobManagerService(clusterSelector: ClusterSelector, service: V1Service): OperationResult<String?> =
+        controller.createJobManagerService(clusterSelector, service)
 
-    fun createStatefulSet(clusterId: ClusterId, statefulSet: V1StatefulSet): OperationResult<String?> =
-        controller.createStatefulSet(clusterId, statefulSet)
+    fun deleteJobManagerService(clusterSelector: ClusterSelector): OperationResult<Void?> =
+        controller.deleteJobManagerService(clusterSelector)
 
-    fun deleteStatefulSets(clusterId: ClusterId): OperationResult<Void?> =
-        controller.deleteStatefulSets(clusterId)
+    fun createStatefulSet(clusterSelector: ClusterSelector, statefulSet: V1StatefulSet): OperationResult<String?> =
+        controller.createStatefulSet(clusterSelector, statefulSet)
 
-    fun deletePersistentVolumeClaims(clusterId: ClusterId): OperationResult<Void?> =
-        controller.deletePersistentVolumeClaims(clusterId)
+    fun deleteStatefulSets(clusterSelector: ClusterSelector): OperationResult<Void?> =
+        controller.deleteStatefulSets(clusterSelector)
 
-    fun refreshStatus(statusTimestamp: DateTime, actionTimestamp: DateTime, hasFinalizer: Boolean) {
+    fun deletePersistentVolumeClaims(clusterSelector: ClusterSelector): OperationResult<Void?> =
+        controller.deletePersistentVolumeClaims(clusterSelector)
+
+    fun refreshStatus(logger: Logger, statusTimestamp: DateTime, actionTimestamp: DateTime, hasFinalizer: Boolean) {
         val taskManagers = resources.taskmanagerStatefulSet?.status?.readyReplicas ?: 0
         if (Status.getActiveTaskManagers(cluster) != taskManagers) {
             Status.setActiveTaskManagers(cluster, taskManagers)
@@ -107,19 +110,22 @@ class TaskContext(
         val newStatusTimestamp = Status.getStatusTimestamp(cluster)
 
         if (statusTimestamp != newStatusTimestamp) {
-            controller.updateStatus(clusterId, cluster)
+            logger.debug("Updating status")
+            controller.updateStatus(clusterSelector, cluster)
         }
 
         val newActionTimestamp = Annotations.getActionTimestamp(cluster)
 
         if (actionTimestamp != newActionTimestamp) {
-            controller.updateAnnotations(clusterId, cluster)
+            logger.debug("Updating annotations")
+            controller.updateAnnotations(clusterSelector, cluster)
         }
 
         val newHasFinalizer = hasFinalizer()
 
         if (hasFinalizer != newHasFinalizer) {
-            controller.updateFinalizers(clusterId, cluster)
+            logger.debug("Updating finalizers")
+            controller.updateFinalizers(clusterSelector, cluster)
         }
     }
 
@@ -160,7 +166,7 @@ class TaskContext(
         val savepointPath = cluster.spec?.operator?.savepointPath
         Status.setSavepointPath(cluster, savepointPath ?: "")
 
-        val labelSelector = ClusterResource.makeLabelSelector(clusterId)
+        val labelSelector = ClusterResource.makeLabelSelector(clusterSelector)
         Status.setLabelSelector(cluster, labelSelector)
 
         val serviceMode = cluster.spec?.jobManager?.serviceMode
@@ -276,46 +282,46 @@ class TaskContext(
 
     fun getTaskManagers(): Int = Status.getTaskManagers(cluster)
 
-    fun createBootstrapJob(clusterId: ClusterId): OperationResult<String?> {
+    fun createBootstrapJob(clusterSelector: ClusterSelector): OperationResult<String?> {
         val savepointPath = Status.getSavepointPath(cluster)
         val parallelism = Status.getJobParallelism(cluster)
 
         val resource = when (Annotations.isWithoutSavepoint(cluster)) {
             true ->
                 DefaultBootstrapJobFactory.createBootstrapJob(
-                    clusterId, "flink-operator", cluster.status.bootstrap, null, parallelism
+                    clusterSelector, "flink-operator", cluster.status.bootstrap, null, parallelism
                 )
             else ->
                 DefaultBootstrapJobFactory.createBootstrapJob(
-                    clusterId, "flink-operator", cluster.status.bootstrap, savepointPath, parallelism
+                    clusterSelector, "flink-operator", cluster.status.bootstrap, savepointPath, parallelism
                 )
         }
 
-        return createBootstrapJob(clusterId, resource)
+        return createBootstrapJob(clusterSelector, resource)
     }
 
-    fun createJobManagerService(clusterId: ClusterId): OperationResult<String?> {
+    fun createJobManagerService(clusterSelector: ClusterSelector): OperationResult<String?> {
         val resource = DefaultClusterResourcesFactory.createJobManagerService(
-            clusterId.namespace, clusterId.uuid, "flink-operator", cluster
+            clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
         )
 
-        return createJobManagerService(clusterId, resource)
+        return createJobManagerService(clusterSelector, resource)
     }
 
-    fun createJobManagerStatefulSet(clusterId: ClusterId): OperationResult<String?> {
+    fun createJobManagerStatefulSet(clusterSelector: ClusterSelector): OperationResult<String?> {
         val resource = DefaultClusterResourcesFactory.createJobManagerStatefulSet(
-            clusterId.namespace, clusterId.uuid, "flink-operator", cluster
+            clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
         )
 
-        return createStatefulSet(clusterId, resource)
+        return createStatefulSet(clusterSelector, resource)
     }
 
-    fun createTaskManagerStatefulSet(clusterId: ClusterId): OperationResult<String?> {
+    fun createTaskManagerStatefulSet(clusterSelector: ClusterSelector): OperationResult<String?> {
         val resource = DefaultClusterResourcesFactory.createTaskManagerStatefulSet(
-            clusterId.namespace, clusterId.uuid, "flink-operator", cluster
+            clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
         )
 
-        return createStatefulSet(clusterId, resource)
+        return createStatefulSet(clusterSelector, resource)
     }
 
     fun getClusterScale() =
@@ -336,7 +342,7 @@ class TaskContext(
             targetPath = Configuration.getSavepointTargetPath(cluster)
         )
 
-    fun doesBootstrapExists(): Boolean = resources.bootstrapJob != null
+    fun doesBootstrapJobExists(): Boolean = resources.bootstrapJob != null
 
     fun doesJobManagerServiceExists(): Boolean = resources.jobmanagerService != null
 
@@ -359,6 +365,4 @@ class TaskContext(
     fun getJobManagerReplicas(): Int = resources.jobmanagerStatefulSet?.status?.replicas ?: 0
 
     fun getTaskManagerReplicas(): Int = resources.taskmanagerStatefulSet?.status?.replicas ?: 0
-
-    fun isBatchMode() = cluster.status?.bootstrap?.executionMode?.toUpperCase() == ExecutionMode.BATCH.toString()
 }

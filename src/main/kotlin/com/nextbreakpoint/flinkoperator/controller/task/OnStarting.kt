@@ -11,7 +11,7 @@ class OnStarting(logger: Logger) : Task(logger) {
         if (context.hasBeenDeleted()) {
             context.setDeleteResources(true)
             context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Stopping)
+            context.setClusterStatus(ClusterStatus.Cancelling)
 
             return
         }
@@ -32,25 +32,25 @@ class OnStarting(logger: Logger) : Task(logger) {
         val taskmanagerStatefuleSetExists = context.doesTaskManagerStatefulSetExists()
 
         if (!jobmanagerServiceExists) {
-            val serviceResult = context.createJobManagerService(context.clusterId)
+            val serviceResult = context.createJobManagerService(context.clusterSelector)
 
-            if (serviceResult.isCompleted()) {
+            if (serviceResult.isSuccessful()) {
                 logger.info("JobManager service created: ${serviceResult.output}")
             }
         }
 
         if (!jobmanagerStatefuleSetExists) {
-            val statefulSetResult = context.createJobManagerStatefulSet(context.clusterId)
+            val statefulSetResult = context.createJobManagerStatefulSet(context.clusterSelector)
 
-            if (statefulSetResult.isCompleted()) {
+            if (statefulSetResult.isSuccessful()) {
                 logger.info("JobManager statefulset created: ${statefulSetResult.output}")
             }
         }
 
         if (!taskmanagerStatefuleSetExists) {
-            val statefulSetResult = context.createTaskManagerStatefulSet(context.clusterId)
+            val statefulSetResult = context.createTaskManagerStatefulSet(context.clusterSelector)
 
-            if (statefulSetResult.isCompleted()) {
+            if (statefulSetResult.isSuccessful()) {
                 logger.info("TaskManager statefulset created: ${statefulSetResult.output}")
             }
         }
@@ -64,7 +64,7 @@ class OnStarting(logger: Logger) : Task(logger) {
             if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScaling.taskManagers) {
                 logger.info("Restating pods...")
 
-                context.restartPods(context.clusterId, clusterScaling)
+                context.restartPods(context.clusterSelector, clusterScaling)
 
                 return
             }
@@ -78,10 +78,10 @@ class OnStarting(logger: Logger) : Task(logger) {
                 return
             }
 
-            if (context.doesBootstrapExists()) {
-                val jobRunningResult = context.isJobRunning(context.clusterId)
+            if (context.doesBootstrapJobExists()) {
+                val jobRunningResult = context.isJobRunning(context.clusterSelector)
 
-                if (!jobRunningResult.isCompleted()) {
+                if (!jobRunningResult.output) {
                     return
                 }
 
@@ -92,25 +92,25 @@ class OnStarting(logger: Logger) : Task(logger) {
 
                 return
             } else {
-                val clusterReadyResult = context.isClusterReady(context.clusterId, clusterScaling)
+                val clusterReadyResult = context.isClusterReady(context.clusterSelector, clusterScaling)
 
-                if (!clusterReadyResult.isCompleted()) {
+                if (!clusterReadyResult.output) {
                     return
                 }
 
                 logger.info("Cluster ready")
 
-                val removeJarResult = context.removeJar(context.clusterId)
+                val removeJarResult = context.removeJar(context.clusterSelector)
 
-                if (!removeJarResult.isCompleted()) {
+                if (!removeJarResult.isSuccessful()) {
                     return
                 }
 
                 logger.info("JARs removed")
 
-                val bootstrapResult = context.createBootstrapJob(context.clusterId)
+                val bootstrapResult = context.createBootstrapJob(context.clusterSelector)
 
-                if (bootstrapResult.isCompleted()) {
+                if (bootstrapResult.isSuccessful()) {
                     logger.info("Bootstrap job created: ${bootstrapResult.output}")
                 }
 

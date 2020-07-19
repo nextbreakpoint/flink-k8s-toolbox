@@ -173,8 +173,8 @@ open class IntegrationSetup {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
-            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs", path = "helm/flink-k8s-toolbox-jobs") != 0) {
-                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs", path = "helm/flink-k8s-toolbox-jobs") != 0) {
+            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-roles", path = "helm/flink-k8s-toolbox-roles") != 0) {
+                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-roles", path = "helm/flink-k8s-toolbox-roles") != 0) {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
@@ -217,7 +217,7 @@ open class IntegrationSetup {
             if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator") != 0) {
                 println("Can't uninstall Helm chart")
             }
-            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs") != 0) {
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-roles") != 0) {
                 println("Can't uninstall Helm chart")
             }
             if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
@@ -303,35 +303,35 @@ open class IntegrationSetup {
 
         fun stopCluster(name: String, options: StopOptions, port: Int) {
             val response = sendPutRequest(url = "http://$host:$port/cluster/$name/stop", body = options, typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't stop cluster $name")
             }
         }
 
         fun startCluster(name: String, options: StartOptions, port: Int) {
             val response = sendPutRequest(url = "http://$host:$port/cluster/$name/start", body = options, typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't start cluster $name")
             }
         }
 
         fun scaleCluster(name: String, options: ScaleOptions, port: Int) {
             val response = sendPutRequest(url = "http://$host:$port/cluster/$name/scale", body = options, typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't scale cluster $name")
             }
         }
 
         fun createCluster(name: String, spec: V1FlinkClusterSpec, port: Int) {
             val response = sendPostRequest(url = "http://$host:$port/cluster/$name", body = spec, typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't create cluster $name")
             }
         }
 
         fun deleteCluster(name: String, port: Int) {
             val response = sendDeleteRequest(url = "http://$host:$port/cluster/$name", typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't delete cluster $name")
             }
         }

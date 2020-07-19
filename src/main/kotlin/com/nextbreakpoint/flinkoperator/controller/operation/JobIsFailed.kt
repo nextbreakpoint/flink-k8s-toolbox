@@ -2,36 +2,41 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
-import io.kubernetes.client.JSON
 import org.apache.log4j.Logger
 
-class TaskManagerDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient): Operation<TaskManagerId, String>(flinkOptions, flinkClient, kubeClient) {
+class JobIsFailed(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Boolean>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(TaskManagerDetails::class.simpleName)
+        private val logger = Logger.getLogger(JobIsFailed::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ClusterSelector, params: TaskManagerId): OperationResult<String> {
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Boolean> {
         return try {
             val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
-            val details = flinkClient.getTaskManagerDetails(address, params)
+            val overview = flinkClient.getOverview(address)
 
-            OperationResult(
-                OperationStatus.OK,
-                JSON().serialize(details)
-            )
+            if (overview.jobsRunning == 0 && overview.jobsFailed >= 1) {
+                OperationResult(
+                    OperationStatus.OK,
+                    true
+                )
+            } else {
+                OperationResult(
+                    OperationStatus.OK,
+                    false
+                )
+            }
         } catch (e : Exception) {
-            logger.error("[name=${clusterSelector.name}] Can't get details of task manager $params", e)
+            logger.warn("[name=${clusterSelector.name}] Can't get overview")
 
             OperationResult(
                 OperationStatus.ERROR,
-                "{}"
+                false
             )
         }
     }

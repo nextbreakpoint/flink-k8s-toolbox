@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
@@ -16,32 +16,37 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
         private val logger = Logger.getLogger(SavepointTrigger::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: SavepointOptions): OperationResult<SavepointRequest> {
+    override fun execute(clusterSelector: ClusterSelector, params: SavepointOptions): OperationResult<SavepointRequest> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
             val runningJobs = flinkClient.listRunningJobs(address)
 
-            if (runningJobs.size > 1) {
-                logger.warn("[name=${clusterId.name}] There are multiple jobs running")
-            }
-
-            if (runningJobs.size != 1) {
-                logger.warn("[name=${clusterId.name}] Can't find a running job")
+            if (runningJobs.isEmpty()) {
+                logger.warn("[name=${clusterSelector.name}] Can't find a running job")
 
                 return OperationResult(
-                    OperationStatus.FAILED,
+                    OperationStatus.ERROR,
                     SavepointRequest("", "")
                 )
             }
 
-            val checkpointingStatistics = flinkClient.getCheckpointingStatistics(address, runningJobs)
-
-            if (checkpointingStatistics.filter { it.value.counts.inProgress > 0 }.isNotEmpty()) {
-                logger.warn("[name=${clusterId.name}] Savepoint in progress for job")
+            if (runningJobs.size > 1) {
+                logger.warn("[name=${clusterSelector.name}] There are multiple jobs running")
 
                 return OperationResult(
-                    OperationStatus.RETRY,
+                    OperationStatus.ERROR,
+                    SavepointRequest("", "")
+                )
+            }
+
+            val jobsInProgress = flinkClient.isCheckpointInProgress(address, runningJobs)
+
+            if (jobsInProgress.isNotEmpty()) {
+                logger.warn("[name=${clusterSelector.name}] Checkpoint already in progress")
+
+                return OperationResult(
+                    OperationStatus.ERROR,
                     SavepointRequest("", "")
                 )
             }
@@ -49,7 +54,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
             val savepointRequests = flinkClient.triggerSavepoints(address, runningJobs, params.targetPath)
 
             return OperationResult(
-                OperationStatus.COMPLETED,
+                OperationStatus.OK,
                 savepointRequests.map {
                     SavepointRequest(
                         jobId = it.key,
@@ -58,10 +63,10 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
                 }.first()
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't trigger savepoint for job", e)
+            logger.error("[name=${clusterSelector.name}] Can't trigger savepoint for job", e)
 
             return OperationResult(
-                OperationStatus.FAILED,
+                OperationStatus.ERROR,
                 SavepointRequest("", "")
             )
         }

@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -15,9 +15,9 @@ class SavepointGetLatest(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
         private val logger = Logger.getLogger(SavepointGetLatest::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: SavepointRequest): OperationResult<String> {
+    override fun execute(clusterSelector: ClusterSelector, params: SavepointRequest): OperationResult<String> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
             val requests = mapOf(params.jobId to params.triggerId)
 
@@ -25,7 +25,7 @@ class SavepointGetLatest(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
 
             if (pendingSavepointRequests.isNotEmpty()) {
                 return OperationResult(
-                    OperationStatus.RETRY,
+                    OperationStatus.ERROR,
                     ""
                 )
             }
@@ -33,23 +33,23 @@ class SavepointGetLatest(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
             val savepointPaths = flinkClient.getLatestSavepointPaths(address, requests)
 
             if (savepointPaths.isEmpty()) {
-                logger.error("[name=${clusterId.name}] Can't find any savepoint")
+                logger.error("[name=${clusterSelector.name}] Can't find any savepoint")
 
                 return OperationResult(
-                    OperationStatus.FAILED,
+                    OperationStatus.ERROR,
                     ""
                 )
             }
 
             return OperationResult(
-                OperationStatus.COMPLETED,
+                OperationStatus.OK,
                 savepointPaths.values.first()
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't get savepoint status", e)
+            logger.error("[name=${clusterSelector.name}] Can't get savepoint status", e)
 
             return OperationResult(
-                OperationStatus.FAILED,
+                OperationStatus.ERROR,
                 ""
             )
         }

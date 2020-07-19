@@ -16,23 +16,7 @@ class OnFailed(logger: Logger) : Task(logger) {
             return
         }
 
-        if (context.doesBootstrapExists()) {
-            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
-
-            if (bootstrapResult.isCompleted()) {
-                logger.info("Bootstrap job deleted")
-            }
-
-            return
-        }
-
-        val jobRunningResult = context.isJobRunning(context.clusterId)
-
-        if (jobRunningResult.isCompleted()) {
-            logger.info("Job running")
-
-            context.setClusterStatus(ClusterStatus.Running)
-
+        if (!suspend(context)) {
             return
         }
 
@@ -68,17 +52,15 @@ class OnFailed(logger: Logger) : Task(logger) {
             return
         }
 
-        if (!context.isBatchMode()) {
-            if (context.getJobRestartPolicy() == "Always") {
-                val changes = context.computeChanges()
+        if (context.getJobRestartPolicy() == "Always") {
+            val changes = context.computeChanges()
 
-                if (changes.isNotEmpty()) {
-                    logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
+            if (changes.isNotEmpty()) {
+                logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
 
-                    context.setClusterStatus(ClusterStatus.Updating)
+                context.setClusterStatus(ClusterStatus.Updating)
 
-                    return
-                }
+                return
             }
         }
     }

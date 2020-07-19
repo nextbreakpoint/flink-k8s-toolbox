@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -15,26 +15,26 @@ class JobDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
         private val logger = Logger.getLogger(JobDetails::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<String> {
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<String> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
             val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.isEmpty()) {
-                logger.error("[name=${clusterId.name}] There is no running job")
+                logger.error("[name=${clusterSelector.name}] There is no running job")
 
                 return OperationResult(
-                    OperationStatus.FAILED,
+                    OperationStatus.ERROR,
                     "{}"
                 )
             }
 
             if (runningJobs.size > 1) {
-                logger.error("[name=${clusterId.name}] There are multiple jobs running")
+                logger.error("[name=${clusterSelector.name}] There are multiple jobs running")
 
                 return OperationResult(
-                    OperationStatus.FAILED,
+                    OperationStatus.ERROR,
                     "{}"
                 )
             }
@@ -42,14 +42,14 @@ class JobDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
             val details = flinkClient.getJobDetails(address, runningJobs.first())
 
             return OperationResult(
-                OperationStatus.COMPLETED,
+                OperationStatus.OK,
                 JSON().serialize(details)
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't get details of job", e)
+            logger.error("[name=${clusterSelector.name}] Can't get details of job", e)
 
             return OperationResult(
-                OperationStatus.FAILED,
+                OperationStatus.ERROR,
                 "{}"
             )
         }

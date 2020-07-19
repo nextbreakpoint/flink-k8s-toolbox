@@ -19,14 +19,6 @@ class OnStopping(logger: Logger) : Task(logger) {
             return
         }
 
-        val runningResult = context.isJobRunning(context.clusterId)
-
-        if (runningResult.isCompleted()) {
-            context.setClusterStatus(ClusterStatus.Cancelling)
-
-            return
-        }
-
         if (context.isDeleteResources()) {
             if (terminate(context)) {
                 context.resetSavepointRequest()

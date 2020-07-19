@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
@@ -17,23 +17,23 @@ class RequestClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
         private val logger = Logger.getLogger(RequestClusterStop::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: StopOptions): OperationResult<Void?> {
-        try {
+    override fun execute(clusterSelector: ClusterSelector, params: StopOptions): OperationResult<Void?> {
+        return try {
             bridge.setWithoutSavepoint(params.withoutSavepoint)
             bridge.setDeleteResources(params.deleteResources)
             bridge.setManualAction(ManualAction.STOP)
 
-            kubeClient.updateAnnotations(clusterId, bridge.getAnnotations())
+            kubeClient.updateAnnotations(clusterSelector, bridge.getAnnotations())
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't stop cluster", e)
+            logger.error("[name=${clusterSelector.name}] Can't stop cluster", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

@@ -12,15 +12,15 @@ class OnRunning(logger: Logger) : Task(logger) {
         if (context.hasBeenDeleted()) {
             context.setDeleteResources(true)
             context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Stopping)
+            context.setClusterStatus(ClusterStatus.Cancelling)
 
             return
         }
 
-        if (context.doesBootstrapExists()) {
-            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
+        if (context.doesBootstrapJobExists()) {
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterSelector)
 
-            if (bootstrapResult.isCompleted()) {
+            if (bootstrapResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
 
@@ -39,48 +39,38 @@ class OnRunning(logger: Logger) : Task(logger) {
             return
         }
 
-        val jobFinishedResult = context.isJobFinished(context.clusterId)
+        val jobFinishedResult = context.isJobFinished(context.clusterSelector)
 
-        if (jobFinishedResult.isCompleted()) {
+        if (jobFinishedResult.output) {
             logger.info("Job has finished")
 
             context.setDeleteResources(false)
             context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Stopping)
+            context.resetSavepointRequest()
+            context.setClusterStatus(ClusterStatus.Finished)
 
             return
         }
 
-        val jobRunningResult = context.isJobRunning(context.clusterId)
+        val jobFailedResult = context.isJobFailed(context.clusterSelector)
 
-        if (!jobRunningResult.isCompleted()) {
-            logger.warn("Job not running")
+        if (jobFailedResult.output) {
+            logger.warn("Job has failed")
 
+            context.setDeleteResources(false)
             context.resetManualAction()
+            context.resetSavepointRequest()
             context.setClusterStatus(ClusterStatus.Failed)
 
             return
         }
 
-        if (!context.isBatchMode()) {
-            val changes = context.computeChanges()
-
-            if (changes.isNotEmpty()) {
-                logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
-
-                context.resetManualAction()
-                context.setClusterStatus(ClusterStatus.Updating)
-
-                return
-            }
-        }
-
         val savepointRequest = context.getSavepointRequest()
 
         if (savepointRequest != null) {
-            val savepointResult = context.getLatestSavepoint(context.clusterId, savepointRequest)
+            val savepointResult = context.getLatestSavepoint(context.clusterSelector, savepointRequest)
 
-            if (savepointResult.isCompleted()) {
+            if (savepointResult.isSuccessful()) {
                 logger.info("Savepoint created for job ${savepointRequest.jobId} (${savepointResult.output})")
 
                 context.resetSavepointRequest()
@@ -107,9 +97,9 @@ class OnRunning(logger: Logger) : Task(logger) {
                 if (context.timeSinceLastSavepointRequestInSeconds() >= savepointIntervalInSeconds) {
                     val options = context.getSavepointOtions()
 
-                    val response = context.triggerSavepoint(context.clusterId, options)
+                    val response = context.triggerSavepoint(context.clusterSelector, options)
 
-                    if (response.isCompleted()) {
+                    if (response.isSuccessful()) {
                         logger.info("Savepoint requested created")
 
                         context.resetManualAction()
@@ -123,11 +113,22 @@ class OnRunning(logger: Logger) : Task(logger) {
             }
         }
 
+        val changes = context.computeChanges()
+
+        if (changes.isNotEmpty()) {
+            logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
+
+            context.resetManualAction()
+            context.setClusterStatus(ClusterStatus.Updating)
+
+            return
+        }
+
         val manualAction = context.getManualAction()
 
         if (manualAction == ManualAction.STOP) {
             context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Stopping)
+            context.setClusterStatus(ClusterStatus.Cancelling)
 
             return
         }
@@ -136,9 +137,9 @@ class OnRunning(logger: Logger) : Task(logger) {
             if (savepointRequest == null) {
                 val options = context.getSavepointOtions()
 
-                val response = context.triggerSavepoint(context.clusterId, options)
+                val response = context.triggerSavepoint(context.clusterSelector, options)
 
-                if (response.isCompleted()) {
+                if (response.isSuccessful()) {
                     logger.info("Savepoint requested created")
 
                     context.resetManualAction()
@@ -166,7 +167,7 @@ class OnRunning(logger: Logger) : Task(logger) {
             return
         }
 
-        if (!context.isBatchMode()) {
+//        if (!context.isBatchMode()) {
             val desiredTaskManagers = context.getDesiredTaskManagers()
             val currentTaskManagers = context.getTaskManagers()
 
@@ -176,6 +177,6 @@ class OnRunning(logger: Logger) : Task(logger) {
 
                 return
             }
-        }
+//        }
     }
 }

@@ -7,21 +7,21 @@ import io.kubernetes.client.models.V1StatefulSet
 interface ClusterResourcesFactory {
     fun createJobManagerService(
         namespace: String,
-        clusterId: String,
+        clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
     ): V1Service
 
     fun createJobManagerStatefulSet(
         namespace: String,
-        clusterId: String,
+        clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
     ): V1StatefulSet
 
     fun createTaskManagerStatefulSet(
         namespace: String,
-        clusterId: String,
+        clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
     ): V1StatefulSet

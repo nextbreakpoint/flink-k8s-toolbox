@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkclient.model.JarEntryInfo
-import com.nextbreakpoint.flinkclient.model.JarFileInfo
+import com.nextbreakpoint.flinkclient.model.ClusterOverviewWithVersion
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -18,18 +17,23 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class JarRemoveTest {
+class JobIsFailedTest {
     private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val flinkAddress = FlinkAddress(host = "localhost", port = 8080)
     private val kubeClient = mock(KubeClient::class.java)
-    private val command = JarRemove(flinkOptions, flinkClient, kubeClient)
+    private val command = JobIsFailed(flinkOptions, flinkClient, kubeClient)
 
     @BeforeEach
     fun configure() {
         given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenReturn(flinkAddress)
-        given(flinkClient.listJars(eq(flinkAddress))).thenReturn(listOf())
+        val overview = ClusterOverviewWithVersion()
+        overview.slotsTotal = 0
+        overview.taskmanagers = 0
+        overview.jobsRunning = 0
+        overview.jobsFailed = 0
+        given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
     }
 
     @Test
@@ -41,54 +45,67 @@ class JarRemoveTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.ERROR)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isFalse()
     }
 
     @Test
     fun `should fail when flinkClient throws exception`() {
-        given(flinkClient.listJars(eq(flinkAddress))).thenThrow(RuntimeException::class.java)
+        given(flinkClient.getOverview(eq(flinkAddress))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterSelector, null)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
-        verify(flinkClient, times(1)).listJars(eq(flinkAddress))
+        verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.ERROR)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isFalse()
     }
 
     @Test
-    fun `should return expected result when there aren't jar files`() {
-        given(flinkClient.listJars(eq(flinkAddress))).thenReturn(listOf())
+    fun `should return expected result when there aren't running jobs or failed jobs`() {
+        val overview = ClusterOverviewWithVersion()
+        overview.jobsRunning = 0
+        overview.jobsFailed = 0
+        given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
         val result = command.execute(clusterSelector, null)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
-        verify(flinkClient, times(1)).listJars(eq(flinkAddress))
+        verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.OK)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isFalse()
     }
 
     @Test
-    fun `should return expected result when there are jar files`() {
-        val file1 = JarFileInfo()
-        file1.id = "id1"
-        file1.name = "file1"
-        file1.addEntryItem(JarEntryInfo())
-        val file2 = JarFileInfo()
-        file2.id = "id2"
-        file2.name = "file2"
-        file2.addEntryItem(JarEntryInfo())
-        given(flinkClient.listJars(eq(flinkAddress))).thenReturn(listOf(file1, file2))
+    fun `should return expected result when there are running jobs and failed jobs`() {
+        val overview = ClusterOverviewWithVersion()
+        overview.jobsRunning = 1
+        overview.jobsFailed = 1
+        given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
         val result = command.execute(clusterSelector, null)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
-        verify(flinkClient, times(1)).listJars(eq(flinkAddress))
-        verify(flinkClient, times(1)).deleteJars(eq(flinkAddress), eq(listOf(file1, file2)))
+        verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.OK)
-        assertThat(result.output).isNull()
+        assertThat(result.output).isFalse()
+    }
+
+    @Test
+    fun `should return expected result when there are only failed jobs`() {
+        val overview = ClusterOverviewWithVersion()
+        overview.jobsRunning = 0
+        overview.jobsFailed = 1
+        given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
+        verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
+        assertThat(result.output).isTrue()
     }
 }

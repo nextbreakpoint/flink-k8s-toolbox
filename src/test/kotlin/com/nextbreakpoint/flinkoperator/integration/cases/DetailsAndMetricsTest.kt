@@ -59,7 +59,7 @@ class DetailsAndMetricsTest : IntegrationSetup() {
         println("Should return job details...")
         val response = getJobDetails(name = "cluster-1", port = port)
         println(response)
-        assertThat(response["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(response["status"] as String?).isEqualTo("OK")
         val details = response["output"] as String
         assertThat(details).isNotBlank()
     }
@@ -69,7 +69,7 @@ class DetailsAndMetricsTest : IntegrationSetup() {
         println("Should return job metrics...")
         val response = getJobMetrics(name = "cluster-1", port = port)
         println(response)
-        assertThat(response["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(response["status"] as String?).isEqualTo("OK")
         val metrics = response["output"] as String
         assertThat(metrics).isNotBlank()
     }
@@ -79,7 +79,7 @@ class DetailsAndMetricsTest : IntegrationSetup() {
         println("Should return JobManager details...")
         val response = getJobManagerMetrics(name = "cluster-1", port = port)
         println(response)
-        assertThat(response["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(response["status"] as String?).isEqualTo("OK")
         val metrics = response["output"] as String
         assertThat(metrics).isNotBlank()
     }
@@ -88,11 +88,11 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     fun `should return taskmanagers`() {
         println("Should return TaskManagers...")
         val response1 = getTaskManagers(name = "cluster-1", port = port)
-        assertThat(response1["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(response1["status"] as String?).isEqualTo("OK")
         val taskmanagers1 = JSON().deserialize<List<TaskManagerInfo>>(response1["output"] as String, taskmanagersTypeToken.type)
         assertThat(taskmanagers1).hasSize(1)
         val response2 = getTaskManagers(name = "cluster-2", port = port)
-        assertThat(response2["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(response2["status"] as String?).isEqualTo("OK")
         val taskmanagers2 = JSON().deserialize<List<TaskManagerInfo>>(response2["output"] as String, taskmanagersTypeToken.type)
         assertThat(taskmanagers2).hasSize(2)
     }
@@ -101,11 +101,11 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     fun `should return taskmanager's details`() {
         println("Should return TaskManager details...")
         val listResponse = getTaskManagers(name = "cluster-1", port = port)
-        assertThat(listResponse["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(listResponse["status"] as String?).isEqualTo("OK")
         val taskmanagers = JSON().deserialize<List<TaskManagerInfo>>(listResponse["output"] as String, taskmanagersTypeToken.type)
         val detailsResponse = getTaskManagerDetails(name = "cluster-1", taskmanagerId = TaskManagerId(taskmanagers[0].id), port = port)
         println(detailsResponse)
-        assertThat(detailsResponse["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(detailsResponse["status"] as String?).isEqualTo("OK")
         val details = detailsResponse["output"] as String
         assertThat(details).isNotBlank()
     }
@@ -114,16 +114,16 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     fun `should return taskmanager's metrics`() {
         println("Should return TaskManager metrics...")
         val listResponse = getTaskManagers(name = "cluster-2", port = port)
-        assertThat(listResponse["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(listResponse["status"] as String?).isEqualTo("OK")
         val taskmanagers = JSON().deserialize<List<TaskManagerInfo>>(listResponse["output"] as String, taskmanagersTypeToken.type)
         val metricsResponse1 = getTaskManagerMetrics(name = "cluster-2", taskmanagerId = TaskManagerId(taskmanagers[0].id), port = port)
         println(metricsResponse1)
-        assertThat(metricsResponse1["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(metricsResponse1["status"] as String?).isEqualTo("OK")
         val metrics1 = metricsResponse1["output"] as String
         assertThat(metrics1).isNotBlank()
         val metricsResponse2 = getTaskManagerMetrics(name = "cluster-2", taskmanagerId = TaskManagerId(taskmanagers[1].id), port = port)
         println(metricsResponse2)
-        assertThat(metricsResponse2["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(metricsResponse2["status"] as String?).isEqualTo("OK")
         val metrics2 = metricsResponse2["output"] as String
         assertThat(metrics2).isNotBlank()
     }

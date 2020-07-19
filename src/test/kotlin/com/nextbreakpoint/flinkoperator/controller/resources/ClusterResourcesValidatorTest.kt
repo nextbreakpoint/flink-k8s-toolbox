@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import io.kubernetes.client.custom.Quantity
@@ -16,14 +16,14 @@ import java.util.UUID
 class ClusterResourcesValidatorTest {
     private val statusEvaluator = ClusterResourcesValidator()
 
-    private val clusterId = UUID.randomUUID().toString()
+    private val clusterSelector = UUID.randomUUID().toString()
 
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
-    private val identity = ClusterId(
+    private val identity = ClusterSelector(
         namespace = "test",
         name = cluster.metadata.name,
-        uuid = clusterId
+        uuid = clusterSelector
     )
 
     @Test
@@ -98,7 +98,7 @@ class ClusterResourcesValidatorTest {
     fun `should return divergent resource when the job manager service does not have the expected service mode`() {
         val jobmanagerService = V1Service()
 
-        val labels = createLabels("flink-operator", "jobmanager", clusterId, cluster.metadata.name)
+        val labels = createLabels("flink-operator", "jobmanager", clusterSelector, cluster.metadata.name)
 
         jobmanagerService.metadata = V1ObjectMeta()
         jobmanagerService.metadata.name = "flink-jobmanager-test"
@@ -507,27 +507,27 @@ class ClusterResourcesValidatorTest {
     private fun createLabels(
         clusterOwner: String,
         role: String,
-        clusterId: String,
+        clusterSelector: String,
         clusterName: String
     ): Map<String, String> {
         val componentLabel = Pair("component", "flink")
 
         val clusterLabel = Pair("name", clusterName)
 
-        val clusterIdLabel = Pair("uid", clusterId)
+        val clusterSelectorLabel = Pair("uid", clusterSelector)
 
         val ownerLabel = Pair("owner", clusterOwner)
 
         val roleLabel = Pair("role", role)
 
-        return mapOf(ownerLabel, clusterLabel, clusterIdLabel, componentLabel, roleLabel)
+        return mapOf(ownerLabel, clusterLabel, clusterSelectorLabel, componentLabel, roleLabel)
     }
 
     private fun createTestClusterResources(cluster: V1FlinkCluster): ClusterResources {
         val targetResources = ClusterResourcesBuilder(
             DefaultClusterResourcesFactory,
             "test",
-            clusterId,
+            clusterSelector,
             "flink-operator",
             cluster
         ).build()

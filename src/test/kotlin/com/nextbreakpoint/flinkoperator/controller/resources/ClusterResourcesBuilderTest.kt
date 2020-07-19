@@ -23,10 +23,10 @@ class ClusterResourcesBuilderTest {
 
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
-    private val clusterId = UUID.randomUUID().toString()
+    private val clusterSelector = UUID.randomUUID().toString()
 
     private val builder = ClusterResourcesBuilder(
-        factory, "test", clusterId, "myself", cluster
+        factory, "test", clusterSelector, "myself", cluster
     )
 
     @BeforeEach
@@ -45,8 +45,8 @@ class ClusterResourcesBuilderTest {
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
         assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
 
-        verify(factory, times(1)).createJobManagerService(eq("test"), eq(clusterId), eq("myself"), eq(cluster))
-        verify(factory, times(1)).createJobManagerStatefulSet(eq("test"), eq(clusterId), eq("myself"), eq(cluster))
-        verify(factory, times(1)).createTaskManagerStatefulSet(eq("test"), eq(clusterId), eq("myself"), eq(cluster))
+        verify(factory, times(1)).createJobManagerService(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
+        verify(factory, times(1)).createJobManagerStatefulSet(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
+        verify(factory, times(1)).createTaskManagerStatefulSet(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
     }
 }

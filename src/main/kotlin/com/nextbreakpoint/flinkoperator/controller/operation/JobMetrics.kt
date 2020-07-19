@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.JobStats
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -16,23 +16,23 @@ class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
         private val logger = Logger.getLogger(JobMetrics::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<String> {
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<String> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
             val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.isEmpty()) {
-                logger.info("[name=${clusterId.name}] Can't find a running job")
+                logger.info("[name=${clusterSelector.name}] Can't find a running job")
 
                 return OperationResult(
-                    OperationStatus.RETRY,
+                    OperationStatus.ERROR,
                     "{}"
                 )
             }
 
             if (runningJobs.size > 1) {
-                logger.warn("[name=${clusterId.name}] There are multiple jobs running")
+                logger.warn("[name=${clusterSelector.name}] There are multiple jobs running")
             }
 
             val metrics = flinkClient.getJobMetrics(address, runningJobs.first(),
@@ -58,14 +58,14 @@ class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
             )
 
             return OperationResult(
-                OperationStatus.COMPLETED,
+                OperationStatus.OK,
                 JSON().serialize(metricsResponse)
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't get metrics of job", e)
+            logger.error("[name=${clusterSelector.name}] Can't get metrics of job", e)
 
             return OperationResult(
-                OperationStatus.FAILED,
+                OperationStatus.ERROR,
                 "{}"
             )
         }

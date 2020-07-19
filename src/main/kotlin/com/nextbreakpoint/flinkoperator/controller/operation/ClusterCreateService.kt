@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -15,19 +15,19 @@ class ClusterCreateService(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
         private val logger = Logger.getLogger(ClusterCreateService::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: V1Service): OperationResult<String?> {
-        try {
-            val serviceOut = kubeClient.createService(clusterId, params)
+    override fun execute(clusterSelector: ClusterSelector, params: V1Service): OperationResult<String?> {
+        return try {
+            val serviceOut = kubeClient.createService(clusterSelector, params)
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 serviceOut.metadata.name
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't create resources", e)
+            logger.error("[name=${clusterSelector.name}] Can't create resources", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

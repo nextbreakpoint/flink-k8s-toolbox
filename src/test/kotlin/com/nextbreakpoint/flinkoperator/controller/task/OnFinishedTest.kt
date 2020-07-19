@@ -19,11 +19,11 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class OnFailedTest {
+class OnFinishedTest {
     private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val logger = mock(Logger::class.java)
     private val context = mock(TaskContext::class.java)
-    private val task = OnFailed(logger)
+    private val task = OnFinished(logger)
 
     @BeforeEach
     fun configure() {
