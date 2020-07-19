@@ -20,8 +20,6 @@ public class V1BootstrapSpec {
     private List<String> arguments;
     @SerializedName("serviceAccount")
     private String serviceAccount;
-    @SerializedName("executionMode")
-    private String executionMode;
 
     public String getPullSecrets() {
         return pullSecrets;
@@ -79,14 +77,6 @@ public class V1BootstrapSpec {
         this.serviceAccount = serviceAccount;
     }
 
-    public String getExecutionMode() {
-        return executionMode;
-    }
-
-    public void setExecutionMode(String executionMode) {
-        this.executionMode = executionMode;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -98,13 +88,12 @@ public class V1BootstrapSpec {
                 Objects.equals(getClassName(), that.getClassName()) &&
                 Objects.equals(getJarPath(), that.getJarPath()) &&
                 Objects.equals(getArguments(), that.getArguments()) &&
-                Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
-                Objects.equals(getExecutionMode(), that.getExecutionMode());
+                Objects.equals(getServiceAccount(), that.getServiceAccount());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getPullSecrets(), getPullPolicy(), getImage(), getClassName(), getJarPath(), getArguments(), getServiceAccount(), getExecutionMode());
+        return Objects.hash(getPullSecrets(), getPullPolicy(), getImage(), getClassName(), getJarPath(), getArguments(), getServiceAccount());
     }
 
     @Override
@@ -117,7 +106,6 @@ public class V1BootstrapSpec {
                 ", jarPath='" + jarPath + '\'' +
                 ", arguments=" + arguments +
                 ", serviceAccount='" + serviceAccount + '\'' +
-                ", executionMode='" + executionMode + '\'' +
                 '}';
     }
 }
