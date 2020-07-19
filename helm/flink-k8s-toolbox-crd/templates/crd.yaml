@@ -82,13 +82,6 @@ spec:
                         - Never
                         - Always
                         - IfNotPresent
-                    executionMode:
-                      description: Execution mode of the job.
-                      type: string
-                      nullable: true
-                      enum:
-                        - Stream
-                        - Batch
                     image:
                       description: Image to use for bootstrapping Flink job.
                       type: string
@@ -8375,6 +8368,7 @@ spec:
                     - Scaling
                     - Running
                     - Failed
+                    - Finished
                     - Suspended
                     - Terminated
                     - Cancelling
@@ -8386,6 +8380,15 @@ spec:
                   type: string
                 savepointTimestamp:
                   type: string
+                savepointMode:
+                  type: string
+                  nullable: false
+                serviceMode:
+                  type: string
+                  nullable: false
+                jobRestartPolicy:
+                  type: string
+                  nullable: false
                 digest:
                   type: object
                   properties:
@@ -8411,12 +8414,6 @@ spec:
                         - Never
                         - Always
                         - IfNotPresent
-                    executionMode:
-                      type: string
-                      nullable: false
-                      enum:
-                        - Stream
-                        - Batch
                     image:
                       type: string
                       nullable: false
