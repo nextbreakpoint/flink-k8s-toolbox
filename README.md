@@ -193,6 +193,10 @@ Install the operator's CRD resource with Helm command:
 
     helm install flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
 
+Install the operator's default roles with Helm command:
+
+    helm install flink-k8s-toolbox-roles helm/flink-k8s-toolbox-roles --set namespace=flink-jobs
+
 Install the operator's resources with SSL enabled:
 
     helm install flink-k8s-toolbox-operator --namespace flink-operator helm/flink-k8s-toolbox-operator --set namespace=flink-jobs --set secretName=flink-operator-ssl
@@ -216,6 +220,10 @@ Stop the operator with command:
 Remove the operator's resources with command:    
 
     helm uninstall flink-k8s-toolbox-operator --namespace flink-operator
+
+Remove the operator's default roles with command:    
+
+    helm uninstall flink-k8s-toolbox-roles --namespace flink-jobs
 
 Remove the operator's CRD resource with command:    
 
@@ -243,7 +251,7 @@ Create a copy of your FlinkCluster resources:
 
     kubectl -n flink-operator get fc -o yaml > clusters-backup.yaml
 
-Upgrade the CRD using Helm:
+Upgrade the CRD using Helm (it prevents from deletion of existing FlinkCluster resources):
 
     helm upgrade flink-k8s-toolbox-crd --install helm/flink-k8s-toolbox-crd
 
@@ -421,7 +429,6 @@ Create a Flink Cluster file:
         pullPolicy: Always
         image: some-registry/flink:1.9.2
       bootstrap:
-        executionMode: Stream
         pullPolicy: Always
         image: some-registry/flink-jobs:1
         jarPath: /flink-jobs.jar
@@ -629,7 +636,6 @@ Create a JSON file:
         "image": "some-registry/flink:1.9.2"
       },
       "bootstrap": {
-        "executionMode": "Stream",
         "pullPolicy": "Always",
         "image": "some-registry/flink-jobs:1",
         "jarPath": "/flink-jobs.jar",
