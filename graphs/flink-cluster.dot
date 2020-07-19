@@ -24,39 +24,46 @@ digraph state_machine {
   STARTING -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources created<BR/>and job running or not defined</TD>
+              <TD>Resources created<BR/>and job running (when defined)</TD>
           </TR>
       </TABLE>
   > ];
   STARTING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Failed starting</TD>
+              <TD>Cluster didn't start before timeout</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> UPDATING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Specification modified</TD>
+              <TD>Cluster specification changed</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> SCALING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Replicas changed</TD>
+              <TD>Cluster scale changed</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Job is defined<BR/>but not running</TD>
+              <TD>Job has failed</TD>
           </TR>
       </TABLE>
   > ];
-  RUNNING -> STOPPING [ label = <
+  RUNNING -> FINISHED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job has finished</TD>
+          </TR>
+      </TABLE>
+  > ];
+  RUNNING -> CANCELLING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>User stopped the cluster<BR/>or cluster deleted</TD>
@@ -66,18 +73,18 @@ digraph state_machine {
   UPDATING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Failed updating</TD>
+              <TD>Cluster didn't stop before timeout</TD>
           </TR>
       </TABLE>
   > ];
-  UPDATING -> RUNNING [ label = <
+  UPDATING -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Resources updated</TD>
+              <TD>Cluster terminated and resources updated</TD>
           </TR>
       </TABLE>
   > ];
-  UPDATING -> STOPPING [ label = <
+  UPDATING -> CANCELLING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>Cluster deleted</TD>
@@ -87,11 +94,11 @@ digraph state_machine {
   SCALING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Failed scaling</TD>
+              <TD>Job didn't stop before timeout</TD>
           </TR>
       </TABLE>
   > ];
-  SCALING -> RUNNING [ label = <
+  SCALING -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>Cluster scaled</TD>
@@ -99,6 +106,13 @@ digraph state_machine {
       </TABLE>
   > ];
   SCALING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster scaled down to zero</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SCALING -> CANCELLING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>Cluster deleted</TD>
@@ -115,28 +129,21 @@ digraph state_machine {
   STOPPING -> TERMINATED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User terminated the cluster<BR/>or specification modified<BR/>or cluster deleted</TD>
+              <TD>User terminated the cluster</TD>
           </TR>
       </TABLE>
   > ];
   STOPPING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Failed stopping</TD>
-          </TR>
-      </TABLE>
-  > ];
-  STOPPING -> CANCELLING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Job running</TD>
+              <TD>Cluster didn't stop before timeout</TD>
           </TR>
       </TABLE>
   > ];
   CANCELLING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Failed cancelling</TD>
+              <TD>Job didn't stop before timeout</TD>
           </TR>
       </TABLE>
   > ];
@@ -157,7 +164,14 @@ digraph state_machine {
   SUSPENDED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User terminated the cluster<BR/>or specification modified<BR/>or cluster deleted</TD>
+              <TD>User terminated the cluster<BR/>or cluster deleted</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUSPENDED -> TERMINATED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Specification modified</TD>
           </TR>
       </TABLE>
   > ];
@@ -175,14 +189,35 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
-  FAILED -> RUNNING [ label = <
+  FAILED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Job is running</TD>
+              <TD>User started the cluster</TD>
           </TR>
       </TABLE>
   > ];
   FAILED -> UPDATING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Specification modified</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FINISHED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>User stopped the cluster<BR/>or cluster deleted</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FINISHED -> STARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>User started the cluster</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FINISHED -> UPDATING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>Specification modified</TD>
@@ -194,9 +229,55 @@ digraph state_machine {
   STARTING [ fillcolor=yellow ];
   UPDATING [ fillcolor=yellow ];
   SCALING [ fillcolor=yellow ];
-  RUNNING [ fillcolor=green width=2.0 ];
-  FAILED [ fillcolor=red width=2.0 ];
-  SUSPENDED [ fillcolor=lightblue width=2.0 ];
-  TERMINATED [ fillcolor=lightblue width=2.0 ];
+  RUNNING [ fillcolor=green width=2.0 ] [ label = <
+       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+           <TR>
+               <TD>RUNNING</TD>
+           </TR>
+           <TR>
+               <TD>Job is running<BR/>(when defined)</TD>
+           </TR>
+       </TABLE>
+     > ];
+  FINISHED [ fillcolor=lightblue width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>FINISHED</TD>
+        </TR>
+        <TR>
+            <TD>Pods should<BR/>be terminated</TD>
+        </TR>
+    </TABLE>
+  > ];
+  FAILED [ fillcolor=red width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>FAILED</TD>
+        </TR>
+        <TR>
+            <TD>Pods should<BR/>be terminated</TD>
+        </TR>
+    </TABLE>
+  > ];
+  SUSPENDED [ fillcolor=lightblue width=2.0 ] [ label = <
+     <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+         <TR>
+             <TD>SUSPENDED</TD>
+         </TR>
+         <TR>
+             <TD>Pods should<BR/>be terminated</TD>
+         </TR>
+     </TABLE>
+    > ];
+  TERMINATED [ fillcolor=lightblue width=2.0 ] [ label = <
+       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+           <TR>
+               <TD>TERMINATED</TD>
+           </TR>
+           <TR>
+               <TD>Resource should<BR/>be deleted</TD>
+           </TR>
+       </TABLE>
+      > ];
   UNKNOWN [ fillcolor=grey width=1.5 ];
 }
