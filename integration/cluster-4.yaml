@@ -18,7 +18,7 @@ spec:
       - --CONSOLE_OUTPUT
       - "true"
       - --SOURCE_FS_PATH
-      - file://tmp/workshop/sensor-events
+      - file://invalid
       - --OUTPUT_FS_PATH
       - file:///tmp/workshop/report-events
   jobManager:
