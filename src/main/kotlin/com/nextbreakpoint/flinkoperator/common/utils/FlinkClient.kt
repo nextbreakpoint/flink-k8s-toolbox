@@ -10,7 +10,7 @@ import com.nextbreakpoint.flinkclient.model.JarFileInfo
 import com.nextbreakpoint.flinkclient.model.JarListInfo
 import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
 import com.nextbreakpoint.flinkclient.model.JobDetailsInfo
-import com.nextbreakpoint.flinkclient.model.JobIdWithStatus
+import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum
 import com.nextbreakpoint.flinkclient.model.JobIdsWithStatusOverview
 import com.nextbreakpoint.flinkclient.model.QueueStatus
 import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
@@ -94,6 +94,10 @@ object FlinkClient {
     }
 
     fun listRunningJobs(address: FlinkAddress): List<String> {
+        return listJobs(address, setOf(StatusEnum.RUNNING))
+    }
+
+    fun listJobs(address: FlinkAddress, statuses: Set<StatusEnum>): List<String> {
         try {
             val flinkApi = createFlinkApiClient(address, TIMEOUT)
 
@@ -108,7 +112,7 @@ object FlinkClient {
                     val jobsOverview = JSON().deserialize<JobIdsWithStatusOverview>(source.readUtf8Line(), JobIdsWithStatusOverview::class.java)
 
                     return jobsOverview.jobs.filter {
-                        jobIdWithStatus -> jobIdWithStatus.status == JobIdWithStatus.StatusEnum.RUNNING
+                            jobIdWithStatus -> statuses.isEmpty() || statuses.contains(jobIdWithStatus.status)
                     }.map {
                         it.id
                     }.toList()
@@ -186,28 +190,13 @@ object FlinkClient {
         }
     }
 
-    fun createSavepoint(address: FlinkAddress, it: String, targetPath: String?): TriggerResponse {
-        try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
-
-            val requestBody = SavepointTriggerRequestBody().cancelJob(true).targetDirectory(targetPath)
-
-            val response = flinkApi.createJobSavepointCall(requestBody, it, null, null).execute()
-
-            response.body().use { body ->
-                if (!response.isSuccessful) {
-                    throw CallException("[$address] Can't request savepoint")
-                }
-
-                body.source().use { source ->
-                    return JSON().deserialize(source.readUtf8Line(), TriggerResponse::class.java)
-                }
-            }
-        } catch (e : CallException) {
-            throw e
-        } catch (e : Exception) {
-            throw RuntimeException(e)
-        }
+    fun cancelJobs(address: FlinkAddress, jobs: List<String>, targetPath: String?): Map<String, String> {
+        return createSavepoints(address, jobs, targetPath, true)
+            .map {
+                it.key to it.value.requestId
+            }.onEach {
+                logger.info("[$address] Created savepoint request ${it.second} for job ${it.first}")
+            }.toMap()
     }
 
     fun getJobDetails(address: FlinkAddress, jobId: String): JobDetailsInfo {
@@ -398,6 +387,36 @@ object FlinkClient {
         }
     }
 
+    fun isCheckpointInProgress(address: FlinkAddress, jobs: List<String>): List<String> {
+        try {
+            val flinkApi = createFlinkApiClient(address, TIMEOUT)
+
+            return jobs.map { jobId ->
+                val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
+
+                jobId to response
+            }.map {
+                it.second.body().use { body ->
+                    if (!it.second.isSuccessful) {
+                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
+                    }
+
+                    it.first to body.source().use { source ->
+                        JSON().deserialize<CheckpointingStatistics>(source.readUtf8Line(), CheckpointingStatistics::class.java)
+                    }
+                }
+            }.filter {
+                it.second.counts.inProgress > 0
+            }.map {
+                it.first
+            }.toList()
+        } catch (e : CallException) {
+            throw e
+        } catch (e : Exception) {
+            throw RuntimeException(e)
+        }
+    }
+
     fun getLatestSavepointPaths(address: FlinkAddress, requests: Map<String, String>): Map<String, String> {
         try {
             val flinkApi = createFlinkApiClient(address, TIMEOUT)
@@ -436,12 +455,21 @@ object FlinkClient {
         }
     }
 
-    fun triggerSavepoints(address: FlinkAddress, jobs: List<String>, targetPath: String?): Map<String, String>  {
+    fun triggerSavepoints(address: FlinkAddress, jobs: List<String>, targetPath: String?): Map<String, String> {
+        return createSavepoints(address, jobs, targetPath, false)
+            .map {
+                it.key to it.value.requestId
+            }.onEach {
+                logger.info("[$address] Created savepoint request ${it.second} for job ${it.first}")
+            }.toMap()
+    }
+
+    private fun createSavepoints(address: FlinkAddress, jobs: List<String>, targetPath: String?, cancelJob: Boolean): Map<String, TriggerResponse> {
         try {
             val flinkApi = createFlinkApiClient(address, TIMEOUT)
 
             return jobs.map {
-                val requestBody = SavepointTriggerRequestBody().cancelJob(false).targetDirectory(targetPath)
+                val requestBody = SavepointTriggerRequestBody().cancelJob(cancelJob).targetDirectory(targetPath)
 
                 val response = flinkApi.createJobSavepointCall(requestBody, it, null, null).execute()
 
@@ -456,10 +484,6 @@ object FlinkClient {
                         JSON().deserialize<TriggerResponse>(source.readUtf8Line(), TriggerResponse::class.java)
                     }
                 }
-            }.map {
-                it.first to it.second.requestId
-            }.onEach {
-                logger.info("[$address] Created savepoint request ${it.second} for job ${it.first}")
             }.toMap()
         } catch (e : CallException) {
             throw e

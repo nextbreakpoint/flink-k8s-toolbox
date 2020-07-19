@@ -6,31 +6,17 @@ import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 import org.apache.log4j.Logger
 
-class OnTerminated(logger: Logger) : Task(logger) {
+class OnFinished(logger: Logger) : Task(logger) {
     override fun execute(context: TaskContext) {
         if (context.hasBeenDeleted()) {
-            logger.info("Removing finalizer from cluster ${context.clusterSelector.name}")
-
-            context.removeFinalizer()
-
-            return
-        }
-
-        if (!terminate(context)) {
-            logger.info("Terminating cluster...")
+            context.setDeleteResources(true)
+            context.resetManualAction()
+            context.setClusterStatus(ClusterStatus.Stopping)
 
             return
         }
 
-        val changes = context.computeChanges()
-
-        if (changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")) {
-            logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
-
-            context.updateStatus()
-            context.updateDigests()
-            context.setClusterStatus(ClusterStatus.Terminated)
-
+        if (!suspend(context)) {
             return
         }
 
@@ -39,6 +25,14 @@ class OnTerminated(logger: Logger) : Task(logger) {
         if (manualAction == ManualAction.START) {
             context.resetManualAction()
             context.setClusterStatus(ClusterStatus.Starting)
+
+            return
+        }
+
+        if (manualAction == ManualAction.STOP) {
+            context.resetManualAction()
+            context.setDeleteResources(true)
+            context.setClusterStatus(ClusterStatus.Stopping)
 
             return
         }
@@ -56,6 +50,18 @@ class OnTerminated(logger: Logger) : Task(logger) {
             context.resetManualAction()
 
             return
+        }
+
+        if (context.getJobRestartPolicy() == "Always") {
+            val changes = context.computeChanges()
+
+            if (changes.isNotEmpty()) {
+                logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
+
+                context.setClusterStatus(ClusterStatus.Updating)
+
+                return
+            }
         }
     }
 }

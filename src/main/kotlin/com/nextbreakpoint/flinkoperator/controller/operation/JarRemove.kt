@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -14,9 +14,9 @@ class JarRemove(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
         private val logger = Logger.getLogger(JarRemove::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
-        try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Void?> {
+        return try {
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
             val files = flinkClient.listJars(address)
 
@@ -24,15 +24,15 @@ class JarRemove(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
                 flinkClient.deleteJars(address, files)
             }
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't remove JAR files", e)
+            logger.error("[name=${clusterSelector.name}] Can't remove JAR files", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

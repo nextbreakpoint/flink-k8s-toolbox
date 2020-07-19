@@ -1,12 +1,12 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import io.kubernetes.client.models.V1Job
 
 interface BootstrapJobFactory {
     fun createBootstrapJob(
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         clusterOwner: String,
         bootstrap: V1BootstrapSpec,
         savepointPath: String?,

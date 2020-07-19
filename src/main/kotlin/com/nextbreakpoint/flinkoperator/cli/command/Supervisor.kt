@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.cli.command
 
 import com.nextbreakpoint.flinkoperator.cli.BootstrapCommand
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.SupervisorOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -24,9 +24,9 @@ class Supervisor : BootstrapCommand<SupervisorOptions> {
     override fun run(flinkOptions: FlinkOptions, namespace: String, clusterName: String, args: SupervisorOptions) {
         val controller = OperationController(flinkOptions, kubeClient = kubeClient, flinkClient = flinkClient)
 
-        val clusterId = ClusterId(namespace = namespace, name = clusterName, uuid = "")
+        val clusterSelector = ClusterSelector(namespace = namespace, name = clusterName, uuid = "")
 
-        val supervisor = TaskController.create(controller, clusterId)
+        val supervisor = TaskController.create(controller, clusterSelector)
 
         val cache = Cache()
 
@@ -39,9 +39,9 @@ class Supervisor : BootstrapCommand<SupervisorOptions> {
         watch.watchPersistentVolumeClaims(namespace)
 
         while (!Thread.interrupted()) {
-            logger.debug("Reconcile resource status...")
+            logger.info("Reconciling ${clusterSelector}...")
 
-            val resources = cache.getCachedResources(clusterId)
+            val resources = cache.getCachedResources(clusterSelector)
 
             supervisor.execute(resources)
 

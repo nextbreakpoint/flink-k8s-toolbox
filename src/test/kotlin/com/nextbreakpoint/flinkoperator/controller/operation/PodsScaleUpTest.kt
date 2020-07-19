@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -21,7 +21,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class PodsScaleUpTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
@@ -40,25 +40,25 @@ class PodsScaleUpTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.restartJobManagerStatefulSets(eq(clusterId), eq(1))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, ClusterScaling(taskManagers = 1, taskSlots = 2))
-        verify(kubeClient, times(1)).restartJobManagerStatefulSets(eq(clusterId), any())
+        given(kubeClient.restartJobManagerStatefulSets(eq(clusterSelector), eq(1))).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterSelector, ClusterScaling(taskManagers = 1, taskSlots = 2))
+        verify(kubeClient, times(1)).restartJobManagerStatefulSets(eq(clusterSelector), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
     @Test
     fun `should return expected result`() {
-        val result = command.execute(clusterId, ClusterScaling(taskManagers = 1, taskSlots = 2))
-        verify(kubeClient, times(1)).restartJobManagerStatefulSets(eq(clusterId), any())
-        verify(kubeClient, times(1)).restartTaskManagerStatefulSets(eq(clusterId), any())
+        val result = command.execute(clusterSelector, ClusterScaling(taskManagers = 1, taskSlots = 2))
+        verify(kubeClient, times(1)).restartJobManagerStatefulSets(eq(clusterSelector), any())
+        verify(kubeClient, times(1)).restartTaskManagerStatefulSets(eq(clusterSelector), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
     }
 }

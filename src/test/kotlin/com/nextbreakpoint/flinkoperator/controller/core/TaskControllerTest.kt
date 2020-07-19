@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
@@ -16,7 +16,7 @@ import org.mockito.Mockito.verify
 
 class TaskControllerTest {
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
-    private val clusterId = ClusterId(name = "test", namespace = "flink", uuid = "123")
+    private val clusterSelector = ClusterSelector(name = "test", namespace = "flink", uuid = "123")
     private val resources = CachedResources(
         flinkCluster = cluster,
         bootstrapJob = TestFactory.aBootstrapJob(cluster),
@@ -41,7 +41,7 @@ class TaskControllerTest {
         ClusterStatus.Terminated to task,
         ClusterStatus.Cancelling to task
     )
-    private val taskController = TaskController.create(controller = controller, clusterId = clusterId, tasks = tasks)
+    private val taskController = TaskController.create(controller = controller, clusterSelector = clusterSelector, tasks = tasks)
 
     @Test
     fun `should update savepoint request`() {

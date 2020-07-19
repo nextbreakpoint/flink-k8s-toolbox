@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkclient.model.JobIdWithStatus
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -14,21 +15,37 @@ class JobStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: 
         private val logger = Logger.getLogger(JobStop::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Void?> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
+
+            val nonRunningJobs = flinkClient.listJobs(address, setOf(
+                JobIdWithStatus.StatusEnum.SUSPENDING,
+                JobIdWithStatus.StatusEnum.RESTARTING,
+                JobIdWithStatus.StatusEnum.RECONCILING,
+                JobIdWithStatus.StatusEnum.SUSPENDED,
+                JobIdWithStatus.StatusEnum.CREATED
+            ))
+
+            nonRunningJobs.forEach {
+                logger.info("[name=${clusterSelector.name}] Stopping job $it...")
+            }
+
+            if (nonRunningJobs.isNotEmpty()) {
+                flinkClient.terminateJobs(address, nonRunningJobs)
+            }
 
             val runningJobs = flinkClient.listRunningJobs(address)
 
             if (runningJobs.size > 1) {
-                logger.warn("[name=${clusterId.name}] There are multiple jobs running")
+                logger.warn("[name=${clusterSelector.name}] There are multiple jobs running")
             }
 
             if (runningJobs.isEmpty()) {
-                logger.warn("[name=${clusterId.name}] Job already stopped!")
+                logger.warn("[name=${clusterSelector.name}] Job already stopped!")
 
                 return OperationResult(
-                    OperationStatus.COMPLETED,
+                    OperationStatus.OK,
                     null
                 )
             }
@@ -38,23 +55,25 @@ class JobStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: 
             val stillRunningJobs = flinkClient.listRunningJobs(address)
 
             if (stillRunningJobs.isNotEmpty()) {
+                logger.debug("[name=${clusterSelector.name}] Job still running...")
+
                 return OperationResult(
-                    OperationStatus.RETRY,
+                    OperationStatus.ERROR,
                     null
                 )
             }
 
-            logger.debug("[name=${clusterId.name}] Job stopped")
+            logger.debug("[name=${clusterSelector.name}] Job stopped")
 
             return OperationResult(
-                OperationStatus.COMPLETED,
+                OperationStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't stop job", e)
+            logger.error("[name=${clusterSelector.name}] Can't stop job", e)
 
             return OperationResult(
-                OperationStatus.FAILED,
+                OperationStatus.ERROR,
                 null
             )
         }

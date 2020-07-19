@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -16,21 +16,21 @@ class RequestSavepointForget(flinkOptions: FlinkOptions, flinkClient: FlinkClien
         private val logger = Logger.getLogger(RequestSavepointTrigger::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
-        try {
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Void?> {
+        return try {
             bridge.setManualAction(ManualAction.FORGET_SAVEPOINT)
 
-            kubeClient.updateAnnotations(clusterId, bridge.getAnnotations())
+            kubeClient.updateAnnotations(clusterSelector, bridge.getAnnotations())
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't forget savepoint", e)
+            logger.error("[name=${clusterSelector.name}] Can't forget savepoint", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
@@ -20,7 +20,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class RequestSavepointForgetTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
@@ -35,24 +35,24 @@ class RequestSavepointForgetTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        KotlinMockito.given(kubeClient.updateAnnotations(KotlinMockito.eq(clusterId), KotlinMockito.any())).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, null)
-        Mockito.verify(kubeClient, Mockito.times(1)).updateAnnotations(KotlinMockito.eq(clusterId), KotlinMockito.any())
+        KotlinMockito.given(kubeClient.updateAnnotations(KotlinMockito.eq(clusterSelector), KotlinMockito.any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterSelector, null)
+        Mockito.verify(kubeClient, Mockito.times(1)).updateAnnotations(KotlinMockito.eq(clusterSelector), KotlinMockito.any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
     @Test
     fun `should forget savepoint`() {
-        val result = command.execute(clusterId, null)
-        Mockito.verify(kubeClient, Mockito.times(1)).updateAnnotations(KotlinMockito.eq(clusterId), KotlinMockito.any())
+        val result = command.execute(clusterSelector, null)
+        Mockito.verify(kubeClient, Mockito.times(1)).updateAnnotations(KotlinMockito.eq(clusterSelector), KotlinMockito.any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.FORGET_SAVEPOINT)
 

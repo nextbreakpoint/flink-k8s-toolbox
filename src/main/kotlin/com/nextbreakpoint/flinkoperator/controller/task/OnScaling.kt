@@ -11,7 +11,7 @@ class OnScaling(logger: Logger) : Task(logger) {
         if (context.hasBeenDeleted()) {
             context.setDeleteResources(true)
             context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Stopping)
+            context.setClusterStatus(ClusterStatus.Cancelling)
 
             return
         }

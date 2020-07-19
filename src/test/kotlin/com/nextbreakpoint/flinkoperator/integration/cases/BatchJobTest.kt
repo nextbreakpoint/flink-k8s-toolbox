@@ -41,20 +41,15 @@ class BatchJobTest : IntegrationSetup() {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Running)).isTrue()
         }
         println("Cluster started")
-        println("Cluster should be suspended after batch job has finished")
+        println("Cluster should status be finished after batch job has finished")
         awaitUntilAsserted(timeout = 360) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Suspended)).isTrue()
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Finished)).isTrue()
         }
-        println("Cluster suspended")
-        TimeUnit.SECONDS.sleep(10)
-        awaitUntilAsserted(timeout = 20) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-3", status = ClusterStatus.Suspended)).isTrue()
-        }
-        println("Cluster still suspended")
+        println("Cluster finished")
     }
 
     @Test
-    fun `should halt cluster when job failed`() {
+    fun `should fail cluster when job failed`() {
         println("Creating cluster...")
         createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-4.yaml")
         awaitUntilAsserted(timeout = 30) {
@@ -66,15 +61,10 @@ class BatchJobTest : IntegrationSetup() {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Running)).isTrue()
         }
         println("Cluster started")
-        println("Cluster should fail when batch job fails")
+        println("Cluster should status be failed after batch job has failed")
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Failed)).isTrue()
         }
         println("Cluster failed")
-        TimeUnit.SECONDS.sleep(10)
-        awaitUntilAsserted(timeout = 20) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-4", status = ClusterStatus.Failed)).isTrue()
-        }
-        println("Cluster still failed")
     }
 }

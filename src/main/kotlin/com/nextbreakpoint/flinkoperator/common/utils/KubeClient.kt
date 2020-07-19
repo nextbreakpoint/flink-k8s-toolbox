@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.common.utils
 import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import io.kubernetes.client.ApiClient
@@ -183,7 +183,7 @@ object KubeClient {
         )
     }
 
-    fun updateAnnotations(clusterId: ClusterId, annotations: Map<String, String>) {
+    fun updateAnnotations(clusterSelector: ClusterSelector, annotations: Map<String, String>) {
         val patch = mapOf<String, Any?>(
             "metadata" to mapOf<String, Any?>(
                 "annotations" to annotations
@@ -193,9 +193,9 @@ object KubeClient {
         val response = objectApi.patchNamespacedCustomObjectCall(
             "nextbreakpoint.com",
             "v1",
-            clusterId.namespace,
+            clusterSelector.namespace,
             "flinkclusters",
-            clusterId.name,
+            clusterSelector.name,
             patch,
             null,
             null
@@ -204,12 +204,12 @@ object KubeClient {
         response.body().use { body ->
             if (!response.isSuccessful) {
                 body.source().use { source -> logger.error(source.readUtf8Line()) }
-                throw RuntimeException("Can't update annotations of cluster ${clusterId.name}")
+                throw RuntimeException("Can't update annotations of cluster ${clusterSelector.name}")
             }
         }
     }
 
-    fun updateFinalizers(clusterId: ClusterId, finalizers: List<String>) {
+    fun updateFinalizers(clusterSelector: ClusterSelector, finalizers: List<String>) {
         val patch = mapOf<String, Any?>(
             "metadata" to mapOf<String, Any?>(
                 "finalizers" to finalizers
@@ -219,9 +219,9 @@ object KubeClient {
         val response = objectApi.patchNamespacedCustomObjectCall(
             "nextbreakpoint.com",
             "v1",
-            clusterId.namespace,
+            clusterSelector.namespace,
             "flinkclusters",
-            clusterId.name,
+            clusterSelector.name,
             patch,
             null,
             null
@@ -230,20 +230,20 @@ object KubeClient {
         response.body().use { body ->
             if (!response.isSuccessful) {
                 body.source().use { source -> logger.error(source.readUtf8Line()) }
-                throw RuntimeException("Can't update finalizers of cluster ${clusterId.name}")
+                throw RuntimeException("Can't update finalizers of cluster ${clusterSelector.name}")
             }
         }
     }
 
-    fun updateStatus(clusterId: ClusterId, status: V1FlinkClusterStatus) {
+    fun updateStatus(clusterSelector: ClusterSelector, status: V1FlinkClusterStatus) {
         val patch = V1FlinkCluster().status(status)
 
         val response = objectApi.patchNamespacedCustomObjectStatusCall(
             "nextbreakpoint.com",
             "v1",
-            clusterId.namespace,
+            clusterSelector.namespace,
             "flinkclusters",
-            clusterId.name,
+            clusterSelector.name,
             V1Patch(JSON().serialize(patch)),
             null,
             null
@@ -252,7 +252,7 @@ object KubeClient {
         response.body().use { body ->
             if (!response.isSuccessful) {
                 body.source().use { source -> logger.error(source.readUtf8Line()) }
-                throw RuntimeException("Can't update status of cluster ${clusterId.name}")
+                throw RuntimeException("Can't update status of cluster ${clusterSelector.name}")
             }
         }
     }
@@ -521,13 +521,13 @@ object KubeClient {
 //        ).items
 //    }
 //
-//    fun listJobManagerServices(clusterId: ClusterId): V1ServiceList {
+//    fun listJobManagerServices(clusterSelector: ClusterSelector): V1ServiceList {
 //        return coreApi.listNamespacedService(
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            null,
 //            null,
 //            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
 //            null,
 //            null,
 //            5,
@@ -535,13 +535,13 @@ object KubeClient {
 //        )
 //    }
 //
-//    fun listJobManagerStatefulSets(clusterId: ClusterId): V1StatefulSetList {
+//    fun listJobManagerStatefulSets(clusterSelector: ClusterSelector): V1StatefulSetList {
 //        return appsApi.listNamespacedStatefulSet(
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            null,
 //            null,
 //            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=jobmanager",
 //            null,
 //            null,
 //            5,
@@ -549,27 +549,13 @@ object KubeClient {
 //        )
 //    }
 //
-//    fun listTaskManagerStatefulSets(clusterId: ClusterId): V1StatefulSetList {
+//    fun listTaskManagerStatefulSets(clusterSelector: ClusterSelector): V1StatefulSetList {
 //        return appsApi.listNamespacedStatefulSet(
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            null,
 //            null,
 //            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
-//            null,
-//            null,
-//            5,
-//            null
-//        )
-//    }
-//
-//    fun listJobManagerPVCs(clusterId: ClusterId): V1PersistentVolumeClaimList {
-//        return coreApi.listNamespacedPersistentVolumeClaim(
-//            clusterId.namespace,
-//            null,
-//            null,
-//            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=taskmanager",
 //            null,
 //            null,
 //            5,
@@ -577,13 +563,27 @@ object KubeClient {
 //        )
 //    }
 //
-//    fun listTaskManagerPVCs(clusterId: ClusterId): V1PersistentVolumeClaimList {
+//    fun listJobManagerPVCs(clusterSelector: ClusterSelector): V1PersistentVolumeClaimList {
 //        return coreApi.listNamespacedPersistentVolumeClaim(
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            null,
 //            null,
 //            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=jobmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//    }
+//
+//    fun listTaskManagerPVCs(clusterSelector: ClusterSelector): V1PersistentVolumeClaimList {
+//        return coreApi.listNamespacedPersistentVolumeClaim(
+//            clusterSelector.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=taskmanager",
 //            null,
 //            null,
 //            5,
@@ -592,12 +592,12 @@ object KubeClient {
 //    }
 //
 //    fun createJobManagerService(
-//        clusterId: ClusterId,
+//        clusterSelector: ClusterSelector,
 //        resources: ClusterResources
 //    ): V1Service {
 //        try {
 //            return coreApi.createNamespacedService(
-//                clusterId.namespace,
+//                clusterSelector.namespace,
 //                resources.jobmanagerService,
 //                null,
 //                null,
@@ -610,12 +610,12 @@ object KubeClient {
 //    }
 
     fun createService(
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         resource: V1Service
     ): V1Service {
         try {
             return coreApi.createNamespacedService(
-                clusterId.namespace,
+                clusterSelector.namespace,
                 resource,
                 null,
                 null,
@@ -628,12 +628,12 @@ object KubeClient {
     }
 
 //    fun createJobManagerStatefulSet(
-//        clusterId: ClusterId,
+//        clusterSelector: ClusterSelector,
 //        resources: ClusterResources
 //    ): V1StatefulSet {
 //        try {
 //            return appsApi.createNamespacedStatefulSet(
-//                clusterId.namespace,
+//                clusterSelector.namespace,
 //                resources.jobmanagerStatefulSet,
 //                null,
 //                null,
@@ -646,12 +646,12 @@ object KubeClient {
 //    }
 //
 //    fun createTaskManagerStatefulSet(
-//        clusterId: ClusterId,
+//        clusterSelector: ClusterSelector,
 //        resources: ClusterResources
 //    ): V1StatefulSet {
 //        try {
 //            return appsApi.createNamespacedStatefulSet(
-//                clusterId.namespace,
+//                clusterSelector.namespace,
 //                resources.taskmanagerStatefulSet,
 //                null,
 //                null,
@@ -664,12 +664,12 @@ object KubeClient {
 //    }
 
     fun createStatefulSet(
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         resource: V1StatefulSet
     ): V1StatefulSet {
         try {
             return appsApi.createNamespacedStatefulSet(
-                clusterId.namespace,
+                clusterSelector.namespace,
                 resource,
                 null,
                 null,
@@ -682,13 +682,13 @@ object KubeClient {
     }
 
 //    fun replaceJobManagerService(
-//        clusterId: ClusterId,
+//        clusterSelector: ClusterSelector,
 //        resources: ClusterResources
 //    ): V1Service {
 //        try {
 //            return coreApi.replaceNamespacedService(
-//                "flink-jobmanager-${clusterId.name}",
-//                clusterId.namespace,
+//                "flink-jobmanager-${clusterSelector.name}",
+//                clusterSelector.namespace,
 //                resources.jobmanagerService,
 //                null,
 //                null,
@@ -701,13 +701,13 @@ object KubeClient {
 //    }
 //
 //    fun replaceJobManagerStatefulSet(
-//        clusterId: ClusterId,
+//        clusterSelector: ClusterSelector,
 //        resources: ClusterResources
 //    ): V1StatefulSet {
 //        try {
 //            return appsApi.replaceNamespacedStatefulSet(
-//                "flink-jobmanager-${clusterId.name}",
-//                clusterId.namespace,
+//                "flink-jobmanager-${clusterSelector.name}",
+//                clusterSelector.namespace,
 //                resources.jobmanagerStatefulSet,
 //                null,
 //                null,
@@ -720,13 +720,13 @@ object KubeClient {
 //    }
 //
 //    fun replaceTaskManagerStatefulSet(
-//        clusterId: ClusterId,
+//        clusterSelector: ClusterSelector,
 //        resources: ClusterResources
 //    ): V1StatefulSet {
 //        try {
 //            return appsApi.replaceNamespacedStatefulSet(
-//                "flink-taskmanager-${clusterId.name}",
-//                clusterId.namespace,
+//                "flink-taskmanager-${clusterSelector.name}",
+//                clusterSelector.namespace,
 //                resources.taskmanagerStatefulSet,
 //                null,
 //                null,
@@ -738,13 +738,13 @@ object KubeClient {
 //        }
 //    }
 
-    fun deleteServices(clusterId: ClusterId) {
+    fun deleteServices(clusterSelector: ClusterSelector) {
         val services = coreApi.listNamespacedService(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
             null,
             null,
             5,
@@ -759,7 +759,7 @@ object KubeClient {
 
                 val status = coreApi.deleteNamespacedService(
                     service.metadata.name,
-                    clusterId.namespace,
+                    clusterSelector.namespace,
                     null,
                     deleteOptions,
                     null,
@@ -777,13 +777,13 @@ object KubeClient {
         }
     }
 
-    fun deleteStatefulSets(clusterId: ClusterId) {
+    fun deleteStatefulSets(clusterSelector: ClusterSelector) {
         val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
             null,
             null,
             5,
@@ -798,7 +798,7 @@ object KubeClient {
 
                 val status = appsApi.deleteNamespacedStatefulSet(
                     statefulSet.metadata.name,
-                    clusterId.namespace,
+                    clusterSelector.namespace,
                     null,
                     deleteOptions,
                     null,
@@ -816,13 +816,13 @@ object KubeClient {
         }
     }
 
-    fun deletePersistentVolumeClaims(clusterId: ClusterId) {
+    fun deletePersistentVolumeClaims(clusterSelector: ClusterSelector) {
         val volumeClaims = coreApi.listNamespacedPersistentVolumeClaim(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
             null,
             null,
             5,
@@ -837,7 +837,7 @@ object KubeClient {
 
                 val status = coreApi.deleteNamespacedPersistentVolumeClaim(
                     volumeClaim.metadata.name,
-                    clusterId.namespace,
+                    clusterSelector.namespace,
                     null,
                     deleteOptions,
                     null,
@@ -855,13 +855,13 @@ object KubeClient {
         }
     }
 
-    fun deleteBootstrapJobs(clusterId: ClusterId) {
+    fun deleteBootstrapJobs(clusterSelector: ClusterSelector) {
         val jobs = batchApi.listNamespacedJob(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
             null,
             null,
             5,
@@ -876,7 +876,7 @@ object KubeClient {
 
                 val status = batchApi.deleteNamespacedJob(
                     job.metadata.name,
-                    clusterId.namespace,
+                    clusterSelector.namespace,
                     null,
                     deleteOptions,
                     null,
@@ -894,7 +894,7 @@ object KubeClient {
         }
     }
 
-//    fun updateSavepointPath(clusterId: ClusterId, savepointPath: String) {
+//    fun updateSavepointPath(clusterSelector: ClusterSelector, savepointPath: String) {
 //        val patch = mapOf<String, Any?>(
 //            "spec" to mapOf<String, Any?>(
 //                "operator" to mapOf<String, Any?>(
@@ -906,9 +906,9 @@ object KubeClient {
 //        val response = objectApi.patchNamespacedCustomObjectCall(
 //            "nextbreakpoint.com",
 //            "v1",
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            "flinkclusters",
-//            clusterId.name,
+//            clusterSelector.name,
 //            patch,
 //            null,
 //            null
@@ -916,10 +916,10 @@ object KubeClient {
 //
 //        response.body().use { body ->
 //            if (response.isSuccessful) {
-//                logger.debug("Savepoint of cluster ${clusterId.name} updated to $savepointPath")
+//                logger.debug("Savepoint of cluster ${clusterSelector.name} updated to $savepointPath")
 //            } else {
 //                body.source().use { source -> logger.error(source.readUtf8Line()) }
-//                logger.error("Can't update savepoint of cluster ${clusterId.name}")
+//                logger.error("Can't update savepoint of cluster ${clusterSelector.name}")
 //            }
 //        }
 //    }
@@ -940,16 +940,16 @@ object KubeClient {
         }
     }
 
-    fun deleteFlinkCluster(clusterId: ClusterId): ApiResponse<Any> {
+    fun deleteFlinkCluster(clusterSelector: ClusterSelector): ApiResponse<Any> {
         try {
             val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
 
             return objectApi.deleteNamespacedCustomObjectWithHttpInfo(
                 "nextbreakpoint.com",
                 "v1",
-                clusterId.namespace,
+                clusterSelector.namespace,
                 "flinkclusters",
-                clusterId.name,
+                clusterSelector.name,
                 deleteOptions,
                 null,
                 null,
@@ -961,13 +961,13 @@ object KubeClient {
         }
     }
 
-//    fun listBootstrapJobs(clusterId: ClusterId): V1JobList {
+//    fun listBootstrapJobs(clusterSelector: ClusterSelector): V1JobList {
 //        return batchApi.listNamespacedJob(
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            null,
 //            null,
 //            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
 //            null,
 //            null,
 //            5,
@@ -975,9 +975,9 @@ object KubeClient {
 //        )
 //    }
 
-    fun createBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): V1Job {
+    fun createBootstrapJob(clusterSelector: ClusterSelector, bootstrapJob: V1Job): V1Job {
         return batchApi.createNamespacedJob(
-            clusterId.namespace,
+            clusterSelector.namespace,
             bootstrapJob,
             null,
             null,
@@ -985,10 +985,10 @@ object KubeClient {
         )
     }
 
-//    fun replaceBootstrapJob(clusterId: ClusterId, bootstrapJob: V1Job): V1Job {
+//    fun replaceBootstrapJob(clusterSelector: ClusterSelector, bootstrapJob: V1Job): V1Job {
 //        return batchApi.replaceNamespacedJob(
-//            "flink-bootstrap-${clusterId.name}",
-//            clusterId.namespace,
+//            "flink-bootstrap-${clusterSelector.name}",
+//            clusterSelector.namespace,
 //            bootstrapJob,
 //            null,
 //            null,
@@ -996,13 +996,13 @@ object KubeClient {
 //        )
 //    }
 
-    fun listTaskManagerPods(clusterId: ClusterId): V1PodList {
+    fun listTaskManagerPods(clusterSelector: ClusterSelector): V1PodList {
         val taskmanagerPods = coreApi.listNamespacedPod(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=taskmanager",
             null,
             null,
             5,
@@ -1011,13 +1011,13 @@ object KubeClient {
         return taskmanagerPods
     }
 
-    fun listJobManagerPods(clusterId: ClusterId): V1PodList {
+    fun listJobManagerPods(clusterSelector: ClusterSelector): V1PodList {
         val jobmanagerPods = coreApi.listNamespacedPod(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=jobmanager",
             null,
             null,
             5,
@@ -1027,15 +1027,15 @@ object KubeClient {
     }
 
     fun restartJobManagerStatefulSets(
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         replicas: Int?
     ) {
         val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=jobmanager",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=jobmanager",
             null,
             null,
             5,
@@ -1056,7 +1056,7 @@ object KubeClient {
 
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
-                    clusterId.namespace,
+                    clusterSelector.namespace,
                     V1Patch(JSON().serialize(patch)),
                     null,
                     null,
@@ -1081,15 +1081,15 @@ object KubeClient {
     }
 
     fun restartTaskManagerStatefulSets(
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         replicas: Int?
     ) {
         val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=taskmanager",
             null,
             null,
             5,
@@ -1110,7 +1110,7 @@ object KubeClient {
 
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
-                    clusterId.namespace,
+                    clusterSelector.namespace,
                     V1Patch(JSON().serialize(patch)),
                     null,
                     null,
@@ -1134,13 +1134,13 @@ object KubeClient {
         }
     }
 
-    fun terminateStatefulSets(clusterId: ClusterId) {
+    fun terminateStatefulSets(clusterSelector: ClusterSelector) {
         val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
             null,
             null,
             5,
@@ -1161,7 +1161,7 @@ object KubeClient {
 
                 val response = appsApi.patchNamespacedStatefulSetScaleCall(
                     statefulSet.metadata.name,
-                    clusterId.namespace,
+                    clusterSelector.namespace,
                     V1Patch(JSON().serialize(patch)),
                     null,
                     null,
@@ -1185,13 +1185,13 @@ object KubeClient {
         }
     }
 
-    fun deleteBootstrapPods(clusterId: ClusterId) {
+    fun deleteBootstrapPods(clusterSelector: ClusterSelector) {
         val pods = coreApi.listNamespacedPod(
-            clusterId.namespace,
+            clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterSelector.name}",
             null,
             null,
             5,
@@ -1206,7 +1206,7 @@ object KubeClient {
 
                 val status = coreApi.deleteNamespacedPod(
                     pod.metadata.name,
-                    clusterId.namespace,
+                    clusterSelector.namespace,
                     null,
                     deleteOptions,
                     null,
@@ -1226,14 +1226,14 @@ object KubeClient {
 
 //    fun deleteBootstrapJobs(
 //        api: BatchV1Api,
-//        clusterId: ClusterId
+//        clusterSelector: ClusterSelector
 //    ) {
 //        val jobs = batchApi.listNamespacedJob(
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            null,
 //            null,
 //            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterId.name}",
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterSelector.name}",
 //            null,
 //            null,
 //            5,
@@ -1248,7 +1248,7 @@ object KubeClient {
 //
 //                val status = batchApi.deleteNamespacedJob(
 //                    job.metadata.name,
-//                    clusterId.namespace,
+//                    clusterSelector.namespace,
 //                    null,
 //                    deleteOptions,
 //                    null,
@@ -1266,7 +1266,7 @@ object KubeClient {
 //        }
 //    }
 
-    fun rescaleCluster(clusterId: ClusterId, taskManagers: Int) {
+    fun rescaleCluster(clusterSelector: ClusterSelector, taskManagers: Int) {
         val patch = mapOf<String, Any?>(
             "spec" to mapOf<String, Any?>(
                 "replicas" to taskManagers
@@ -1276,9 +1276,9 @@ object KubeClient {
         val response = objectApi.patchNamespacedCustomObjectScaleCall(
             "nextbreakpoint.com",
             "v1",
-            clusterId.namespace,
+            clusterSelector.namespace,
             "flinkclusters",
-            clusterId.name,
+            clusterSelector.name,
             patch,
             null,
             null
@@ -1287,18 +1287,18 @@ object KubeClient {
         response.body().use { body ->
             if (!response.isSuccessful) {
                 body.source().use { source -> logger.error(source.readUtf8Line()) }
-                throw RuntimeException("Can't modify scale of cluster ${clusterId.name}")
+                throw RuntimeException("Can't modify scale of cluster ${clusterSelector.name}")
             }
         }
     }
 
-//    fun setTaskManagerStatefulSetReplicas(clusterId: ClusterId, taskManagers: Int) {
+//    fun setTaskManagerStatefulSetReplicas(clusterSelector: ClusterSelector, taskManagers: Int) {
 //        val statefulSets = appsApi.listNamespacedStatefulSet(
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            null,
 //            null,
 //            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=taskmanager",
 //            null,
 //            null,
 //            5,
@@ -1306,7 +1306,7 @@ object KubeClient {
 //        )
 //
 //        if (statefulSets.items.size == 0) {
-//            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
+//            throw RuntimeException("Can't find task managers of cluster ${clusterSelector.name}")
 //        }
 //
 //        statefulSets.items.forEach { statefulSet ->
@@ -1323,7 +1323,7 @@ object KubeClient {
 //
 //                val response = appsApi.patchNamespacedStatefulSetScaleCall(
 //                    statefulSet.metadata.name,
-//                    clusterId.namespace,
+//                    clusterSelector.namespace,
 //                    V1Patch(JSON().serialize(patch)),
 //                    null,
 //                    null,
@@ -1347,13 +1347,13 @@ object KubeClient {
 //        }
 //    }
 //
-//    fun getTaskManagerStatefulSetReplicas(clusterId: ClusterId): Int {
+//    fun getTaskManagerStatefulSetReplicas(clusterSelector: ClusterSelector): Int {
 //        val statefulSets = appsApi.listNamespacedStatefulSet(
-//            clusterId.namespace,
+//            clusterSelector.namespace,
 //            null,
 //            null,
 //            null,
-//            "name=${clusterId.name},uid=${clusterId.uuid},owner=flink-operator,role=taskmanager",
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=taskmanager",
 //            null,
 //            null,
 //            5,
@@ -1361,7 +1361,7 @@ object KubeClient {
 //        )
 //
 //        if (statefulSets.items.size == 0) {
-//            throw RuntimeException("Can't find task managers of cluster ${clusterId.name}")
+//            throw RuntimeException("Can't find task managers of cluster ${clusterSelector.name}")
 //        }
 //
 //        return statefulSets.items.firstOrNull()?.status?.currentReplicas ?: 0

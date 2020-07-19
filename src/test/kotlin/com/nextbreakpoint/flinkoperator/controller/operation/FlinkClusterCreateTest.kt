@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -18,7 +18,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class FlinkClusterCreateTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
@@ -32,12 +32,12 @@ class FlinkClusterCreateTest {
     @Test
     fun `should fail when kubeClient throws exception`() {
         given(kubeClient.createFlinkCluster(eq(cluster))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).createFlinkCluster(eq(cluster))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
@@ -46,12 +46,12 @@ class FlinkClusterCreateTest {
         val response = mock(ApiResponse::class.java) as ApiResponse<Any>
         given(response.statusCode).thenReturn(500)
         given(kubeClient.createFlinkCluster(eq(cluster))).thenReturn(response)
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).createFlinkCluster(eq(cluster))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
@@ -60,12 +60,12 @@ class FlinkClusterCreateTest {
         val response = mock(ApiResponse::class.java) as ApiResponse<Any>
         given(response.statusCode).thenReturn(201)
         given(kubeClient.createFlinkCluster(eq(cluster))).thenReturn(response)
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).createFlinkCluster(eq(cluster))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
     }
 }

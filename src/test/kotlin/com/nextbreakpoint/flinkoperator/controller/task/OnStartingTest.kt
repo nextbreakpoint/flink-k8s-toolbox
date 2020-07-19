@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
@@ -20,7 +20,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnStartingTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val clusterScaling = ClusterScaling(taskManagers = 2, taskSlots = 1)
     private val logger = mock(Logger::class.java)
     private val context = mock(TaskContext::class.java)
@@ -28,33 +28,32 @@ class OnStartingTest {
 
     @BeforeEach
     fun configure() {
-        given(context.clusterId).thenReturn(clusterId)
+        given(context.clusterSelector).thenReturn(clusterSelector)
         given(context.hasBeenDeleted()).thenReturn(false)
         given(context.getClusterScale()).thenReturn(clusterScaling)
         given(context.getJobManagerReplicas()).thenReturn(1)
         given(context.getTaskManagerReplicas()).thenReturn(2)
         given(context.isBootstrapPresent()).thenReturn(true)
-        given(context.isClusterReady(any(), any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
-        given(context.removeJar(any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
-        given(context.isJobRunning(any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = null))
+        given(context.isClusterReady(any(), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = true))
+        given(context.removeJar(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
+        given(context.isJobRunning(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = true))
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(10)
-        given(context.doesBootstrapExists()).thenReturn(true)
+        given(context.doesBootstrapJobExists()).thenReturn(true)
         given(context.doesJobManagerServiceExists()).thenReturn(true)
         given(context.doesJobManagerStatefulSetExists()).thenReturn(true)
         given(context.doesTaskManagerStatefulSetExists()).thenReturn(true)
-        given(context.createBootstrapJob(any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "test-bootstrap-job"))
-        given(context.createJobManagerService(any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "test-jobmanager-service"))
-        given(context.createJobManagerStatefulSet(any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "test-jobmanager-statefulset"))
-        given(context.createTaskManagerStatefulSet(any())).thenReturn(OperationResult(status = OperationStatus.COMPLETED, output = "test-taskmanager-statefulset"))
+        given(context.createBootstrapJob(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "test-bootstrap-job"))
+        given(context.createJobManagerService(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "test-jobmanager-service"))
+        given(context.createJobManagerStatefulSet(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "test-jobmanager-statefulset"))
+        given(context.createTaskManagerStatefulSet(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "test-taskmanager-statefulset"))
     }
 
     @Test
     fun `should change status to running when cluster has all resources and job is running`() {
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).getClusterScale()
@@ -62,7 +61,7 @@ class OnStartingTest {
         verify(context, times(1)).getTaskManagerReplicas()
         verify(context, times(1)).isBootstrapPresent()
         verify(context, times(1)).isJobRunning(any())
-        verify(context, times(1)).doesBootstrapExists()
+        verify(context, times(1)).doesBootstrapJobExists()
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
@@ -76,7 +75,6 @@ class OnStartingTest {
         given(context.isBootstrapPresent()).thenReturn(false)
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
@@ -94,20 +92,18 @@ class OnStartingTest {
 
     @Test
     fun `should do nothing when cluster has all resources but job is not running`() {
-        given(context.isJobRunning(any())).thenReturn(OperationResult(status = OperationStatus.RETRY, output = null))
+        given(context.isJobRunning(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = false))
         task.execute(context)
-        verify(logger, times(0)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).getClusterScale()
         verify(context, times(1)).getJobManagerReplicas()
         verify(context, times(1)).getTaskManagerReplicas()
         verify(context, times(1)).isBootstrapPresent()
-        verify(context, times(1)).isJobRunning(eq(clusterId))
-        verify(context, times(1)).doesBootstrapExists()
+        verify(context, times(1)).isJobRunning(eq(clusterSelector))
+        verify(context, times(1)).doesBootstrapJobExists()
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
@@ -116,22 +112,21 @@ class OnStartingTest {
 
     @Test
     fun `should create bootstrap job when bootstrap job does not exist and cluster is ready`() {
-        given(context.doesBootstrapExists()).thenReturn(false)
+        given(context.doesBootstrapJobExists()).thenReturn(false)
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).getClusterScale()
         verify(context, times(1)).getJobManagerReplicas()
         verify(context, times(1)).getTaskManagerReplicas()
         verify(context, times(1)).isBootstrapPresent()
-        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verify(context, times(1)).removeJar(eq(clusterId))
-        verify(context, times(1)).createBootstrapJob(eq(clusterId))
-        verify(context, times(1)).doesBootstrapExists()
+        verify(context, times(1)).isClusterReady(eq(clusterSelector), eq(clusterScaling))
+        verify(context, times(1)).removeJar(eq(clusterSelector))
+        verify(context, times(1)).createBootstrapJob(eq(clusterSelector))
+        verify(context, times(1)).doesBootstrapJobExists()
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
@@ -140,21 +135,19 @@ class OnStartingTest {
 
     @Test
     fun `should do nothing when bootstrap job does not exist and cluster is not ready`() {
-        given(context.isClusterReady(any(), any())).thenReturn(OperationResult(status = OperationStatus.RETRY, output = null))
-        given(context.doesBootstrapExists()).thenReturn(false)
+        given(context.isClusterReady(any(), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = false))
+        given(context.doesBootstrapJobExists()).thenReturn(false)
         task.execute(context)
-        verify(logger, times(0)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).getClusterScale()
         verify(context, times(1)).getJobManagerReplicas()
         verify(context, times(1)).getTaskManagerReplicas()
         verify(context, times(1)).isBootstrapPresent()
-        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verify(context, times(1)).doesBootstrapExists()
+        verify(context, times(1)).isClusterReady(eq(clusterSelector), eq(clusterScaling))
+        verify(context, times(1)).doesBootstrapJobExists()
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
@@ -163,22 +156,21 @@ class OnStartingTest {
 
     @Test
     fun `should do nothing when bootstrap job does not exist and jar has not been removed`() {
-        given(context.removeJar(any())).thenReturn(OperationResult(status = OperationStatus.RETRY, output = null))
-        given(context.doesBootstrapExists()).thenReturn(false)
+        given(context.removeJar(any())).thenReturn(OperationResult(status = OperationStatus.ERROR, output = null))
+        given(context.doesBootstrapJobExists()).thenReturn(false)
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).getClusterScale()
         verify(context, times(1)).getJobManagerReplicas()
         verify(context, times(1)).getTaskManagerReplicas()
         verify(context, times(1)).isBootstrapPresent()
-        verify(context, times(1)).isClusterReady(eq(clusterId), eq(clusterScaling))
-        verify(context, times(1)).removeJar(eq(clusterId))
-        verify(context, times(1)).doesBootstrapExists()
+        verify(context, times(1)).isClusterReady(eq(clusterSelector), eq(clusterScaling))
+        verify(context, times(1)).removeJar(eq(clusterSelector))
+        verify(context, times(1)).doesBootstrapJobExists()
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
@@ -190,9 +182,8 @@ class OnStartingTest {
         given(context.getJobManagerReplicas()).thenReturn(0)
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).getClusterScale()
@@ -201,7 +192,7 @@ class OnStartingTest {
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
-        verify(context, times(1)).restartPods(eq(clusterId), eq(clusterScaling))
+        verify(context, times(1)).restartPods(eq(clusterSelector), eq(clusterScaling))
         verifyNoMoreInteractions(context)
     }
 
@@ -210,9 +201,8 @@ class OnStartingTest {
         given(context.getTaskManagerReplicas()).thenReturn(1)
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).getClusterScale()
@@ -221,7 +211,7 @@ class OnStartingTest {
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
-        verify(context, times(1)).restartPods(eq(clusterId), eq(clusterScaling))
+        verify(context, times(1)).restartPods(eq(clusterSelector), eq(clusterScaling))
         verifyNoMoreInteractions(context)
     }
 
@@ -230,15 +220,14 @@ class OnStartingTest {
         given(context.doesJobManagerServiceExists()).thenReturn(false)
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
-        verify(context, times(1)).createJobManagerService(eq(clusterId))
+        verify(context, times(1)).createJobManagerService(eq(clusterSelector))
         verifyNoMoreInteractions(context)
     }
 
@@ -247,15 +236,14 @@ class OnStartingTest {
         given(context.doesJobManagerStatefulSetExists()).thenReturn(false)
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
-        verify(context, times(1)).createJobManagerStatefulSet(eq(clusterId))
+        verify(context, times(1)).createJobManagerStatefulSet(eq(clusterSelector))
         verifyNoMoreInteractions(context)
     }
 
@@ -264,15 +252,14 @@ class OnStartingTest {
         given(context.doesTaskManagerStatefulSetExists()).thenReturn(false)
         task.execute(context)
         verify(logger, atLeast(1)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterId
+        verify(context, atLeast(1)).clusterSelector
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).timeSinceLastUpdateInSeconds()
         verify(context, times(1)).doesJobManagerServiceExists()
         verify(context, times(1)).doesJobManagerStatefulSetExists()
         verify(context, times(1)).doesTaskManagerStatefulSetExists()
-        verify(context, times(1)).createTaskManagerStatefulSet(eq(clusterId))
+        verify(context, times(1)).createTaskManagerStatefulSet(eq(clusterSelector))
         verifyNoMoreInteractions(context)
     }
 
@@ -280,7 +267,6 @@ class OnStartingTest {
     fun `should change status to failed if cluster is not running after timeout`() {
         given(context.timeSinceLastUpdateInSeconds()).thenReturn(301)
         task.execute(context)
-        verify(logger, times(0)).info(any())
         verify(logger, times(1)).error(any())
         verifyNoMoreInteractions(logger)
         verify(context, times(1)).hasBeenDeleted()
@@ -291,16 +277,14 @@ class OnStartingTest {
     }
 
     @Test
-    fun `should change status to stopping if cluster has been deleted`() {
+    fun `should change status to cancelling if cluster has been deleted`() {
         given(context.hasBeenDeleted()).thenReturn(true)
         task.execute(context)
-        verify(logger, times(0)).info(any())
-        verify(logger, times(0)).error(any())
         verifyNoMoreInteractions(logger)
         verify(context, times(1)).hasBeenDeleted()
         verify(context, times(1)).resetManualAction()
         verify(context, times(1)).setDeleteResources(ArgumentMatchers.eq(true))
-        verify(context, times(1)).setClusterStatus(eq(ClusterStatus.Stopping))
+        verify(context, times(1)).setClusterStatus(eq(ClusterStatus.Cancelling))
         verifyNoMoreInteractions(context)
     }
 }

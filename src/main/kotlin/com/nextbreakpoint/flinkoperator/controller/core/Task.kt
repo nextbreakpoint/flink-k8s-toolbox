@@ -6,10 +6,10 @@ abstract class Task(val logger: Logger) {
     abstract fun execute(context: TaskContext)
 
     protected fun cancel(context: TaskContext): Boolean {
-        if (context.doesBootstrapExists()) {
-            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
+        if (context.doesBootstrapJobExists()) {
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterSelector)
 
-            if (bootstrapResult.isCompleted()) {
+            if (bootstrapResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
 
@@ -22,31 +22,27 @@ abstract class Task(val logger: Logger) {
             if (savepointRequest == null) {
                 val options = context.getSavepointOtions()
 
-                val cancelResult = context.cancelJob(context.clusterId, options)
+                val cancelResult = context.cancelJob(context.clusterSelector, options)
 
-                if (cancelResult.isFailed()) {
-                    logger.error("Failed to cancel job...")
+                if (cancelResult.isSuccessful()) {
+                    if (cancelResult.output != null) {
+                        logger.info("Cancelling job with savepoint...")
 
-                    return true
-                }
+                        context.setSavepointRequest(cancelResult.output)
+                    } else {
+                        logger.info("Stopping job without savepoint...")
 
-                if (cancelResult.isCompleted()) {
-                    logger.info("Cancelling job with savepoint...")
-
-                    context.setSavepointRequest(cancelResult.output)
-
-                    return false
+                        return true
+                    }
+                } else {
+                    logger.warn("Can't create savepoint. Retrying...")
                 }
             } else {
-                val savepointResult = context.getLatestSavepoint(context.clusterId, savepointRequest)
+                val savepointResult = context.getLatestSavepoint(context.clusterSelector, savepointRequest)
 
-                if (savepointResult.isFailed()) {
-                    logger.error("Failed to cancel job...")
+                logger.info("Savepoint is in progress...")
 
-                    return true
-                }
-
-                if (savepointResult.isCompleted()) {
+                if (savepointResult.isSuccessful()) {
                     logger.info("Savepoint created for job ${savepointRequest.jobId} (${savepointResult.output})")
 
                     context.setSavepointPath(savepointResult.output)
@@ -57,15 +53,9 @@ abstract class Task(val logger: Logger) {
         } else {
             logger.info("Savepoint not required")
 
-            val stopResult = context.stopJob(context.clusterId)
+            val stopResult = context.stopJob(context.clusterSelector)
 
-            if (stopResult.isFailed()) {
-                logger.error("Failed to stop job...")
-
-                return true
-            }
-
-            if (stopResult.isCompleted()) {
+            if (stopResult.isSuccessful()) {
                 logger.info("Stopping job without savepoint...")
 
                 return true
@@ -76,20 +66,20 @@ abstract class Task(val logger: Logger) {
     }
 
     protected fun suspend(context: TaskContext): Boolean {
-        val terminatedResult = context.arePodsTerminated(context.clusterId)
+        val terminatedResult = context.arePodsTerminated(context.clusterSelector)
 
-        if (!terminatedResult.isCompleted()) {
-            context.terminatePods(context.clusterId)
+        if (!terminatedResult.output) {
+            context.terminatePods(context.clusterSelector)
 
             return false
         }
 
-        val bootstrapExists = context.doesBootstrapExists()
+        val bootstrapExists = context.doesBootstrapJobExists()
 
         if (bootstrapExists) {
-            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterSelector)
 
-            if (bootstrapResult.isCompleted()) {
+            if (bootstrapResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
         }
@@ -97,9 +87,9 @@ abstract class Task(val logger: Logger) {
         val jobmanagerServiceExists = context.doesJobManagerServiceExists()
 
         if (jobmanagerServiceExists) {
-            val serviceResult = context.deleteJobManagerService(context.clusterId)
+            val serviceResult = context.deleteJobManagerService(context.clusterSelector)
 
-            if (serviceResult.isCompleted()) {
+            if (serviceResult.isSuccessful()) {
                 logger.info("JobManager service deleted")
             }
         }
@@ -108,15 +98,15 @@ abstract class Task(val logger: Logger) {
     }
 
     protected fun terminate(context: TaskContext): Boolean {
-        val terminatedResult = context.arePodsTerminated(context.clusterId)
+        val terminatedResult = context.arePodsTerminated(context.clusterSelector)
 
-        if (!terminatedResult.isCompleted()) {
-            context.terminatePods(context.clusterId)
+        if (!terminatedResult.output) {
+            context.terminatePods(context.clusterSelector)
 
             return false
         }
 
-        val bootstrapExists = context.doesBootstrapExists()
+        val bootstrapExists = context.doesBootstrapJobExists()
         val jobmanagerServiceExists = context.doesJobManagerServiceExists()
         val jobmanagerStatefuleSetExists = context.doesJobManagerStatefulSetExists()
         val taskmanagerStatefulSetExists = context.doesTaskManagerStatefulSetExists()
@@ -124,33 +114,33 @@ abstract class Task(val logger: Logger) {
         val taskmanagerPVCExists = context.doesTaskManagerPVCExists()
 
         if (bootstrapExists) {
-            val bootstrapResult = context.deleteBootstrapJob(context.clusterId)
+            val bootstrapResult = context.deleteBootstrapJob(context.clusterSelector)
 
-            if (bootstrapResult.isCompleted()) {
+            if (bootstrapResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
         }
 
         if (jobmanagerServiceExists) {
-            val serviceResult = context.deleteJobManagerService(context.clusterId)
+            val serviceResult = context.deleteJobManagerService(context.clusterSelector)
 
-            if (serviceResult.isCompleted()) {
+            if (serviceResult.isSuccessful()) {
                 logger.info("JobManager service deleted")
             }
         }
 
         if (jobmanagerStatefuleSetExists || taskmanagerStatefulSetExists) {
-            val statefulSetsResult = context.deleteStatefulSets(context.clusterId)
+            val statefulSetsResult = context.deleteStatefulSets(context.clusterSelector)
 
-            if (statefulSetsResult.isCompleted()) {
+            if (statefulSetsResult.isSuccessful()) {
                 logger.info("JobManager and TaskManager statefulset deleted")
             }
         }
 
         if (jomanagerPVCExists || taskmanagerPVCExists) {
-            val persistenVolumeClaimsResult = context.deletePersistentVolumeClaims(context.clusterId)
+            val persistenVolumeClaimsResult = context.deletePersistentVolumeClaims(context.clusterSelector)
 
-            if (persistenVolumeClaimsResult.isCompleted()) {
+            if (persistenVolumeClaimsResult.isSuccessful()) {
                 logger.info("JobManager and TaskManager PVC deleted")
             }
         }

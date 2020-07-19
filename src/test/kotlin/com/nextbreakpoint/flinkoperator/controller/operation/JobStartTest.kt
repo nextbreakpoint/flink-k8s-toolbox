@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 import com.nextbreakpoint.flinkclient.model.ClusterOverviewWithVersion
 import com.nextbreakpoint.flinkclient.model.JarEntryInfo
 import com.nextbreakpoint.flinkclient.model.JarFileInfo
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -24,7 +24,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class JobStartTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
@@ -48,26 +48,26 @@ class JobStartTest {
     @Test
     fun `should fail when kubeClient throws exception`() {
         given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
     @Test
     fun `should fail when flinkClient throws exception`() {
         given(flinkClient.listJars(eq(flinkAddress))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verify(flinkClient, times(1)).listJars(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
@@ -80,27 +80,27 @@ class JobStartTest {
         overview.jobsFinished = 0
         given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
         given(flinkClient.listRunningJobs(eq(flinkAddress))).thenReturn(listOf("aJob"))
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
     }
 
     @Test
     fun `should return expected result when there aren't jar files`() {
         given(flinkClient.listJars(eq(flinkAddress))).thenReturn(listOf())
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verify(flinkClient, times(1)).listJars(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
@@ -117,7 +117,7 @@ class JobStartTest {
         file2.uploaded = 1
         file2.addEntryItem(JarEntryInfo())
         given(flinkClient.listJars(eq(flinkAddress))).thenReturn(listOf(file1, file2))
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verify(flinkClient, times(1)).listJars(eq(flinkAddress))
@@ -132,7 +132,7 @@ class JobStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
     }
 
@@ -150,7 +150,7 @@ class JobStartTest {
         file2.uploaded = 1
         file2.addEntryItem(JarEntryInfo())
         given(flinkClient.listJars(eq(flinkAddress))).thenReturn(listOf(file1, file2))
-        val result = command.execute(clusterId, cluster)
+        val result = command.execute(clusterSelector, cluster)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verify(flinkClient, times(1)).listJars(eq(flinkAddress))
@@ -165,7 +165,7 @@ class JobStartTest {
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
     }
 }
