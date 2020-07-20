@@ -8380,6 +8380,8 @@ spec:
                   type: string
                 savepointTimestamp:
                   type: string
+                savepointRequestTimestamp:
+                  type: string
                 savepointMode:
                   type: string
                   nullable: false
