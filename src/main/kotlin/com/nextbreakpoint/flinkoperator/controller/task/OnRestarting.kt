@@ -3,23 +3,25 @@ package com.nextbreakpoint.flinkoperator.controller.task
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
 
-class OnStopping : Task() {
+class OnRestarting : Task() {
     override fun execute(context: TaskContext) {
+        if (context.isResourceDeleted()) {
+            context.onResourceDeleted()
+            return
+        }
+
         if (context.hasTaskTimedOut()) {
             context.onTaskTimeOut()
             return
         }
 
-        if (context.mustTerminateResources()) {
-            if (context.terminateCluster()) {
-                context.onClusterTerminated()
-                return
-            }
-        } else {
-            if (context.suspendCluster()) {
-                context.onClusterSuspended()
-                return
-            }
+        if (!context.resetCluster()) {
+            return
+        }
+
+        if (context.cancelJob()) {
+            context.onClusterReadyToRestart()
+            return
         }
     }
 }

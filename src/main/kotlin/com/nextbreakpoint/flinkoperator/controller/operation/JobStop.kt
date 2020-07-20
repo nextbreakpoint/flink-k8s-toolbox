@@ -10,71 +10,71 @@ import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import org.apache.log4j.Logger
 
-class JobStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
+class JobStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Boolean>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobStop::class.simpleName)
+
+        private val nonRunningSet = setOf(
+            JobIdWithStatus.StatusEnum.SUSPENDING,
+            JobIdWithStatus.StatusEnum.RESTARTING,
+            JobIdWithStatus.StatusEnum.RECONCILING,
+            JobIdWithStatus.StatusEnum.FAILING,
+            JobIdWithStatus.StatusEnum.CREATED,
+            JobIdWithStatus.StatusEnum.SUSPENDED
+        )
     }
 
-    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Void?> {
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Boolean> {
         try {
             val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
-            val nonRunningJobs = flinkClient.listJobs(address, setOf(
-                JobIdWithStatus.StatusEnum.SUSPENDING,
-                JobIdWithStatus.StatusEnum.RESTARTING,
-                JobIdWithStatus.StatusEnum.RECONCILING,
-                JobIdWithStatus.StatusEnum.SUSPENDED,
-                JobIdWithStatus.StatusEnum.CREATED
-            ))
+            val allJobs = flinkClient.listJobs(address, setOf())
+
+            val nonRunningJobs = allJobs
+                .filter { nonRunningSet.contains(it.value) }
+                .map { it.key }
+                .toList()
 
             nonRunningJobs.forEach {
                 logger.info("[name=${clusterSelector.name}] Stopping job $it...")
             }
 
-            if (nonRunningJobs.isNotEmpty()) {
-                flinkClient.terminateJobs(address, nonRunningJobs)
-            }
-
-            val runningJobs = flinkClient.listRunningJobs(address)
+            val runningJobs = allJobs
+                .filter { it.value == JobIdWithStatus.StatusEnum.RUNNING }
+                .map { it.key }
+                .toList()
 
             if (runningJobs.size > 1) {
-                logger.warn("[name=${clusterSelector.name}] There are multiple jobs running")
+                logger.warn("[name=${clusterSelector.name}] There are multiple running jobs")
             }
 
-            if (runningJobs.isEmpty()) {
-                logger.warn("[name=${clusterSelector.name}] Job already stopped!")
+            runningJobs.forEach {
+                logger.info("[name=${clusterSelector.name}] Stopping job $it...")
+            }
+
+            if (nonRunningJobs.isNotEmpty() || runningJobs.isNotEmpty()) {
+                val jobs = mutableListOf<String>()
+                jobs.addAll(nonRunningJobs)
+                jobs.addAll(runningJobs)
+
+                flinkClient.terminateJobs(address, jobs)
 
                 return OperationResult(
                     OperationStatus.OK,
-                    null
+                    false
                 )
-            }
-
-            flinkClient.terminateJobs(address, runningJobs)
-
-            val stillRunningJobs = flinkClient.listRunningJobs(address)
-
-            if (stillRunningJobs.isNotEmpty()) {
-                logger.debug("[name=${clusterSelector.name}] Job still running...")
-
+            } else {
                 return OperationResult(
-                    OperationStatus.ERROR,
-                    null
+                    OperationStatus.OK,
+                    true
                 )
             }
-
-            logger.debug("[name=${clusterSelector.name}] Job stopped")
-
-            return OperationResult(
-                OperationStatus.OK,
-                null
-            )
         } catch (e : Exception) {
             logger.error("[name=${clusterSelector.name}] Can't stop job", e)
 
             return OperationResult(
                 OperationStatus.ERROR,
-                null
+                false
             )
         }
     }

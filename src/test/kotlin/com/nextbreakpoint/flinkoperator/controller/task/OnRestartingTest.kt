@@ -1,8 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
-import com.nextbreakpoint.flinkoperator.testing.KotlinMockito
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -10,21 +8,16 @@ import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 
-class OnStartingTest {
+class OnRestartingTest {
     private val context = mock(TaskContext::class.java)
-    private val task = OnStarting()
-    private val actions = setOf(
-        ManualAction.STOP,
-        ManualAction.FORGET_SAVEPOINT
-    )
+    private val task = OnRestarting()
 
     @BeforeEach
     fun configure() {
         given(context.isResourceDeleted()).thenReturn(false)
         given(context.hasTaskTimedOut()).thenReturn(false)
-        given(context.isManualActionPresent()).thenReturn(false)
-        given(context.hasResourceChanged()).thenReturn(false)
-        given(context.startCluster()).thenReturn(false)
+        given(context.resetCluster()).thenReturn(true)
+        given(context.cancelJob()).thenReturn(false)
     }
 
     @Test
@@ -33,11 +26,8 @@ class OnStartingTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).hasTaskTimedOut()
-        inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).hasResourceChanged()
-        inOrder.verify(context, times(1)).ensurePodsExists()
-        inOrder.verify(context, times(1)).ensureServiceExist()
-        inOrder.verify(context, times(1)).startCluster()
+        inOrder.verify(context, times(1)).resetCluster()
+        inOrder.verify(context, times(1)).cancelJob()
         inOrder.verifyNoMoreInteractions()
     }
 
@@ -63,40 +53,26 @@ class OnStartingTest {
     }
 
     @Test
-    fun `should behave as expected when manual action is present`() {
-        given(context.isManualActionPresent()).thenReturn(true)
+    fun `should behave as expected when bootstrap job is present`() {
+        given(context.resetCluster()).thenReturn(false)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
-        inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).executeManualAction(KotlinMockito.eq(actions))
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).resetCluster()
         inOrder.verifyNoMoreInteractions()
     }
 
     @Test
-    fun `should behave as expected when resource has changed`() {
-        given(context.hasResourceChanged()).thenReturn(true)
+    fun `should behave as expected when job is cancelled`() {
+        given(context.cancelJob()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
-        inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).hasResourceChanged()
-        inOrder.verify(context, times(1)).onResourceChanged()
-        inOrder.verifyNoMoreInteractions()
-    }
-
-    @Test
-    fun `should behave as expected when cluster has been started`() {
-        given(context.startCluster()).thenReturn(true)
-        task.execute(context)
-        val inOrder = inOrder(context)
-        inOrder.verify(context, times(1)).isResourceDeleted()
-        inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).hasResourceChanged()
-        inOrder.verify(context, times(1)).ensurePodsExists()
-        inOrder.verify(context, times(1)).ensureServiceExist()
-        inOrder.verify(context, times(1)).startCluster()
-        inOrder.verify(context, times(1)).onClusterStarted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).resetCluster()
+        inOrder.verify(context, times(1)).cancelJob()
+        inOrder.verify(context, times(1)).onClusterReadyToRestart()
         inOrder.verifyNoMoreInteractions()
     }
 }

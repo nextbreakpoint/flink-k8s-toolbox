@@ -27,7 +27,7 @@ class TaskControllerTest {
         taskmanagerPVC = TestFactory.aTaskManagerPersistenVolumeClaim(cluster)
     )
     private val logger = mock(Logger::class.java)
-    private val task = spy(DummyTask(logger, cluster))
+    private val task = spy(DummyTask(cluster))
     private val controller = mock(OperationController::class.java)
     private val tasks = mapOf(
         ClusterStatus.Unknown to task,
@@ -52,7 +52,7 @@ class TaskControllerTest {
         assertThat(Status.getStatusTimestamp(cluster)).isGreaterThanOrEqualTo(timestamp)
     }
 
-    class DummyTask(logger: Logger, val cluster: V1FlinkCluster) : Task(logger) {
+    class DummyTask(val cluster: V1FlinkCluster) : Task() {
         override fun execute(context: TaskContext) {
             Status.setClusterStatus(cluster, ClusterStatus.Running)
         }

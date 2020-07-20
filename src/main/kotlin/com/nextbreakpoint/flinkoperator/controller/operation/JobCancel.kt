@@ -15,20 +15,27 @@ import org.apache.log4j.Logger
 class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<SavepointOptions, SavepointRequest?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobCancel::class.simpleName)
+
+        private val nonRunningSet = setOf(
+            StatusEnum.SUSPENDING,
+            StatusEnum.RESTARTING,
+            StatusEnum.RECONCILING,
+            StatusEnum.FAILING,
+            StatusEnum.CREATED,
+            StatusEnum.SUSPENDED
+        )
     }
 
     override fun execute(clusterSelector: ClusterSelector, params: SavepointOptions): OperationResult<SavepointRequest?> {
         try {
             val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
-            val nonRunningJobs = flinkClient.listJobs(address, setOf(
-                StatusEnum.SUSPENDING,
-                StatusEnum.RESTARTING,
-                StatusEnum.RECONCILING,
-                StatusEnum.FAILING,
-                StatusEnum.CREATED,
-                StatusEnum.SUSPENDED
-            ))
+            val allJobs = flinkClient.listJobs(address, setOf())
+
+            val nonRunningJobs = allJobs
+                .filter { nonRunningSet.contains(it.value) }
+                .map { it.key }
+                .toList()
 
             if (nonRunningJobs.isNotEmpty()) {
                 nonRunningJobs.forEach {
@@ -36,12 +43,30 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
                 }
 
                 flinkClient.terminateJobs(address, nonRunningJobs)
+
+                return OperationResult(
+                    OperationStatus.OK,
+                    null
+                )
             }
 
-            val runningJobs = flinkClient.listRunningJobs(address)
+            val runningJobs = allJobs
+                .filter { it.value == StatusEnum.RUNNING }
+                .map { it.key }
+                .toList()
+
+            if (runningJobs.isEmpty()) {
+                return OperationResult(
+                    OperationStatus.OK,
+                    SavepointRequest(
+                        jobId = "",
+                        triggerId = ""
+                    )
+                )
+            }
 
             if (runningJobs.size > 1) {
-                logger.warn("[name=${clusterSelector.name}] There are multiple jobs running")
+                logger.warn("[name=${clusterSelector.name}] There are multiple running jobs")
 
                 runningJobs.forEach {
                     logger.info("[name=${clusterSelector.name}] Stopping job $it...")
@@ -54,18 +79,22 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
                     null
                 )
             } else {
-                if (runningJobs.isEmpty()) {
-                    return OperationResult(
-                        OperationStatus.OK,
-                        null
-                    )
-                }
+                // only one job is running at this point
 
                 runningJobs.forEach {
                     logger.info("[name=${clusterSelector.name}] Cancelling job $it...")
                 }
 
                 val requests = flinkClient.cancelJobs(address, runningJobs, params.targetPath)
+
+                if (requests.isEmpty()) {
+                    flinkClient.terminateJobs(address, runningJobs)
+
+                    return OperationResult(
+                        OperationStatus.OK,
+                        null
+                    )
+                }
 
                 return OperationResult(
                     OperationStatus.OK,

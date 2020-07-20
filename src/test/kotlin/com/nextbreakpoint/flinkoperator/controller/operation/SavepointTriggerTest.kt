@@ -87,4 +87,17 @@ class SavepointTriggerTest {
         assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isEqualTo(SavepointRequest(jobId = "1", triggerId = "100"))
     }
+
+    @Test
+    fun `should return expected result when there are multiple jobs running`() {
+        given(flinkClient.listRunningJobs(eq(flinkAddress))).thenReturn(listOf("1", "2"))
+        val result = command.execute(clusterSelector, savepointOptions)
+        verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
+        verify(flinkClient, times(1)).listRunningJobs(eq(flinkAddress))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
+        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
+    }
 }
