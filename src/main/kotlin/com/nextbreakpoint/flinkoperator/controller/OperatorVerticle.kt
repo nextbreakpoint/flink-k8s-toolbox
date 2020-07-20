@@ -550,7 +550,7 @@ class OperatorVerticle : AbstractVerticle() {
 
         resorces.forEach { pair ->
             try {
-                logger.info("Reconciling ${pair.first}...")
+                logger.debug("Reconciling ${pair.first}...")
 
                 TaskController.create(controller, pair.first).execute(pair.second)
             } catch (e: Exception) {

@@ -1,8 +1,8 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
@@ -11,6 +11,8 @@ import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
+import com.nextbreakpoint.flinkoperator.controller.operation.ArePodsRunning
+import com.nextbreakpoint.flinkoperator.controller.operation.ArePodsTerminated
 import com.nextbreakpoint.flinkoperator.controller.operation.BootstrapCreateJob
 import com.nextbreakpoint.flinkoperator.controller.operation.BootstrapDeleteJob
 import com.nextbreakpoint.flinkoperator.controller.operation.ClusterCreateService
@@ -29,7 +31,6 @@ import com.nextbreakpoint.flinkoperator.controller.operation.JobIsFinished
 import com.nextbreakpoint.flinkoperator.controller.operation.JobIsRunning
 import com.nextbreakpoint.flinkoperator.controller.operation.JobStart
 import com.nextbreakpoint.flinkoperator.controller.operation.JobStop
-import com.nextbreakpoint.flinkoperator.controller.operation.ArePodsTerminated
 import com.nextbreakpoint.flinkoperator.controller.operation.PodsScaleDown
 import com.nextbreakpoint.flinkoperator.controller.operation.PodsScaleUp
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterScale
@@ -110,13 +111,16 @@ class OperationController(
     fun restartPods(clusterSelector: ClusterSelector, options: ClusterScaling): OperationResult<Void?> =
         PodsScaleUp(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, options)
 
+    fun arePodsRunning(clusterSelector: ClusterSelector): OperationResult<Boolean> =
+        ArePodsRunning(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
+
     fun arePodsTerminated(clusterSelector: ClusterSelector): OperationResult<Boolean> =
         ArePodsTerminated(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
 
     fun startJob(clusterSelector: ClusterSelector, cluster: V1FlinkCluster) : OperationResult<Void?> =
         JobStart(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, cluster)
 
-    fun stopJob(clusterSelector: ClusterSelector): OperationResult<Void?> =
+    fun stopJob(clusterSelector: ClusterSelector): OperationResult<Boolean> =
         JobStop(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
 
     fun cancelJob(clusterSelector: ClusterSelector, options: SavepointOptions): OperationResult<SavepointRequest?> =

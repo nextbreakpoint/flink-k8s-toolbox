@@ -1,336 +1,80 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
-import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
-import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
-import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
-import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
-import org.apache.log4j.Logger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.atLeast
+import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnUpdatingTest {
-    private val savepointOptions = SavepointOptions(targetPath = "file:///tmp")
-    private val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
-    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
-    private val logger = mock(Logger::class.java)
     private val context = mock(TaskContext::class.java)
-    private val task = OnUpdating(logger)
+    private val task = OnUpdating()
 
     @BeforeEach
     fun configure() {
-        given(context.clusterSelector).thenReturn(clusterSelector)
-        given(context.hasBeenDeleted()).thenReturn(false)
-        given(context.timeSinceLastUpdateInSeconds()).thenReturn(10)
-        given(context.doesBootstrapJobExists()).thenReturn(false)
-        given(context.doesJobManagerServiceExists()).thenReturn(false)
-        given(context.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(context.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(context.doesJobManagerPVCExists()).thenReturn(false)
-        given(context.doesTaskManagerPVCExists()).thenReturn(false)
-        given(context.computeChanges()).thenReturn(listOf())
-        given(context.getSavepointRequest()).thenReturn(null)
-        given(context.getSavepointMode()).thenReturn("Manual")
-        given(context.getSavepointOtions()).thenReturn(savepointOptions)
-        given(context.getSavepointInterval()).thenReturn(60)
-        given(context.isSavepointRequired()).thenReturn(false)
-        given(context.arePodsTerminated(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = true))
-        given(context.deleteBootstrapJob(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        given(context.deleteJobManagerService(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        given(context.deleteStatefulSets(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        given(context.deletePersistentVolumeClaims(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        given(context.isJobRunning(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = true))
-        given(context.stopJob(any())).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        given(context.cancelJob(any(), eq(savepointOptions))).thenReturn(OperationResult(status = OperationStatus.OK, output = savepointRequest))
-        given(context.triggerSavepoint(any(), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = savepointRequest))
-        given(context.getLatestSavepoint(any(), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "file:///tmp/1"))
+        given(context.isResourceDeleted()).thenReturn(false)
+        given(context.hasTaskTimedOut()).thenReturn(false)
+        given(context.mustRecreateResources()).thenReturn(true)
+        given(context.terminateCluster()).thenReturn(false)
     }
 
     @Test
-    fun `should change status to starting when cluster configuration didn't change`() {
+    fun `should behave as expected when nothing happens`() {
         task.execute(context)
-        verifyNoMoreInteractions(logger)
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).setClusterStatus(ClusterStatus.Starting)
-        verifyNoMoreInteractions(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).mustRecreateResources()
+        inOrder.verify(context, times(1)).terminateCluster()
+        inOrder.verifyNoMoreInteractions()
     }
 
     @Test
-    fun `should change status to starting when jobmanager configuration has changed and resources have been deleted`() {
-        given(context.computeChanges()).thenReturn(listOf("JOB_MANAGER"))
+    fun `should behave as expected when resource has been deleted`() {
+        given(context.isResourceDeleted()).thenReturn(true)
         task.execute(context)
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).arePodsTerminated(eq(clusterSelector))
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).doesJobManagerServiceExists()
-        verify(context, times(1)).doesJobManagerStatefulSetExists()
-        verify(context, times(1)).doesTaskManagerStatefulSetExists()
-        verify(context, times(1)).doesJobManagerPVCExists()
-        verify(context, times(1)).doesTaskManagerPVCExists()
-        verify(context, times(1)).updateDigests()
-        verify(context, times(1)).updateStatus()
-        verify(context, times(1)).setClusterStatus(ClusterStatus.Starting)
-        verifyNoMoreInteractions(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).onResourceDeleted()
+        inOrder.verifyNoMoreInteractions()
     }
 
     @Test
-    fun `should change status to starting when taskmanager configuration has changed and resources have been deleted`() {
-        given(context.computeChanges()).thenReturn(listOf("TASK_MANAGER"))
+    fun `should behave as expected when task is taking too long`() {
+        given(context.hasTaskTimedOut()).thenReturn(true)
         task.execute(context)
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).arePodsTerminated(eq(clusterSelector))
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).doesJobManagerServiceExists()
-        verify(context, times(1)).doesJobManagerStatefulSetExists()
-        verify(context, times(1)).doesTaskManagerStatefulSetExists()
-        verify(context, times(1)).doesJobManagerPVCExists()
-        verify(context, times(1)).doesTaskManagerPVCExists()
-        verify(context, times(1)).updateDigests()
-        verify(context, times(1)).updateStatus()
-        verify(context, times(1)).setClusterStatus(ClusterStatus.Starting)
-        verifyNoMoreInteractions(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).onTaskTimeOut()
+        inOrder.verifyNoMoreInteractions()
     }
 
     @Test
-    fun `should change status to starting when runtime configuration has changed and resources have been deleted`() {
-        given(context.computeChanges()).thenReturn(listOf("RUNTIME"))
+    fun `should behave as expected when mustn't recreate resources`() {
+        given(context.mustRecreateResources()).thenReturn(false)
         task.execute(context)
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).arePodsTerminated(eq(clusterSelector))
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).doesJobManagerServiceExists()
-        verify(context, times(1)).doesJobManagerStatefulSetExists()
-        verify(context, times(1)).doesTaskManagerStatefulSetExists()
-        verify(context, times(1)).doesJobManagerPVCExists()
-        verify(context, times(1)).doesTaskManagerPVCExists()
-        verify(context, times(1)).updateDigests()
-        verify(context, times(1)).updateStatus()
-        verify(context, times(1)).setClusterStatus(ClusterStatus.Starting)
-        verifyNoMoreInteractions(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).mustRecreateResources()
+        inOrder.verify(context, times(1)).onClusterReadyToUpdate()
+        inOrder.verifyNoMoreInteractions()
     }
 
     @Test
-    fun `should change status to starting and update savepoint path when bootstrap configuration has changed and job has been stopped`() {
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
+    fun `should behave as expected when must recreate resources and cluster is terminated`() {
+        given(context.mustRecreateResources()).thenReturn(true)
+        given(context.terminateCluster()).thenReturn(true)
         task.execute(context)
-        verify(logger, atLeast(1)).info(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).isSavepointRequired()
-        verify(context, times(1)).stopJob(eq(clusterSelector))
-        verify(context, times(1)).updateDigests()
-        verify(context, times(1)).updateStatus()
-        verify(context, times(1)).setClusterStatus(ClusterStatus.Starting)
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should not change status when bootstrap configuration has changed and job can't be stopped`() {
-        given(context.stopJob(any())).thenReturn(OperationResult(status = OperationStatus.ERROR, output = null))
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
-        task.execute(context)
-        verify(logger, atLeast(1)).info(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).isSavepointRequired()
-        verify(context, times(1)).stopJob(eq(clusterSelector))
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should create savepoint request when bootstrap configuration has changed and savepoint is required`() {
-        given(context.isSavepointRequired()).thenReturn(true)
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
-        task.execute(context)
-        verify(logger, atLeast(1)).info(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).isSavepointRequired()
-        verify(context, times(1)).getSavepointRequest()
-        verify(context, times(1)).getSavepointOtions()
-        verify(context, times(1)).cancelJob(eq(clusterSelector), eq(savepointOptions))
-        verify(context, times(1)).setSavepointRequest(eq(savepointRequest))
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should not create savepoint request when bootstrap configuration has changed and savepoint is required but job has not been cancelled`() {
-        given(context.cancelJob(any(), eq(savepointOptions))).thenReturn(OperationResult(status = OperationStatus.ERROR, output = null))
-        given(context.isSavepointRequired()).thenReturn(true)
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
-        task.execute(context)
-        verify(logger, atLeast(1)).warn(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).isSavepointRequired()
-        verify(context, times(1)).getSavepointRequest()
-        verify(context, times(1)).getSavepointOtions()
-        verify(context, times(1)).cancelJob(eq(clusterSelector), eq(savepointOptions))
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should not change status when bootstrap configuration has changed but job can't be cancelled`() {
-        given(context.cancelJob(any(), eq(savepointOptions))).thenReturn(OperationResult(status = OperationStatus.ERROR, output = savepointRequest))
-        given(context.isSavepointRequired()).thenReturn(true)
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
-        task.execute(context)
-        verify(logger, atLeast(1)).warn(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).isSavepointRequired()
-        verify(context, times(1)).getSavepointRequest()
-        verify(context, times(1)).getSavepointOtions()
-        verify(context, times(1)).cancelJob(eq(clusterSelector), eq(savepointOptions))
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should not change status when bootstrap configuration has changed and savepoint failed`() {
-        given(context.getLatestSavepoint(any(), any())).thenReturn(OperationResult(status = OperationStatus.ERROR, output = "file:///tmp/1"))
-        given(context.isSavepointRequired()).thenReturn(true)
-        given(context.getSavepointRequest()).thenReturn(savepointRequest)
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
-        task.execute(context)
-        verify(logger, atLeast(1)).info(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).isSavepointRequired()
-        verify(context, times(1)).getSavepointRequest()
-        verify(context, times(1)).getLatestSavepoint(eq(clusterSelector), eq(savepointRequest))
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should change status to starting when bootstrap configuration has changed and job has been cancelled`() {
-        given(context.isSavepointRequired()).thenReturn(true)
-        given(context.getSavepointRequest()).thenReturn(savepointRequest)
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
-        task.execute(context)
-        verify(logger, atLeast(1)).info(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).isSavepointRequired()
-        verify(context, times(1)).getSavepointRequest()
-        verify(context, times(1)).getLatestSavepoint(eq(clusterSelector), eq(savepointRequest))
-        verify(context, times(1)).setSavepointPath(eq("file:///tmp/1"))
-        verify(context, times(1)).updateDigests()
-        verify(context, times(1)).updateStatus()
-        verify(context, times(1)).setClusterStatus(ClusterStatus.Starting)
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should do nothing when when bootstrap configuration has changed and job has not been cancelled yet and savepoint is not completed`() {
-        given(context.getLatestSavepoint(any(), any())).thenReturn(OperationResult(status = OperationStatus.ERROR, output = "file:///tmp/1"))
-        given(context.isSavepointRequired()).thenReturn(true)
-        given(context.getSavepointRequest()).thenReturn(savepointRequest)
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
-        task.execute(context)
-        verify(logger, atLeast(1)).info(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).isSavepointRequired()
-        verify(context, times(1)).getSavepointRequest()
-        verify(context, times(1)).getLatestSavepoint(eq(clusterSelector), eq(savepointRequest))
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should delete bootstrap job when bootstrap configuration has changed and job exists`() {
-        given(context.doesBootstrapJobExists()).thenReturn(true)
-        given(context.computeChanges()).thenReturn(listOf("BOOTSTRAP"))
-        task.execute(context)
-        verify(logger, atLeast(1)).info(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, atLeast(1)).clusterSelector
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).computeChanges()
-        verify(context, times(1)).doesBootstrapJobExists()
-        verify(context, times(1)).deleteBootstrapJob(eq(clusterSelector))
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should change status to failed if cluster not updated after timeout`() {
-        given(context.timeSinceLastUpdateInSeconds()).thenReturn(301)
-        task.execute(context)
-        verify(logger, times(1)).error(any())
-        verifyNoMoreInteractions(logger)
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).timeSinceLastUpdateInSeconds()
-        verify(context, times(1)).resetSavepointRequest()
-        verify(context, times(1)).setClusterStatus(eq(ClusterStatus.Failed))
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should change status to cancelling if cluster has been deleted`() {
-        given(context.hasBeenDeleted()).thenReturn(true)
-        task.execute(context)
-        verifyNoMoreInteractions(logger)
-        verify(context, times(1)).hasBeenDeleted()
-        verify(context, times(1)).setDeleteResources(ArgumentMatchers.eq(true))
-        verify(context, times(1)).resetManualAction()
-        verify(context, times(1)).setClusterStatus(eq(ClusterStatus.Cancelling))
-        verifyNoMoreInteractions(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).mustRecreateResources()
+        inOrder.verify(context, times(1)).terminateCluster()
+        inOrder.verify(context, times(1)).onClusterReadyToUpdate()
+        inOrder.verifyNoMoreInteractions()
     }
 }

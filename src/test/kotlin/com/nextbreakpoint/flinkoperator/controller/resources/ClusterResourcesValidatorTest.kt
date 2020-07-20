@@ -532,6 +532,9 @@ class ClusterResourcesValidatorTest {
             cluster
         ).build()
 
+        targetResources.jobmanagerStatefulSet?.spec?.replicas = 1
+        targetResources.taskmanagerStatefulSet?.spec?.replicas = cluster.spec.taskManagers
+
         return ClusterResources(
             jobmanagerService = targetResources.jobmanagerService,
             jobmanagerStatefulSet = targetResources.jobmanagerStatefulSet,

@@ -8371,6 +8371,7 @@ spec:
                     - Finished
                     - Suspended
                     - Terminated
+                    - Restarting
                     - Cancelling
                 savepointPath:
                   type: string

@@ -11,5 +11,6 @@ enum class ClusterStatus {
     Finished,
     Suspended,
     Terminated,
+    Restarting,
     Cancelling
 }

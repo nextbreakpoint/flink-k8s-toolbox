@@ -94,10 +94,10 @@ object FlinkClient {
     }
 
     fun listRunningJobs(address: FlinkAddress): List<String> {
-        return listJobs(address, setOf(StatusEnum.RUNNING))
+        return listJobs(address, setOf(StatusEnum.RUNNING)).keys.toList()
     }
 
-    fun listJobs(address: FlinkAddress, statuses: Set<StatusEnum>): List<String> {
+    fun listJobs(address: FlinkAddress, statuses: Set<StatusEnum>): Map<String, StatusEnum> {
         try {
             val flinkApi = createFlinkApiClient(address, TIMEOUT)
 
@@ -114,8 +114,8 @@ object FlinkClient {
                     return jobsOverview.jobs.filter {
                             jobIdWithStatus -> statuses.isEmpty() || statuses.contains(jobIdWithStatus.status)
                     }.map {
-                        it.id
-                    }.toList()
+                        it.id to it.status
+                    }.toMap()
                 }
             }
         } catch (e : CallException) {
@@ -318,7 +318,7 @@ object FlinkClient {
 
                 response.body().use { body ->
                     if (!response.isSuccessful) {
-                        logger.warn("[$address] Can't cancel job $it");
+                        throw CallException("[$address] Can't cancel job $it")
                     }
                 }
             }

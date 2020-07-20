@@ -12,6 +12,7 @@ import com.nextbreakpoint.flinkoperator.controller.task.OnStarting
 import com.nextbreakpoint.flinkoperator.controller.task.OnStopping
 import com.nextbreakpoint.flinkoperator.controller.task.OnSuspended
 import com.nextbreakpoint.flinkoperator.controller.task.OnTerminated
+import com.nextbreakpoint.flinkoperator.controller.task.OnRestarting
 import com.nextbreakpoint.flinkoperator.controller.task.OnUpdating
 import org.apache.log4j.Logger
 
@@ -26,17 +27,18 @@ class TaskController(
             val logger = Logger.getLogger("TaskController (" + clusterSelector.name + ")")
 
             val tasks = mapOf(
-                ClusterStatus.Unknown to OnInitialize(logger),
-                ClusterStatus.Starting to OnStarting(logger),
-                ClusterStatus.Stopping to OnStopping(logger),
-                ClusterStatus.Updating to OnUpdating(logger),
-                ClusterStatus.Scaling to OnScaling(logger),
-                ClusterStatus.Running to OnRunning(logger),
-                ClusterStatus.Failed to OnFailed(logger),
-                ClusterStatus.Finished to OnFinished(logger),
-                ClusterStatus.Suspended to OnSuspended(logger),
-                ClusterStatus.Terminated to OnTerminated(logger),
-                ClusterStatus.Cancelling to OnCancelling(logger)
+                ClusterStatus.Unknown to OnInitialize(),
+                ClusterStatus.Starting to OnStarting(),
+                ClusterStatus.Stopping to OnStopping(),
+                ClusterStatus.Updating to OnUpdating(),
+                ClusterStatus.Scaling to OnScaling(),
+                ClusterStatus.Running to OnRunning(),
+                ClusterStatus.Failed to OnFailed(),
+                ClusterStatus.Finished to OnFinished(),
+                ClusterStatus.Suspended to OnSuspended(),
+                ClusterStatus.Terminated to OnTerminated(),
+                ClusterStatus.Restarting to OnRestarting(),
+                ClusterStatus.Cancelling to OnCancelling()
             )
 
             return TaskController(controller, clusterSelector, logger, tasks)
@@ -56,21 +58,23 @@ class TaskController(
 
             logger.info("Resource version: ${cluster.metadata?.resourceVersion}")
 
-            val context = TaskContext(clusterSelector, cluster, resources, controller)
+            val mediator = TaskMediator(clusterSelector, cluster, resources, controller)
 
-            val actionTimestamp = context.getActionTimestamp()
+            val actionTimestamp = mediator.getActionTimestamp()
 
-            val statusTimestamp = context.getStatusTimestamp()
+            val statusTimestamp = mediator.getStatusTimestamp()
 
-            val hasFinalizer = context.hasFinalizer()
+            val hasFinalizer = mediator.hasFinalizer()
 
-            val status = context.getClusterStatus()
+            val status = mediator.getClusterStatus()
 
             logger.info("Cluster status: $status")
 
+            val context = TaskContext(logger, mediator)
+
             tasks[status]?.execute(context)
 
-            context.refreshStatus(logger, statusTimestamp, actionTimestamp, hasFinalizer)
+            mediator.refreshStatus(logger, statusTimestamp, actionTimestamp, hasFinalizer)
         } catch (e : Exception) {
             logger.error("Error occurred while reconciling resource ${clusterSelector.name}", e)
         }

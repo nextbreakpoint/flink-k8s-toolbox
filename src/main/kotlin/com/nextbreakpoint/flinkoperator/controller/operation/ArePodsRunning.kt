@@ -9,9 +9,9 @@ import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import org.apache.log4j.Logger
 
-class ArePodsTerminated(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Boolean>(flinkOptions, flinkClient, kubeClient) {
+class ArePodsRunning(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<Void?, Boolean>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(ArePodsTerminated::class.simpleName)
+        private val logger = Logger.getLogger(ArePodsRunning::class.simpleName)
     }
 
     override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Boolean> {
@@ -34,7 +34,7 @@ class ArePodsTerminated(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
 
             return OperationResult(
                 OperationStatus.OK,
-                !jobmanagerRunning && !taskmanagerRunning
+                jobmanagerRunning && taskmanagerRunning
             )
         } catch (e : Exception) {
             logger.error("[name=${clusterSelector.name}] Can't get pods", e)

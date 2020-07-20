@@ -19,12 +19,12 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class ArePodsTerminatedTest {
+class ArePodsRunningTest {
     private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
-    private val command = ArePodsTerminated(flinkOptions, flinkClient, kubeClient)
+    private val command = ArePodsRunning(flinkOptions, flinkClient, kubeClient)
 
     @BeforeEach
     fun configure() {
@@ -45,7 +45,95 @@ class ArePodsTerminatedTest {
     }
 
     @Test
-    fun `should return expected result when pods are not running`() {
+    fun `should return expected result when there aren't pods running`() {
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterSelector))
+        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterSelector))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
+        assertThat(result.output).isFalse()
+    }
+
+    @Test
+    fun `should return expected result when only job manager is running`() {
+        val containerStatus = V1ContainerStatusBuilder()
+            .withNewState()
+            .withNewRunning()
+            .endRunning()
+            .endState()
+            .build()
+        val podStatus = V1PodStatusBuilder()
+            .addToContainerStatuses(containerStatus)
+            .build()
+        val podList = V1PodListBuilder()
+            .addNewItem()
+            .withNewSpec()
+            .endSpec()
+            .withStatus(podStatus)
+            .endItem()
+            .build()
+        given(kubeClient.listJobManagerPods(eq(clusterSelector))).thenReturn(podList)
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterSelector))
+        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterSelector))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
+        assertThat(result.output).isFalse()
+    }
+
+    @Test
+    fun `should return expected result when only task manager is running`() {
+        val containerStatus = V1ContainerStatusBuilder()
+            .withNewState()
+            .withNewRunning()
+            .endRunning()
+            .endState()
+            .build()
+        val podStatus = V1PodStatusBuilder()
+            .addToContainerStatuses(containerStatus)
+            .build()
+        val podList = V1PodListBuilder()
+            .addNewItem()
+            .withNewSpec()
+            .endSpec()
+            .withStatus(podStatus)
+            .endItem()
+            .build()
+        given(kubeClient.listTaskManagerPods(eq(clusterSelector))).thenReturn(podList)
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterSelector))
+        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterSelector))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
+        assertThat(result.output).isFalse()
+    }
+
+    @Test
+    fun `should return expected result when job manger and task manager are running`() {
+        val containerStatus = V1ContainerStatusBuilder()
+            .withNewState()
+            .withNewRunning()
+            .endRunning()
+            .endState()
+            .build()
+        val podStatus = V1PodStatusBuilder()
+            .addToContainerStatuses(containerStatus)
+            .build()
+        val podList = V1PodListBuilder()
+            .addNewItem()
+            .withNewSpec()
+            .endSpec()
+            .withStatus(podStatus)
+            .endItem()
+            .build()
+        given(kubeClient.listJobManagerPods(eq(clusterSelector))).thenReturn(podList)
+        given(kubeClient.listTaskManagerPods(eq(clusterSelector))).thenReturn(podList)
         val result = command.execute(clusterSelector, null)
         verify(kubeClient, times(1)).listJobManagerPods(eq(clusterSelector))
         verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterSelector))
@@ -54,93 +142,5 @@ class ArePodsTerminatedTest {
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isTrue()
-    }
-
-    @Test
-    fun `should return expected result when job manager is still running`() {
-        val containerStatus = V1ContainerStatusBuilder()
-            .withNewState()
-            .withNewRunning()
-            .endRunning()
-            .endState()
-            .build()
-        val podStatus = V1PodStatusBuilder()
-            .addToContainerStatuses(containerStatus)
-            .build()
-        val podList = V1PodListBuilder()
-            .addNewItem()
-            .withNewSpec()
-            .endSpec()
-            .withStatus(podStatus)
-            .endItem()
-            .build()
-        given(kubeClient.listJobManagerPods(eq(clusterSelector))).thenReturn(podList)
-        val result = command.execute(clusterSelector, null)
-        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterSelector))
-        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterSelector))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.OK)
-        assertThat(result.output).isFalse()
-    }
-
-    @Test
-    fun `should return expected result when task manager is still running`() {
-        val containerStatus = V1ContainerStatusBuilder()
-            .withNewState()
-            .withNewRunning()
-            .endRunning()
-            .endState()
-            .build()
-        val podStatus = V1PodStatusBuilder()
-            .addToContainerStatuses(containerStatus)
-            .build()
-        val podList = V1PodListBuilder()
-            .addNewItem()
-            .withNewSpec()
-            .endSpec()
-            .withStatus(podStatus)
-            .endItem()
-            .build()
-        given(kubeClient.listTaskManagerPods(eq(clusterSelector))).thenReturn(podList)
-        val result = command.execute(clusterSelector, null)
-        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterSelector))
-        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterSelector))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.OK)
-        assertThat(result.output).isFalse()
-    }
-
-    @Test
-    fun `should return expected result when job manager and task manager are still running`() {
-        val containerStatus = V1ContainerStatusBuilder()
-            .withNewState()
-            .withNewRunning()
-            .endRunning()
-            .endState()
-            .build()
-        val podStatus = V1PodStatusBuilder()
-            .addToContainerStatuses(containerStatus)
-            .build()
-        val podList = V1PodListBuilder()
-            .addNewItem()
-            .withNewSpec()
-            .endSpec()
-            .withStatus(podStatus)
-            .endItem()
-            .build()
-        given(kubeClient.listJobManagerPods(eq(clusterSelector))).thenReturn(podList)
-        given(kubeClient.listTaskManagerPods(eq(clusterSelector))).thenReturn(podList)
-        val result = command.execute(clusterSelector, null)
-        verify(kubeClient, times(1)).listJobManagerPods(eq(clusterSelector))
-        verify(kubeClient, times(1)).listTaskManagerPods(eq(clusterSelector))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.OK)
-        assertThat(result.output).isFalse()
     }
 }

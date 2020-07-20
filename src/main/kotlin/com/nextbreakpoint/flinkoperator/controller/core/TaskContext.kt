@@ -1,368 +1,600 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
-import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
-import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
-import io.kubernetes.client.models.V1Job
-import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 import org.apache.log4j.Logger
-import org.joda.time.DateTime
 
 class TaskContext(
-    val clusterSelector: ClusterSelector,
-    private val cluster: V1FlinkCluster,
-    private val resources: CachedResources,
-    private val controller: OperationController
+    private val logger: Logger,
+    private val mediator: TaskMediator
 ) {
-    fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - Status.getStatusTimestamp(cluster).millis) / 1000L
+    fun onTaskTimeOut() {
+        logger.info("Timeout occurred")
+        mediator.setClusterStatus(ClusterStatus.Failed)
+    }
 
-    fun timeSinceLastSavepointRequestInSeconds() = (controller.currentTimeMillis() - Status.getSavepointRequestTimestamp(cluster).millis) / 1000L
+    fun onClusterTerminated() {
+        logger.info("Cluster terminated")
+        mediator.setClusterStatus(ClusterStatus.Terminated)
+    }
 
-    fun removeJar(clusterSelector: ClusterSelector) : OperationResult<Void?> =
-        controller.removeJar(clusterSelector)
+    fun onClusterSuspended() {
+        logger.info("Cluster suspended")
+        mediator.setClusterStatus(ClusterStatus.Suspended)
+    }
 
-    fun triggerSavepoint(clusterSelector: ClusterSelector, options: SavepointOptions) : OperationResult<SavepointRequest> =
-        controller.triggerSavepoint(clusterSelector, options)
+    fun onClusterStarted() {
+        logger.info("Cluster started")
+        mediator.setClusterStatus(ClusterStatus.Running)
+    }
 
-    fun getLatestSavepoint(clusterSelector: ClusterSelector, savepointRequest: SavepointRequest) : OperationResult<String> =
-        controller.getLatestSavepoint(clusterSelector, savepointRequest)
+    fun onClusterReadyToRestart() {
+        logger.info("Cluster restarted")
+        mediator.setClusterStatus(ClusterStatus.Updating)
+    }
 
-    fun createBootstrapJob(clusterSelector: ClusterSelector, bootstrapJob: V1Job): OperationResult<String?> =
-        controller.createBootstrapJob(clusterSelector, bootstrapJob)
+    fun onClusterReadyToUpdate() {
+        logger.info("Resource updated")
+        mediator.updateStatus()
+        mediator.updateDigests()
+        mediator.setClusterStatus(ClusterStatus.Starting)
+    }
 
-    fun deleteBootstrapJob(clusterSelector: ClusterSelector) : OperationResult<Void?> =
-        controller.deleteBootstrapJob(clusterSelector)
+    fun onClusterReadyToScale() {
+        logger.info("Cluster scaled")
+        mediator.rescaleCluster()
 
-    fun terminatePods(clusterSelector: ClusterSelector) : OperationResult<Void?> =
-        controller.terminatePods(clusterSelector)
-
-    fun restartPods(clusterSelector: ClusterSelector, options: ClusterScaling): OperationResult<Void?> =
-        controller.restartPods(clusterSelector, options)
-
-    fun arePodsTerminated(clusterSelector: ClusterSelector): OperationResult<Boolean> =
-        controller.arePodsTerminated(clusterSelector)
-
-    fun startJob(clusterSelector: ClusterSelector, cluster: V1FlinkCluster) : OperationResult<Void?> =
-        controller.startJob(clusterSelector, cluster)
-
-    fun stopJob(clusterSelector: ClusterSelector): OperationResult<Void?> =
-        controller.stopJob(clusterSelector)
-
-    fun cancelJob(clusterSelector: ClusterSelector, options: SavepointOptions): OperationResult<SavepointRequest?> =
-        controller.cancelJob(clusterSelector, options)
-
-    fun isClusterReady(clusterSelector: ClusterSelector, options: ClusterScaling): OperationResult<Boolean> =
-        controller.isClusterReady(clusterSelector, options)
-
-    fun isJobFinished(clusterSelector: ClusterSelector): OperationResult<Boolean> =
-        controller.isJobFinished(clusterSelector)
-
-    fun isJobRunning(clusterSelector: ClusterSelector): OperationResult<Boolean> =
-        controller.isJobRunning(clusterSelector)
-
-    fun isJobFailed(clusterSelector: ClusterSelector): OperationResult<Boolean> =
-        controller.isJobFailed(clusterSelector)
-
-    fun createJobManagerService(clusterSelector: ClusterSelector, service: V1Service): OperationResult<String?> =
-        controller.createJobManagerService(clusterSelector, service)
-
-    fun deleteJobManagerService(clusterSelector: ClusterSelector): OperationResult<Void?> =
-        controller.deleteJobManagerService(clusterSelector)
-
-    fun createStatefulSet(clusterSelector: ClusterSelector, statefulSet: V1StatefulSet): OperationResult<String?> =
-        controller.createStatefulSet(clusterSelector, statefulSet)
-
-    fun deleteStatefulSets(clusterSelector: ClusterSelector): OperationResult<Void?> =
-        controller.deleteStatefulSets(clusterSelector)
-
-    fun deletePersistentVolumeClaims(clusterSelector: ClusterSelector): OperationResult<Void?> =
-        controller.deletePersistentVolumeClaims(clusterSelector)
-
-    fun refreshStatus(logger: Logger, statusTimestamp: DateTime, actionTimestamp: DateTime, hasFinalizer: Boolean) {
-        val taskManagers = resources.taskmanagerStatefulSet?.status?.readyReplicas ?: 0
-        if (Status.getActiveTaskManagers(cluster) != taskManagers) {
-            Status.setActiveTaskManagers(cluster, taskManagers)
-        }
-
-        val taskSlots = cluster.status?.taskSlots ?: 1
-        if (Status.getTotalTaskSlots(cluster) != taskManagers * taskSlots) {
-            Status.setTotalTaskSlots(cluster, taskManagers * taskSlots)
-        }
-
-        val savepointMode = cluster.spec?.operator?.savepointMode
-        if (Status.getSavepointMode(cluster) != savepointMode) {
-            Status.setSavepointMode(cluster, savepointMode)
-        }
-
-        val jobRestartPolicy = cluster.spec?.operator?.jobRestartPolicy
-        if (Status.getJobRestartPolicy(cluster) != jobRestartPolicy) {
-            Status.setJobRestartPolicy(cluster, jobRestartPolicy)
-        }
-
-        val newStatusTimestamp = Status.getStatusTimestamp(cluster)
-
-        if (statusTimestamp != newStatusTimestamp) {
-            logger.debug("Updating status")
-            controller.updateStatus(clusterSelector, cluster)
-        }
-
-        val newActionTimestamp = Annotations.getActionTimestamp(cluster)
-
-        if (actionTimestamp != newActionTimestamp) {
-            logger.debug("Updating annotations")
-            controller.updateAnnotations(clusterSelector, cluster)
-        }
-
-        val newHasFinalizer = hasFinalizer()
-
-        if (hasFinalizer != newHasFinalizer) {
-            logger.debug("Updating finalizers")
-            controller.updateFinalizers(clusterSelector, cluster)
+        if (mediator.getTaskManagers() == 0) {
+            mediator.setClusterStatus(ClusterStatus.Stopping)
+        } else {
+            mediator.setClusterStatus(ClusterStatus.Starting)
         }
     }
 
-    fun hasBeenDeleted(): Boolean = cluster.metadata.deletionTimestamp != null
+    fun onClusterReadyToStop() {
+        logger.warn("Job cancelled")
+        mediator.setClusterStatus(ClusterStatus.Stopping)
+    }
 
-    fun hasFinalizer(): Boolean = cluster.metadata.finalizers.orEmpty().contains("finalizer.nextbreakpoint.com")
+    fun onJobFinished() {
+        logger.info("Job finished")
+        mediator.setDeleteResources(false)
+        mediator.setClusterStatus(ClusterStatus.Finished)
+    }
 
-    fun addFinalizer() {
-        if (cluster.metadata.finalizers == null) {
-            cluster.metadata.finalizers = listOf()
+    fun onJobFailed() {
+        logger.warn("Job failed")
+        mediator.setDeleteResources(false)
+        mediator.setClusterStatus(ClusterStatus.Failed)
+    }
+
+    fun onResourceInitialise() {
+        logger.info("Cluster initialised")
+        mediator.initializeAnnotations()
+        mediator.initializeStatus()
+        mediator.updateDigests()
+        mediator.addFinalizer()
+        mediator.setClusterStatus(ClusterStatus.Starting)
+    }
+
+    fun onResourceDiverged() {
+        logger.info("Cluster diverged")
+        mediator.setClusterStatus(ClusterStatus.Starting)
+    }
+
+    fun onResourceDeleted() {
+        logger.info("Resource deleted")
+        mediator.setDeleteResources(true)
+        mediator.resetManualAction()
+        mediator.setClusterStatus(ClusterStatus.Stopping)
+    }
+
+    fun onResourceChanged() {
+        logger.info("Resource changed")
+        mediator.setClusterStatus(ClusterStatus.Restarting)
+    }
+
+    fun onResourceScaled() {
+        logger.info("Resource scaled")
+        mediator.setClusterStatus(ClusterStatus.Scaling)
+    }
+
+    fun cancelJob(): Boolean {
+        val jobManagerServiceExists = mediator.doesJobManagerServiceExists()
+        val jobManagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
+        val taskManagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+
+        if (!jobManagerServiceExists || !jobManagerStatefulSetExists || !taskManagerStatefulSetExists) {
+            return true
         }
 
-        if (!cluster.metadata.finalizers.contains("finalizer.nextbreakpoint.com")) {
-            cluster.metadata.finalizers = cluster.metadata.finalizers.plus("finalizer.nextbreakpoint.com")
+        val podsRunningResult = mediator.arePodsRunning(mediator.clusterSelector)
+
+        if (podsRunningResult.isSuccessful() && !podsRunningResult.output) {
+            return true
         }
+
+        if (mediator.isSavepointRequired()) {
+            val savepointRequest = mediator.getSavepointRequest()
+
+            if (savepointRequest == null) {
+                val cancelResult = mediator.cancelJob(mediator.clusterSelector, mediator.getSavepointOtions())
+
+                if (!cancelResult.isSuccessful()) {
+                    logger.warn("Can't cancel the job")
+                    return true
+                }
+
+                if (cancelResult.output == null) {
+                    logger.info("Cancelling job...")
+                    return false
+                }
+
+                if (cancelResult.output == SavepointRequest("", "")) {
+                    logger.info("Job stopped without savepoint")
+                    return true
+                } else {
+                    logger.info("Cancelling job with savepoint...")
+                    mediator.setSavepointRequest(cancelResult.output)
+                    return false
+                }
+            } else {
+                val savepointResult = mediator.getLatestSavepoint(mediator.clusterSelector, savepointRequest)
+
+                logger.info("Savepoint is in progress...")
+
+                if (savepointResult.isSuccessful()) {
+                    logger.info("Job stopped with savepoint (${savepointResult.output})")
+                    mediator.resetSavepointRequest()
+                    mediator.setSavepointPath(savepointResult.output)
+                    return true
+                }
+
+                val seconds = mediator.timeSinceLastUpdateInSeconds()
+
+                if (seconds > Timeout.TASK_TIMEOUT) {
+                    logger.error("Giving up after $seconds seconds")
+                    mediator.resetSavepointRequest()
+                    return true
+                }
+            }
+        } else {
+            logger.info("Savepoint not required")
+
+            val stopResult = mediator.stopJob(mediator.clusterSelector)
+
+            if (!stopResult.isSuccessful()) {
+                logger.warn("Can't stop the job")
+                return true
+            }
+
+            if (stopResult.output) {
+                logger.info("Job stopped without savepoint")
+                return true
+            } else {
+                logger.info("Cancelling job...")
+                return false
+            }
+        }
+
+        return false
+    }
+
+    fun startCluster(): Boolean {
+        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
+        val jobmanagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
+        val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+
+        if (!jobmanagerServiceExists || !jobmanagerStatefulSetExists || !taskmanagerStatefulSetExists) {
+            return false
+        }
+
+        val clusterScaling = mediator.getClusterScale()
+
+        val jobmanagerReplicas = mediator.getJobManagerReplicas()
+        val taskmanagerReplicas = mediator.getTaskManagerReplicas()
+
+        if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScaling.taskManagers) {
+            logger.info("Updating replicas...")
+            mediator.restartPods(mediator.clusterSelector, clusterScaling)
+            return false
+        }
+
+        if (!mediator.isBootstrapPresent()) {
+            val clusterReadyResult = mediator.isClusterReady(mediator.clusterSelector, clusterScaling)
+
+            if (!clusterReadyResult.isSuccessful() || !clusterReadyResult.output) {
+                return false
+            }
+
+            logger.info("Cluster ready")
+
+            return true
+        }
+
+        if (mediator.doesBootstrapJobExists()) {
+            logger.info("Cluster starting")
+
+            val jobRunningResult = mediator.isJobRunning(mediator.clusterSelector)
+
+            if (jobRunningResult.isSuccessful() && jobRunningResult.output) {
+                return true
+            }
+        } else {
+            val clusterReadyResult = mediator.isClusterReady(mediator.clusterSelector, clusterScaling)
+
+            if (!clusterReadyResult.isSuccessful() || !clusterReadyResult.output) {
+                return false
+            }
+
+            logger.info("Cluster ready")
+
+            val removeJarResult = mediator.removeJar(mediator.clusterSelector)
+
+            if (!removeJarResult.isSuccessful()) {
+                return false
+            }
+
+            logger.info("JARs removed")
+
+            val stopResult = mediator.stopJob(mediator.clusterSelector)
+
+            if (!stopResult.isSuccessful() || !stopResult.output) {
+                return false
+            }
+
+            logger.info("Ready to run job")
+
+            val bootstrapResult = mediator.createBootstrapJob(mediator.clusterSelector)
+
+            if (!bootstrapResult.isSuccessful()) {
+                return false
+            }
+
+            logger.info("Bootstrap job created")
+        }
+
+        return false
+    }
+
+    fun suspendCluster(): Boolean {
+        val terminatedResult = mediator.arePodsTerminated(mediator.clusterSelector)
+
+        if (!terminatedResult.isSuccessful() || !terminatedResult.output) {
+            mediator.terminatePods(mediator.clusterSelector)
+
+            return false
+        }
+
+        val bootstrapExists = mediator.doesBootstrapJobExists()
+
+        if (bootstrapExists) {
+            val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
+
+            if (bootstrapResult.isSuccessful()) {
+                logger.info("Bootstrap job deleted")
+            }
+        }
+
+        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
+
+        if (jobmanagerServiceExists) {
+            val serviceResult = mediator.deleteJobManagerService(mediator.clusterSelector)
+
+            if (serviceResult.isSuccessful()) {
+                logger.info("JobManager service deleted")
+            }
+        }
+
+        return !bootstrapExists && !jobmanagerServiceExists
+    }
+
+    fun terminateCluster(): Boolean {
+        val terminatedResult = mediator.arePodsTerminated(mediator.clusterSelector)
+
+        if (!terminatedResult.isSuccessful() || !terminatedResult.output) {
+            mediator.terminatePods(mediator.clusterSelector)
+
+            return false
+        }
+
+        val bootstrapExists = mediator.doesBootstrapJobExists()
+        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
+        val jobmanagerStatefuleSetExists = mediator.doesJobManagerStatefulSetExists()
+        val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+        val jomanagerPVCExists = mediator.doesJobManagerPVCExists()
+        val taskmanagerPVCExists = mediator.doesTaskManagerPVCExists()
+
+        if (bootstrapExists) {
+            val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
+
+            if (bootstrapResult.isSuccessful()) {
+                logger.info("Bootstrap job deleted")
+            }
+        }
+
+        if (jobmanagerServiceExists) {
+            val serviceResult = mediator.deleteJobManagerService(mediator.clusterSelector)
+
+            if (serviceResult.isSuccessful()) {
+                logger.info("JobManager service deleted")
+            }
+        }
+
+        if (jobmanagerStatefuleSetExists || taskmanagerStatefulSetExists) {
+            val statefulSetsResult = mediator.deleteStatefulSets(mediator.clusterSelector)
+
+            if (statefulSetsResult.isSuccessful()) {
+                logger.info("JobManager and TaskManager deleted")
+            }
+        }
+
+        if (jomanagerPVCExists || taskmanagerPVCExists) {
+            val persistenVolumeClaimsResult = mediator.deletePersistentVolumeClaims(mediator.clusterSelector)
+
+            if (persistenVolumeClaimsResult.isSuccessful()) {
+                logger.info("Persistent volume claims deleted")
+            }
+        }
+
+        return !bootstrapExists && !jobmanagerServiceExists && !jobmanagerStatefuleSetExists && !taskmanagerStatefulSetExists && !jomanagerPVCExists && !taskmanagerPVCExists
+    }
+
+    fun resetCluster(): Boolean {
+        val bootstrapExists = mediator.doesBootstrapJobExists()
+
+        if (bootstrapExists) {
+            val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
+
+            if (bootstrapResult.isSuccessful()) {
+                logger.info("Bootstrap job deleted")
+            }
+        }
+
+        return !bootstrapExists
+    }
+
+    fun hasResourceDiverged(): Boolean {
+        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
+        val jobmanagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
+        val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+
+        if (!jobmanagerServiceExists || !jobmanagerStatefulSetExists || !taskmanagerStatefulSetExists) {
+            return true
+        }
+
+        val clusterScaling = mediator.getClusterScale()
+
+        val jobmanagerReplicas = mediator.getJobManagerReplicas()
+        val taskmanagerReplicas = mediator.getTaskManagerReplicas()
+
+        if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScaling.taskManagers) {
+            return true
+        }
+
+        return false
+    }
+
+    fun hasResourceChanged(): Boolean {
+        val changes = mediator.computeChanges()
+
+        if (changes.isNotEmpty()) {
+            logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
+            return true
+        }
+
+        return false
+    }
+
+    fun hasJobFinished(): Boolean {
+        val bootstrapPresent = mediator.isBootstrapPresent()
+
+        if (bootstrapPresent) {
+            val result = mediator.isJobFinished(mediator.clusterSelector)
+
+            if (result.isSuccessful() && result.output) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    fun hasJobFailed(): Boolean {
+        val bootstrapPresent = mediator.isBootstrapPresent()
+
+        if (bootstrapPresent) {
+            val result = mediator.isJobFailed(mediator.clusterSelector)
+
+            if (result.isSuccessful() && result.output) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    fun hasTaskTimedOut(): Boolean {
+        val seconds = mediator.timeSinceLastUpdateInSeconds()
+
+        if (seconds > Timeout.TASK_TIMEOUT) {
+            logger.error("Giving up after $seconds seconds")
+            return true
+        }
+
+        return false
+    }
+
+    fun hasScaleChanged(): Boolean {
+        val desiredTaskManagers = mediator.getDesiredTaskManagers()
+        val currentTaskManagers = mediator.getTaskManagers()
+        return currentTaskManagers != desiredTaskManagers
+    }
+
+    fun isManualActionPresent() = mediator.getManualAction() != ManualAction.NONE
+
+    fun isBootstrapPresent() = mediator.isBootstrapPresent()
+
+    fun isResourceDeleted() = mediator.hasBeenDeleted()
+
+    fun shouldRestartJob() = mediator.getJobRestartPolicy()?.toUpperCase() == "ALWAYS"
+
+    fun mustTerminateResources() = mediator.isDeleteResources()
+
+    fun mustRecreateResources(): Boolean {
+        val changes = mediator.computeChanges()
+        return changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")
     }
 
     fun removeFinalizer() {
-        if (cluster.metadata.finalizers == null) {
+        logger.info("Remove finalizer")
+        mediator.removeFinalizer()
+    }
+
+    fun ensureServiceExist() {
+        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
+
+        if (!jobmanagerServiceExists) {
+            val serviceResult = mediator.createJobManagerService(mediator.clusterSelector)
+
+            if (serviceResult.isSuccessful()) {
+                logger.info("Service created: ${serviceResult.output}")
+            }
+        }
+    }
+
+    fun ensurePodsExists() {
+        val jobmanagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
+        val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+
+        if (!jobmanagerStatefulSetExists) {
+            val statefulSetResult = mediator.createJobManagerStatefulSet(mediator.clusterSelector)
+
+            if (statefulSetResult.isSuccessful()) {
+                logger.info("JobManager created: ${statefulSetResult.output}")
+            }
+        }
+
+        if (!taskmanagerStatefulSetExists) {
+            val statefulSetResult = mediator.createTaskManagerStatefulSet(mediator.clusterSelector)
+
+            if (statefulSetResult.isSuccessful()) {
+                logger.info("TaskManager created: ${statefulSetResult.output}")
+            }
+        }
+    }
+
+    fun executeManualAction(acceptedActions: Set<ManualAction>) {
+        executeManualAction(acceptedActions, false)
+    }
+
+    fun executeManualAction(acceptedActions: Set<ManualAction>, cancelJob: Boolean) {
+        logger.info("Detected manual action")
+
+        val manualAction = mediator.getManualAction()
+
+        when (manualAction) {
+            ManualAction.START -> {
+                if (acceptedActions.contains(ManualAction.START)) {
+                    logger.info("Start cluster")
+                    mediator.setClusterStatus(ClusterStatus.Starting)
+                } else {
+                    logger.warn("Action not allowed")
+                }
+            }
+            ManualAction.STOP -> {
+                if (acceptedActions.contains(ManualAction.STOP)) {
+                    logger.info("Stop cluster")
+                    if (cancelJob) {
+                        mediator.setClusterStatus(ClusterStatus.Cancelling)
+                    } else {
+                        mediator.setDeleteResources(true)
+                        mediator.setClusterStatus(ClusterStatus.Stopping)
+                    }
+                } else {
+                    logger.warn("Action not allowed")
+                }
+            }
+            ManualAction.FORGET_SAVEPOINT -> {
+                if (acceptedActions.contains(ManualAction.FORGET_SAVEPOINT)) {
+                    logger.info("Forget savepoint path")
+                    mediator.setSavepointPath("")
+                } else {
+                    logger.warn("Action not allowed")
+                }
+            }
+            ManualAction.TRIGGER_SAVEPOINT -> {
+                if (acceptedActions.contains(ManualAction.TRIGGER_SAVEPOINT)) {
+                    if (mediator.getSavepointRequest() == null) {
+                        val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOtions())
+                        if (response.isSuccessful()) {
+                            logger.info("Savepoint requested created. Waiting for savepoint...")
+                            mediator.setSavepointRequest(response.output)
+                        } else {
+                            logger.error("Savepoint request has failed. Skipping manual savepoint")
+                        }
+                    } else {
+                        logger.error("Savepoint request already exists. Skipping manual savepoint")
+                    }
+                } else {
+                    logger.warn("Action not allowed")
+                }
+            }
+            ManualAction.NONE -> {
+            }
+        }
+
+        if (manualAction != ManualAction.NONE) {
+            mediator.resetManualAction()
+        }
+    }
+
+    fun updateSavepoint() {
+        if (!mediator.isBootstrapPresent()) {
             return
         }
 
-        if (cluster.metadata.finalizers.contains("finalizer.nextbreakpoint.com")) {
-            cluster.metadata.finalizers = cluster.metadata.finalizers.minus("finalizer.nextbreakpoint.com")
+        val savepointRequest = mediator.getSavepointRequest()
+
+        if (savepointRequest != null) {
+            val savepointResult = mediator.getLatestSavepoint(mediator.clusterSelector, savepointRequest)
+
+            if (savepointResult.isSuccessful()) {
+                logger.info("Savepoint created (${savepointResult.output})")
+                mediator.resetSavepointRequest()
+                mediator.setSavepointPath(savepointResult.output)
+                return
+            }
+
+            val seconds = mediator.timeSinceLastUpdateInSeconds()
+
+            if (seconds > Timeout.TASK_TIMEOUT) {
+                logger.error("Giving up after $seconds seconds")
+                mediator.resetSavepointRequest()
+                return
+            }
+        } else {
+            val savepointMode = mediator.getSavepointMode()
+
+            if (savepointMode?.toUpperCase() == "AUTOMATIC") {
+                val savepointIntervalInSeconds = mediator.getSavepointInterval()
+
+                if (mediator.timeSinceLastSavepointRequestInSeconds() >= savepointIntervalInSeconds) {
+                    val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOtions())
+
+                    if (response.isSuccessful()) {
+                        logger.info("Savepoint requested created. Waiting for savepoint...")
+                        mediator.setSavepointRequest(response.output)
+                        return
+                    } else {
+                        logger.error("Savepoint request failed. Skipping automatic savepoint")
+                        mediator.resetSavepointRequest()
+                        return
+                    }
+                }
+            }
         }
     }
-
-    fun initializeStatus() {
-        val bootstrap = cluster.spec?.bootstrap
-        Status.setBootstrap(cluster, bootstrap)
-
-        val taskManagers = cluster.spec?.taskManagers ?: 0
-        val taskSlots = cluster.spec?.taskManager?.taskSlots ?: 1
-        Status.setTaskManagers(cluster, taskManagers)
-        Status.setTaskSlots(cluster, taskSlots)
-        Status.setJobParallelism(cluster, taskManagers * taskSlots)
-
-        val savepointPath = cluster.spec?.operator?.savepointPath
-        Status.setSavepointPath(cluster, savepointPath ?: "")
-
-        val labelSelector = ClusterResource.makeLabelSelector(clusterSelector)
-        Status.setLabelSelector(cluster, labelSelector)
-
-        val serviceMode = cluster.spec?.jobManager?.serviceMode
-        Status.setServiceMode(cluster, serviceMode)
-
-        val savepointMode = cluster.spec?.operator?.savepointMode
-        Status.setSavepointMode(cluster, savepointMode)
-
-        val jobRestartPolicy = cluster.spec?.operator?.jobRestartPolicy
-        Status.setJobRestartPolicy(cluster, jobRestartPolicy)
-    }
-
-    fun initializeAnnotations() {
-        Annotations.setDeleteResources(cluster, false)
-        Annotations.setWithoutSavepoint(cluster, false)
-        Annotations.setManualAction(cluster, ManualAction.NONE)
-    }
-
-    fun updateDigests() {
-        val actualJobManagerDigest = ClusterResource.computeDigest(cluster.spec?.jobManager)
-        val actualTaskManagerDigest = ClusterResource.computeDigest(cluster.spec?.taskManager)
-        val actualRuntimeDigest = ClusterResource.computeDigest(cluster.spec?.runtime)
-        val actualBootstrapDigest = ClusterResource.computeDigest(cluster.spec?.bootstrap)
-        Status.setJobManagerDigest(cluster, actualJobManagerDigest)
-        Status.setTaskManagerDigest(cluster, actualTaskManagerDigest)
-        Status.setRuntimeDigest(cluster, actualRuntimeDigest)
-        Status.setBootstrapDigest(cluster, actualBootstrapDigest)
-    }
-
-    fun updateStatus() {
-        val bootstrap = cluster.spec?.bootstrap
-        Status.setBootstrap(cluster, bootstrap)
-        val serviceMode = cluster.spec?.jobManager?.serviceMode
-        Status.setServiceMode(cluster, serviceMode)
-        val taskManagers = cluster.spec?.taskManagers ?: 0
-        val taskSlots = cluster.spec?.taskManager?.taskSlots ?: 1
-        Status.setTaskManagers(cluster, taskManagers)
-        Status.setTaskSlots(cluster, taskSlots)
-        Status.setJobParallelism(cluster, taskManagers * taskSlots)
-    }
-
-    fun computeChanges(): List<String> {
-        val jobManagerDigest = Status.getJobManagerDigest(cluster)
-        val taskManagerDigest = Status.getTaskManagerDigest(cluster)
-        val runtimeDigest = Status.getRuntimeDigest(cluster)
-        val bootstrapDigest = Status.getBootstrapDigest(cluster)
-
-        val actualJobManagerDigest = ClusterResource.computeDigest(cluster.spec?.jobManager)
-        val actualTaskManagerDigest = ClusterResource.computeDigest(cluster.spec?.taskManager)
-        val actualRuntimeDigest = ClusterResource.computeDigest(cluster.spec?.runtime)
-        val actualBootstrapDigest = ClusterResource.computeDigest(cluster.spec?.bootstrap)
-
-        val changes = mutableListOf<String>()
-
-        if (jobManagerDigest != actualJobManagerDigest) {
-            changes.add("JOB_MANAGER")
-        }
-
-        if (taskManagerDigest != actualTaskManagerDigest) {
-            changes.add("TASK_MANAGER")
-        }
-
-        if (runtimeDigest != actualRuntimeDigest) {
-            changes.add("RUNTIME")
-        }
-
-        if (bootstrapDigest != actualBootstrapDigest) {
-            changes.add("BOOTSTRAP")
-        }
-
-        return changes
-    }
-
-    fun setClusterStatus(status: ClusterStatus) {
-        Status.setClusterStatus(cluster, status)
-    }
-
-    fun getClusterStatus(): ClusterStatus = Status.getClusterStatus(cluster)
-
-    fun resetManualAction() {
-        Annotations.setManualAction(cluster, ManualAction.NONE)
-    }
-
-    fun setDeleteResources(value: Boolean) {
-        Annotations.setDeleteResources(cluster, value)
-    }
-
-    fun resetSavepointRequest() {
-        Status.resetSavepointRequest(cluster)
-    }
-
-    fun setSavepointRequest(request: SavepointRequest) {
-        Status.setSavepointRequest(cluster, request)
-    }
-
-    fun getSavepointRequest(): SavepointRequest? = Status.getSavepointRequest(cluster)
-
-    fun setSavepointPath(path: String) {
-        Status.setSavepointPath(cluster, path)
-    }
-
-    fun isBootstrapPresent(): Boolean = Status.getBootstrap(cluster) != null
-
-    fun getSavepointMode(): String? = Status.getSavepointMode(cluster)
-
-    fun rescaleCluster() {
-        val desiredTaskManagers = cluster.spec?.taskManagers ?: 1
-        val currentTaskSlots = cluster.status?.taskSlots ?: 1
-        Status.setTaskManagers(cluster, desiredTaskManagers)
-        Status.setTaskSlots(cluster, currentTaskSlots)
-        Status.setJobParallelism(cluster, desiredTaskManagers * currentTaskSlots)
-    }
-
-    fun getTaskManagers(): Int = Status.getTaskManagers(cluster)
-
-    fun createBootstrapJob(clusterSelector: ClusterSelector): OperationResult<String?> {
-        val savepointPath = Status.getSavepointPath(cluster)
-        val parallelism = Status.getJobParallelism(cluster)
-
-        val resource = when (Annotations.isWithoutSavepoint(cluster)) {
-            true ->
-                DefaultBootstrapJobFactory.createBootstrapJob(
-                    clusterSelector, "flink-operator", cluster.status.bootstrap, null, parallelism
-                )
-            else ->
-                DefaultBootstrapJobFactory.createBootstrapJob(
-                    clusterSelector, "flink-operator", cluster.status.bootstrap, savepointPath, parallelism
-                )
-        }
-
-        return createBootstrapJob(clusterSelector, resource)
-    }
-
-    fun createJobManagerService(clusterSelector: ClusterSelector): OperationResult<String?> {
-        val resource = DefaultClusterResourcesFactory.createJobManagerService(
-            clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
-        )
-
-        return createJobManagerService(clusterSelector, resource)
-    }
-
-    fun createJobManagerStatefulSet(clusterSelector: ClusterSelector): OperationResult<String?> {
-        val resource = DefaultClusterResourcesFactory.createJobManagerStatefulSet(
-            clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
-        )
-
-        return createStatefulSet(clusterSelector, resource)
-    }
-
-    fun createTaskManagerStatefulSet(clusterSelector: ClusterSelector): OperationResult<String?> {
-        val resource = DefaultClusterResourcesFactory.createTaskManagerStatefulSet(
-            clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
-        )
-
-        return createStatefulSet(clusterSelector, resource)
-    }
-
-    fun getClusterScale() =
-        ClusterScaling(
-            taskManagers = Status.getTaskManagers(cluster), taskSlots = Status.getTaskSlots(cluster)
-        )
-
-    fun getActionTimestamp(): DateTime = Annotations.getActionTimestamp(cluster)
-
-    fun getStatusTimestamp(): DateTime = Status.getStatusTimestamp(cluster)
-
-    fun getJobRestartPolicy(): String? = Status.getJobRestartPolicy(cluster)
-
-    fun isSavepointRequired(): Boolean = !Annotations.isWithoutSavepoint(cluster) && !Annotations.isDeleteResources(cluster)
-
-    fun getSavepointOtions() =
-        SavepointOptions(
-            targetPath = Configuration.getSavepointTargetPath(cluster)
-        )
-
-    fun doesBootstrapJobExists(): Boolean = resources.bootstrapJob != null
-
-    fun doesJobManagerServiceExists(): Boolean = resources.jobmanagerService != null
-
-    fun doesJobManagerStatefulSetExists(): Boolean = resources.jobmanagerStatefulSet != null
-
-    fun doesTaskManagerStatefulSetExists(): Boolean = resources.taskmanagerStatefulSet != null
-
-    fun doesJobManagerPVCExists(): Boolean = resources.jobmanagerPVC != null
-
-    fun doesTaskManagerPVCExists(): Boolean = resources.taskmanagerPVC != null
-
-    fun getManualAction(): ManualAction = Annotations.getManualAction(cluster)
-
-    fun getSavepointInterval(): Long = Configuration.getSavepointInterval(cluster)
-
-    fun isDeleteResources(): Boolean = Annotations.isDeleteResources(cluster)
-
-    fun getDesiredTaskManagers(): Int = cluster.spec?.taskManagers ?: 1
-
-    fun getJobManagerReplicas(): Int = resources.jobmanagerStatefulSet?.status?.replicas ?: 0
-
-    fun getTaskManagerReplicas(): Int = resources.taskmanagerStatefulSet?.status?.replicas ?: 0
 }
+

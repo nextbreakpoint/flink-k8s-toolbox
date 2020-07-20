@@ -26,12 +26,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.fail
 
 open class IntegrationSetup {
-    @AfterEach
-    fun printSomeInfo() {
-        describeResources()
-        printOperatorLogs()
-    }
-
     companion object {
         val redirect = Redirect.INHERIT
         val version = "1.3.2-beta"
@@ -48,7 +42,6 @@ open class IntegrationSetup {
 
         private var skipDockerImages = System.getenv("SKIP_BUILD_IMAGES") == "true"
 
-        @BeforeAll
         @JvmStatic
         fun setup() {
             cleanDockerImages()
@@ -67,7 +60,6 @@ open class IntegrationSetup {
             TimeUnit.SECONDS.sleep(5)
         }
 
-        @AfterAll
         @JvmStatic
         fun teardown() {
             TimeUnit.SECONDS.sleep(5)
@@ -77,16 +69,16 @@ open class IntegrationSetup {
             deleteNamespace()
         }
 
-        fun describeResources() {
-//        describePods(redirect = redirect, namespace = namespace)
-            describeClusters(redirect = redirect, namespace = namespace)
-        }
-
         fun printInfo() {
             println("Run test - ${Date(timestamp)}")
             println("Namespace = $namespace")
             println("Version = $version")
-            println("Build images = ${if (skipDockerImages) "No" else "Yes"}")
+            println("Skip build images = ${if (skipDockerImages) "Yes" else "No"}")
+        }
+
+        fun describeResources() {
+            describePods(redirect = redirect, namespace = namespace)
+            describeClusters(redirect = redirect, namespace = namespace)
         }
 
         fun createNamespace() {
@@ -290,6 +282,22 @@ open class IntegrationSetup {
                 .atMost(Duration.ofSeconds(timeout))
                 .pollDelay(Duration.ofSeconds(10))
                 .pollInterval(Duration.ofSeconds(10))
+                .until(condition)
+        }
+
+        fun awaitUntilAsserted(timeout: Long, delay: Long, interval: Long, assertion: () -> Unit) {
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(timeout))
+                .pollDelay(Duration.ofSeconds(delay))
+                .pollInterval(Duration.ofSeconds(interval))
+                .untilAsserted(assertion)
+        }
+
+        fun awaitUntilCondition(timeout: Long, delay: Long, interval: Long, condition: () -> Boolean) {
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(timeout))
+                .pollDelay(Duration.ofSeconds(delay))
+                .pollInterval(Duration.ofSeconds(interval))
                 .until(condition)
         }
 
@@ -556,7 +564,7 @@ open class IntegrationSetup {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace logs -l app=flink-operator"
+                "kubectl -n $namespace logs --tail=200 -l app=flink-operator"
             )
             return executeCommand(redirect, command)
         }

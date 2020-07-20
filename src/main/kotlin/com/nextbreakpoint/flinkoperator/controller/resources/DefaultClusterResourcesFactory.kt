@@ -243,7 +243,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         return V1StatefulSetBuilder()
             .withMetadata(jobmanagerMetadata)
             .editOrNewSpec()
-            .withReplicas(1)
+            .withReplicas(0)
             .editOrNewTemplate()
             .withSpec(jobmanagerPodSpec)
             .withMetadata(jobmanagerPodMetadata)
@@ -385,12 +385,10 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         taskmanagerPodMetadata.annotations = flinkCluster.spec.taskManager?.annotations
 
-        val replicas = flinkCluster.spec?.taskManagers ?: 1
-
         return V1StatefulSetBuilder()
             .withMetadata(taskmanagerMetadata)
             .editOrNewSpec()
-            .withReplicas(replicas)
+            .withReplicas(0)
             .editOrNewTemplate()
             .withSpec(taskmanagerPodSpec)
             .withMetadata(taskmanagerPodMetadata)
