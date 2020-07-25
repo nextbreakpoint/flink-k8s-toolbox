@@ -5,19 +5,35 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
-    - name: Set up JDK 1.8
+    - name: Install JDK 1.8
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    - name: Set up Docker
-      run: sh pipeline/setup-docker.sh
-    - name: Set up Minikube
-      run: sh pipeline/setup-minikube.sh
-    - name: Set up Kube
-      run: sh pipeline/setup-kube.sh
-    - name: Set up Helm
-      run: sh pipeline/setup-helm.sh
-    - name: Build and run unit tests
-      run: ./gradlew test --info
-    - name: Run integration tests
-      run: ./gradlew integrationTest --info
+    - name: Install Docker
+      run: pipeline/install-docker.sh
+    - name: Install Minikube
+      run: pipeline/install-minikube.sh
+    - name: Install Kubectl
+      run: pipeline/install-kubectl.sh
+    - name: Install Helm
+      run: pipeline/install-helm.sh
+    - name: Build operator
+      run: pipeline/build-operator.sh
+    - name: Build test images
+      run: pipeline/build-test-images.sh
+    - name: Run integration test - CreateAndDelete
+      run: pipeline/run-integration-test.sh CreateAndDelete
+    - name: Run integration test - StartAndStop
+      run: pipeline/run-integration-test.sh StartAndStop
+    - name: Run integration test - ScaleUpAndDown
+      run: pipeline/run-integration-test.sh ScaleUpAndDown
+    - name: Run integration test - ResourceUpdated
+      run: pipeline/run-integration-test.sh ResourceUpdated
+    - name: Run integration test - BatchJob
+      run: pipeline/run-integration-test.sh BatchJob
+    - name: Run integration test - Savepoint
+      run: pipeline/run-integration-test.sh Savepoint
+    - name: Run integration test - ResourceStatus
+      run: pipeline/run-integration-test.sh ResourceStatus
+    - name: Run integration test - DetailsAndMetrics
+      run: pipeline/run-integration-test.sh DetailsAndMetrics

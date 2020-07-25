@@ -8,19 +8,19 @@ Vagrant.configure(2) do |config|
       netmask: "255.255.255.0",
       auto_config: true
     s.vm.provision :shell,
-      path: "pipeline/setup-docker.sh",
+      path: "pipeline/install-docker.sh",
       privileged: false
     s.vm.provision :shell,
-      path: "pipeline/setup-minikube.sh",
+      path: "pipeline/install-minikube.sh",
       privileged: false
     s.vm.provision :shell,
-      path: "pipeline/setup-kube.sh",
+      path: "pipeline/install-kubectl.sh",
       privileged: false
     s.vm.provision :shell,
-      path: "pipeline/setup-helm.sh",
+      path: "pipeline/install-helm.sh",
       privileged: false
     s.vm.provision :shell,
-      path: "pipeline/setup-java.sh",
+      path: "pipeline/install-java.sh",
       privileged: false
     s.vm.provider "virtualbox" do |v|
       v.name = "integration"
