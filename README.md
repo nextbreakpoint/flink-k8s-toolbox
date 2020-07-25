@@ -99,35 +99,43 @@ The possible states of a FlinkCluster resource are represented in this graph:
 
 - **STOPPING**
 
-  This status means that the cluster is going to stop. The Flink job will be canceled (creating a new savepoint) or stopped (without creating a new savepoint), and the secondary resources will be stopped or deleted (optional).
+  This status means that the cluster is going to stop. The job will be canceled (creating a new savepoint) or stopped (without creating a new savepoint).
 
 - **SUSPENDED**
 
-  This status means that the cluster has been suspended. The Flink job has been stopped, and the secondary resources have been stopped.
+  This status means that the cluster has been suspended. The secondary resources are stopped.
 
 - **TERMINATED**
 
-  This status means that the cluster has been terminated. The Flink job has been stopped, and the secondary resources have been deleted.
+  This status means that the cluster has been terminated. The secondary resources are deleted.
 
 - **RUNNING**
 
-  This status means that the cluster is running. The secondary resources have been created and the job is running. When the cluster is in this state and the job stops running for any reason, the status is automatically changed to FAILED.
+  This status means that the cluster is running and when defined also the job is running.
 
-- **UPDATING**
+- **CANCELLING**
 
-  This status means that the cluster is updating the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator might need to destroy and recreate some resources.
+  This status means that the cluster is cancelling the job. The operator will attempt to cancel the job creating a savepoint if required. 
+
+- **RESTARTING**
+
+  This status means that the cluster is restarting the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator will attempt to cancel the job creating a savepoint if required.
 
 - **SCALING**
 
-  This status means that the cluster is scaling the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator might need to destroy and recreate some resources.
+  This status means that the cluster is scaling the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator will attempt to cancel the job creating a savepoint if required.
+  
+- **UPDATING**
+
+  This status means that the cluster is updating the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator might need to destroy and recreate some resources. 
 
 - **FAILED**
 
-  This status means that the cluster is not running properly. The secondary resources might not work or the job might have failed (or it has been canceled manually). When the cluster is in this state but a running job is detected, the status is automatically changed to RUNNING.
+  This status means that the job has failed or some other error has occurred. The secondary resources are stopped.
 
-- **CHECKPOINTING**
+- **FINISHED**
 
-  This status means that the cluster is creating a savepoint. The status is automatically changed to RUNNING when the savepoint request has been created.
+  This status means that the job has finished. The secondary resources are stopped.
 
 ## Flink Operator REST API
 
