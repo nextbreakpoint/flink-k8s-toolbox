@@ -564,7 +564,7 @@ open class IntegrationSetup {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace logs --tail=200 -l app=flink-operator"
+                "kubectl -n $namespace logs --tail=1000 -l app=flink-operator"
             )
             return executeCommand(redirect, command)
         }
