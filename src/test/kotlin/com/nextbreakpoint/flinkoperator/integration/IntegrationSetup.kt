@@ -16,9 +16,6 @@ import com.squareup.okhttp.RequestBody
 import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
 import java.lang.ProcessBuilder.Redirect
 import java.time.Duration
 import java.util.Date
@@ -40,11 +37,10 @@ open class IntegrationSetup {
         val statusTypeToken = object : TypeToken<V1FlinkClusterStatus>() {}
         val taskmanagersTypeToken = object : TypeToken<List<TaskManagerInfo>>() {}
 
-        private var skipDockerImages = System.getenv("SKIP_BUILD_IMAGES") == "true"
+        private var buildDockerImages = System.getenv("BUILD_IMAGES") == "true"
 
         @JvmStatic
         fun setup() {
-            cleanDockerImages()
             buildDockerImages()
             TimeUnit.SECONDS.sleep(5)
             printInfo()
@@ -73,7 +69,7 @@ open class IntegrationSetup {
             println("Run test - ${Date(timestamp)}")
             println("Namespace = $namespace")
             println("Version = $version")
-            println("Skip build images = ${if (skipDockerImages) "Yes" else "No"}")
+            println("Build images = ${if (buildDockerImages) "Yes" else "No"}")
         }
 
         fun describeResources() {
@@ -92,9 +88,10 @@ open class IntegrationSetup {
         }
 
         fun buildDockerImages() {
-            if (skipDockerImages) {
+            if (!buildDockerImages) {
                 return
             }
+            cleanDockerImages()
             println("Building operator image...")
             if (buildDockerImage(redirect = redirect, path = ".", name = "integration/flink-k8s-toolbox:$version", args = emptyList()) != 0) {
                 fail("Can't build operator image")
@@ -115,7 +112,7 @@ open class IntegrationSetup {
                 fail("Can't build job image")
             }
             println("Images created")
-            skipDockerImages = true
+            buildDockerImages = false
         }
 
         fun installMinio() {

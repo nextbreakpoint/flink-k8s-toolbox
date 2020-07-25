@@ -566,17 +566,18 @@ Run unit tests with command:
 
 Run integration tests against Docker for Desktop or Minikube with command:
 
+    export BUILD_IMAGES=true
     ./gradlew clean integrationTest
 
 You can skip the Docker images build step, if images already exist:
 
-    export SKIP_BUILD_IMAGES=true
+    export BUILD_IMAGES=false
     ./gradlew clean integrationTest
 
 Please note that only Java 8 is supported. Define JAVA_HOME variable to specify the correct JDK:  
 
     export JAVA_HOME=/path_to_jdk
-    export SKIP_BUILD_IMAGES=true
+    export BUILD_IMAGES=true
     ./gradlew clean integrationTest
 
 ## Automatic savepoints
