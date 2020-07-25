@@ -4,16 +4,6 @@ digraph state_machine {
   margin=0;
   rankdir=LR;
   node [shape=circle style=filled fillcolor=skyblue width=1.8 heigth=1.8 fixedsize=true];
-  UNKNOWN [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>UNKNOWN</TD>
-          </TR>
-          <TR>
-              <TD>Initial state</TD>
-          </TR>
-      </TABLE>
-  > ];
   UNKNOWN -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
@@ -21,31 +11,45 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
-  STARTING -> RUNNING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Resources created<BR/>and job running (when defined)</TD>
-          </TR>
-      </TABLE>
-  > ];
   STARTING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster didn't start before timeout</TD>
+              <TD>Cluster didn't start<BR/>before timeout</TD>
           </TR>
       </TABLE>
   > ];
-  RUNNING -> UPDATING [ label = <
+  STARTING -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster specification changed</TD>
+              <TD>Stop signal received<BR/>or cluster deleted</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTING -> RUNNING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster running<BR/>(and job running if defined)</TD>
+          </TR>
+      </TABLE>
+  > ];
+  RUNNING -> STARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster diverged</TD>
+          </TR>
+      </TABLE>
+  > ];
+  RUNNING -> RESTARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster modified</TD>
           </TR>
       </TABLE>
   > ];
   RUNNING -> SCALING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster scale changed</TD>
+              <TD>Cluster scaled</TD>
           </TR>
       </TABLE>
   > ];
@@ -66,169 +70,248 @@ digraph state_machine {
   RUNNING -> CANCELLING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped the cluster<BR/>or cluster deleted</TD>
+              <TD>Stop signal received<BR/>or cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
-  UPDATING -> FAILED [ label = <
+  RESTARTING -> FAILED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster didn't stop before timeout</TD>
+              <TD>Job didn't stop<BR/>before timeout</TD>
           </TR>
       </TABLE>
   > ];
-  UPDATING -> STARTING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Cluster terminated and resources updated</TD>
-          </TR>
-      </TABLE>
-  > ];
-  UPDATING -> CANCELLING [ label = <
+  RESTARTING -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>Cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
-  SCALING -> FAILED [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Job didn't stop before timeout</TD>
-          </TR>
-      </TABLE>
-  > ];
-  SCALING -> STARTING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Cluster scaled</TD>
-          </TR>
-      </TABLE>
-  > ];
-  SCALING -> STOPPING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Cluster scaled down to zero</TD>
-          </TR>
-      </TABLE>
-  > ];
-  SCALING -> CANCELLING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Cluster deleted</TD>
-          </TR>
-      </TABLE>
-  > ];
-  STOPPING -> SUSPENDED [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>User stopped the cluster</TD>
-          </TR>
-      </TABLE>
-  > ];
-  STOPPING -> TERMINATED [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>User terminated the cluster</TD>
-          </TR>
-      </TABLE>
-  > ];
-  STOPPING -> FAILED [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Cluster didn't stop before timeout</TD>
-          </TR>
-      </TABLE>
-  > ];
-  CANCELLING -> FAILED [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Job didn't stop before timeout</TD>
-          </TR>
-      </TABLE>
-  > ];
-  CANCELLING -> STOPPING [ label = <
+  RESTARTING -> UPDATING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>Job stopped</TD>
           </TR>
       </TABLE>
   > ];
+  UPDATING -> FAILED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster didn't stop<BR/>before timeout</TD>
+          </TR>
+      </TABLE>
+  > ];
+  UPDATING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster deleted</TD>
+          </TR>
+      </TABLE>
+  > ];
+  UPDATING -> STARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster updated</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SCALING -> FAILED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job didn't stop<BR/>before timeout</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SCALING -> STARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Replicas greater<BR/>than zero</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SCALING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Zero replicas<BR/>or cluster deleted</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STOPPING -> FAILED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster didn't stop<BR/>before timeout</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STOPPING -> SUSPENDED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Stop signal received</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STOPPING -> TERMINATED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Terminate signal received</TD>
+          </TR>
+      </TABLE>
+  > ];
+  CANCELLING -> FAILED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job didn't stop<BR/>before timeout</TD>
+          </TR>
+      </TABLE>
+  > ];
+  CANCELLING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster deleted<BR/>or job stopped</TD>
+          </TR>
+      </TABLE>
+  > ];
   SUSPENDED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User started the cluster</TD>
+              <TD>Start signal received</TD>
           </TR>
       </TABLE>
   > ];
   SUSPENDED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User terminated the cluster<BR/>or cluster deleted</TD>
+              <TD>Terminate signal received<BR/>or cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
   SUSPENDED -> TERMINATED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Specification modified</TD>
+              <TD>Cluster modified</TD>
           </TR>
       </TABLE>
   > ];
   TERMINATED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User started the cluster</TD>
+              <TD>Start signal received</TD>
           </TR>
       </TABLE>
   > ];
   FAILED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped the cluster<BR/>or cluster deleted</TD>
+              <TD>Stop signal received<BR/>or cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
   FAILED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User started the cluster</TD>
+              <TD>Start signal received</TD>
           </TR>
       </TABLE>
   > ];
   FAILED -> UPDATING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Specification modified</TD>
+              <TD>Cluster modified</TD>
           </TR>
       </TABLE>
   > ];
   FINISHED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User stopped the cluster<BR/>or cluster deleted</TD>
+              <TD>Stop signal received<BR/>or cluster deleted</TD>
           </TR>
       </TABLE>
   > ];
   FINISHED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>User started the cluster</TD>
+              <TD>Start signal received</TD>
           </TR>
       </TABLE>
   > ];
   FINISHED -> UPDATING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Specification modified</TD>
+              <TD>Cluster modified</TD>
           </TR>
       </TABLE>
   > ];
-  CANCELLING [ fillcolor=yellow ];
-  STOPPING [ fillcolor=yellow ];
-  STARTING [ fillcolor=yellow ];
-  UPDATING [ fillcolor=yellow ];
-  SCALING [ fillcolor=yellow ];
+  UNKNOWN [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>UNKNOWN</TD>
+          </TR>
+          <TR>
+              <TD>Initial state</TD>
+          </TR>
+      </TABLE>
+  > ];
+  CANCELLING [ fillcolor=yellow ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>CANCELLING</TD>
+        </TR>
+        <TR>
+            <TD>Cancel job<BR/>(with savepoint)</TD>
+        </TR>
+    </TABLE>
+  > ];
+  RESTARTING [ fillcolor=yellow ] [ label = <
+     <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+         <TR>
+             <TD>RESTARTING</TD>
+         </TR>
+         <TR>
+             <TD>Cancel job<BR/>(with savepoint)</TD>
+         </TR>
+     </TABLE>
+    > ];
+  STOPPING [ fillcolor=yellow ] [ label = <
+       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+           <TR>
+               <TD>STOPPING</TD>
+           </TR>
+           <TR>
+               <TD>Terminate pods</TD>
+           </TR>
+       </TABLE>
+     > ];
+  STARTING [ fillcolor=yellow ] [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>STARTING</TD>
+          </TR>
+          <TR>
+              <TD>Create pods<BR/>and run job</TD>
+          </TR>
+      </TABLE>
+    > ];
+  UPDATING [ fillcolor=yellow ] [ label = <
+     <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+         <TR>
+             <TD>UPDATING</TD>
+         </TR>
+         <TR>
+             <TD>Terminate pods<BR/>(if required)</TD>
+         </TR>
+     </TABLE>
+   > ];
+  SCALING [ fillcolor=yellow ] [ label = <
+       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+           <TR>
+               <TD>SCALING</TD>
+           </TR>
+           <TR>
+             <TD>Cancel job<BR/>(with savepoint)</TD>
+           </TR>
+       </TABLE>
+     > ];
   RUNNING [ fillcolor=green width=2.0 ] [ label = <
        <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
            <TR>
@@ -245,7 +328,7 @@ digraph state_machine {
             <TD>FINISHED</TD>
         </TR>
         <TR>
-            <TD>Pods should<BR/>be terminated</TD>
+            <TD>Terminate pods</TD>
         </TR>
     </TABLE>
   > ];
@@ -255,7 +338,7 @@ digraph state_machine {
             <TD>FAILED</TD>
         </TR>
         <TR>
-            <TD>Pods should<BR/>be terminated</TD>
+            <TD>Terminate pods</TD>
         </TR>
     </TABLE>
   > ];
@@ -265,7 +348,7 @@ digraph state_machine {
              <TD>SUSPENDED</TD>
          </TR>
          <TR>
-             <TD>Pods should<BR/>be terminated</TD>
+             <TD>Terminate pods</TD>
          </TR>
      </TABLE>
     > ];
@@ -275,7 +358,7 @@ digraph state_machine {
                <TD>TERMINATED</TD>
            </TR>
            <TR>
-               <TD>Resource should<BR/>be deleted</TD>
+               <TD>Remove resources</TD>
            </TR>
        </TABLE>
       > ];
