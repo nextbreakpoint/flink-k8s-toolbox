@@ -71,21 +71,21 @@ class ScaleUpAndDownTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 60, delay = 1, interval = 1) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Scaling)).isTrue()
         }
+        awaitUntilAsserted(timeout = 240, delay = 1, interval = 1) {
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Starting)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
+        }
         val scaleOptions2 = ScaleOptions(taskManagers = 1)
         scaleCluster(name = "cluster-2", options = scaleOptions2, port = port)
         awaitUntilAsserted(timeout = 60, delay = 1, interval = 1) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Scaling)).isTrue()
         }
-        awaitUntilAsserted(timeout = 240) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Starting)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 240) {
+        awaitUntilAsserted(timeout = 240, delay = 1, interval = 1) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Starting)).isTrue()
         }
-        awaitUntilAsserted(timeout = 240) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Running)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 240) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Running)).isTrue()
         }
         val response1 = getClusterStatus(name = "cluster-1", port = port)
@@ -113,21 +113,21 @@ class ScaleUpAndDownTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 60, delay = 1, interval = 1) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Scaling)).isTrue()
         }
+        awaitUntilAsserted(timeout = 240, delay = 1, interval = 1) {
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Stopping)).isTrue()
+        }
+        awaitUntilAsserted(timeout = 360) {
+            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Suspended)).isTrue()
+            assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-1", taskManagers = 0)).isTrue()
+        }
         scaleCluster(name = "cluster-2", options = scaleOptions0, port = port)
         awaitUntilAsserted(timeout = 60, delay = 1, interval = 1) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Scaling)).isTrue()
         }
-        awaitUntilAsserted(timeout = 240) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Stopping)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 240) {
+        awaitUntilAsserted(timeout = 240, delay = 1, interval = 1) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Stopping)).isTrue()
         }
-        awaitUntilAsserted(timeout = 240) {
-            assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Suspended)).isTrue()
-            assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-1", taskManagers = 0)).isTrue()
-        }
-        awaitUntilAsserted(timeout = 240) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-2", status = ClusterStatus.Suspended)).isTrue()
             assertThat(hasActiveTaskManagers(redirect = redirect, namespace = namespace, name = "cluster-2", taskManagers = 0)).isTrue()
         }
