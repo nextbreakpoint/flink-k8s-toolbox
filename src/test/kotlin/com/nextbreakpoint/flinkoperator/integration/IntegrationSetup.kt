@@ -25,7 +25,7 @@ import kotlin.test.fail
 open class IntegrationSetup {
     companion object {
         val redirect = Redirect.INHERIT
-        val version = "1.3.3-beta"
+        val version = "1.3.4-beta"
         val timestamp = System.currentTimeMillis()
 //        val namespace = "integration-$timestamp"
         val namespace = "integration"
