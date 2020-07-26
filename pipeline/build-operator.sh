@@ -5,4 +5,4 @@ set -e
 
 eval $(minikube docker-env)
 
-docker build -t integration/flink-k8s-toolbox:1.3.3-beta .
+docker build -t integration/flink-k8s-toolbox:1.3.4-beta .
