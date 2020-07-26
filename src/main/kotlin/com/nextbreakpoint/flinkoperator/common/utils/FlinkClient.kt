@@ -17,6 +17,7 @@ import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
 import com.nextbreakpoint.flinkclient.model.TaskManagerDetailsInfo
 import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
 import com.nextbreakpoint.flinkclient.model.TriggerResponse
+import com.nextbreakpoint.flinkoperator.common.model.SavepointInfo
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.Metric
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
@@ -351,7 +352,7 @@ object FlinkClient {
         }
     }
 
-    fun getPendingSavepointRequests(address: FlinkAddress, requests: Map<String, String>): List<String> {
+    fun getSavepointRequestsStatus(address: FlinkAddress, requests: Map<String, String>): Map<String, SavepointInfo> {
         try {
             val flinkApi = createFlinkApiClient(address, TIMEOUT)
 
@@ -371,82 +372,14 @@ object FlinkClient {
 
                     if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
                         logger.info("[$address] Savepoint still in progress for job ${it.first}")
+                    } else {
+                        logger.info("[$address] Savepoint completed for job ${it.first}")
                     }
 
-                    it.first to asynchronousOperationResult.status.id
+                    val operation = asynchronousOperationResult.operation as? Map<String, String>
+
+                    it.first to SavepointInfo(asynchronousOperationResult.status.id.toString(), operation?.get("location"))
                 }
-            }.filter {
-                it.second == QueueStatus.IdEnum.IN_PROGRESS
-            }.map {
-                it.first
-            }.toList()
-        } catch (e : CallException) {
-            throw e
-        } catch (e : Exception) {
-            throw RuntimeException(e)
-        }
-    }
-
-    fun isCheckpointInProgress(address: FlinkAddress, jobs: List<String>): List<String> {
-        try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
-
-            return jobs.map { jobId ->
-                val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
-
-                jobId to response
-            }.map {
-                it.second.body().use { body ->
-                    if (!it.second.isSuccessful) {
-                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
-                    }
-
-                    it.first to body.source().use { source ->
-                        JSON().deserialize<CheckpointingStatistics>(source.readUtf8Line(), CheckpointingStatistics::class.java)
-                    }
-                }
-            }.filter {
-                it.second.counts.inProgress > 0
-            }.map {
-                it.first
-            }.toList()
-        } catch (e : CallException) {
-            throw e
-        } catch (e : Exception) {
-            throw RuntimeException(e)
-        }
-    }
-
-    fun getLatestSavepointPaths(address: FlinkAddress, requests: Map<String, String>): Map<String, String> {
-        try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT)
-
-            return requests.map { (jobId, _) ->
-                val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
-
-                jobId to response
-            }.map {
-                it.second.body().use { body ->
-                    if (!it.second.isSuccessful) {
-                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
-                    }
-
-                    val checkpointingStatistics = body.source().use { source ->
-                        JSON().deserialize<CheckpointingStatistics>(source.readUtf8Line(), CheckpointingStatistics::class.java)
-                    }
-
-                    val savepoint = checkpointingStatistics.latest?.savepoint
-
-                    if (savepoint == null) {
-                        logger.error("[$address] Savepoint not found for job ${it.first}")
-                    }
-
-                    val externalPathOrEmpty = savepoint?.externalPath ?: ""
-
-                    it.first to externalPathOrEmpty.trim('\"')
-                }
-            }.filter {
-                it.second.isNotBlank()
             }.toMap()
         } catch (e : CallException) {
             throw e
@@ -454,6 +387,76 @@ object FlinkClient {
             throw RuntimeException(e)
         }
     }
+
+//    fun isCheckpointInProgress(address: FlinkAddress, jobs: List<String>): List<String> {
+//        try {
+//            val flinkApi = createFlinkApiClient(address, TIMEOUT)
+//
+//            return jobs.map { jobId ->
+//                val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
+//
+//                jobId to response
+//            }.map {
+//                it.second.body().use { body ->
+//                    if (!it.second.isSuccessful) {
+//                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
+//                    }
+//
+//                    it.first to body.source().use { source ->
+//                        JSON().deserialize<CheckpointingStatistics>(source.readUtf8Line(), CheckpointingStatistics::class.java)
+//                    }
+//                }
+//            }.filter {
+//                it.second.counts.inProgress > 0
+//            }.map {
+//                it.first
+//            }.toList()
+//        } catch (e : CallException) {
+//            throw e
+//        } catch (e : Exception) {
+//            throw RuntimeException(e)
+//        }
+//    }
+
+//    fun getLatestSavepointPaths(address: FlinkAddress, requests: Map<String, String>): Map<String, String> {
+//        try {
+//            val flinkApi = createFlinkApiClient(address, TIMEOUT)
+//
+//            return requests.map { (jobId, _) ->
+//                val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
+//
+//                jobId to response
+//            }.map {
+//                it.second.body().use { body ->
+//                    if (!it.second.isSuccessful) {
+//                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
+//                    }
+//
+//                    val checkpointingStatistics = body.source().use { source ->
+//                        JSON().deserialize<CheckpointingStatistics>(source.readUtf8Line(), CheckpointingStatistics::class.java)
+//                    }
+//
+//                    if (checkpointingStatistics.latest != null && checkpointingStatistics.latest.savepoint != null) {
+//                        val savepoint = checkpointingStatistics.latest.savepoint
+//
+//                        if (savepoint.status == CompletedCheckpointStatistics.StatusEnum.COMPLETED) {
+//                            it.first to savepoint.externalPath.trim('\"')
+//                        } else {
+//                            it.first to ""
+//                        }
+//                    } else {
+//                        it.first to ""
+//                    }
+//                }
+//            }.filter {
+//                it.second.isNotBlank()
+//            }.toMap()
+//        } catch (e : CallException) {
+//            throw e
+//        } catch (e : Exception) {
+//            throw RuntimeException(e)
+//        }
+//    }
 
     fun triggerSavepoints(address: FlinkAddress, jobs: List<String>, targetPath: String?): Map<String, String> {
         return createSavepoints(address, jobs, targetPath, false)
