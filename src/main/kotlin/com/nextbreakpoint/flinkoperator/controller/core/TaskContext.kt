@@ -101,6 +101,11 @@ class TaskContext(
     }
 
     fun cancelJob(): Boolean {
+        if (!mediator.isBootstrapPresent()) {
+            logger.info("Bootstrap not defined. Skipping cancel")
+            return true
+        }
+
         val jobManagerServiceExists = mediator.doesJobManagerServiceExists()
         val jobManagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
         val taskManagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
@@ -272,7 +277,7 @@ class TaskContext(
             return false
         }
 
-        val bootstrapExists = mediator.doesBootstrapJobExists()
+        val bootstrapExists = mediator.isBootstrapPresent() && mediator.doesBootstrapJobExists()
 
         if (bootstrapExists) {
             val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
@@ -304,7 +309,7 @@ class TaskContext(
             return false
         }
 
-        val bootstrapExists = mediator.doesBootstrapJobExists()
+        val bootstrapExists = mediator.isBootstrapPresent() && mediator.doesBootstrapJobExists()
         val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
         val jobmanagerStatefuleSetExists = mediator.doesJobManagerStatefulSetExists()
         val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
@@ -347,7 +352,7 @@ class TaskContext(
     }
 
     fun resetCluster(): Boolean {
-        val bootstrapExists = mediator.doesBootstrapJobExists()
+        val bootstrapExists = mediator.isBootstrapPresent() && mediator.doesBootstrapJobExists()
 
         if (bootstrapExists) {
             val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
@@ -393,9 +398,7 @@ class TaskContext(
     }
 
     fun hasJobFinished(): Boolean {
-        val bootstrapPresent = mediator.isBootstrapPresent()
-
-        if (bootstrapPresent) {
+        if (mediator.isBootstrapPresent()) {
             val result = mediator.isJobFinished(mediator.clusterSelector)
 
             if (result.isSuccessful() && result.output) {
@@ -407,9 +410,7 @@ class TaskContext(
     }
 
     fun hasJobFailed(): Boolean {
-        val bootstrapPresent = mediator.isBootstrapPresent()
-
-        if (bootstrapPresent) {
+        if (mediator.isBootstrapPresent()) {
             val result = mediator.isJobFailed(mediator.clusterSelector)
 
             if (result.isSuccessful() && result.output) {
@@ -439,11 +440,9 @@ class TaskContext(
 
     fun isManualActionPresent() = mediator.getManualAction() != ManualAction.NONE
 
-    fun isBootstrapPresent() = mediator.isBootstrapPresent()
-
     fun isResourceDeleted() = mediator.hasBeenDeleted()
 
-    fun shouldRestartJob() = mediator.getJobRestartPolicy()?.toUpperCase() == "ALWAYS"
+    fun shouldRestart() = mediator.getRestartPolicy()?.toUpperCase() == "ALWAYS"
 
     fun mustTerminateResources() = mediator.isDeleteResources()
 
@@ -531,16 +530,20 @@ class TaskContext(
             }
             ManualAction.TRIGGER_SAVEPOINT -> {
                 if (acceptedActions.contains(ManualAction.TRIGGER_SAVEPOINT)) {
-                    if (mediator.getSavepointRequest() == null) {
-                        val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOtions())
-                        if (response.isSuccessful() && response.output != null) {
-                            logger.info("Savepoint requested created. Waiting for savepoint...")
-                            mediator.setSavepointRequest(response.output)
+                    if (mediator.isBootstrapPresent()) {
+                        if (mediator.getSavepointRequest() == null) {
+                            val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOtions())
+                            if (response.isSuccessful() && response.output != null) {
+                                logger.info("Savepoint requested created. Waiting for savepoint...")
+                                mediator.setSavepointRequest(response.output)
+                            } else {
+                                logger.error("Savepoint request has failed. Skipping manual savepoint")
+                            }
                         } else {
-                            logger.error("Savepoint request has failed. Skipping manual savepoint")
+                            logger.error("Savepoint request already exists. Skipping manual savepoint")
                         }
                     } else {
-                        logger.error("Savepoint request already exists. Skipping manual savepoint")
+                        logger.info("Bootstrap not defined. Skipping savepoint")
                     }
                 } else {
                     logger.warn("Action not allowed")

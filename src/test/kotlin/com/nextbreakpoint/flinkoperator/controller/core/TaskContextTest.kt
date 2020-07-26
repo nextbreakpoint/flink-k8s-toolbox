@@ -174,6 +174,14 @@ class TaskContextTest {
     }
 
     @Test
+    fun `cancelJob should return true when bootstrap is not defined`() {
+        given(mediator.isBootstrapPresent()).thenReturn(false)
+        val result = context.cancelJob()
+        verify(mediator, times(1)).isBootstrapPresent()
+        assertThat(result).isTrue()
+    }
+
+    @Test
     fun `cancelJob should return true when jobmanager service is not present`() {
         given(mediator.doesJobManagerServiceExists()).thenReturn(false)
         val result = context.cancelJob()
@@ -584,6 +592,19 @@ class TaskContextTest {
     }
 
     @Test
+    fun `suspendCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap is not defined`() {
+        given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
+        given(mediator.isBootstrapPresent()).thenReturn(false)
+        given(mediator.doesBootstrapJobExists()).thenReturn(true)
+        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
+        val result = context.suspendCluster()
+        verify(mediator, times(1)).arePodsTerminated(any())
+        verify(mediator, times(1)).isBootstrapPresent()
+        verify(mediator, times(1)).doesJobManagerServiceExists()
+        assertThat(result).isTrue()
+    }
+
+    @Test
     fun `suspendCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap job is not present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
@@ -746,6 +767,27 @@ class TaskContextTest {
     }
 
     @Test
+    fun `terminateCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap is not defined and statefulsets are not present and pvcs are not present`() {
+        given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
+        given(mediator.isBootstrapPresent()).thenReturn(false)
+        given(mediator.doesBootstrapJobExists()).thenReturn(true)
+        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
+        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
+        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
+        given(mediator.doesJobManagerPVCExists()).thenReturn(false)
+        given(mediator.doesTaskManagerPVCExists()).thenReturn(false)
+        val result = context.terminateCluster()
+        verify(mediator, times(1)).arePodsTerminated(any())
+        verify(mediator, times(1)).isBootstrapPresent()
+        verify(mediator, times(1)).doesJobManagerServiceExists()
+        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
+        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
+        verify(mediator, times(1)).doesJobManagerPVCExists()
+        verify(mediator, times(1)).doesTaskManagerPVCExists()
+        assertThat(result).isTrue()
+    }
+
+    @Test
     fun `terminateCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap job is not present and statefulsets are not present and pvcs are not present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
@@ -773,6 +815,14 @@ class TaskContextTest {
         verify(mediator, times(1)).doesBootstrapJobExists()
         verify(mediator, times(1)).deleteBootstrapJob(any())
         assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `resetCluster should return true when bootstrap is not defined`() {
+        given(mediator.isBootstrapPresent()).thenReturn(false)
+        val result = context.resetCluster()
+        verify(mediator, times(1)).isBootstrapPresent()
+        assertThat(result).isTrue()
     }
 
     @Test
@@ -991,22 +1041,6 @@ class TaskContextTest {
     }
 
     @Test
-    fun `isBootstrapPresent should return false when boostrap in not present`() {
-        given(mediator.isBootstrapPresent()).thenReturn(false)
-        val result = context.isBootstrapPresent()
-        verify(mediator, times(1)).isBootstrapPresent()
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `isBootstrapPresent should return true when boostrap in present`() {
-        given(mediator.isBootstrapPresent()).thenReturn(true)
-        val result = context.isBootstrapPresent()
-        verify(mediator, times(1)).isBootstrapPresent()
-        assertThat(result).isTrue()
-    }
-
-    @Test
     fun `isResourceDeleted should return false when resource hasn't been deleted`() {
         given(mediator.hasBeenDeleted()).thenReturn(false)
         val result = context.isResourceDeleted()
@@ -1024,17 +1058,17 @@ class TaskContextTest {
 
     @Test
     fun `shouldRestartJob should return false when restart policy is not always`() {
-        given(mediator.getJobRestartPolicy()).thenReturn("NEVER")
-        val result = context.shouldRestartJob()
-        verify(mediator, times(1)).getJobRestartPolicy()
+        given(mediator.getRestartPolicy()).thenReturn("NEVER")
+        val result = context.shouldRestart()
+        verify(mediator, times(1)).getRestartPolicy()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `shouldRestartJob should return true when restart policy is always`() {
-        given(mediator.getJobRestartPolicy()).thenReturn("ALWAYS")
-        val result = context.shouldRestartJob()
-        verify(mediator, times(1)).getJobRestartPolicy()
+        given(mediator.getRestartPolicy()).thenReturn("ALWAYS")
+        val result = context.shouldRestart()
+        verify(mediator, times(1)).getRestartPolicy()
         assertThat(result).isTrue()
     }
 
@@ -1171,6 +1205,16 @@ class TaskContextTest {
         given(mediator.getManualAction()).thenReturn(ManualAction.TRIGGER_SAVEPOINT)
         context.executeManualAction(setOf())
         verify(mediator, times(1)).getManualAction()
+        verify(mediator, times(1)).resetManualAction()
+    }
+
+    @Test
+    fun `executeManualAction should do nothing when manual action is trigger savepoint and bootstrap is not defined`() {
+        given(mediator.isBootstrapPresent()).thenReturn(false)
+        given(mediator.getManualAction()).thenReturn(ManualAction.TRIGGER_SAVEPOINT)
+        context.executeManualAction(setOf(ManualAction.TRIGGER_SAVEPOINT))
+        verify(mediator, times(1)).getManualAction()
+        verify(mediator, times(1)).isBootstrapPresent()
         verify(mediator, times(1)).resetManualAction()
     }
 

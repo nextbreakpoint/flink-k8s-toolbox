@@ -113,9 +113,8 @@ class OnRunningTest {
     }
 
     @Test
-    fun `should behave as expected when manual action is present and bootstrap is defined`() {
+    fun `should behave as expected when manual action is present`() {
         given(context.isManualActionPresent()).thenReturn(true)
-        given(context.isBootstrapPresent()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
@@ -124,25 +123,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasJobFinished()
         inOrder.verify(context, times(1)).hasJobFailed()
         inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).isBootstrapPresent()
         inOrder.verify(context, times(1)).executeManualAction(actions, true)
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should behave as expected when manual action is present but bootstrap is not defined`() {
-        given(context.isManualActionPresent()).thenReturn(true)
-        given(context.isBootstrapPresent()).thenReturn(false)
-        task.execute(context)
-        val inOrder = inOrder(context)
-        inOrder.verify(context, times(1)).isResourceDeleted()
-        inOrder.verify(context, times(1)).resetCluster()
-        inOrder.verify(context, times(1)).hasResourceDiverged()
-        inOrder.verify(context, times(1)).hasJobFinished()
-        inOrder.verify(context, times(1)).hasJobFailed()
-        inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).isBootstrapPresent()
-        inOrder.verify(context, times(1)).executeManualAction(actionsNoTrigger, true)
         verifyNoMoreInteractions(context)
     }
 

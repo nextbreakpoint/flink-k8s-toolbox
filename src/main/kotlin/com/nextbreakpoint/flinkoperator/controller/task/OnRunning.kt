@@ -12,12 +12,6 @@ class OnRunning : Task() {
         ManualAction.TRIGGER_SAVEPOINT
     )
 
-    private val actionsNoTrigger = setOf(
-        ManualAction.START,
-        ManualAction.STOP,
-        ManualAction.FORGET_SAVEPOINT
-    )
-
     override fun execute(context: TaskContext) {
         if (context.isResourceDeleted()) {
             context.onResourceDeleted()
@@ -44,11 +38,7 @@ class OnRunning : Task() {
         }
 
         if (context.isManualActionPresent()) {
-            if (context.isBootstrapPresent()) {
-                context.executeManualAction(actions, true)
-            } else {
-                context.executeManualAction(actionsNoTrigger, true)
-            }
+            context.executeManualAction(actions, true)
             return
         }
 
