@@ -503,7 +503,7 @@ Create a Flink Cluster file:
         savepointMode: Automatic
         savepointInterval: 60
         savepointTargetPath: file:///var/tmp/test
-        jobRestartPolicy: Always
+        restartPolicy: Always
     EOF
 
 Create a FlinkCluster resource with command:
@@ -752,7 +752,7 @@ Create a JSON file:
         "savepointMode": "Automatic",
         "savepointInterval": 60,
         "savepointTargetPath": "file:///var/tmp/test",
-        "jobRestartPolicy": "OnFailure"
+        "restartPolicy": "Never"
       }
     }
     EOF

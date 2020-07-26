@@ -223,13 +223,13 @@ object Status {
     fun setRestartPolicy(flinkCluster: V1FlinkCluster, restartPolicy: String?) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.jobRestartPolicy = restartPolicy
+        flinkCluster.status?.restartPolicy = restartPolicy
 
         updateStatusTimestamp(flinkCluster, currentTimeMillis())
     }
 
     fun getRestartPolicy(flinkCluster: V1FlinkCluster): String? =
-        flinkCluster.status?.jobRestartPolicy
+        flinkCluster.status?.restartPolicy
 
     fun setBootstrap(flinkCluster: V1FlinkCluster, bootstrap: V1BootstrapSpec?) {
         ensureState(flinkCluster)

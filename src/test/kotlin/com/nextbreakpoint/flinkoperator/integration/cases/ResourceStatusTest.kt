@@ -77,7 +77,7 @@ class ResourceStatusTest : IntegrationSetup() {
         assertThat(status1.jobParallelism).isEqualTo(1)
         assertThat(status1.taskSlots).isEqualTo(1)
         assertThat(status1.totalTaskSlots).isEqualTo(1)
-        assertThat(status1.jobRestartPolicy).isEqualTo("Always")
+        assertThat(status1.restartPolicy).isEqualTo("Always")
         val response2 = getClusterStatus(name = "cluster-2", port = port)
         println(response2)
         assertThat(response2["status"] as String?).isEqualTo("OK")
@@ -90,6 +90,6 @@ class ResourceStatusTest : IntegrationSetup() {
         assertThat(status2.jobParallelism).isEqualTo(4)
         assertThat(status2.taskSlots).isEqualTo(2)
         assertThat(status2.totalTaskSlots).isEqualTo(4)
-        assertThat(status2.jobRestartPolicy).isEqualTo("Never")
+        assertThat(status2.restartPolicy).isEqualTo("Never")
     }
 }

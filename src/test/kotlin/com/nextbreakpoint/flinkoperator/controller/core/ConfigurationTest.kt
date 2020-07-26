@@ -35,8 +35,8 @@ class ConfigurationTest {
     }
 
     @Test
-    fun `the default job restart policy is NEVER`() {
-        assertThat(Configuration.getJobRestartPolicy(flinkCluster)).isEqualTo("NEVER")
+    fun `the default restart policy is NEVER`() {
+        assertThat(Configuration.getRestartPolicy(flinkCluster)).isEqualTo("NEVER")
     }
 
     @Test
@@ -64,9 +64,9 @@ class ConfigurationTest {
     }
 
     @Test
-    fun `should return job restart policy`() {
-        flinkCluster.spec.operator.jobRestartPolicy = "ALWAYS"
-        assertThat(Configuration.getJobRestartPolicy(flinkCluster)).isEqualTo("ALWAYS")
+    fun `should return restart policy`() {
+        flinkCluster.spec.operator.restartPolicy = "ALWAYS"
+        assertThat(Configuration.getRestartPolicy(flinkCluster)).isEqualTo("ALWAYS")
     }
 
     @Test

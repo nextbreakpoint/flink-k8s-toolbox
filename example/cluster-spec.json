@@ -298,6 +298,6 @@
     "savepointMode": "Automatic",
     "savepointInterval": 300,
     "savepointTargetPath": "file:///var/savepoints",
-    "jobRestartPolicy": "Always"
+    "restartPolicy": "Always"
   }
 }
