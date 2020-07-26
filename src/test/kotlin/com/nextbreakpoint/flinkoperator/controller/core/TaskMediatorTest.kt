@@ -175,7 +175,7 @@ class TaskMediatorTest {
         assertThat(Status.getLabelSelector(cluster)).isNull()
         assertThat(Status.getServiceMode(cluster)).isNull()
         assertThat(Status.getSavepointMode(cluster)).isNull()
-        assertThat(Status.getJobRestartPolicy(cluster)).isNull()
+        assertThat(Status.getRestartPolicy(cluster)).isNull()
         cluster.spec?.operator?.savepointPath = "file:///tmp/1"
         context.initializeStatus()
         assertThat(Status.getBootstrap(cluster)).isNotNull()
@@ -186,7 +186,7 @@ class TaskMediatorTest {
         assertThat(Status.getLabelSelector(cluster)).isNotEmpty()
         assertThat(Status.getServiceMode(cluster)).isEqualTo("ClusterIP")
         assertThat(Status.getSavepointMode(cluster)).isEqualTo("Automatic")
-        assertThat(Status.getJobRestartPolicy(cluster)).isEqualTo("Never")
+        assertThat(Status.getRestartPolicy(cluster)).isEqualTo("Never")
     }
 
     @Test
@@ -336,9 +336,9 @@ class TaskMediatorTest {
 
     @Test
     fun `should return job restart policy`() {
-        assertThat(context.getJobRestartPolicy()).isNull()
-        Status.setJobRestartPolicy(cluster, "Never")
-        assertThat(context.getJobRestartPolicy()).isEqualTo("Never")
+        assertThat(context.getRestartPolicy()).isNull()
+        Status.setRestartPolicy(cluster, "Never")
+        assertThat(context.getRestartPolicy()).isEqualTo("Never")
     }
 
     @Test
@@ -440,7 +440,7 @@ class TaskMediatorTest {
         Status.setTaskSlots(cluster, 4)
         Status.setTaskManagers(cluster, 2)
         Status.setSavepointMode(cluster, "Manual")
-        Status.setJobRestartPolicy(cluster, "Always")
+        Status.setRestartPolicy(cluster, "Always")
 
         cluster.spec?.taskManagers = 2
 
@@ -458,7 +458,7 @@ class TaskMediatorTest {
         assertThat(Status.getTaskSlots(cluster)).isEqualTo(4)
         assertThat(Status.getTaskManagers(cluster)).isEqualTo(2)
         assertThat(Status.getSavepointMode(cluster)).isEqualTo("Automatic")
-        assertThat(Status.getJobRestartPolicy(cluster)).isEqualTo("Never")
+        assertThat(Status.getRestartPolicy(cluster)).isEqualTo("Never")
 
         verify(controller, times(1)).updateStatus(eq(clusterSelector), eq(cluster))
         verify(controller, times(1)).updateFinalizers(eq(clusterSelector), eq(cluster))

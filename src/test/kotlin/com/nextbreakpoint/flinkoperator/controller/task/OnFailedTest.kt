@@ -25,7 +25,7 @@ class OnFailedTest {
         given(context.isResourceDeleted()).thenReturn(false)
         given(context.suspendCluster()).thenReturn(true)
         given(context.isManualActionPresent()).thenReturn(false)
-        given(context.shouldRestartJob()).thenReturn(false)
+        given(context.shouldRestart()).thenReturn(false)
     }
 
     @Test
@@ -35,7 +35,7 @@ class OnFailedTest {
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).shouldRestartJob()
+        inOrder.verify(context, times(1)).shouldRestart()
         verifyNoMoreInteractions(context)
     }
 
@@ -73,28 +73,28 @@ class OnFailedTest {
 
     @Test
     fun `should behave as expected when job should restart but resource haven't changed`() {
-        given(context.shouldRestartJob()).thenReturn(true)
+        given(context.shouldRestart()).thenReturn(true)
         given(context.hasResourceChanged()).thenReturn(false)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).shouldRestartJob()
+        inOrder.verify(context, times(1)).shouldRestart()
         inOrder.verify(context, times(1)).hasResourceChanged()
         verifyNoMoreInteractions(context)
     }
 
     @Test
     fun `should behave as expected when job should restart and resource has changed`() {
-        given(context.shouldRestartJob()).thenReturn(true)
+        given(context.shouldRestart()).thenReturn(true)
         given(context.hasResourceChanged()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verify(context, times(1)).shouldRestartJob()
+        inOrder.verify(context, times(1)).shouldRestart()
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).onResourceChanged()
         verifyNoMoreInteractions(context)
