@@ -8323,8 +8323,8 @@ spec:
                       description: Location where to create savepoints.
                       type: string
                       nullable: false
-                    jobRestartPolicy:
-                      description: Control job restart in case of cluster failure. Default value is NEVER.
+                    restartPolicy:
+                      description: Control restart in case of cluster or job failure. Default value is NEVER.
                       type: string
                       nullable: false
                       enum:
@@ -8333,7 +8333,7 @@ spec:
                   required:
                     - savepointMode
                     - savepointTargetPath
-                    - jobRestartPolicy
+                    - restartPolicy
               required:
                 - runtime
                 - jobManager
@@ -8389,7 +8389,7 @@ spec:
                 serviceMode:
                   type: string
                   nullable: false
-                jobRestartPolicy:
+                restartPolicy:
                   type: string
                   nullable: false
                 digest:
@@ -8470,7 +8470,7 @@ spec:
         jsonPath: .status.jobParallelism
       - name: JOB-RESTART
         type: string
-        jsonPath: .status.jobRestartPolicy
+        jsonPath: .status.restartPolicy
       - name: SERVICE-MODE
         type: string
         jsonPath: .status.serviceMode

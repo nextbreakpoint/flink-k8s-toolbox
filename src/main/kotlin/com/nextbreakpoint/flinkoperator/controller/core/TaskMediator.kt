@@ -105,9 +105,9 @@ class TaskMediator(
             Status.setSavepointMode(cluster, savepointMode)
         }
 
-        val jobRestartPolicy = cluster.spec?.operator?.jobRestartPolicy
-        if (Status.getRestartPolicy(cluster) != jobRestartPolicy) {
-            Status.setRestartPolicy(cluster, jobRestartPolicy)
+        val restartPolicy = cluster.spec?.operator?.restartPolicy
+        if (Status.getRestartPolicy(cluster) != restartPolicy) {
+            Status.setRestartPolicy(cluster, restartPolicy)
         }
 
         val newStatusTimestamp = Status.getStatusTimestamp(cluster)
@@ -174,8 +174,8 @@ class TaskMediator(
         val savepointMode = cluster.spec?.operator?.savepointMode
         Status.setSavepointMode(cluster, savepointMode)
 
-        val jobRestartPolicy = cluster.spec?.operator?.jobRestartPolicy
-        Status.setRestartPolicy(cluster, jobRestartPolicy)
+        val restartPolicy = cluster.spec?.operator?.restartPolicy
+        Status.setRestartPolicy(cluster, restartPolicy)
     }
 
     fun initializeAnnotations() {

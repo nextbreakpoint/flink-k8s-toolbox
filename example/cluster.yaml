@@ -188,4 +188,4 @@ spec:
     savepointMode: Manual
     savepointInterval: 60
     savepointTargetPath: file:///var/savepoints
-    jobRestartPolicy: Always
+    restartPolicy: Always

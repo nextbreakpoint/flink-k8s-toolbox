@@ -137,4 +137,4 @@ spec:
     savepointMode: Manual
     savepointInterval: 20
     savepointTargetPath: s3a://flink/2/savepoints
-    jobRestartPolicy: Never
+    restartPolicy: Never
