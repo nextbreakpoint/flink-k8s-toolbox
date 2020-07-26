@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -15,19 +15,19 @@ class BootstrapCreateJob(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
         private val logger = Logger.getLogger(BootstrapCreateJob::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: V1Job): OperationResult<String?> {
-        try {
-            val jobOut = kubeClient.createBootstrapJob(clusterId, params)
+    override fun execute(clusterSelector: ClusterSelector, params: V1Job): OperationResult<String?> {
+        return try {
+            val jobOut = kubeClient.createBootstrapJob(clusterSelector, params)
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 jobOut.metadata.name
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't create bootstrap job", e)
+            logger.error("[name=${clusterSelector.name}] Can't create bootstrap job", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

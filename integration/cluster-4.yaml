@@ -8,7 +8,6 @@ spec:
     pullPolicy: Never
     image: integration/flink:1.9.2
   bootstrap:
-    executionMode: Batch
     serviceAccount: flink-bootstrap
     pullPolicy: Never
     image: integration/flink-jobs:1
@@ -18,7 +17,7 @@ spec:
       - --CONSOLE_OUTPUT
       - "true"
       - --SOURCE_FS_PATH
-      - file://tmp/workshop/sensor-events
+      - file://invalid
       - --OUTPUT_FS_PATH
       - file:///tmp/workshop/report-events
   jobManager:

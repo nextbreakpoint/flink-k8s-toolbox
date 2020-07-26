@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -19,7 +19,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class BootstrapCreateJobTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val bootstrapJob = mock(V1Job::class.java)
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
@@ -29,29 +29,29 @@ class BootstrapCreateJobTest {
     @BeforeEach
     fun configure() {
         val job = V1JobBuilder().withNewMetadata().withName("xxx").endMetadata().build()
-        given(kubeClient.createBootstrapJob(eq(clusterId), any())).thenReturn(job)
+        given(kubeClient.createBootstrapJob(eq(clusterSelector), any())).thenReturn(job)
     }
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.createBootstrapJob(eq(clusterId), any())).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, bootstrapJob)
-        verify(kubeClient, times(1)).createBootstrapJob(eq(clusterId), any())
+        given(kubeClient.createBootstrapJob(eq(clusterSelector), any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterSelector, bootstrapJob)
+        verify(kubeClient, times(1)).createBootstrapJob(eq(clusterSelector), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
     @Test
     fun `should return expected result`() {
-        val result = command.execute(clusterId, bootstrapJob)
-        verify(kubeClient, times(1)).createBootstrapJob(eq(clusterId), any())
+        val result = command.execute(clusterSelector, bootstrapJob)
+        verify(kubeClient, times(1)).createBootstrapJob(eq(clusterSelector), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isEqualTo("xxx")
     }
 }

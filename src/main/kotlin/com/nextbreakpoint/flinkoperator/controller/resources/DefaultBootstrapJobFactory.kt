@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1Affinity
 import io.kubernetes.client.models.V1Container
@@ -20,7 +20,7 @@ import io.kubernetes.client.models.V1WeightedPodAffinityTerm
 
 object DefaultBootstrapJobFactory : BootstrapJobFactory {
     override fun createBootstrapJob(
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         clusterOwner: String,
         bootstrap: V1BootstrapSpec,
         savepointPath: String?,
@@ -36,8 +36,8 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
 
         val jobLabels = mapOf(
             Pair("owner", clusterOwner),
-            Pair("name", clusterId.name),
-            Pair("uid", clusterId.uuid),
+            Pair("name", clusterSelector.name),
+            Pair("uid", clusterSelector.uuid),
             Pair("component", "flink")
         )
 
@@ -53,8 +53,8 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
 
         val arguments =
             createBootstrapArguments(
-                clusterId.namespace,
-                clusterId.name,
+                clusterSelector.namespace,
+                clusterSelector.name,
                 bootstrap,
                 savepointPath,
                 parallelism
@@ -91,7 +91,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
 
         val job = V1JobBuilder()
             .editOrNewMetadata()
-            .withName("flink-bootstrap-${clusterId.name}")
+            .withName("flink-bootstrap-${clusterSelector.name}")
             .withLabels(jobLabels)
             .endMetadata()
             .editOrNewSpec()
@@ -101,7 +101,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
             .withTtlSecondsAfterFinished(30)
             .editOrNewTemplate()
             .editOrNewMetadata()
-            .withName("flink-bootstrap-${clusterId.name}")
+            .withName("flink-bootstrap-${clusterSelector.name}")
             .withLabels(jobLabels)
             .endMetadata()
             .withSpec(jobPodSpec)

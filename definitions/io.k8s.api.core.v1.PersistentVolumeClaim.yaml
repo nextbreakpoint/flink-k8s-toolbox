@@ -158,7 +158,7 @@ properties:
           \ http://kubernetes.io/docs/user-guide/identifiers#names"
         type: "string"
       namespace:
-        description: "Namespace defines the space within each name must be unique.\
+        description: "Namespace defines the space within which each name must be unique.\
           \ An empty namespace is equivalent to the \"default\" namespace, but \"\
           default\" is the canonical representation. Not all objects are required\
           \ to be scoped to a namespace - the value of this field for those objects\
@@ -400,8 +400,7 @@ properties:
         type: "string"
       volumeMode:
         description: "volumeMode defines what type of volume is required by the claim.\
-          \ Value of Filesystem is implied when not included in claim spec. This is\
-          \ a beta feature."
+          \ Value of Filesystem is implied when not included in claim spec."
         type: "string"
       volumeName:
         description: "VolumeName is the binding reference to the PersistentVolume\

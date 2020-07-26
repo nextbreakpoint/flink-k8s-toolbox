@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -15,8 +15,8 @@ class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
         private val logger = Logger.getLogger(FlinkClusterCreate::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: V1FlinkCluster): OperationResult<Void?> {
-        try {
+    override fun execute(clusterSelector: ClusterSelector, params: V1FlinkCluster): OperationResult<Void?> {
+        return try {
             val flinkCluster = V1FlinkCluster()
                 .apiVersion("nextbreakpoint.com/v1")
                 .kind("FlinkCluster")
@@ -26,25 +26,25 @@ class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
             val response = kubeClient.createFlinkCluster(flinkCluster)
 
             if (response.statusCode == 201) {
-                logger.info("[name=${clusterId.name}] Custom object created")
+                logger.info("[name=${clusterSelector.name}] Custom object created")
 
-                return OperationResult(
-                    OperationStatus.COMPLETED,
+                OperationResult(
+                    OperationStatus.OK,
                     null
                 )
             } else {
-                logger.error("[name=${clusterId.name}] Can't create custom object")
+                logger.error("[name=${clusterSelector.name}] Can't create custom object")
 
-                return OperationResult(
-                    OperationStatus.FAILED,
+                OperationResult(
+                    OperationStatus.ERROR,
                     null
                 )
             }
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't create cluster resource", e)
+            logger.error("[name=${clusterSelector.name}] Can't create cluster resource", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

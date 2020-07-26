@@ -157,9 +157,11 @@ properties:
       \ management and SELinux relabeling."
     properties:
       defaultMode:
-        description: "Optional: mode bits to use on created files by default. Must\
-          \ be a value between 0 and 0777. Defaults to 0644. Directories within the\
-          \ path are not affected by this setting. This might be in conflict with\
+        description: "Optional: mode bits used to set permissions on created files\
+          \ by default. Must be an octal value between 0000 and 0777 or a decimal\
+          \ value between 0 and 511. YAML accepts both octal and decimal values, JSON\
+          \ requires decimal values for mode bits. Defaults to 0644. Directories within\
+          \ the path are not affected by this setting. This might be in conflict with\
           \ other options that affect the file mode, like fsGroup, and the result\
           \ can be other mode bits set."
         format: "int32"
@@ -179,11 +181,13 @@ properties:
               description: "The key to project."
               type: "string"
             mode:
-              description: "Optional: mode bits to use on this file, must be a value\
-                \ between 0 and 0777. If not specified, the volume defaultMode will\
-                \ be used. This might be in conflict with other options that affect\
-                \ the file mode, like fsGroup, and the result can be other mode bits\
-                \ set."
+              description: "Optional: mode bits used to set permissions on this file.\
+                \ Must be an octal value between 0000 and 0777 or a decimal value\
+                \ between 0 and 511. YAML accepts both octal and decimal values, JSON\
+                \ requires decimal values for mode bits. If not specified, the volume\
+                \ defaultMode will be used. This might be in conflict with other options\
+                \ that affect the file mode, like fsGroup, and the result can be other\
+                \ mode bits set."
               format: "int32"
               type: "integer"
             path:
@@ -245,10 +249,13 @@ properties:
     properties:
       defaultMode:
         description: "Optional: mode bits to use on created files by default. Must\
-          \ be a value between 0 and 0777. Defaults to 0644. Directories within the\
-          \ path are not affected by this setting. This might be in conflict with\
-          \ other options that affect the file mode, like fsGroup, and the result\
-          \ can be other mode bits set."
+          \ be a Optional: mode bits used to set permissions on created files by default.\
+          \ Must be an octal value between 0000 and 0777 or a decimal value between\
+          \ 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal\
+          \ values for mode bits. Defaults to 0644. Directories within the path are\
+          \ not affected by this setting. This might be in conflict with other options\
+          \ that affect the file mode, like fsGroup, and the result can be other mode\
+          \ bits set."
         format: "int32"
         type: "integer"
       items:
@@ -272,11 +279,13 @@ properties:
               - "fieldPath"
               type: "object"
             mode:
-              description: "Optional: mode bits to use on this file, must be a value\
-                \ between 0 and 0777. If not specified, the volume defaultMode will\
-                \ be used. This might be in conflict with other options that affect\
-                \ the file mode, like fsGroup, and the result can be other mode bits\
-                \ set."
+              description: "Optional: mode bits used to set permissions on this file,\
+                \ must be an octal value between 0000 and 0777 or a decimal value\
+                \ between 0 and 511. YAML accepts both octal and decimal values, JSON\
+                \ requires decimal values for mode bits. If not specified, the volume\
+                \ defaultMode will be used. This might be in conflict with other options\
+                \ that affect the file mode, like fsGroup, and the result can be other\
+                \ mode bits set."
               format: "int32"
               type: "integer"
             path:
@@ -690,10 +699,12 @@ properties:
     description: "Represents a projected volume source"
     properties:
       defaultMode:
-        description: "Mode bits to use on created files by default. Must be a value\
-          \ between 0 and 0777. Directories within the path are not affected by this\
-          \ setting. This might be in conflict with other options that affect the\
-          \ file mode, like fsGroup, and the result can be other mode bits set."
+        description: "Mode bits used to set permissions on created files by default.\
+          \ Must be an octal value between 0000 and 0777 or a decimal value between\
+          \ 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal\
+          \ values for mode bits. Directories within the path are not affected by\
+          \ this setting. This might be in conflict with other options that affect\
+          \ the file mode, like fsGroup, and the result can be other mode bits set."
         format: "int32"
         type: "integer"
       sources:
@@ -726,11 +737,14 @@ properties:
                         description: "The key to project."
                         type: "string"
                       mode:
-                        description: "Optional: mode bits to use on this file, must\
-                          \ be a value between 0 and 0777. If not specified, the volume\
-                          \ defaultMode will be used. This might be in conflict with\
-                          \ other options that affect the file mode, like fsGroup,\
-                          \ and the result can be other mode bits set."
+                        description: "Optional: mode bits used to set permissions\
+                          \ on this file. Must be an octal value between 0000 and\
+                          \ 0777 or a decimal value between 0 and 511. YAML accepts\
+                          \ both octal and decimal values, JSON requires decimal values\
+                          \ for mode bits. If not specified, the volume defaultMode\
+                          \ will be used. This might be in conflict with other options\
+                          \ that affect the file mode, like fsGroup, and the result\
+                          \ can be other mode bits set."
                         format: "int32"
                         type: "integer"
                       path:
@@ -778,11 +792,14 @@ properties:
                         - "fieldPath"
                         type: "object"
                       mode:
-                        description: "Optional: mode bits to use on this file, must\
-                          \ be a value between 0 and 0777. If not specified, the volume\
-                          \ defaultMode will be used. This might be in conflict with\
-                          \ other options that affect the file mode, like fsGroup,\
-                          \ and the result can be other mode bits set."
+                        description: "Optional: mode bits used to set permissions\
+                          \ on this file, must be an octal value between 0000 and\
+                          \ 0777 or a decimal value between 0 and 511. YAML accepts\
+                          \ both octal and decimal values, JSON requires decimal values\
+                          \ for mode bits. If not specified, the volume defaultMode\
+                          \ will be used. This might be in conflict with other options\
+                          \ that affect the file mode, like fsGroup, and the result\
+                          \ can be other mode bits set."
                         format: "int32"
                         type: "integer"
                       path:
@@ -882,11 +899,14 @@ properties:
                         description: "The key to project."
                         type: "string"
                       mode:
-                        description: "Optional: mode bits to use on this file, must\
-                          \ be a value between 0 and 0777. If not specified, the volume\
-                          \ defaultMode will be used. This might be in conflict with\
-                          \ other options that affect the file mode, like fsGroup,\
-                          \ and the result can be other mode bits set."
+                        description: "Optional: mode bits used to set permissions\
+                          \ on this file. Must be an octal value between 0000 and\
+                          \ 0777 or a decimal value between 0 and 511. YAML accepts\
+                          \ both octal and decimal values, JSON requires decimal values\
+                          \ for mode bits. If not specified, the volume defaultMode\
+                          \ will be used. This might be in conflict with other options\
+                          \ that affect the file mode, like fsGroup, and the result\
+                          \ can be other mode bits set."
                         format: "int32"
                         type: "integer"
                       path:
@@ -1073,9 +1093,11 @@ properties:
       \ relabeling."
     properties:
       defaultMode:
-        description: "Optional: mode bits to use on created files by default. Must\
-          \ be a value between 0 and 0777. Defaults to 0644. Directories within the\
-          \ path are not affected by this setting. This might be in conflict with\
+        description: "Optional: mode bits used to set permissions on created files\
+          \ by default. Must be an octal value between 0000 and 0777 or a decimal\
+          \ value between 0 and 511. YAML accepts both octal and decimal values, JSON\
+          \ requires decimal values for mode bits. Defaults to 0644. Directories within\
+          \ the path are not affected by this setting. This might be in conflict with\
           \ other options that affect the file mode, like fsGroup, and the result\
           \ can be other mode bits set."
         format: "int32"
@@ -1095,11 +1117,13 @@ properties:
               description: "The key to project."
               type: "string"
             mode:
-              description: "Optional: mode bits to use on this file, must be a value\
-                \ between 0 and 0777. If not specified, the volume defaultMode will\
-                \ be used. This might be in conflict with other options that affect\
-                \ the file mode, like fsGroup, and the result can be other mode bits\
-                \ set."
+              description: "Optional: mode bits used to set permissions on this file.\
+                \ Must be an octal value between 0000 and 0777 or a decimal value\
+                \ between 0 and 511. YAML accepts both octal and decimal values, JSON\
+                \ requires decimal values for mode bits. If not specified, the volume\
+                \ defaultMode will be used. This might be in conflict with other options\
+                \ that affect the file mode, like fsGroup, and the result can be other\
+                \ mode bits set."
               format: "int32"
               type: "integer"
             path:

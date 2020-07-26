@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
@@ -17,22 +17,22 @@ class RequestClusterStart(flinkOptions: FlinkOptions, flinkClient: FlinkClient, 
         private val logger = Logger.getLogger(RequestClusterStart::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: StartOptions): OperationResult<Void?> {
-        try {
+    override fun execute(clusterSelector: ClusterSelector, params: StartOptions): OperationResult<Void?> {
+        return try {
             bridge.setWithoutSavepoint(params.withoutSavepoint)
             bridge.setManualAction(ManualAction.START)
 
-            kubeClient.updateAnnotations(clusterId, bridge.getAnnotations())
+            kubeClient.updateAnnotations(clusterSelector, bridge.getAnnotations())
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't start cluster", e)
+            logger.error("[name=${clusterSelector.name}] Can't start cluster", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

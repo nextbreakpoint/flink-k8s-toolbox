@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkclient.model.ClusterOverviewWithVersion
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -19,7 +19,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class ClusterIsReadyTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val flinkAddress = FlinkAddress(host = "localhost", port = 8080)
@@ -39,26 +39,26 @@ class ClusterIsReadyTest {
     @Test
     fun `should fail when kubeClient throws exception`() {
         given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScaling)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
-        assertThat(result.output).isNull()
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
+        assertThat(result.output).isFalse()
     }
 
     @Test
     fun `should fail when flinkClient throws exception`() {
         given(flinkClient.getOverview(eq(flinkAddress))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScaling)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
-        assertThat(result.output).isNull()
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
+        assertThat(result.output).isFalse()
     }
 
     @Test
@@ -67,14 +67,14 @@ class ClusterIsReadyTest {
         overview.slotsAvailable = 2
         overview.taskmanagers = 0
         given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterId, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScaling)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
-        assertThat(result.output).isNull()
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
+        assertThat(result.output).isFalse()
     }
 
     @Test
@@ -83,14 +83,14 @@ class ClusterIsReadyTest {
         overview.slotsAvailable = 0
         overview.taskmanagers = 2
         given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterId, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScaling)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.RETRY)
-        assertThat(result.output).isNull()
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
+        assertThat(result.output).isFalse()
     }
 
     @Test
@@ -99,13 +99,13 @@ class ClusterIsReadyTest {
         overview.slotsAvailable = 2
         overview.taskmanagers = 2
         given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterId, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScaling)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
-        assertThat(result.output).isNull()
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
+        assertThat(result.output).isTrue()
     }
 }

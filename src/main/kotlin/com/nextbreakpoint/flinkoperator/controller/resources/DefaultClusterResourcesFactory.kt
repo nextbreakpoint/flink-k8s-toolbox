@@ -28,7 +28,7 @@ import io.kubernetes.client.models.V1WeightedPodAffinityTerm
 object DefaultClusterResourcesFactory : ClusterResourcesFactory {
     override fun createJobManagerService(
         namespace: String,
-        clusterId: String,
+        clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
     ): V1Service {
@@ -39,7 +39,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         val serviceLabels = mapOf(
             Pair("owner", clusterOwner),
             Pair("name", flinkCluster.metadata.name),
-            Pair("uid", clusterId),
+            Pair("uid", clusterSelector),
             Pair("component", "flink"),
             Pair("role", "jobmanager")
         )
@@ -83,7 +83,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
     override fun createJobManagerStatefulSet(
         namespace: String,
-        clusterId: String,
+        clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
     ): V1StatefulSet {
@@ -98,7 +98,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         val jobmanagerLabels = mapOf(
             Pair("owner", clusterOwner),
             Pair("name", flinkCluster.metadata.name),
-            Pair("uid", clusterId),
+            Pair("uid", clusterSelector),
             Pair("component", "flink"),
             Pair("role", "jobmanager")
         )
@@ -106,7 +106,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         val taskmanagerLabels = mapOf(
             Pair("owner", clusterOwner),
             Pair("name", flinkCluster.metadata.name),
-            Pair("uid", clusterId),
+            Pair("uid", clusterSelector),
             Pair("component", "flink"),
             Pair("role", "taskmanager")
         )
@@ -243,7 +243,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         return V1StatefulSetBuilder()
             .withMetadata(jobmanagerMetadata)
             .editOrNewSpec()
-            .withReplicas(1)
+            .withReplicas(0)
             .editOrNewTemplate()
             .withSpec(jobmanagerPodSpec)
             .withMetadata(jobmanagerPodMetadata)
@@ -258,7 +258,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
     override fun createTaskManagerStatefulSet(
         namespace: String,
-        clusterId: String,
+        clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
     ): V1StatefulSet {
@@ -273,7 +273,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         val jobmanagerLabels = mapOf(
             Pair("owner", clusterOwner),
             Pair("name", flinkCluster.metadata.name),
-            Pair("uid", clusterId),
+            Pair("uid", clusterSelector),
             Pair("component", "flink"),
             Pair("role", "jobmanager")
         )
@@ -281,7 +281,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
         val taskmanagerLabels = mapOf(
             Pair("owner", clusterOwner),
             Pair("name", flinkCluster.metadata.name),
-            Pair("uid", clusterId),
+            Pair("uid", clusterSelector),
             Pair("component", "flink"),
             Pair("role", "taskmanager")
         )
@@ -385,12 +385,10 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         taskmanagerPodMetadata.annotations = flinkCluster.spec.taskManager?.annotations
 
-        val replicas = flinkCluster.spec?.taskManagers ?: 1
-
         return V1StatefulSetBuilder()
             .withMetadata(taskmanagerMetadata)
             .editOrNewSpec()
-            .withReplicas(replicas)
+            .withReplicas(0)
             .editOrNewTemplate()
             .withSpec(taskmanagerPodSpec)
             .withMetadata(taskmanagerPodMetadata)

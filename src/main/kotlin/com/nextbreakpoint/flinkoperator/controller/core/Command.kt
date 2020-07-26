@@ -1,5 +1,5 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 
-data class Command(val clusterId: ClusterId, val json: String)
+data class Command(val clusterSelector: ClusterSelector, val json: String)

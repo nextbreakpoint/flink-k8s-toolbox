@@ -5,7 +5,6 @@
     "image": "integration/flink:1.9.2"
   },
   "bootstrap": {
-    "executionMode": "Stream",
     "serviceAccount": "flink-bootstrap",
     "pullPolicy": "Never",
     "image": "integration/flink-jobs:1",

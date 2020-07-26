@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
@@ -16,7 +16,7 @@ import org.mockito.Mockito.verify
 
 class TaskControllerTest {
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
-    private val clusterId = ClusterId(name = "test", namespace = "flink", uuid = "123")
+    private val clusterSelector = ClusterSelector(name = "test", namespace = "flink", uuid = "123")
     private val resources = CachedResources(
         flinkCluster = cluster,
         bootstrapJob = TestFactory.aBootstrapJob(cluster),
@@ -27,7 +27,7 @@ class TaskControllerTest {
         taskmanagerPVC = TestFactory.aTaskManagerPersistenVolumeClaim(cluster)
     )
     private val logger = mock(Logger::class.java)
-    private val task = spy(DummyTask(logger, cluster))
+    private val task = spy(DummyTask(cluster))
     private val controller = mock(OperationController::class.java)
     private val tasks = mapOf(
         ClusterStatus.Unknown to task,
@@ -41,7 +41,7 @@ class TaskControllerTest {
         ClusterStatus.Terminated to task,
         ClusterStatus.Cancelling to task
     )
-    private val taskController = TaskController.create(controller = controller, clusterId = clusterId, tasks = tasks)
+    private val taskController = TaskController.create(controller = controller, clusterSelector = clusterSelector, tasks = tasks)
 
     @Test
     fun `should update savepoint request`() {
@@ -52,7 +52,7 @@ class TaskControllerTest {
         assertThat(Status.getStatusTimestamp(cluster)).isGreaterThanOrEqualTo(timestamp)
     }
 
-    class DummyTask(logger: Logger, val cluster: V1FlinkCluster) : Task(logger) {
+    class DummyTask(val cluster: V1FlinkCluster) : Task() {
         override fun execute(context: TaskContext) {
             Status.setClusterStatus(cluster, ClusterStatus.Running)
         }

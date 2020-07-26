@@ -1,21 +1,21 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ResourceStatus
 import io.kubernetes.client.models.V1EnvVar
 
 class ClusterResourcesValidator {
     fun evaluate(
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         flinkCluster: V1FlinkCluster,
         clusterResources: ClusterResources
     ): ClusterResourcesStatus {
-        val jobmanagerServiceStatus = evaluateJobManagerServiceStatus(clusterResources, clusterId, flinkCluster)
+        val jobmanagerServiceStatus = evaluateJobManagerServiceStatus(clusterResources, clusterSelector, flinkCluster)
 
-        val jobmanagerStatefulSetStatus = evaluateJobManagerStatefulSetStatus(clusterResources, clusterId, flinkCluster)
+        val jobmanagerStatefulSetStatus = evaluateJobManagerStatefulSetStatus(clusterResources, clusterSelector, flinkCluster)
 
-        val taskmanagerStatefulSetStatus = evaluateTaskManagerStatefulSetStatus(clusterResources, clusterId, flinkCluster)
+        val taskmanagerStatefulSetStatus = evaluateTaskManagerStatefulSetStatus(clusterResources, clusterSelector, flinkCluster)
 
         return ClusterResourcesStatus(
             jobmanagerService = jobmanagerServiceStatus,
@@ -26,7 +26,7 @@ class ClusterResourcesValidator {
 
     private fun evaluateJobManagerServiceStatus(
         actualClusterResources: ClusterResources,
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         flinkCluster: V1FlinkCluster
     ): Pair<ResourceStatus, List<String>> {
         val jobmanagerService = actualClusterResources.jobmanagerService ?: return ResourceStatus.MISSING to listOf()
@@ -45,7 +45,7 @@ class ClusterResourcesValidator {
             statusReport.add("name label missing or invalid")
         }
 
-        if (jobmanagerService.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
+        if (jobmanagerService.metadata.labels["uid"]?.equals(clusterSelector.uuid) != true) {
             statusReport.add("uid label missing or invalid")
         }
 
@@ -62,7 +62,7 @@ class ClusterResourcesValidator {
 
     private fun evaluateJobManagerStatefulSetStatus(
         actualClusterResources: ClusterResources,
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         flinkCluster: V1FlinkCluster
     ): Pair<ResourceStatus, List<String>> {
         val jobmanagerStatefulSet = actualClusterResources.jobmanagerStatefulSet ?: return ResourceStatus.MISSING to listOf()
@@ -81,7 +81,7 @@ class ClusterResourcesValidator {
             statusReport.add("name label missing or invalid")
         }
 
-        if (jobmanagerStatefulSet.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
+        if (jobmanagerStatefulSet.metadata.labels["uid"]?.equals(clusterSelector.uuid) != true) {
             statusReport.add("uid label missing or invalid")
         }
 
@@ -166,7 +166,7 @@ class ClusterResourcesValidator {
 
     private fun evaluateTaskManagerStatefulSetStatus(
         actualClusterResources: ClusterResources,
-        clusterId: ClusterId,
+        clusterSelector: ClusterSelector,
         flinkCluster: V1FlinkCluster
     ): Pair<ResourceStatus, List<String>> {
         val taskmanagerStatefulSet = actualClusterResources.taskmanagerStatefulSet ?: return ResourceStatus.MISSING to listOf()
@@ -185,7 +185,7 @@ class ClusterResourcesValidator {
             statusReport.add("name label missing or invalid")
         }
 
-        if (taskmanagerStatefulSet.metadata.labels["uid"]?.equals(clusterId.uuid) != true) {
+        if (taskmanagerStatefulSet.metadata.labels["uid"]?.equals(clusterSelector.uuid) != true) {
             statusReport.add("uid label missing or invalid")
         }
 

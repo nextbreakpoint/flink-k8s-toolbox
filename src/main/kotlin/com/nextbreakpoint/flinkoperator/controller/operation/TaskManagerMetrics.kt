@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.JobManagerStats
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
@@ -17,9 +17,9 @@ class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
         private val logger = Logger.getLogger(TaskManagerMetrics::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: TaskManagerId): OperationResult<String> {
+    override fun execute(clusterSelector: ClusterSelector, params: TaskManagerId): OperationResult<String> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
             val metrics = flinkClient.getTaskManagerMetrics(address, params,
                 "Status.JVM.CPU.Time,Status.JVM.CPU.Load,Status.JVM.Threads.Count,Status.JVM.Memory.Heap.Max,Status.JVM.Memory.Heap.Used,Status.JVM.Memory.Heap.Committed,Status.JVM.Memory.NonHeap.Max,Status.JVM.Memory.NonHeap.Used,Status.JVM.Memory.NonHeap.Committed,Status.JVM.Memory.Direct.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Direct.TotalCapacity,Status.JVM.Memory.Mapped.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Mapped.TotalCapacity,Status.JVM.GarbageCollector.Copy.Time,Status.JVM.GarbageCollector.Copy.Count,Status.JVM.GarbageCollector.MarkSweepCompact.Time,Status.JVM.GarbageCollector.MarkSweepCompact.Count,Status.JVM.ClassLoader.ClassesLoaded,Status.JVM.ClassLoader.ClassesUnloaded,taskSlotsTotal,taskSlotsAvailable,numRegisteredTaskManagers,numRunningJobs"
@@ -56,14 +56,14 @@ class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
             )
 
             return OperationResult(
-                OperationStatus.COMPLETED,
+                OperationStatus.OK,
                 JSON().serialize(metricsResponse)
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't get metrics of task manager $params", e)
+            logger.error("[name=${clusterSelector.name}] Can't get metrics of task manager $params", e)
 
             return OperationResult(
-                OperationStatus.FAILED,
+                OperationStatus.ERROR,
                 "{}"
             )
         }

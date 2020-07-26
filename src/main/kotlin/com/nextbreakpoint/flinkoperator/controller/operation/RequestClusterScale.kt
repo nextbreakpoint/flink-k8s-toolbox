@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -15,19 +15,19 @@ class RequestClusterScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, 
         private val logger = Logger.getLogger(RequestClusterScale::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: ScaleOptions): OperationResult<Void?> {
-        try {
-            kubeClient.rescaleCluster(clusterId, params.taskManagers)
+    override fun execute(clusterSelector: ClusterSelector, params: ScaleOptions): OperationResult<Void?> {
+        return try {
+            kubeClient.rescaleCluster(clusterSelector, params.taskManagers)
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't scale cluster", e)
+            logger.error("[name=${clusterSelector.name}] Can't scale cluster", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }
