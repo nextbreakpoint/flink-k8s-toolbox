@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnTerminatedTest {
     private val context = mock(TaskContext::class.java)
@@ -31,7 +32,7 @@ class OnTerminatedTest {
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -41,7 +42,7 @@ class OnTerminatedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).removeFinalizer()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -51,7 +52,7 @@ class OnTerminatedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -63,6 +64,6 @@ class OnTerminatedTest {
         inOrder.verify(context, times(1)).terminateCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).executeManualAction(actions)
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }

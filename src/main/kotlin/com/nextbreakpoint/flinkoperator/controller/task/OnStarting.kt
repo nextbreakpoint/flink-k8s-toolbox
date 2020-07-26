@@ -31,6 +31,11 @@ class OnStarting : Task() {
             return
         }
 
+        if (context.hasScaleChanged()) {
+            context.onResourceScaled()
+            return
+        }
+
         context.ensurePodsExists()
         context.ensureServiceExist()
 

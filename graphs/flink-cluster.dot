@@ -25,6 +25,20 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
+  STARTING -> RESTARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster modified</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTING -> SCALING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster scaled</TD>
+          </TR>
+      </TABLE>
+  > ];
   STARTING -> RUNNING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>

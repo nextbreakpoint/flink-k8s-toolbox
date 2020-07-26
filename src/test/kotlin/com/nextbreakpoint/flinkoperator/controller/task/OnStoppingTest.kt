@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnStoppingTest {
     private val context = mock(TaskContext::class.java)
@@ -26,7 +27,7 @@ class OnStoppingTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).onTaskTimeOut()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -37,7 +38,7 @@ class OnStoppingTest {
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).mustTerminateResources()
         inOrder.verify(context, times(1)).suspendCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -50,7 +51,7 @@ class OnStoppingTest {
         inOrder.verify(context, times(1)).mustTerminateResources()
         inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).onClusterSuspended()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -61,7 +62,7 @@ class OnStoppingTest {
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).mustTerminateResources()
         inOrder.verify(context, times(1)).terminateCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -74,6 +75,6 @@ class OnStoppingTest {
         inOrder.verify(context, times(1)).mustTerminateResources()
         inOrder.verify(context, times(1)).terminateCluster()
         inOrder.verify(context, times(1)).onClusterTerminated()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }

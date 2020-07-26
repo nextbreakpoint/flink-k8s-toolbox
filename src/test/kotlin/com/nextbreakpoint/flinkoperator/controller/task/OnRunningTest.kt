@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnRunningTest {
     private val context = mock(TaskContext::class.java)
@@ -49,7 +50,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).hasScaleChanged()
         inOrder.verify(context, times(1)).updateSavepoint()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -59,7 +60,7 @@ class OnRunningTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).onResourceDeleted()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -69,7 +70,7 @@ class OnRunningTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).resetCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -81,7 +82,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).resetCluster()
         inOrder.verify(context, times(1)).hasResourceDiverged()
         inOrder.verify(context, times(1)).onResourceDiverged()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -94,7 +95,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasResourceDiverged()
         inOrder.verify(context, times(1)).hasJobFinished()
         inOrder.verify(context, times(1)).onJobFinished()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -108,7 +109,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasJobFinished()
         inOrder.verify(context, times(1)).hasJobFailed()
         inOrder.verify(context, times(1)).onJobFailed()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -125,7 +126,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).isBootstrapPresent()
         inOrder.verify(context, times(1)).executeManualAction(actions, true)
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -142,7 +143,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).isBootstrapPresent()
         inOrder.verify(context, times(1)).executeManualAction(actionsNoTrigger, true)
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -158,7 +159,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).onResourceChanged()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -175,6 +176,6 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).hasScaleChanged()
         inOrder.verify(context, times(1)).onResourceScaled()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }

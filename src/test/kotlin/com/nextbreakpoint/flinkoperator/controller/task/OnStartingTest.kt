@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnStartingTest {
     private val context = mock(TaskContext::class.java)
@@ -24,6 +25,7 @@ class OnStartingTest {
         given(context.hasTaskTimedOut()).thenReturn(false)
         given(context.isManualActionPresent()).thenReturn(false)
         given(context.hasResourceChanged()).thenReturn(false)
+        given(context.hasScaleChanged()).thenReturn(false)
         given(context.startCluster()).thenReturn(false)
     }
 
@@ -35,10 +37,11 @@ class OnStartingTest {
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).hasResourceChanged()
+        inOrder.verify(context, times(1)).hasScaleChanged()
         inOrder.verify(context, times(1)).ensurePodsExists()
         inOrder.verify(context, times(1)).ensureServiceExist()
         inOrder.verify(context, times(1)).startCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -48,7 +51,7 @@ class OnStartingTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).onResourceDeleted()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -59,7 +62,7 @@ class OnStartingTest {
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).onTaskTimeOut()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -68,9 +71,10 @@ class OnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).executeManualAction(KotlinMockito.eq(actions))
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -79,10 +83,25 @@ class OnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).onResourceChanged()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when scale has changed`() {
+        given(context.hasScaleChanged()).thenReturn(true)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isManualActionPresent()
+        inOrder.verify(context, times(1)).hasResourceChanged()
+        inOrder.verify(context, times(1)).hasScaleChanged()
+        inOrder.verify(context, times(1)).onResourceScaled()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -91,12 +110,14 @@ class OnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).hasResourceChanged()
+        inOrder.verify(context, times(1)).hasScaleChanged()
         inOrder.verify(context, times(1)).ensurePodsExists()
         inOrder.verify(context, times(1)).ensureServiceExist()
         inOrder.verify(context, times(1)).startCluster()
         inOrder.verify(context, times(1)).onClusterStarted()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnSuspendedTest {
     private val context = mock(TaskContext::class.java)
@@ -33,7 +34,7 @@ class OnSuspendedTest {
         inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).ensurePodsExists()
         inOrder.verify(context, times(1)).isManualActionPresent()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -43,7 +44,7 @@ class OnSuspendedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).onResourceDeleted()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -53,7 +54,7 @@ class OnSuspendedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).suspendCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -66,6 +67,6 @@ class OnSuspendedTest {
         inOrder.verify(context, times(1)).ensurePodsExists()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).executeManualAction(actions)
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }
