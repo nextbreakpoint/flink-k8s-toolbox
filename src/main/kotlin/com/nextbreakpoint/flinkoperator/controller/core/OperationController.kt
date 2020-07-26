@@ -38,7 +38,7 @@ import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStart
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestClusterStop
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestSavepointForget
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestSavepointTrigger
-import com.nextbreakpoint.flinkoperator.controller.operation.SavepointGetLatest
+import com.nextbreakpoint.flinkoperator.controller.operation.SavepointQuery
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1Service
@@ -93,11 +93,11 @@ class OperationController(
     fun removeJar(clusterSelector: ClusterSelector) : OperationResult<Void?> =
         JarRemove(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
 
-    fun triggerSavepoint(clusterSelector: ClusterSelector, options: SavepointOptions) : OperationResult<SavepointRequest> =
+    fun triggerSavepoint(clusterSelector: ClusterSelector, options: SavepointOptions) : OperationResult<SavepointRequest?> =
         SavepointTrigger(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, options)
 
-    fun getLatestSavepoint(clusterSelector: ClusterSelector, savepointRequest: SavepointRequest) : OperationResult<String> =
-        SavepointGetLatest(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, savepointRequest)
+    fun querySavepoint(clusterSelector: ClusterSelector, savepointRequest: SavepointRequest) : OperationResult<String?> =
+        SavepointQuery(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, savepointRequest)
 
     fun createBootstrapJob(clusterSelector: ClusterSelector, bootstrapJob: V1Job): OperationResult<String?> =
         BootstrapCreateJob(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, bootstrapJob)

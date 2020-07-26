@@ -6,7 +6,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
-import com.nextbreakpoint.flinkoperator.controller.core.CachedResources
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
@@ -239,24 +238,36 @@ class TaskContextTest {
     fun `cancelJob should return false when savepoint is required and savepoint request is present but savepoint is not completed`() {
         given(mediator.isSavepointRequired()).thenReturn(true)
         given(mediator.getSavepointRequest()).thenReturn(savepointRequest)
-        given(mediator.getLatestSavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.ERROR, ""))
+        given(mediator.querySavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, null))
         val result = context.cancelJob()
         verify(mediator, times(1)).isSavepointRequired()
         verify(mediator, times(1)).getSavepointRequest()
-        verify(mediator, times(1)).getLatestSavepoint(any(), any())
+        verify(mediator, times(1)).querySavepoint(any(), any())
         assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `cancelJob should return true when savepoint is required and savepoint request is present but savepoint can't be completed`() {
+        given(mediator.isSavepointRequired()).thenReturn(true)
+        given(mediator.getSavepointRequest()).thenReturn(savepointRequest)
+        given(mediator.querySavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.ERROR, null))
+        val result = context.cancelJob()
+        verify(mediator, times(1)).isSavepointRequired()
+        verify(mediator, times(1)).getSavepointRequest()
+        verify(mediator, times(1)).querySavepoint(any(), any())
+        assertThat(result).isTrue()
     }
 
     @Test
     fun `cancelJob should return true when savepoint is required and savepoint request is present but savepoint takes too long`() {
         given(mediator.isSavepointRequired()).thenReturn(true)
         given(mediator.getSavepointRequest()).thenReturn(savepointRequest)
-        given(mediator.getLatestSavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.ERROR, ""))
+        given(mediator.querySavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.timeSinceLastUpdateInSeconds()).thenReturn(301)
         val result = context.cancelJob()
         verify(mediator, times(1)).isSavepointRequired()
         verify(mediator, times(1)).getSavepointRequest()
-        verify(mediator, times(1)).getLatestSavepoint(any(), any())
+        verify(mediator, times(1)).querySavepoint(any(), any())
         verify(mediator, times(1)).timeSinceLastUpdateInSeconds()
         assertThat(result).isTrue()
     }
@@ -265,11 +276,11 @@ class TaskContextTest {
     fun `cancelJob should return true when savepoint is required and savepoint request is present and savepoint is completed`() {
         given(mediator.isSavepointRequired()).thenReturn(true)
         given(mediator.getSavepointRequest()).thenReturn(savepointRequest)
-        given(mediator.getLatestSavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, "/tmp/1"))
+        given(mediator.querySavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, "/tmp/1"))
         val result = context.cancelJob()
         verify(mediator, times(1)).resetSavepointRequest()
         verify(mediator, times(1)).setSavepointPath("/tmp/1")
-        verify(mediator, times(1)).getLatestSavepoint(any(), any())
+        verify(mediator, times(1)).querySavepoint(any(), any())
         assertThat(result).isTrue()
     }
 
@@ -1317,13 +1328,28 @@ class TaskContextTest {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.getSavepointRequest()).thenReturn(savepointRequest)
         given(mediator.timeSinceLastUpdateInSeconds()).thenReturn(60)
-        given(mediator.getLatestSavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.ERROR, ""))
+        given(mediator.querySavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, null))
         context.updateSavepoint()
         verify(mediator, times(1)).clusterSelector
         verify(mediator, times(1)).isBootstrapPresent()
         verify(mediator, times(1)).getSavepointRequest()
-        verify(mediator, times(1)).getLatestSavepoint(eq(clusterSelector), eq(savepointRequest))
+        verify(mediator, times(1)).querySavepoint(eq(clusterSelector), eq(savepointRequest))
         verify(mediator, times(1)).timeSinceLastUpdateInSeconds()
+        verifyNoMoreInteractions(mediator)
+    }
+
+    @Test
+    fun `updateSavepoint should not change status when bootstrap is present and savepoint request is present but savepoint can't be completed`() {
+        given(mediator.isBootstrapPresent()).thenReturn(true)
+        given(mediator.getSavepointRequest()).thenReturn(savepointRequest)
+        given(mediator.timeSinceLastUpdateInSeconds()).thenReturn(60)
+        given(mediator.querySavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.ERROR, null))
+        context.updateSavepoint()
+        verify(mediator, times(1)).clusterSelector
+        verify(mediator, times(1)).isBootstrapPresent()
+        verify(mediator, times(1)).getSavepointRequest()
+        verify(mediator, times(1)).querySavepoint(eq(clusterSelector), eq(savepointRequest))
+        verify(mediator, times(1)).resetSavepointRequest()
         verifyNoMoreInteractions(mediator)
     }
 
@@ -1332,12 +1358,12 @@ class TaskContextTest {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.getSavepointRequest()).thenReturn(savepointRequest)
         given(mediator.timeSinceLastUpdateInSeconds()).thenReturn(60)
-        given(mediator.getLatestSavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, "/tmp/1"))
+        given(mediator.querySavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, "/tmp/1"))
         context.updateSavepoint()
         verify(mediator, times(1)).clusterSelector
         verify(mediator, times(1)).isBootstrapPresent()
         verify(mediator, times(1)).getSavepointRequest()
-        verify(mediator, times(1)).getLatestSavepoint(eq(clusterSelector), eq(savepointRequest))
+        verify(mediator, times(1)).querySavepoint(eq(clusterSelector), eq(savepointRequest))
         verify(mediator, times(1)).resetSavepointRequest()
         verify(mediator, times(1)).setSavepointPath(eq("/tmp/1"))
         verifyNoMoreInteractions(mediator)
@@ -1348,12 +1374,12 @@ class TaskContextTest {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.getSavepointRequest()).thenReturn(savepointRequest)
         given(mediator.timeSinceLastUpdateInSeconds()).thenReturn(600)
-        given(mediator.getLatestSavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.ERROR, "/tmp/1"))
+        given(mediator.querySavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, null))
         context.updateSavepoint()
         verify(mediator, times(1)).clusterSelector
         verify(mediator, times(1)).isBootstrapPresent()
         verify(mediator, times(1)).getSavepointRequest()
-        verify(mediator, times(1)).getLatestSavepoint(eq(clusterSelector), eq(savepointRequest))
+        verify(mediator, times(1)).querySavepoint(eq(clusterSelector), eq(savepointRequest))
         verify(mediator, times(1)).timeSinceLastUpdateInSeconds()
         verify(mediator, times(1)).resetSavepointRequest()
         verifyNoMoreInteractions(mediator)
