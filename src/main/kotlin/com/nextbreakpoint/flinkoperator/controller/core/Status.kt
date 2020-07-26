@@ -220,15 +220,15 @@ object Status {
     fun getServiceMode(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.serviceMode
 
-    fun setJobRestartPolicy(flinkCluster: V1FlinkCluster, jobRestartPolicy: String?) {
+    fun setRestartPolicy(flinkCluster: V1FlinkCluster, restartPolicy: String?) {
         ensureState(flinkCluster)
 
-        flinkCluster.status?.jobRestartPolicy = jobRestartPolicy
+        flinkCluster.status?.jobRestartPolicy = restartPolicy
 
         updateStatusTimestamp(flinkCluster, currentTimeMillis())
     }
 
-    fun getJobRestartPolicy(flinkCluster: V1FlinkCluster): String? =
+    fun getRestartPolicy(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.jobRestartPolicy
 
     fun setBootstrap(flinkCluster: V1FlinkCluster, bootstrap: V1BootstrapSpec?) {

@@ -26,7 +26,7 @@ class OnFinished : Task() {
             return
         }
 
-        if (context.shouldRestartJob()) {
+        if (context.shouldRestart()) {
             if (context.hasResourceChanged()) {
                 context.onResourceChanged()
                 return

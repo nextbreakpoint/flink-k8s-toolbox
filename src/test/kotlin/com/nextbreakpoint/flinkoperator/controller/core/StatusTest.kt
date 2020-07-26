@@ -193,9 +193,9 @@ class StatusTest {
     fun `should store job restart policy and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
         assertThat(Status.getStatusTimestamp(cluster)).isEqualTo(DateTime(0))
-        assertThat(Status.getJobRestartPolicy(cluster)).isNull()
-        Status.setJobRestartPolicy(cluster, "Never")
-        assertThat(Status.getJobRestartPolicy(cluster)).isEqualTo("Never")
+        assertThat(Status.getRestartPolicy(cluster)).isNull()
+        Status.setRestartPolicy(cluster, "Never")
+        assertThat(Status.getRestartPolicy(cluster)).isEqualTo("Never")
         assertThat(Status.getStatusTimestamp(cluster)).isGreaterThanOrEqualTo(timestamp)
     }
 
