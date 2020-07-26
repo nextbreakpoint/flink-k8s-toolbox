@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnFailedTest {
     private val context = mock(TaskContext::class.java)
@@ -35,7 +36,7 @@ class OnFailedTest {
         inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).shouldRestartJob()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -45,7 +46,7 @@ class OnFailedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).onResourceDeleted()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -55,7 +56,7 @@ class OnFailedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).suspendCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -64,9 +65,10 @@ class OnFailedTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).executeManualAction(eq(actions))
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -76,10 +78,11 @@ class OnFailedTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).shouldRestartJob()
         inOrder.verify(context, times(1)).hasResourceChanged()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -89,10 +92,11 @@ class OnFailedTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).suspendCluster()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).shouldRestartJob()
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).onResourceChanged()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnCancellingTest {
     private val context = mock(TaskContext::class.java)
@@ -28,7 +29,7 @@ class OnCancellingTest {
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).resetCluster()
         inOrder.verify(context, times(1)).cancelJob()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -38,7 +39,7 @@ class OnCancellingTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).onResourceDeleted()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -49,7 +50,7 @@ class OnCancellingTest {
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).onTaskTimeOut()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -60,7 +61,7 @@ class OnCancellingTest {
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).resetCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -73,6 +74,6 @@ class OnCancellingTest {
         inOrder.verify(context, times(1)).resetCluster()
         inOrder.verify(context, times(1)).cancelJob()
         inOrder.verify(context, times(1)).onClusterReadyToStop()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }
