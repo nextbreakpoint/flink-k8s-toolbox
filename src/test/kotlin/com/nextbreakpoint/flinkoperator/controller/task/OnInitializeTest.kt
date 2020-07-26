@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnInitializeTest {
     private val context = mock(TaskContext::class.java)
@@ -15,6 +16,6 @@ class OnInitializeTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).onResourceInitialise()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 class OnUpdatingTest {
     private val context = mock(TaskContext::class.java)
@@ -28,7 +29,7 @@ class OnUpdatingTest {
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).mustRecreateResources()
         inOrder.verify(context, times(1)).terminateCluster()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -38,7 +39,7 @@ class OnUpdatingTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).onResourceDeleted()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -49,7 +50,7 @@ class OnUpdatingTest {
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).onTaskTimeOut()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -61,7 +62,7 @@ class OnUpdatingTest {
         inOrder.verify(context, times(1)).hasTaskTimedOut()
         inOrder.verify(context, times(1)).mustRecreateResources()
         inOrder.verify(context, times(1)).onClusterReadyToUpdate()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 
     @Test
@@ -75,6 +76,6 @@ class OnUpdatingTest {
         inOrder.verify(context, times(1)).mustRecreateResources()
         inOrder.verify(context, times(1)).terminateCluster()
         inOrder.verify(context, times(1)).onClusterReadyToUpdate()
-        inOrder.verifyNoMoreInteractions()
+        verifyNoMoreInteractions(context)
     }
 }
