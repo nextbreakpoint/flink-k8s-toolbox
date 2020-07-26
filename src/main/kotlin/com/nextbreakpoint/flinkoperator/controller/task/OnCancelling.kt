@@ -1,29 +1,27 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
-import com.nextbreakpoint.flinkoperator.controller.core.Timeout
-import org.apache.log4j.Logger
 
-class OnCancelling(logger: Logger) : Task(logger) {
+class OnCancelling : Task() {
     override fun execute(context: TaskContext) {
-        val seconds = context.timeSinceLastUpdateInSeconds()
-
-        if (seconds > Timeout.TASK_TIMEOUT) {
-            logger.error("Job not cancelled after $seconds seconds")
-
-            context.resetSavepointRequest()
-            context.setClusterStatus(ClusterStatus.Failed)
-
+        if (context.isResourceDeleted()) {
+            context.onResourceDeleted()
             return
         }
 
-        if (cancel(context)) {
-            logger.info("Job cancelled");
+        if (context.hasTaskTimedOut()) {
+            context.onTaskTimeOut()
+            return
+        }
 
-            context.resetSavepointRequest()
-            context.setClusterStatus(ClusterStatus.Stopping)
+        if (!context.resetCluster()) {
+            return
+        }
+
+        if (context.cancelJob()) {
+            context.onClusterReadyToStop()
+            return
         }
     }
 }

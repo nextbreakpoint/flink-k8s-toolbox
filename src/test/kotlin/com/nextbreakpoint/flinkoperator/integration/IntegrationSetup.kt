@@ -16,9 +16,6 @@ import com.squareup.okhttp.RequestBody
 import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
 import java.lang.ProcessBuilder.Redirect
 import java.time.Duration
 import java.util.Date
@@ -26,15 +23,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.fail
 
 open class IntegrationSetup {
-    @AfterEach
-    fun printSomeInfo() {
-        describeResources()
-        printOperatorLogs()
-    }
-
     companion object {
         val redirect = Redirect.INHERIT
-        val version = "1.3.2-beta"
+        val version = "1.3.3-beta"
         val timestamp = System.currentTimeMillis()
 //        val namespace = "integration-$timestamp"
         val namespace = "integration"
@@ -46,12 +37,10 @@ open class IntegrationSetup {
         val statusTypeToken = object : TypeToken<V1FlinkClusterStatus>() {}
         val taskmanagersTypeToken = object : TypeToken<List<TaskManagerInfo>>() {}
 
-        private var skipDockerImages = System.getenv("SKIP_BUILD_IMAGES") == "true"
+        private var buildDockerImages = System.getenv("BUILD_IMAGES") == "true"
 
-        @BeforeAll
         @JvmStatic
         fun setup() {
-            cleanDockerImages()
             buildDockerImages()
             TimeUnit.SECONDS.sleep(5)
             printInfo()
@@ -67,7 +56,6 @@ open class IntegrationSetup {
             TimeUnit.SECONDS.sleep(5)
         }
 
-        @AfterAll
         @JvmStatic
         fun teardown() {
             TimeUnit.SECONDS.sleep(5)
@@ -77,16 +65,16 @@ open class IntegrationSetup {
             deleteNamespace()
         }
 
-        fun describeResources() {
-//        describePods(redirect = redirect, namespace = namespace)
-            describeClusters(redirect = redirect, namespace = namespace)
-        }
-
         fun printInfo() {
             println("Run test - ${Date(timestamp)}")
             println("Namespace = $namespace")
             println("Version = $version")
-            println("Build images = ${if (skipDockerImages) "No" else "Yes"}")
+            println("Build images = ${if (buildDockerImages) "Yes" else "No"}")
+        }
+
+        fun describeResources() {
+            describePods(redirect = redirect, namespace = namespace)
+            describeClusters(redirect = redirect, namespace = namespace)
         }
 
         fun createNamespace() {
@@ -100,9 +88,10 @@ open class IntegrationSetup {
         }
 
         fun buildDockerImages() {
-            if (skipDockerImages) {
+            if (!buildDockerImages) {
                 return
             }
+            cleanDockerImages()
             println("Building operator image...")
             if (buildDockerImage(redirect = redirect, path = ".", name = "integration/flink-k8s-toolbox:$version", args = emptyList()) != 0) {
                 fail("Can't build operator image")
@@ -123,7 +112,7 @@ open class IntegrationSetup {
                 fail("Can't build job image")
             }
             println("Images created")
-            skipDockerImages = true
+            buildDockerImages = false
         }
 
         fun installMinio() {
@@ -173,8 +162,8 @@ open class IntegrationSetup {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
-            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs", path = "helm/flink-k8s-toolbox-jobs") != 0) {
-                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs", path = "helm/flink-k8s-toolbox-jobs") != 0) {
+            if (installHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-roles", path = "helm/flink-k8s-toolbox-roles") != 0) {
+                if (upgradeHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-roles", path = "helm/flink-k8s-toolbox-roles") != 0) {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
@@ -217,7 +206,7 @@ open class IntegrationSetup {
             if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-operator") != 0) {
                 println("Can't uninstall Helm chart")
             }
-            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-jobs") != 0) {
+            if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-roles") != 0) {
                 println("Can't uninstall Helm chart")
             }
             if (uninstallHelmChart(redirect = redirect, namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
@@ -293,6 +282,22 @@ open class IntegrationSetup {
                 .until(condition)
         }
 
+        fun awaitUntilAsserted(timeout: Long, delay: Long, interval: Long, assertion: () -> Unit) {
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(timeout))
+                .pollDelay(Duration.ofSeconds(delay))
+                .pollInterval(Duration.ofSeconds(interval))
+                .untilAsserted(assertion)
+        }
+
+        fun awaitUntilCondition(timeout: Long, delay: Long, interval: Long, condition: () -> Boolean) {
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(timeout))
+                .pollDelay(Duration.ofSeconds(delay))
+                .pollInterval(Duration.ofSeconds(interval))
+                .until(condition)
+        }
+
         private fun listClusters(port: Int): List<String> {
             val response = sendGetRequest(url = "http://$host:$port/clusters", typeToken = listTypeToken)
             if (response.first != 200) {
@@ -303,35 +308,35 @@ open class IntegrationSetup {
 
         fun stopCluster(name: String, options: StopOptions, port: Int) {
             val response = sendPutRequest(url = "http://$host:$port/cluster/$name/stop", body = options, typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't stop cluster $name")
             }
         }
 
         fun startCluster(name: String, options: StartOptions, port: Int) {
             val response = sendPutRequest(url = "http://$host:$port/cluster/$name/start", body = options, typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't start cluster $name")
             }
         }
 
         fun scaleCluster(name: String, options: ScaleOptions, port: Int) {
             val response = sendPutRequest(url = "http://$host:$port/cluster/$name/scale", body = options, typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't scale cluster $name")
             }
         }
 
         fun createCluster(name: String, spec: V1FlinkClusterSpec, port: Int) {
             val response = sendPostRequest(url = "http://$host:$port/cluster/$name", body = spec, typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't create cluster $name")
             }
         }
 
         fun deleteCluster(name: String, port: Int) {
             val response = sendDeleteRequest(url = "http://$host:$port/cluster/$name", typeToken = mapTypeToken)
-            if (response.first != 200 || response.second["status"] != "COMPLETED") {
+            if (response.first != 200 || response.second["status"] != "OK") {
                 fail("Can't delete cluster $name")
             }
         }
@@ -556,7 +561,7 @@ open class IntegrationSetup {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace logs -l app=flink-operator"
+                "kubectl -n $namespace logs --tail=1000 -l app=flink-operator"
             )
             return executeCommand(redirect, command)
         }

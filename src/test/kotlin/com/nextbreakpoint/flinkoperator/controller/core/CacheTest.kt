@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -16,12 +16,12 @@ class CacheTest {
 
     @Test
     fun `should throw RuntimeException when looking for non existent cluster`() {
-        assertThatThrownBy { cache.getFlinkCluster(ClusterId(namespace = "flink", name = "test", uuid = "123")) }.isInstanceOf(RuntimeException::class.java)
+        assertThatThrownBy { cache.getFlinkCluster(ClusterSelector(namespace = "flink", name = "test", uuid = "123")) }.isInstanceOf(RuntimeException::class.java)
     }
 
     @Test
     fun `should throw RuntimeException when looking for non existent cluster id`() {
-        assertThatThrownBy { cache.getClusterId(namespace = "flink", name = "test") }.isInstanceOf(RuntimeException::class.java)
+        assertThatThrownBy { cache.findClusterSelector(namespace = "flink", name = "test") }.isInstanceOf(RuntimeException::class.java)
     }
 
     @Test
@@ -30,8 +30,8 @@ class CacheTest {
     }
 
     @Test
-    fun `should return empty list of cluster ids initially`() {
-        assertThat(cache.getClusterIds()).isEmpty()
+    fun `should return empty list of cluster selectors initially`() {
+        assertThat(cache.getClusterSelectors()).isEmpty()
     }
 
     @Test
@@ -47,15 +47,15 @@ class CacheTest {
         val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
-        assertThat(cache.getFlinkCluster(ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = "123"))).isNotNull()
+        assertThat(cache.getFlinkCluster(ClusterSelector(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = "123"))).isNotNull()
     }
 
     @Test
-    fun `should find cluster id when a cluster changed`() {
+    fun `should find cluster selectors when a cluster changed`() {
         val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
-        assertThat(cache.getClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name)).isNotNull()
+        assertThat(cache.findClusterSelector(namespace = cluster.metadata.namespace, name = cluster.metadata.name)).isNotNull()
     }
 
     @Test
@@ -106,11 +106,11 @@ class CacheTest {
         val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
-        val clusterIds = cache.getClusterIds()
-        assertThat(clusterIds).hasSize(2)
-        val clusterId1 = ClusterId(namespace = "flink", name = "test", uuid = "123")
-        val clusterId2 = ClusterId(namespace = "flink", name = "test", uuid = "456")
-        assertThat(clusterIds).containsExactlyInAnyOrder(clusterId1, clusterId2)
+        val clusterSelectors = cache.getClusterSelectors()
+        assertThat(clusterSelectors).hasSize(2)
+        val clusterSelector1 = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
+        val clusterSelector2 = ClusterSelector(namespace = "flink", name = "test", uuid = "456")
+        assertThat(clusterSelectors).containsExactlyInAnyOrder(clusterSelector1, clusterSelector2)
     }
 
     @Test
@@ -133,8 +133,8 @@ class CacheTest {
         val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
-        val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
-        val resources = cache.getCachedResources(clusterId = clusterId)
+        val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
+        val resources = cache.getCachedResources(clusterSelector = clusterSelector)
         assertThat(resources.bootstrapJob).isNull()
         assertThat(resources.jobmanagerService).isNull()
         assertThat(resources.jobmanagerStatefulSet).isNull()
@@ -160,8 +160,8 @@ class CacheTest {
         cache.onStatefulSetChanged(taskManagerStatefulSet1)
         cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim1)
         cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim1)
-        val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
-        val resources = cache.getCachedResources(clusterId = clusterId)
+        val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
+        val resources = cache.getCachedResources(clusterSelector = clusterSelector)
         assertThat(resources.bootstrapJob).isEqualTo(bootstrapJob)
         assertThat(resources.jobmanagerService).isEqualTo(jobManagerService1)
         assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobManagerStatefulSet1)
@@ -201,16 +201,16 @@ class CacheTest {
         cache.onStatefulSetChanged(taskManagerStatefulSet2)
         cache.onPersistentVolumeClaimChanged(jobManagerPersistenVolumeClaim2)
         cache.onPersistentVolumeClaimChanged(taskManagerPersistenVolumeClaim2)
-        val clusterId1 = ClusterId(namespace = "flink", name = "test", uuid = "123")
-        val resources1 = cache.getCachedResources(clusterId = clusterId1)
+        val clusterSelector1 = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
+        val resources1 = cache.getCachedResources(clusterSelector = clusterSelector1)
         assertThat(resources1.bootstrapJob).isEqualTo(bootstrapJob1)
         assertThat(resources1.jobmanagerService).isEqualTo(jobManagerService1)
         assertThat(resources1.jobmanagerStatefulSet).isEqualTo(jobManagerStatefulSet1)
         assertThat(resources1.taskmanagerStatefulSet).isEqualTo(taskManagerStatefulSet1)
         assertThat(resources1.jobmanagerPVC).isEqualTo(jobManagerPersistenVolumeClaim1)
         assertThat(resources1.taskmanagerPVC).isEqualTo(taskManagerPersistenVolumeClaim1)
-        val clusterId2 = ClusterId(namespace = "flink", name = "test", uuid = "456")
-        val resources2 = cache.getCachedResources(clusterId = clusterId2)
+        val clusterSelector2 = ClusterSelector(namespace = "flink", name = "test", uuid = "456")
+        val resources2 = cache.getCachedResources(clusterSelector = clusterSelector2)
         assertThat(resources2.bootstrapJob).isEqualTo(bootstrapJob2)
         assertThat(resources2.jobmanagerService).isEqualTo(jobManagerService2)
         assertThat(resources2.jobmanagerStatefulSet).isEqualTo(jobManagerStatefulSet2)
@@ -256,16 +256,16 @@ class CacheTest {
         cache.onStatefulSetDeleted(taskManagerStatefulSet1)
         cache.onPersistentVolumeClaimDeleted(jobManagerPersistenVolumeClaim1)
         cache.onPersistentVolumeClaimDeleted(taskManagerPersistenVolumeClaim1)
-        val clusterId1 = ClusterId(namespace = "flink", name = "test", uuid = "123")
-        val resources1 = cache.getCachedResources(clusterId = clusterId1)
+        val clusterSelector1 = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
+        val resources1 = cache.getCachedResources(clusterSelector = clusterSelector1)
         assertThat(resources1.bootstrapJob).isNull()
         assertThat(resources1.jobmanagerService).isNull()
         assertThat(resources1.jobmanagerStatefulSet).isNull()
         assertThat(resources1.taskmanagerStatefulSet).isNull()
         assertThat(resources1.jobmanagerPVC).isNull()
         assertThat(resources1.taskmanagerPVC).isNull()
-        val clusterId2 = ClusterId(namespace = "flink", name = "test", uuid = "456")
-        val resources2 = cache.getCachedResources(clusterId = clusterId2)
+        val clusterSelector2 = ClusterSelector(namespace = "flink", name = "test", uuid = "456")
+        val resources2 = cache.getCachedResources(clusterSelector = clusterSelector2)
         assertThat(resources2.bootstrapJob).isEqualTo(bootstrapJob2)
         assertThat(resources2.jobmanagerService).isEqualTo(jobManagerService2)
         assertThat(resources2.jobmanagerStatefulSet).isEqualTo(jobManagerStatefulSet2)
@@ -311,16 +311,16 @@ class CacheTest {
         cache.onStatefulSetDeletedAll()
         cache.onPersistentVolumeClaimDeletedAll()
         cache.onPersistentVolumeClaimDeletedAll()
-        val clusterId1 = ClusterId(namespace = "flink", name = "test", uuid = "123")
-        val resources1 = cache.getCachedResources(clusterId = clusterId1)
+        val clusterSelector1 = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
+        val resources1 = cache.getCachedResources(clusterSelector = clusterSelector1)
         assertThat(resources1.bootstrapJob).isNull()
         assertThat(resources1.jobmanagerService).isNull()
         assertThat(resources1.jobmanagerStatefulSet).isNull()
         assertThat(resources1.taskmanagerStatefulSet).isNull()
         assertThat(resources1.jobmanagerPVC).isNull()
         assertThat(resources1.taskmanagerPVC).isNull()
-        val clusterId2 = ClusterId(namespace = "flink", name = "test", uuid = "456")
-        val resources2 = cache.getCachedResources(clusterId = clusterId2)
+        val clusterSelector2 = ClusterSelector(namespace = "flink", name = "test", uuid = "456")
+        val resources2 = cache.getCachedResources(clusterSelector = clusterSelector2)
         assertThat(resources2.bootstrapJob).isNull()
         assertThat(resources2.jobmanagerService).isNull()
         assertThat(resources2.jobmanagerStatefulSet).isNull()

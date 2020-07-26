@@ -1,40 +1,27 @@
 package com.nextbreakpoint.flinkoperator.controller.task
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Task
 import com.nextbreakpoint.flinkoperator.controller.core.TaskContext
-import com.nextbreakpoint.flinkoperator.controller.core.Timeout
-import org.apache.log4j.Logger
 
-class OnScaling(logger: Logger) : Task(logger) {
+class OnScaling : Task() {
     override fun execute(context: TaskContext) {
-        if (context.hasBeenDeleted()) {
-            context.setDeleteResources(true)
-            context.resetManualAction()
-            context.setClusterStatus(ClusterStatus.Stopping)
-
+        if (context.isResourceDeleted()) {
+            context.onResourceDeleted()
             return
         }
 
-        val seconds = context.timeSinceLastUpdateInSeconds()
-
-        if (seconds > Timeout.TASK_TIMEOUT) {
-            logger.error("Cluster not scaled after $seconds seconds")
-
-            context.resetSavepointRequest()
-            context.setClusterStatus(ClusterStatus.Failed)
-
+        if (context.hasTaskTimedOut()) {
+            context.onTaskTimeOut()
             return
         }
 
-        if (cancel(context)) {
-            context.rescaleCluster()
+        if (!context.resetCluster()) {
+            return
+        }
 
-            if (context.getTaskManagers() == 0) {
-                context.setClusterStatus(ClusterStatus.Stopping)
-            } else {
-                context.setClusterStatus(ClusterStatus.Starting)
-            }
+        if (context.cancelJob()) {
+            context.onClusterReadyToScale()
+            return
         }
     }
 }

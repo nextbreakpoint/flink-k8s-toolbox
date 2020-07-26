@@ -6,7 +6,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: flink-operator
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -45,7 +45,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: flink-operator
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}

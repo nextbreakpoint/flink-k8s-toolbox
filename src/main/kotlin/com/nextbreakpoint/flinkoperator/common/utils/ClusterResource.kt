@@ -7,7 +7,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1JobManagerSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1RuntimeSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1TaskManagerSpec
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import io.kubernetes.client.JSON
 import java.security.MessageDigest
 import java.util.Base64
@@ -51,6 +51,6 @@ object ClusterResource {
         )
     }
 
-    fun makeLabelSelector(clusterId: ClusterId) =
-        "uid=${clusterId.uuid},name=${clusterId.name},owner=flink-operator,component=flink,role=taskmanager"
+    fun makeLabelSelector(clusterSelector: ClusterSelector) =
+        "uid=${clusterSelector.uuid},name=${clusterSelector.name},owner=flink-operator,component=flink,role=taskmanager"
 }

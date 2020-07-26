@@ -6,6 +6,7 @@ import com.nextbreakpoint.flinkoperator.common.model.StopOptions
 import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -15,7 +16,8 @@ class StartAndStopTest : IntegrationSetup() {
     companion object {
         @BeforeAll
         @JvmStatic
-        fun createClusters() {
+        fun setup() {
+            IntegrationSetup.setup()
             println("Creating clusters...")
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
@@ -30,7 +32,7 @@ class StartAndStopTest : IntegrationSetup() {
 
         @AfterAll
         @JvmStatic
-        fun removeFinalizers() {
+        fun teardown() {
             println("Removing finalizers...")
             removeFinalizers(name = "cluster-1")
             removeFinalizers(name = "cluster-2")
@@ -42,7 +44,14 @@ class StartAndStopTest : IntegrationSetup() {
             awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
             }
+            IntegrationSetup.teardown()
         }
+    }
+
+    @AfterEach
+    fun printInfo() {
+        describeResources()
+        printOperatorLogs()
     }
 
     @Test

@@ -5,7 +5,6 @@
     "image": "example/flink:1.9.2"
   },
   "bootstrap": {
-    "executionMode": "Stream",
     "serviceAccount": "flink-bootstrap",
     "pullPolicy": "Never",
     "image": "example/flink-jobs:1",
@@ -296,8 +295,8 @@
     }
   },
   "operator": {
-    "savepointMode": "Manual",
-    "savepointInterval": 60,
+    "savepointMode": "Automatic",
+    "savepointInterval": 300,
     "savepointTargetPath": "file:///var/savepoints",
     "jobRestartPolicy": "Always"
   }

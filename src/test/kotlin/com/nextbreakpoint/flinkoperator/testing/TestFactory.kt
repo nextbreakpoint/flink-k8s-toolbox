@@ -2,7 +2,7 @@ package com.nextbreakpoint.flinkoperator.testing
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
@@ -334,7 +334,7 @@ object TestFactory {
     }
 
     fun createBootstrapJob(uid: String, cluster: V1FlinkCluster): V1Job {
-        val clusterId = ClusterId(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
-        return DefaultBootstrapJobFactory.createBootstrapJob(clusterId, "flink-operator", cluster.spec.bootstrap, "/tmp/000", 1)
+        val clusterSelector = ClusterSelector(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
+        return DefaultBootstrapJobFactory.createBootstrapJob(clusterSelector, "flink-operator", cluster.spec.bootstrap, "/tmp/000", 1)
     }
 }

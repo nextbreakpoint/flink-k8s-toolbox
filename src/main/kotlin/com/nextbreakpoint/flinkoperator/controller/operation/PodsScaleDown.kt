@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -14,21 +14,21 @@ class PodsScaleDown(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCl
         private val logger = Logger.getLogger(PodsScaleDown::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
-        try {
-            logger.debug("[name=${clusterId.name}] Terminating pods...")
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Void?> {
+        return try {
+            logger.debug("[name=${clusterSelector.name}] Terminating pods...")
 
-            kubeClient.terminateStatefulSets(clusterId)
+            kubeClient.terminateStatefulSets(clusterSelector)
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't terminate pods", e)
+            logger.error("[name=${clusterSelector.name}] Can't terminate pods", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

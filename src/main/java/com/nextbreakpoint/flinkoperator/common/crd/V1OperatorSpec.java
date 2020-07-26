@@ -15,8 +15,6 @@ public class V1OperatorSpec {
     private String savepointTargetPath;
     @SerializedName("jobRestartPolicy")
     private String jobRestartPolicy;
-    @SerializedName("taskManagers")
-    private Integer taskManagers;
 
     public String getSavepointMode() {
         return savepointMode;

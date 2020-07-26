@@ -6,6 +6,7 @@ import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -16,7 +17,8 @@ class SavepointTest : IntegrationSetup() {
     companion object {
         @BeforeAll
         @JvmStatic
-        fun createClusters() {
+        fun setup() {
+            IntegrationSetup.setup()
             println("Creating clusters...")
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-1.yaml")
             createCluster(redirect = redirect, namespace = namespace, path = "integration/cluster-2.yaml")
@@ -39,7 +41,7 @@ class SavepointTest : IntegrationSetup() {
 
         @AfterAll
         @JvmStatic
-        fun removeFinalizers() {
+        fun teardown() {
             println("Removing finalizers...")
             removeFinalizers(name = "cluster-1")
             removeFinalizers(name = "cluster-2")
@@ -51,7 +53,14 @@ class SavepointTest : IntegrationSetup() {
             awaitUntilAsserted(timeout = 360) {
                 assertThat(clusterExists(redirect = redirect, namespace = namespace, name = "cluster-2")).isFalse()
             }
+            IntegrationSetup.teardown()
         }
+    }
+
+    @AfterEach
+    fun printInfo() {
+        describeResources()
+        printOperatorLogs()
     }
 
     @Test
@@ -59,7 +68,7 @@ class SavepointTest : IntegrationSetup() {
         println("Should create savepoint automatically...")
         val response = getClusterStatus(name = "cluster-2", port = port)
         println(response)
-        assertThat(response["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(response["status"] as String?).isEqualTo("OK")
         val initialStatus = JSON().deserialize<V1FlinkClusterStatus>(response["output"] as String, statusTypeToken.type)
         assertThat(initialStatus.savepointMode).isEqualTo("Manual")
         if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/operator/savepointMode\",\"value\":\"Automatic\"}]") != 0) {
@@ -68,21 +77,21 @@ class SavepointTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 120) {
             val pollResponse = getClusterStatus(name = "cluster-2", port = port)
             println(pollResponse)
-            assertThat(pollResponse["status"] as String?).isEqualTo("COMPLETED")
+            assertThat(pollResponse["status"] as String?).isEqualTo("OK")
             val latestStatus = JSON().deserialize<V1FlinkClusterStatus>(pollResponse["output"] as String, statusTypeToken.type)
             assertThat(latestStatus.savepointPath).isNotBlank()
             assertThat(latestStatus.savepointTimestamp).isNotNull()
         }
         val nextResponse = getClusterStatus(name = "cluster-2", port = port)
         println(nextResponse)
-        assertThat(nextResponse["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(nextResponse["status"] as String?).isEqualTo("OK")
         val currentStatus = JSON().deserialize<V1FlinkClusterStatus>(nextResponse["output"] as String, statusTypeToken.type)
         assertThat(currentStatus.savepointPath).isNotBlank()
         assertThat(currentStatus.savepointTimestamp).isNotNull()
         awaitUntilAsserted(timeout = 120) {
             val pollResponse = getClusterStatus(name = "cluster-2", port = port)
             println(pollResponse)
-            assertThat(pollResponse["status"] as String?).isEqualTo("COMPLETED")
+            assertThat(pollResponse["status"] as String?).isEqualTo("OK")
             val latestStatus = JSON().deserialize<V1FlinkClusterStatus>(pollResponse["output"] as String, statusTypeToken.type)
             assertThat(latestStatus.savepointPath).isNotBlank()
             assertThat(latestStatus.savepointTimestamp).isNotNull()
@@ -96,7 +105,7 @@ class SavepointTest : IntegrationSetup() {
         println("Should create savepoint manually...")
         val response = getClusterStatus(name = "cluster-1", port = port)
         println(response)
-        assertThat(response["status"] as String?).isEqualTo("COMPLETED")
+        assertThat(response["status"] as String?).isEqualTo("OK")
         val initialStatus = JSON().deserialize<V1FlinkClusterStatus>(response["output"] as String, statusTypeToken.type)
         assertThat(initialStatus.savepointMode).isEqualTo("Manual")
         assertThat(initialStatus.savepointPath).isBlank()
@@ -105,7 +114,7 @@ class SavepointTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 120) {
             val pollResponse = getClusterStatus(name = "cluster-1", port = port)
             println(pollResponse)
-            assertThat(pollResponse["status"] as String?).isEqualTo("COMPLETED")
+            assertThat(pollResponse["status"] as String?).isEqualTo("OK")
             val latestStatus = JSON().deserialize<V1FlinkClusterStatus>(pollResponse["output"] as String, statusTypeToken.type)
             assertThat(latestStatus.savepointPath).isNotBlank()
             assertThat(latestStatus.savepointTimestamp).isNotNull()

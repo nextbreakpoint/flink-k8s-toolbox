@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -16,21 +16,21 @@ class TaskManagerDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
         private val logger = Logger.getLogger(TaskManagerDetails::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: TaskManagerId): OperationResult<String> {
-        try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterId.namespace, clusterId.name)
+    override fun execute(clusterSelector: ClusterSelector, params: TaskManagerId): OperationResult<String> {
+        return try {
+            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
 
             val details = flinkClient.getTaskManagerDetails(address, params)
 
-            return OperationResult(
-                OperationStatus.COMPLETED,
+            OperationResult(
+                OperationStatus.OK,
                 JSON().serialize(details)
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't get details of task manager $params", e)
+            logger.error("[name=${clusterSelector.name}] Can't get details of task manager $params", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 "{}"
             )
         }

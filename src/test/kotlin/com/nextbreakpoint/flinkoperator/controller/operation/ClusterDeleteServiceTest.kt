@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -16,7 +16,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class ClusterDeleteServiceTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
@@ -28,24 +28,24 @@ class ClusterDeleteServiceTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.deleteServices(eq(clusterId))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteServices(eq(clusterId))
+        given(kubeClient.deleteServices(eq(clusterSelector))).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).deleteServices(eq(clusterSelector))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
     @Test
     fun `should delete jobmanager service`() {
-        val result = command.execute(clusterId, null)
-        verify(kubeClient, times(1)).deleteServices(eq(clusterId))
+        val result = command.execute(clusterSelector, null)
+        verify(kubeClient, times(1)).deleteServices(eq(clusterSelector))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
     }
 }

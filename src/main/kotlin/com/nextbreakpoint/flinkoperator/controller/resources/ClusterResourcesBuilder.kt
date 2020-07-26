@@ -5,21 +5,21 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 class ClusterResourcesBuilder(
     private val factory: ClusterResourcesFactory,
     private val namespace: String,
-    private val clusterId: String,
+    private val clusterSelector: String,
     private val clusterOwner: String,
     private val flinkCluster: V1FlinkCluster
 ) {
     fun build(): ClusterResources {
         val jobmanagerService = factory.createJobManagerService(
-            namespace, clusterId, clusterOwner, flinkCluster
+            namespace, clusterSelector, clusterOwner, flinkCluster
         )
 
         val jobmanagerStatefulSet = factory.createJobManagerStatefulSet(
-            namespace, clusterId, clusterOwner, flinkCluster
+            namespace, clusterSelector, clusterOwner, flinkCluster
         )
 
         val taskmanagerStatefulSet = factory.createTaskManagerStatefulSet(
-            namespace, clusterId, clusterOwner, flinkCluster
+            namespace, clusterSelector, clusterOwner, flinkCluster
         )
 
         return ClusterResources(

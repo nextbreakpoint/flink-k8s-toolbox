@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
@@ -14,30 +14,30 @@ class FlinkClusterDelete(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
         private val logger = Logger.getLogger(FlinkClusterDelete::class.simpleName)
     }
 
-    override fun execute(clusterId: ClusterId, params: Void?): OperationResult<Void?> {
-        try {
-            val response = kubeClient.deleteFlinkCluster(clusterId)
+    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Void?> {
+        return try {
+            val response = kubeClient.deleteFlinkCluster(clusterSelector)
 
             if (response.statusCode == 200) {
-                logger.info("[name=${clusterId.name}] Custom object deleted")
+                logger.info("[name=${clusterSelector.name}] Custom object deleted")
 
-                return OperationResult(
-                    OperationStatus.COMPLETED,
+                OperationResult(
+                    OperationStatus.OK,
                     null
                 )
             } else {
-                logger.error("[name=${clusterId.name}] Can't delete custom object")
+                logger.error("[name=${clusterSelector.name}] Can't delete custom object")
 
-                return OperationResult(
-                    OperationStatus.FAILED,
+                OperationResult(
+                    OperationStatus.ERROR,
                     null
                 )
             }
         } catch (e : Exception) {
-            logger.error("[name=${clusterId.name}] Can't delete cluster resource", e)
+            logger.error("[name=${clusterSelector.name}] Can't delete cluster resource", e)
 
-            return OperationResult(
-                OperationStatus.FAILED,
+            OperationResult(
+                OperationStatus.ERROR,
                 null
             )
         }

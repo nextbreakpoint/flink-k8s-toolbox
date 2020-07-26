@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
-import com.nextbreakpoint.flinkoperator.common.model.ClusterId
+import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
@@ -24,7 +24,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class RequestClusterStartTest {
-    private val clusterId = ClusterId(namespace = "flink", name = "test", uuid = "123")
+    private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
@@ -39,13 +39,13 @@ class RequestClusterStartTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        KotlinMockito.given(kubeClient.updateAnnotations(eq(clusterId), any())).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
-        verify(kubeClient, times(1)).updateAnnotations(eq(clusterId), any())
+        KotlinMockito.given(kubeClient.updateAnnotations(eq(clusterSelector), any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterSelector, StartOptions(withoutSavepoint = true))
+        verify(kubeClient, times(1)).updateAnnotations(eq(clusterSelector), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.FAILED)
+        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
     }
 
@@ -53,12 +53,12 @@ class RequestClusterStartTest {
     fun `should return expected result when starting without savepoint`() {
         Status.setClusterStatus(cluster, ClusterStatus.Terminated)
         val actionTimestamp = Annotations.getActionTimestamp(cluster)
-        val result = command.execute(clusterId, StartOptions(withoutSavepoint = true))
-        verify(kubeClient, times(1)).updateAnnotations(eq(clusterId), any())
+        val result = command.execute(clusterSelector, StartOptions(withoutSavepoint = true))
+        verify(kubeClient, times(1)).updateAnnotations(eq(clusterSelector), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
         assertThat(Annotations.isWithoutSavepoint(cluster)).isEqualTo(true)
@@ -69,12 +69,12 @@ class RequestClusterStartTest {
     fun `should return expected result when starting with savepoint`() {
         Status.setClusterStatus(cluster, ClusterStatus.Terminated)
         val actionTimestamp = Annotations.getActionTimestamp(cluster)
-        val result = command.execute(clusterId, StartOptions(withoutSavepoint = false))
-        verify(kubeClient, times(1)).updateAnnotations(eq(clusterId), any())
+        val result = command.execute(clusterSelector, StartOptions(withoutSavepoint = false))
+        verify(kubeClient, times(1)).updateAnnotations(eq(clusterSelector), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.COMPLETED)
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
         assertThat(Annotations.getManualAction(cluster)).isEqualTo(ManualAction.START)
         assertThat(Annotations.isWithoutSavepoint(cluster)).isEqualTo(false)
