@@ -13,8 +13,8 @@ public class V1OperatorSpec {
     private Long savepointInterval;
     @SerializedName("savepointTargetPath")
     private String savepointTargetPath;
-    @SerializedName("jobRestartPolicy")
-    private String jobRestartPolicy;
+    @SerializedName("restartPolicy")
+    private String restartPolicy;
 
     public String getSavepointMode() {
         return savepointMode;
@@ -51,12 +51,12 @@ public class V1OperatorSpec {
         this.savepointTargetPath = savepointTargetPath;
     }
 
-    public String getJobRestartPolicy() {
-        return jobRestartPolicy;
+    public String getRestartPolicy() {
+        return restartPolicy;
     }
 
-    public void setJobRestartPolicy(String jobRestartPolicy) {
-        this.jobRestartPolicy = jobRestartPolicy;
+    public void setRestartPolicy(String restartPolicy) {
+        this.restartPolicy = restartPolicy;
     }
 
     @Override
@@ -68,12 +68,12 @@ public class V1OperatorSpec {
                 Objects.equals(getSavepointPath(), that.getSavepointPath()) &&
                 Objects.equals(getSavepointInterval(), that.getSavepointInterval()) &&
                 Objects.equals(getSavepointTargetPath(), that.getSavepointTargetPath()) &&
-                Objects.equals(getJobRestartPolicy(), that.getJobRestartPolicy());
+                Objects.equals(getRestartPolicy(), that.getRestartPolicy());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getSavepointMode(), getSavepointPath(), getSavepointInterval(), getSavepointTargetPath(), getJobRestartPolicy());
+        return Objects.hash(getSavepointMode(), getSavepointPath(), getSavepointInterval(), getSavepointTargetPath(), getRestartPolicy());
     }
 
     @Override
@@ -83,7 +83,7 @@ public class V1OperatorSpec {
                 ", savepointPath='" + savepointPath + '\'' +
                 ", savepointInterval=" + savepointInterval +
                 ", savepointTargetPath='" + savepointTargetPath + '\'' +
-                ", jobRestartPolicy='" + jobRestartPolicy + '\'' +
+                ", restartPolicy='" + restartPolicy + '\'' +
                 '}';
     }
 }

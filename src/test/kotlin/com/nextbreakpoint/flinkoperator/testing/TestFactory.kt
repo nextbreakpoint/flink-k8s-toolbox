@@ -222,7 +222,7 @@ object TestFactory {
                 }
               },
               "operator": {
-                "jobRestartPolicy": "Never",
+                "restartPolicy": "Never",
                 "savepointMode": "Automatic",
                 "savepointInterval": "60",
                 "savepointTargetPath": "file:///var/tmp/test"

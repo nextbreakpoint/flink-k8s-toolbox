@@ -15,6 +15,6 @@ object Configuration {
     fun getSavepointTargetPath(flinkCluster: V1FlinkCluster) : String? =
         flinkCluster.spec?.operator?.savepointTargetPath?.trim()
 
-    fun getJobRestartPolicy(flinkCluster: V1FlinkCluster) : String =
-        flinkCluster.spec?.operator?.jobRestartPolicy ?: "NEVER"
+    fun getRestartPolicy(flinkCluster: V1FlinkCluster) : String =
+        flinkCluster.spec?.operator?.restartPolicy ?: "NEVER"
 }
