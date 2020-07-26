@@ -29,11 +29,11 @@ class TaskMediator(
     fun removeJar(clusterSelector: ClusterSelector) : OperationResult<Void?> =
         controller.removeJar(clusterSelector)
 
-    fun triggerSavepoint(clusterSelector: ClusterSelector, options: SavepointOptions) : OperationResult<SavepointRequest> =
+    fun triggerSavepoint(clusterSelector: ClusterSelector, options: SavepointOptions) : OperationResult<SavepointRequest?> =
         controller.triggerSavepoint(clusterSelector, options)
 
-    fun getLatestSavepoint(clusterSelector: ClusterSelector, savepointRequest: SavepointRequest) : OperationResult<String> =
-        controller.getLatestSavepoint(clusterSelector, savepointRequest)
+    fun querySavepoint(clusterSelector: ClusterSelector, savepointRequest: SavepointRequest) : OperationResult<String?> =
+        controller.querySavepoint(clusterSelector, savepointRequest)
 
     fun createBootstrapJob(clusterSelector: ClusterSelector, bootstrapJob: V1Job): OperationResult<String?> =
         controller.createBootstrapJob(clusterSelector, bootstrapJob)

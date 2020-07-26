@@ -140,16 +140,21 @@ class TaskContext(
                     return false
                 }
             } else {
-                val savepointResult = mediator.getLatestSavepoint(mediator.clusterSelector, savepointRequest)
+                val querySavepointResult = mediator.querySavepoint(mediator.clusterSelector, savepointRequest)
 
-                logger.info("Savepoint is in progress...")
-
-                if (savepointResult.isSuccessful()) {
-                    logger.info("Job stopped with savepoint (${savepointResult.output})")
-                    mediator.resetSavepointRequest()
-                    mediator.setSavepointPath(savepointResult.output)
+                if (!querySavepointResult.isSuccessful()) {
+                    logger.warn("Can't create savepoint")
                     return true
                 }
+
+                if (querySavepointResult.output != null) {
+                    logger.info("Job stopped with savepoint (${querySavepointResult.output})")
+                    mediator.resetSavepointRequest()
+                    mediator.setSavepointPath(querySavepointResult.output)
+                    return true
+                }
+
+                logger.info("Savepoint is in progress...")
 
                 val seconds = mediator.timeSinceLastUpdateInSeconds()
 
@@ -528,7 +533,7 @@ class TaskContext(
                 if (acceptedActions.contains(ManualAction.TRIGGER_SAVEPOINT)) {
                     if (mediator.getSavepointRequest() == null) {
                         val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOtions())
-                        if (response.isSuccessful()) {
+                        if (response.isSuccessful() && response.output != null) {
                             logger.info("Savepoint requested created. Waiting for savepoint...")
                             mediator.setSavepointRequest(response.output)
                         } else {
@@ -558,14 +563,22 @@ class TaskContext(
         val savepointRequest = mediator.getSavepointRequest()
 
         if (savepointRequest != null) {
-            val savepointResult = mediator.getLatestSavepoint(mediator.clusterSelector, savepointRequest)
+            val querySavepointResult = mediator.querySavepoint(mediator.clusterSelector, savepointRequest)
 
-            if (savepointResult.isSuccessful()) {
-                logger.info("Savepoint created (${savepointResult.output})")
+            if (!querySavepointResult.isSuccessful()) {
+                logger.warn("Can't create savepoint")
                 mediator.resetSavepointRequest()
-                mediator.setSavepointPath(savepointResult.output)
                 return
             }
+
+            if (querySavepointResult.output != null) {
+                logger.info("Savepoint created (${querySavepointResult.output})")
+                mediator.resetSavepointRequest()
+                mediator.setSavepointPath(querySavepointResult.output)
+                return
+            }
+
+            logger.info("Savepoint is in progress...")
 
             val seconds = mediator.timeSinceLastUpdateInSeconds()
 
@@ -583,7 +596,7 @@ class TaskContext(
                 if (mediator.timeSinceLastSavepointRequestInSeconds() >= savepointIntervalInSeconds) {
                     val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOtions())
 
-                    if (response.isSuccessful()) {
+                    if (response.isSuccessful() && response.output != null) {
                         logger.info("Savepoint requested created. Waiting for savepoint...")
                         mediator.setSavepointRequest(response.output)
                         return

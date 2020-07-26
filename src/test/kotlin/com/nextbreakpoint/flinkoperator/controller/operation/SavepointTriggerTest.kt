@@ -31,7 +31,6 @@ class SavepointTriggerTest {
     fun configure() {
         given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenReturn(flinkAddress)
         given(flinkClient.listRunningJobs(eq(flinkAddress))).thenReturn(listOf("1"))
-        given(flinkClient.isCheckpointInProgress(eq(flinkAddress), eq(listOf("1")))).thenReturn(listOf())
         given(flinkClient.triggerSavepoints(eq(flinkAddress), eq(listOf("1")), eq("file://tmp"))).thenReturn(mapOf("1" to "100"))
     }
 
@@ -44,7 +43,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.ERROR)
-        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
+        assertThat(result.output).isNull()
     }
 
     @Test
@@ -57,35 +56,7 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.ERROR)
-        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
-    }
-
-    @Test
-    fun `should return expected result when there are savepoints in progress`() {
-        given(flinkClient.isCheckpointInProgress(eq(flinkAddress), eq(listOf("1")))).thenReturn(listOf("1"))
-        val result = command.execute(clusterSelector, savepointOptions)
-        verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
-        verify(flinkClient, times(1)).listRunningJobs(eq(flinkAddress))
-        verify(flinkClient, times(1)).isCheckpointInProgress(eq(flinkAddress), eq(listOf("1")))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.ERROR)
-        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
-    }
-
-    @Test
-    fun `should return expected result when there aren't savepoints in progress`() {
-        val result = command.execute(clusterSelector, savepointOptions)
-        verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
-        verify(flinkClient, times(1)).listRunningJobs(eq(flinkAddress))
-        verify(flinkClient, times(1)).isCheckpointInProgress(eq(flinkAddress), eq(listOf("1")))
-        verify(flinkClient, times(1)).triggerSavepoints(eq(flinkAddress), eq(listOf("1")), eq("file://tmp"))
-        verifyNoMoreInteractions(kubeClient)
-        verifyNoMoreInteractions(flinkClient)
-        assertThat(result).isNotNull()
-        assertThat(result.status).isEqualTo(OperationStatus.OK)
-        assertThat(result.output).isEqualTo(SavepointRequest(jobId = "1", triggerId = "100"))
+        assertThat(result.output).isNull()
     }
 
     @Test
@@ -98,6 +69,19 @@ class SavepointTriggerTest {
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.ERROR)
-        assertThat(result.output).isEqualTo(SavepointRequest("", ""))
+        assertThat(result.output).isNull()
+    }
+
+    @Test
+    fun `should return expected result when savepoint is triggered`() {
+        val result = command.execute(clusterSelector, savepointOptions)
+        verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
+        verify(flinkClient, times(1)).listRunningJobs(eq(flinkAddress))
+        verify(flinkClient, times(1)).triggerSavepoints(eq(flinkAddress), eq(listOf("1")), eq("file://tmp"))
+        verifyNoMoreInteractions(kubeClient)
+        verifyNoMoreInteractions(flinkClient)
+        assertThat(result).isNotNull()
+        assertThat(result.status).isEqualTo(OperationStatus.OK)
+        assertThat(result.output).isEqualTo(SavepointRequest(jobId = "1", triggerId = "100"))
     }
 }

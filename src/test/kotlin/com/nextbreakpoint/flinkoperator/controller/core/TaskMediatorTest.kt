@@ -517,17 +517,17 @@ class TaskMediatorTest {
     }
 
     @Test
-    fun `should trigger savepoint jar`() {
+    fun `should trigger savepoint`() {
         given(controller.triggerSavepoint(eq(clusterSelector), eq(savepointOptions))).thenReturn(OperationResult(status = OperationStatus.OK, output = savepointRequest))
         assertThat(context.triggerSavepoint(clusterSelector, savepointOptions)).isNotNull()
         verify(controller, times(1)).triggerSavepoint(eq(clusterSelector), eq(savepointOptions))
     }
 
     @Test
-    fun `should get latest savepoint`() {
-        given(controller.getLatestSavepoint(eq(clusterSelector), eq(savepointRequest))).thenReturn(OperationResult(status = OperationStatus.OK, output = "file:///tmp/1"))
-        assertThat(context.getLatestSavepoint(clusterSelector, savepointRequest)).isNotNull()
-        verify(controller, times(1)).getLatestSavepoint(eq(clusterSelector), eq(savepointRequest))
+    fun `should query savepoint`() {
+        given(controller.querySavepoint(eq(clusterSelector), eq(savepointRequest))).thenReturn(OperationResult(status = OperationStatus.OK, output = "file:///tmp/1"))
+        assertThat(context.querySavepoint(clusterSelector, savepointRequest)).isNotNull()
+        verify(controller, times(1)).querySavepoint(eq(clusterSelector), eq(savepointRequest))
     }
 
     @Test
