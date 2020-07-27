@@ -371,14 +371,25 @@ object FlinkClient {
                     }
 
                     if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
-                        logger.info("[$address] Savepoint still in progress for job ${it.first}")
+                        logger.info("[$address] Savepoint in progress for job ${it.first}")
+
+                        it.first to SavepointInfo("IN_PROGRESS", null)
                     } else {
-                        logger.info("[$address] Savepoint completed for job ${it.first}")
+                        val operation = asynchronousOperationResult.operation as? Map<String, String>
+                        logger.debug("operation: $operation")
+                        val location = operation?.get("location")
+                        val failureCause = operation?.get("failure-cause")
+
+                        if (failureCause == null) {
+                            logger.info("[$address] Savepoint completed for job ${it.first}")
+
+                            it.first to SavepointInfo("COMPLETED", location)
+                        } else {
+                            logger.info("[$address] Savepoint failed for job ${it.first}")
+
+                            it.first to SavepointInfo("FAILED", null)
+                        }
                     }
-
-                    val operation = asynchronousOperationResult.operation as? Map<String, String>
-
-                    it.first to SavepointInfo(asynchronousOperationResult.status.id.toString(), operation?.get("location"))
                 }
             }.toMap()
         } catch (e : CallException) {
