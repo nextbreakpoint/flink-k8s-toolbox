@@ -101,11 +101,6 @@ class TaskContext(
     }
 
     fun cancelJob(): Boolean {
-        if (!mediator.isBootstrapPresent()) {
-            logger.info("Bootstrap not defined. Skipping cancel")
-            return true
-        }
-
         val jobManagerServiceExists = mediator.doesJobManagerServiceExists()
         val jobManagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
         val taskManagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
@@ -120,7 +115,7 @@ class TaskContext(
             return true
         }
 
-        if (mediator.isSavepointRequired()) {
+        if (mediator.isBootstrapPresent() && mediator.isSavepointRequired()) {
             val savepointRequest = mediator.getSavepointRequest()
 
             if (savepointRequest == null) {
@@ -277,7 +272,7 @@ class TaskContext(
             return false
         }
 
-        val bootstrapExists = mediator.isBootstrapPresent() && mediator.doesBootstrapJobExists()
+        val bootstrapExists = mediator.doesBootstrapJobExists()
 
         if (bootstrapExists) {
             val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
@@ -285,6 +280,8 @@ class TaskContext(
             if (bootstrapResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
+
+            return false
         }
 
         val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
@@ -297,7 +294,7 @@ class TaskContext(
             }
         }
 
-        return !bootstrapExists && !jobmanagerServiceExists
+        return !jobmanagerServiceExists
     }
 
     fun terminateCluster(): Boolean {
@@ -309,12 +306,13 @@ class TaskContext(
             return false
         }
 
-        val bootstrapExists = mediator.isBootstrapPresent() && mediator.doesBootstrapJobExists()
         val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
         val jobmanagerStatefuleSetExists = mediator.doesJobManagerStatefulSetExists()
         val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
         val jomanagerPVCExists = mediator.doesJobManagerPVCExists()
         val taskmanagerPVCExists = mediator.doesTaskManagerPVCExists()
+
+        val bootstrapExists = mediator.doesBootstrapJobExists()
 
         if (bootstrapExists) {
             val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
@@ -322,6 +320,8 @@ class TaskContext(
             if (bootstrapResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
+
+            return false
         }
 
         if (jobmanagerServiceExists) {
@@ -348,11 +348,11 @@ class TaskContext(
             }
         }
 
-        return !bootstrapExists && !jobmanagerServiceExists && !jobmanagerStatefuleSetExists && !taskmanagerStatefulSetExists && !jomanagerPVCExists && !taskmanagerPVCExists
+        return !jobmanagerServiceExists && !jobmanagerStatefuleSetExists && !taskmanagerStatefulSetExists && !jomanagerPVCExists && !taskmanagerPVCExists
     }
 
     fun resetCluster(): Boolean {
-        val bootstrapExists = mediator.isBootstrapPresent() && mediator.doesBootstrapJobExists()
+        val bootstrapExists = mediator.doesBootstrapJobExists()
 
         if (bootstrapExists) {
             val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
@@ -360,9 +360,11 @@ class TaskContext(
             if (bootstrapResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
+
+            return false
         }
 
-        return !bootstrapExists
+        return true
     }
 
     fun hasResourceDiverged(): Boolean {
@@ -543,7 +545,7 @@ class TaskContext(
                             logger.error("Savepoint request already exists. Skipping manual savepoint")
                         }
                     } else {
-                        logger.info("Bootstrap not defined. Skipping savepoint")
+                        logger.info("Bootstrap not defined")
                     }
                 } else {
                     logger.warn("Action not allowed")
