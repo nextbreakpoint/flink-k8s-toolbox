@@ -174,14 +174,6 @@ class TaskContextTest {
     }
 
     @Test
-    fun `cancelJob should return true when bootstrap is not defined`() {
-        given(mediator.isBootstrapPresent()).thenReturn(false)
-        val result = context.cancelJob()
-        verify(mediator, times(1)).isBootstrapPresent()
-        assertThat(result).isTrue()
-    }
-
-    @Test
     fun `cancelJob should return true when jobmanager service is not present`() {
         given(mediator.doesJobManagerServiceExists()).thenReturn(false)
         val result = context.cancelJob()
@@ -564,20 +556,6 @@ class TaskContextTest {
     }
 
     @Test
-    fun `suspendCluster should return false when pods have been stopped but bootstrap job is present`() {
-        given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.deleteBootstrapJob(any())).thenReturn(OperationResult(OperationStatus.OK, null))
-        given(mediator.doesBootstrapJobExists()).thenReturn(true)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        val result = context.suspendCluster()
-        verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).deleteBootstrapJob(any())
-        assertThat(result).isFalse()
-    }
-
-    @Test
     fun `suspendCluster should return false when pods have been stopped but jobmanager service is present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.deleteJobManagerService(any())).thenReturn(OperationResult(OperationStatus.OK, null))
@@ -589,19 +567,6 @@ class TaskContextTest {
         verify(mediator, times(1)).doesJobManagerServiceExists()
         verify(mediator, times(1)).deleteJobManagerService(any())
         assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `suspendCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap is not defined`() {
-        given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.isBootstrapPresent()).thenReturn(false)
-        given(mediator.doesBootstrapJobExists()).thenReturn(true)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        val result = context.suspendCluster()
-        verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).isBootstrapPresent()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        assertThat(result).isTrue()
     }
 
     @Test
@@ -767,27 +732,6 @@ class TaskContextTest {
     }
 
     @Test
-    fun `terminateCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap is not defined and statefulsets are not present and pvcs are not present`() {
-        given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.isBootstrapPresent()).thenReturn(false)
-        given(mediator.doesBootstrapJobExists()).thenReturn(true)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesJobManagerPVCExists()).thenReturn(false)
-        given(mediator.doesTaskManagerPVCExists()).thenReturn(false)
-        val result = context.terminateCluster()
-        verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).isBootstrapPresent()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).doesJobManagerPVCExists()
-        verify(mediator, times(1)).doesTaskManagerPVCExists()
-        assertThat(result).isTrue()
-    }
-
-    @Test
     fun `terminateCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap job is not present and statefulsets are not present and pvcs are not present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
@@ -815,14 +759,6 @@ class TaskContextTest {
         verify(mediator, times(1)).doesBootstrapJobExists()
         verify(mediator, times(1)).deleteBootstrapJob(any())
         assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `resetCluster should return true when bootstrap is not defined`() {
-        given(mediator.isBootstrapPresent()).thenReturn(false)
-        val result = context.resetCluster()
-        verify(mediator, times(1)).isBootstrapPresent()
-        assertThat(result).isTrue()
     }
 
     @Test
