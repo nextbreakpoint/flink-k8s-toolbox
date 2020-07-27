@@ -80,7 +80,7 @@ class TaskContext(
 
     fun onResourceDiverged() {
         logger.info("Cluster diverged")
-        mediator.setClusterStatus(ClusterStatus.Starting)
+        mediator.setClusterStatus(ClusterStatus.Restarting)
     }
 
     fun onResourceDeleted() {

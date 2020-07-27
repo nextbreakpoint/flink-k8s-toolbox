@@ -90,7 +90,7 @@ class TaskContextTest {
     @Test
     fun `should change status on resource diverged event`() {
         context.onResourceDiverged()
-        verify(mediator, times(1)).setClusterStatus(eq(ClusterStatus.Starting))
+        verify(mediator, times(1)).setClusterStatus(eq(ClusterStatus.Restarting))
     }
 
     @Test
