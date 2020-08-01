@@ -144,7 +144,7 @@ class TaskContext(
                 val querySavepointResult = mediator.querySavepoint(mediator.clusterSelector, savepointRequest)
 
                 if (!querySavepointResult.isSuccessful()) {
-                    logger.warn("Can't create savepoint")
+                    logger.warn("Can't cancel job with savepoint")
                     return true
                 }
 
