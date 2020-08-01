@@ -20,6 +20,7 @@ import com.nextbreakpoint.flinkclient.model.TriggerResponse
 import com.nextbreakpoint.flinkoperator.common.model.SavepointInfo
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.Metric
+import com.nextbreakpoint.flinkoperator.common.model.RescaleInfo
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import org.apache.log4j.Logger
 import java.io.File
@@ -399,76 +400,6 @@ object FlinkClient {
         }
     }
 
-//    fun isCheckpointInProgress(address: FlinkAddress, jobs: List<String>): List<String> {
-//        try {
-//            val flinkApi = createFlinkApiClient(address, TIMEOUT)
-//
-//            return jobs.map { jobId ->
-//                val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
-//
-//                jobId to response
-//            }.map {
-//                it.second.body().use { body ->
-//                    if (!it.second.isSuccessful) {
-//                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
-//                    }
-//
-//                    it.first to body.source().use { source ->
-//                        JSON().deserialize<CheckpointingStatistics>(source.readUtf8Line(), CheckpointingStatistics::class.java)
-//                    }
-//                }
-//            }.filter {
-//                it.second.counts.inProgress > 0
-//            }.map {
-//                it.first
-//            }.toList()
-//        } catch (e : CallException) {
-//            throw e
-//        } catch (e : Exception) {
-//            throw RuntimeException(e)
-//        }
-//    }
-
-//    fun getLatestSavepointPaths(address: FlinkAddress, requests: Map<String, String>): Map<String, String> {
-//        try {
-//            val flinkApi = createFlinkApiClient(address, TIMEOUT)
-//
-//            return requests.map { (jobId, _) ->
-//                val response = flinkApi.getJobCheckpointsCall(jobId, null, null).execute()
-//
-//                jobId to response
-//            }.map {
-//                it.second.body().use { body ->
-//                    if (!it.second.isSuccessful) {
-//                        throw CallException("[$address] Can't get checkpointing statistics for job ${it.first}")
-//                    }
-//
-//                    val checkpointingStatistics = body.source().use { source ->
-//                        JSON().deserialize<CheckpointingStatistics>(source.readUtf8Line(), CheckpointingStatistics::class.java)
-//                    }
-//
-//                    if (checkpointingStatistics.latest != null && checkpointingStatistics.latest.savepoint != null) {
-//                        val savepoint = checkpointingStatistics.latest.savepoint
-//
-//                        if (savepoint.status == CompletedCheckpointStatistics.StatusEnum.COMPLETED) {
-//                            it.first to savepoint.externalPath.trim('\"')
-//                        } else {
-//                            it.first to ""
-//                        }
-//                    } else {
-//                        it.first to ""
-//                    }
-//                }
-//            }.filter {
-//                it.second.isNotBlank()
-//            }.toMap()
-//        } catch (e : CallException) {
-//            throw e
-//        } catch (e : Exception) {
-//            throw RuntimeException(e)
-//        }
-//    }
-
     fun triggerSavepoints(address: FlinkAddress, jobs: List<String>, targetPath: String?): Map<String, String> {
         return createSavepoints(address, jobs, targetPath, false)
             .map {
@@ -491,7 +422,7 @@ object FlinkClient {
             }.map {
                 it.second.body().use { body ->
                     if (!it.second.isSuccessful) {
-                        throw CallException("[$address] Can't request savepoint for job $it")
+                        throw CallException("[$address] Can't trigger savepoint for job $it")
                     }
 
                     it.first to body.source().use { source ->
@@ -528,21 +459,80 @@ object FlinkClient {
         }
     }
 
-    fun triggerJobRescaling(address: FlinkAddress, jobId: String, parallelism: Int): TriggerResponse {
+    fun getRescaleRequestsStatus(address: FlinkAddress, requests: Map<String, String>): Map<String, RescaleInfo> {
         try {
-            val flinkApi = createFlinkApiClient(address, TIMEOUT * 30)
+            val flinkApi = createFlinkApiClient(address, TIMEOUT)
 
-            val response = flinkApi.triggerJobRescalingCall(jobId, parallelism, null, null).execute();
+            return requests.map { (jobId, requestId) ->
+                val response = flinkApi.getJobRescalingStatusCall(jobId, requestId, null, null).execute()
 
-            response.body().use { body ->
-                if (!response.isSuccessful) {
-                    throw CallException("[$address] Can't rescale job")
+                jobId to response
+            }.map {
+                it.second.body().use { body ->
+                    if (!it.second.isSuccessful) {
+                        throw CallException("[$address] Can't get rescale status for job ${it.first}")
+                    }
+
+                    val asynchronousOperationResult = body.source().use { source ->
+                        JSON().deserialize<AsynchronousOperationResult>(source.readUtf8Line(), AsynchronousOperationResult::class.java)
+                    }
+
+                    if (asynchronousOperationResult.status.id != QueueStatus.IdEnum.COMPLETED) {
+                        logger.info("[$address] Rescale in progress for job ${it.first}")
+
+                        it.first to RescaleInfo("IN_PROGRESS")
+                    } else {
+                        val operation = asynchronousOperationResult.operation as? Map<String, Object>
+                        logger.debug("operation: $operation")
+                        val failureCause = operation?.get("failure-cause") as? Map<String, Object>
+
+                        if (failureCause == null) {
+                            logger.info("[$address] Rescale completed for job ${it.first}")
+
+                            it.first to RescaleInfo("COMPLETED")
+                        } else {
+                            logger.info("[$address] Rescale failed for job ${it.first} (${failureCause})")
+
+                            it.first to RescaleInfo("FAILED")
+                        }
+                    }
                 }
+            }.toMap()
+        } catch (e : CallException) {
+            throw e
+        } catch (e : Exception) {
+            throw RuntimeException(e)
+        }
+    }
 
-                body.source().use { source ->
-                    return JSON().deserialize(source.readUtf8Line(), object : TypeToken<TriggerResponse>() {}.type)
+    fun triggerJobsRescaling(address: FlinkAddress, jobs: List<String>, parallelism: Int): Map<String, String> {
+        return triggerJobRescaling(address, jobs, parallelism)
+            .map {
+                it.key to it.value.requestId
+            }.onEach {
+                logger.info("[$address] Created rescale request ${it.second} for job ${it.first}")
+            }.toMap()
+    }
+
+    private fun triggerJobRescaling(address: FlinkAddress, jobs: List<String>, parallelism: Int): Map<String, TriggerResponse> {
+        try {
+            val flinkApi = createFlinkApiClient(address, TIMEOUT)
+
+            return jobs.map {
+                val response = flinkApi.triggerJobRescalingCall(it, parallelism, null, null).execute()
+
+                it to response
+            }.map {
+                it.second.body().use { body ->
+                    if (!it.second.isSuccessful) {
+                        throw CallException("[$address] Can't trigger rescale for job $it")
+                    }
+
+                    it.first to body.source().use { source ->
+                        JSON().deserialize<TriggerResponse>(source.readUtf8Line(), TriggerResponse::class.java)
+                    }
                 }
-            }
+            }.toMap()
         } catch (e : CallException) {
             throw e
         } catch (e : Exception) {
