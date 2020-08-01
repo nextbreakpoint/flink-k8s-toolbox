@@ -48,7 +48,8 @@ Install operator's global resources:
 
 Install operator's namespace resources:
 
-    helm install --namespace flink flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator
+    helm install flink-k8s-toolbox-roles helm/flink-k8s-toolbox-roles --namespace flink
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink
 
 Run Flink Operator:
 
@@ -190,8 +191,8 @@ Run Flink Operator using Docker image:
 
 Run Flink Operator using Helm and local registry:
 
-    helm install --namespace flink flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
 
 Run Flink Operator using Helm and local image:
 
-    helm install --namespace flink flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
