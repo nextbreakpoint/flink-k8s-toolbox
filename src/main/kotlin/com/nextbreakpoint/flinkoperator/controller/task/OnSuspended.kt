@@ -21,8 +21,6 @@ class OnSuspended : Task() {
             return
         }
 
-        context.ensurePodsExists()
-
         if (context.isManualActionPresent()) {
             context.executeManualAction(actions)
             return

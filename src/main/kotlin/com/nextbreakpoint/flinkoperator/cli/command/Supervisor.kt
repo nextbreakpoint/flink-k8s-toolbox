@@ -33,10 +33,9 @@ class Supervisor : BootstrapCommand<SupervisorOptions> {
         val watch = CacheAdapter(kubeClient, cache)
 
         watch.watchClusters(namespace)
-        watch.watchJobs(namespace)
         watch.watchServices(namespace)
-        watch.watchStatefuleSets(namespace)
-        watch.watchPersistentVolumeClaims(namespace)
+        watch.watchJobs(namespace)
+        watch.watchPods(namespace)
 
         while (!Thread.interrupted()) {
             logger.info("Reconciling ${clusterSelector}...")

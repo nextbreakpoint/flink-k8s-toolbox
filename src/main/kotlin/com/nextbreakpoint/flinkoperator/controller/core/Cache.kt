@@ -4,19 +4,16 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1ObjectMeta
-import io.kubernetes.client.models.V1PersistentVolumeClaim
+import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 import java.util.concurrent.ConcurrentHashMap
 
 class Cache {
     private val flinkClusters = ConcurrentHashMap<ClusterSelector, V1FlinkCluster>()
     private val bootstrapJobs = ConcurrentHashMap<ClusterSelector, V1Job>()
-    private val jobmanagerServices = ConcurrentHashMap<ClusterSelector, V1Service>()
-    private val jobmanagerStatefulSets = ConcurrentHashMap<ClusterSelector, V1StatefulSet>()
-    private val taskmanagerStatefulSets = ConcurrentHashMap<ClusterSelector, V1StatefulSet>()
-    private val jobmanagerPersistentVolumeClaims = ConcurrentHashMap<ClusterSelector, V1PersistentVolumeClaim>()
-    private val taskmanagerPersistentVolumeClaims = ConcurrentHashMap<ClusterSelector, V1PersistentVolumeClaim>()
+    private val jobmanagerPods = ConcurrentHashMap<ClusterSelector, MutableMap<String, V1Pod>>()
+    private val taskmanagerPods = ConcurrentHashMap<ClusterSelector, MutableMap<String, V1Pod>>()
+    private val services = ConcurrentHashMap<ClusterSelector, V1Service>()
 
     fun getClusterSelectors(): List<ClusterSelector> = flinkClusters.keys.toList()
 
@@ -32,13 +29,11 @@ class Cache {
 
     fun getCachedResources(clusterSelector: ClusterSelector) =
             CachedResources(
-                    flinkCluster = flinkClusters[clusterSelector],
-                    bootstrapJob = bootstrapJobs[clusterSelector],
-                    jobmanagerService = jobmanagerServices[clusterSelector],
-                    jobmanagerStatefulSet = jobmanagerStatefulSets[clusterSelector],
-                    taskmanagerStatefulSet = taskmanagerStatefulSets[clusterSelector],
-                    jobmanagerPVC = jobmanagerPersistentVolumeClaims[clusterSelector],
-                    taskmanagerPVC = taskmanagerPersistentVolumeClaims[clusterSelector]
+                flinkCluster = flinkClusters[clusterSelector],
+                bootstrapJob = bootstrapJobs[clusterSelector],
+                jobmanagerPods = jobmanagerPods[clusterSelector]?.values?.toSet() ?: setOf(),
+                taskmanagerPods = taskmanagerPods[clusterSelector]?.values?.toSet() ?: setOf(),
+                service = services[clusterSelector]
             )
 
     fun onFlinkClusterChanged(resource: V1FlinkCluster) {
@@ -68,13 +63,13 @@ class Cache {
     fun onServiceChanged(resource: V1Service) {
         val clusterSelector = makeClusterSelector(resource.metadata)
 
-        jobmanagerServices[clusterSelector] = resource
+        services[clusterSelector] = resource
     }
 
     fun onServiceDeleted(resource: V1Service) {
         val clusterSelector = makeClusterSelector(resource.metadata)
 
-        jobmanagerServices.remove(clusterSelector)
+        services.remove(clusterSelector)
     }
 
     fun onJobChanged(resource: V1Job) {
@@ -89,51 +84,47 @@ class Cache {
         bootstrapJobs.remove(clusterSelector)
     }
 
-    fun onStatefulSetChanged(resource: V1StatefulSet) {
+    fun onPodChanged(resource: V1Pod) {
         val clusterSelector = makeClusterSelector(resource.metadata)
 
         when {
-            resource.metadata.labels.get("role") == "jobmanager" ->
-                jobmanagerStatefulSets[clusterSelector] = resource
+            resource.metadata.labels.get("role") == "jobmanager" -> {
+                val pods = jobmanagerPods[clusterSelector] ?: mutableMapOf()
+                pods.put(resource.metadata.name, resource)
+                jobmanagerPods[clusterSelector] = pods
+            }
 
-            resource.metadata.labels.get("role") == "taskmanager" ->
-                taskmanagerStatefulSets[clusterSelector] = resource
+            resource.metadata.labels.get("role") == "taskmanager" -> {
+                val pods = taskmanagerPods[clusterSelector] ?: mutableMapOf()
+                pods.put(resource.metadata.name, resource)
+                taskmanagerPods[clusterSelector] = pods
+            }
         }
     }
 
-    fun onStatefulSetDeleted(resource: V1StatefulSet) {
+    fun onPodDeleted(resource: V1Pod) {
         val clusterSelector = makeClusterSelector(resource.metadata)
 
         when {
-            resource.metadata.labels.get("role") == "jobmanager" ->
-                jobmanagerStatefulSets.remove(clusterSelector)
+            resource.metadata.labels.get("role") == "jobmanager" -> {
+                val pods = jobmanagerPods[clusterSelector]
+                if (pods != null) {
+                    pods.remove(resource.metadata.name)
+                    if (pods.isEmpty()) {
+                        jobmanagerPods.remove(clusterSelector)
+                    }
+                }
+            }
 
-            resource.metadata.labels.get("role") == "taskmanager" ->
-                taskmanagerStatefulSets.remove(clusterSelector)
-        }
-    }
-
-    fun onPersistentVolumeClaimChanged(resource: V1PersistentVolumeClaim) {
-        val clusterSelector = makeClusterSelector(resource.metadata)
-
-        when {
-            resource.metadata.labels.get("role") == "jobmanager" ->
-                jobmanagerPersistentVolumeClaims[clusterSelector] = resource
-
-            resource.metadata.labels.get("role") == "taskmanager" ->
-                taskmanagerPersistentVolumeClaims[clusterSelector] = resource
-        }
-    }
-
-    fun onPersistentVolumeClaimDeleted(resource: V1PersistentVolumeClaim) {
-        val clusterSelector = makeClusterSelector(resource.metadata)
-
-        when {
-            resource.metadata.labels.get("role") == "jobmanager" ->
-                jobmanagerPersistentVolumeClaims.remove(clusterSelector)
-
-            resource.metadata.labels.get("role") == "taskmanager" ->
-                taskmanagerPersistentVolumeClaims.remove(clusterSelector)
+            resource.metadata.labels.get("role") == "taskmanager" ->  {
+                val pods = taskmanagerPods[clusterSelector]
+                if (pods != null) {
+                    pods.remove(resource.metadata.name)
+                    if (pods.isEmpty()) {
+                        taskmanagerPods.remove(clusterSelector)
+                    }
+                }
+            }
         }
     }
 
@@ -142,17 +133,12 @@ class Cache {
     }
 
     fun onServiceDeletedAll() {
-        jobmanagerServices.clear()
+        services.clear()
     }
 
-    fun onStatefulSetDeletedAll() {
-        jobmanagerStatefulSets.clear()
-        taskmanagerStatefulSets.clear()
-    }
-
-    fun onPersistentVolumeClaimDeletedAll() {
-        jobmanagerPersistentVolumeClaims.clear()
-        taskmanagerPersistentVolumeClaims.clear()
+    fun onPodDeletedAll() {
+        jobmanagerPods.clear()
+        taskmanagerPods.clear()
     }
 
     private fun makeClusterSelector(metadata: V1ObjectMeta) =

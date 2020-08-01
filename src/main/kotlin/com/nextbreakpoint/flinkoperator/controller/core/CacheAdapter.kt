@@ -28,19 +28,6 @@ class CacheAdapter(
             })
         }
 
-    fun watchJobs(namespace: String) =
-        thread {
-            watchResources(namespace, { namespace ->
-                kubeClient.watchJobs(namespace)
-            }, { resource ->
-                cache.onJobChanged(resource)
-            }, { resource ->
-                cache.onJobDeleted(resource)
-            }, {
-                cache.onJobDeletedAll()
-            })
-        }
-
     fun watchServices(namespace: String) =
         thread {
             watchResources(namespace, { namespace ->
@@ -54,29 +41,29 @@ class CacheAdapter(
             })
         }
 
-    fun watchStatefuleSets(namespace: String) =
+    fun watchPods(namespace: String) =
         thread {
             watchResources(namespace, { namespace ->
-                kubeClient.watchStatefulSets(namespace)
+                kubeClient.watchPods(namespace)
             }, { resource ->
-                cache.onStatefulSetChanged(resource)
+                cache.onPodChanged(resource)
             }, { resource ->
-                cache.onStatefulSetDeleted(resource)
+                cache.onPodDeleted(resource)
             }, {
-                cache.onStatefulSetDeletedAll()
+                cache.onPodDeletedAll()
             })
         }
 
-    fun watchPersistentVolumeClaims(namespace: String) =
+    fun watchJobs(namespace: String) =
         thread {
             watchResources(namespace, { namespace ->
-                kubeClient.watchPersistentVolumeClaims(namespace)
+                kubeClient.watchJobs(namespace)
             }, { resource ->
-                cache.onPersistentVolumeClaimChanged(resource)
+                cache.onJobChanged(resource)
             }, { resource ->
-                cache.onPersistentVolumeClaimDeleted(resource)
+                cache.onJobDeleted(resource)
             }, {
-                cache.onPersistentVolumeClaimDeletedAll()
+                cache.onJobDeletedAll()
             })
         }
 

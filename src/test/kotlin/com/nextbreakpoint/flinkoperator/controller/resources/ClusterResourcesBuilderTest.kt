@@ -4,8 +4,8 @@ import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
+import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,8 +18,8 @@ class ClusterResourcesBuilderTest {
     private val factory = mock(ClusterResourcesFactory::class.java)
 
     private val jobmanagerService = mock(V1Service::class.java)
-    private val jobmanagerStatefulSet = mock(V1StatefulSet::class.java)
-    private val taskmanagerStatefulSet = mock(V1StatefulSet::class.java)
+    private val jobmanagerPod = mock(V1Pod::class.java)
+    private val taskmanagerPod = mock(V1Pod::class.java)
 
     private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
 
@@ -31,9 +31,9 @@ class ClusterResourcesBuilderTest {
 
     @BeforeEach
     fun setup() {
-        given(factory.createJobManagerService(any(), any(), any(), any())).thenReturn(jobmanagerService)
-        given(factory.createJobManagerStatefulSet(any(), any(), any(), any())).thenReturn(jobmanagerStatefulSet)
-        given(factory.createTaskManagerStatefulSet(any(), any(), any(), any())).thenReturn(taskmanagerStatefulSet)
+        given(factory.createService(any(), any(), any(), any())).thenReturn(jobmanagerService)
+        given(factory.createJobManagerPod(any(), any(), any(), any())).thenReturn(jobmanagerPod)
+        given(factory.createTaskManagerPod(any(), any(), any(), any())).thenReturn(taskmanagerPod)
     }
 
     @Test
@@ -41,12 +41,12 @@ class ClusterResourcesBuilderTest {
         val resources = builder.build()
 
         assertThat(resources).isNotNull()
-        assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
-        assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
-        assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
+        assertThat(resources.service).isEqualTo(jobmanagerService)
+        assertThat(resources.jobmanagerPod).isEqualTo(jobmanagerPod)
+        assertThat(resources.taskmanagerPod).isEqualTo(taskmanagerPod)
 
-        verify(factory, times(1)).createJobManagerService(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
-        verify(factory, times(1)).createJobManagerStatefulSet(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
-        verify(factory, times(1)).createTaskManagerStatefulSet(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
+        verify(factory, times(1)).createService(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
+        verify(factory, times(1)).createJobManagerPod(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
+        verify(factory, times(1)).createTaskManagerPod(eq("test"), eq(clusterSelector), eq("myself"), eq(cluster))
     }
 }

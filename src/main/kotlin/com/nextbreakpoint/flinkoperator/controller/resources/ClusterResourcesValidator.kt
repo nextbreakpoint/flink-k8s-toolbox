@@ -13,14 +13,14 @@ class ClusterResourcesValidator {
     ): ClusterResourcesStatus {
         val jobmanagerServiceStatus = evaluateJobManagerServiceStatus(clusterResources, clusterSelector, flinkCluster)
 
-        val jobmanagerStatefulSetStatus = evaluateJobManagerStatefulSetStatus(clusterResources, clusterSelector, flinkCluster)
+        val jobmanagerStatefulSetStatus = evaluateJobManagerPodStatus(clusterResources, clusterSelector, flinkCluster)
 
-        val taskmanagerStatefulSetStatus = evaluateTaskManagerStatefulSetStatus(clusterResources, clusterSelector, flinkCluster)
+        val taskmanagerStatefulSetStatus = evaluateTaskManagerPodStatus(clusterResources, clusterSelector, flinkCluster)
 
         return ClusterResourcesStatus(
-            jobmanagerService = jobmanagerServiceStatus,
-            jobmanagerStatefulSet = jobmanagerStatefulSetStatus,
-            taskmanagerStatefulSet = taskmanagerStatefulSetStatus
+            service = jobmanagerServiceStatus,
+            jobmanagerPod = jobmanagerStatefulSetStatus,
+            taskmanagerPod = taskmanagerStatefulSetStatus
         )
     }
 
@@ -29,7 +29,7 @@ class ClusterResourcesValidator {
         clusterSelector: ClusterSelector,
         flinkCluster: V1FlinkCluster
     ): Pair<ResourceStatus, List<String>> {
-        val jobmanagerService = actualClusterResources.jobmanagerService ?: return ResourceStatus.MISSING to listOf()
+        val jobmanagerService = actualClusterResources.service ?: return ResourceStatus.MISSING to listOf()
 
         val statusReport = mutableListOf<String>()
 
@@ -60,58 +60,54 @@ class ClusterResourcesValidator {
         return ResourceStatus.VALID to listOf()
     }
 
-    private fun evaluateJobManagerStatefulSetStatus(
+    private fun evaluateJobManagerPodStatus(
         actualClusterResources: ClusterResources,
         clusterSelector: ClusterSelector,
         flinkCluster: V1FlinkCluster
     ): Pair<ResourceStatus, List<String>> {
-        val jobmanagerStatefulSet = actualClusterResources.jobmanagerStatefulSet ?: return ResourceStatus.MISSING to listOf()
+        val jobmanagerPod = actualClusterResources.jobmanagerPod ?: return ResourceStatus.MISSING to listOf()
 
         val statusReport = mutableListOf<String>()
 
-        if (jobmanagerStatefulSet.metadata.labels["role"]?.equals("jobmanager") != true) {
+        if (jobmanagerPod.metadata.labels["role"]?.equals("jobmanager") != true) {
             statusReport.add("role label missing or invalid")
         }
 
-        if (jobmanagerStatefulSet.metadata.labels["component"]?.equals("flink") != true) {
+        if (jobmanagerPod.metadata.labels["component"]?.equals("flink") != true) {
             statusReport.add("component label missing or invalid")
         }
 
-        if (jobmanagerStatefulSet.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
+        if (jobmanagerPod.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
             statusReport.add("name label missing or invalid")
         }
 
-        if (jobmanagerStatefulSet.metadata.labels["uid"]?.equals(clusterSelector.uuid) != true) {
+        if (jobmanagerPod.metadata.labels["uid"]?.equals(clusterSelector.uuid) != true) {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (jobmanagerStatefulSet.spec.template.spec.serviceAccountName != flinkCluster.spec.jobManager?.serviceAccount ?: "default") {
+        if (jobmanagerPod.spec.serviceAccountName != flinkCluster.spec.jobManager?.serviceAccount ?: "default") {
             statusReport.add("service account does not match")
         }
 
         if (flinkCluster.spec.runtime?.pullSecrets != null) {
-            if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets?.size != 1) {
+            if (jobmanagerPod.spec.imagePullSecrets?.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (jobmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.runtime?.pullSecrets) {
+                if (jobmanagerPod.spec.imagePullSecrets[0].name != flinkCluster.spec.runtime?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }
         }
 
-        if (jobmanagerStatefulSet.spec.volumeClaimTemplates?.size != flinkCluster.spec.jobManager?.persistentVolumeClaimsTemplates?.size) {
-            statusReport.add("unexpected number of volume claim templates")
-        }
-
         val initContainerCount = flinkCluster.spec?.jobManager?.initContainers?.size ?: 0
         val sideContainerCount = flinkCluster.spec?.jobManager?.sideContainers?.size ?: 0
 
-        if (jobmanagerStatefulSet.spec.template.spec.initContainers?.size != initContainerCount) {
+        if (jobmanagerPod.spec.initContainers?.size != initContainerCount) {
             statusReport.add("unexpected number of init containers")
         }
 
-        if (jobmanagerStatefulSet.spec.template.spec.containers?.size == sideContainerCount + 1) {
-            val container = jobmanagerStatefulSet.spec.template.spec.containers.get(0)
+        if (jobmanagerPod.spec.containers?.size == sideContainerCount + 1) {
+            val container = jobmanagerPod.spec.containers.get(0)
 
             if (container.image != flinkCluster.spec.runtime?.image) {
                 statusReport.add("container image does not match")
@@ -127,7 +123,7 @@ class ClusterResourcesValidator {
 
             val jobmanagerRpcAddressEnvVar = container.env.filter { it.name == "JOB_MANAGER_RPC_ADDRESS" }.firstOrNull()
 
-            if (jobmanagerRpcAddressEnvVar?.value == null || (actualClusterResources.jobmanagerService != null && jobmanagerRpcAddressEnvVar.value.toString() != actualClusterResources.jobmanagerService.metadata.name)) {
+            if (jobmanagerRpcAddressEnvVar?.value == null || (actualClusterResources.service != null && jobmanagerRpcAddressEnvVar.value.toString() != actualClusterResources.service.metadata.name)) {
                 statusReport.add("missing or invalid environment variable JOB_MANAGER_RPC_ADDRESS")
             }
 
@@ -164,64 +160,54 @@ class ClusterResourcesValidator {
         return ResourceStatus.VALID to listOf()
     }
 
-    private fun evaluateTaskManagerStatefulSetStatus(
+    private fun evaluateTaskManagerPodStatus(
         actualClusterResources: ClusterResources,
         clusterSelector: ClusterSelector,
         flinkCluster: V1FlinkCluster
     ): Pair<ResourceStatus, List<String>> {
-        val taskmanagerStatefulSet = actualClusterResources.taskmanagerStatefulSet ?: return ResourceStatus.MISSING to listOf()
+        val taskmanagerPod = actualClusterResources.taskmanagerPod ?: return ResourceStatus.MISSING to listOf()
 
         val statusReport = mutableListOf<String>()
 
-        if (taskmanagerStatefulSet.metadata.labels["role"]?.equals("taskmanager") != true) {
+        if (taskmanagerPod.metadata.labels["role"]?.equals("taskmanager") != true) {
             statusReport.add("role label missing or invalid")
         }
 
-        if (taskmanagerStatefulSet.metadata.labels["component"]?.equals("flink") != true) {
+        if (taskmanagerPod.metadata.labels["component"]?.equals("flink") != true) {
             statusReport.add("component label missing or invalid")
         }
 
-        if (taskmanagerStatefulSet.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
+        if (taskmanagerPod.metadata.labels["name"]?.equals(flinkCluster.metadata.name) != true) {
             statusReport.add("name label missing or invalid")
         }
 
-        if (taskmanagerStatefulSet.metadata.labels["uid"]?.equals(clusterSelector.uuid) != true) {
+        if (taskmanagerPod.metadata.labels["uid"]?.equals(clusterSelector.uuid) != true) {
             statusReport.add("uid label missing or invalid")
         }
 
-        if (taskmanagerStatefulSet.spec.template.spec.serviceAccountName != flinkCluster.spec.taskManager?.serviceAccount ?: "default") {
+        if (taskmanagerPod.spec.serviceAccountName != flinkCluster.spec.taskManager?.serviceAccount ?: "default") {
             statusReport.add("service account does not match")
         }
 
         if (flinkCluster.spec.runtime?.pullSecrets != null) {
-            if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets.size != 1) {
+            if (taskmanagerPod.spec.imagePullSecrets.size != 1) {
                 statusReport.add("unexpected number of pull secrets")
             } else {
-                if (taskmanagerStatefulSet.spec.template.spec.imagePullSecrets[0].name != flinkCluster.spec.runtime?.pullSecrets) {
+                if (taskmanagerPod.spec.imagePullSecrets[0].name != flinkCluster.spec.runtime?.pullSecrets) {
                     statusReport.add("pull secrets don't match")
                 }
             }
         }
 
-        if (taskmanagerStatefulSet.spec.volumeClaimTemplates?.size != flinkCluster.spec.taskManager?.persistentVolumeClaimsTemplates?.size) {
-            statusReport.add("unexpected number of volume claim templates")
-        }
-
-        val replicas = flinkCluster.spec?.taskManagers ?: 1
-
-        if (taskmanagerStatefulSet.spec.replicas != replicas) {
-            statusReport.add("number of replicas doesn't match")
-        }
-
         val initContainerCount = flinkCluster.spec?.jobManager?.initContainers?.size ?: 0
         val sideContainerCount = flinkCluster.spec?.jobManager?.sideContainers?.size ?: 0
 
-        if (taskmanagerStatefulSet.spec.template.spec.initContainers?.size != initContainerCount) {
+        if (taskmanagerPod.spec.initContainers?.size != initContainerCount) {
             statusReport.add("unexpected number of init containers")
         }
 
-        if (taskmanagerStatefulSet.spec.template.spec.containers?.size == sideContainerCount + 1) {
-            val container = taskmanagerStatefulSet.spec.template.spec.containers.get(0)
+        if (taskmanagerPod.spec.containers?.size == sideContainerCount + 1) {
+            val container = taskmanagerPod.spec.containers.get(0)
 
             if (container.image != flinkCluster.spec.runtime?.image) {
                 statusReport.add("container image does not match")
@@ -237,7 +223,7 @@ class ClusterResourcesValidator {
 
             val taskmanagerRpcAddressEnvVar = container.env.filter { it.name == "JOB_MANAGER_RPC_ADDRESS" }.firstOrNull()
 
-            if (taskmanagerRpcAddressEnvVar?.value == null || (actualClusterResources.jobmanagerService != null && taskmanagerRpcAddressEnvVar.value.toString() != actualClusterResources.jobmanagerService.metadata.name)) {
+            if (taskmanagerRpcAddressEnvVar?.value == null || (actualClusterResources.service != null && taskmanagerRpcAddressEnvVar.value.toString() != actualClusterResources.service.metadata.name)) {
                 statusReport.add("missing or invalid environment variable JOB_MANAGER_RPC_ADDRESS")
             }
 

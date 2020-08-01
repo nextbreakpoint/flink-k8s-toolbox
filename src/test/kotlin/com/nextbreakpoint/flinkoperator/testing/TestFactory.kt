@@ -2,18 +2,14 @@ package com.nextbreakpoint.flinkoperator.testing
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
-import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJobFactory
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
-import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1ObjectMeta
-import io.kubernetes.client.models.V1PersistentVolumeClaimBuilder
+import io.kubernetes.client.models.V1PodBuilder
 import io.kubernetes.client.models.V1ServiceBuilder
-import io.kubernetes.client.models.V1StatefulSetBuilder
 
 object TestFactory {
     fun aCluster(name: String, namespace: String, taskManagers: Int = 1, taskSlots: Int = 1): V1FlinkCluster {
@@ -271,10 +267,10 @@ object TestFactory {
         .endMetadata()
         .build()
 
-    fun aJobManagerStatefulSet(cluster: V1FlinkCluster) = V1StatefulSetBuilder()
+    fun aJobManagerPod(cluster: V1FlinkCluster, suffix: String) = V1PodBuilder()
         .withNewMetadata()
         .withNamespace(cluster.metadata.namespace)
-        .withName("${cluster.metadata.name}-statefulset")
+        .withName("${cluster.metadata.name}-pod-$suffix")
         .withLabels(mapOf(
             "name" to cluster.metadata.name,
             "uid" to cluster.metadata.uid,
@@ -284,36 +280,10 @@ object TestFactory {
         .endMetadata()
         .build()
 
-    fun aTaskManagerStatefulSet(cluster: V1FlinkCluster) = V1StatefulSetBuilder()
+    fun aTaskManagerPod(cluster: V1FlinkCluster, suffix: String) = V1PodBuilder()
         .withNewMetadata()
         .withNamespace(cluster.metadata.namespace)
-        .withName("${cluster.metadata.name}-statefulset")
-        .withLabels(mapOf(
-            "name" to cluster.metadata.name,
-            "uid" to cluster.metadata.uid,
-            "role" to "taskmanager"
-        ))
-        .withUid(cluster.metadata.uid)
-        .endMetadata()
-        .build()
-
-    fun aJobManagerPersistenVolumeClaim(cluster: V1FlinkCluster) = V1PersistentVolumeClaimBuilder()
-        .withNewMetadata()
-        .withNamespace(cluster.metadata.namespace)
-        .withName("${cluster.metadata.name}-pvc")
-        .withLabels(mapOf(
-            "name" to cluster.metadata.name,
-            "uid" to cluster.metadata.uid,
-            "role" to "jobmanager"
-        ))
-        .withUid(cluster.metadata.uid)
-        .endMetadata()
-        .build()
-
-    fun aTaskManagerPersistenVolumeClaim(cluster: V1FlinkCluster) = V1PersistentVolumeClaimBuilder()
-        .withNewMetadata()
-        .withNamespace(cluster.metadata.namespace)
-        .withName("${cluster.metadata.name}-pvc")
+        .withName("${cluster.metadata.name}-pod-$suffix")
         .withLabels(mapOf(
             "name" to cluster.metadata.name,
             "uid" to cluster.metadata.uid,
@@ -331,10 +301,5 @@ object TestFactory {
             "flink-operator",
             cluster
         ).build()
-    }
-
-    fun createBootstrapJob(uid: String, cluster: V1FlinkCluster): V1Job {
-        val clusterSelector = ClusterSelector(namespace = cluster.metadata.namespace, name = cluster.metadata.name, uuid = uid)
-        return DefaultBootstrapJobFactory.createBootstrapJob(clusterSelector, "flink-operator", cluster.spec.bootstrap, "/tmp/000", 1)
     }
 }

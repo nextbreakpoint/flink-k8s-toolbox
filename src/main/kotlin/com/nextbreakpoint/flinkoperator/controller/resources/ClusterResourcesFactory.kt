@@ -1,28 +1,28 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
+import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 
 interface ClusterResourcesFactory {
-    fun createJobManagerService(
+    fun createService(
         namespace: String,
         clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
     ): V1Service
 
-    fun createJobManagerStatefulSet(
+    fun createJobManagerPod(
         namespace: String,
         clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet
+    ): V1Pod
 
-    fun createTaskManagerStatefulSet(
+    fun createTaskManagerPod(
         namespace: String,
         clusterSelector: String,
         clusterOwner: String,
         flinkCluster: V1FlinkCluster
-    ): V1StatefulSet
+    ): V1Pod
 }

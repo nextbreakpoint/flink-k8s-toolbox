@@ -92,13 +92,9 @@ Create Flink Secret resource:
 
     kubectl create -f example/secrets.yaml -n flink
 
-Create Flink Cluster resource with standard storage class (required for Minikube):
+Create Flink Cluster resource:
 
     kubectl create -f example/cluster.yaml -n flink
-
-Create Flink Cluster resource with hostpath storage class (required for Docker for Desktop):
-
-    kubectl create -f example/cluster-hostpath.yaml -n flink
 
 Get Flink Cluster resource:
 
@@ -120,16 +116,16 @@ Check pods are created:
 
 Check logs of JobManager:
 
-    kubectl logs -n flink flink-jobmanager-test-0 -c flink-jobmanager
+    kubectl logs -n flink jobmanager-test-0 -c jobmanager
 
 Check logs of TaskManager:
 
-    kubectl logs -n flink flink-taskmanager-test-0 -c flink-taskmanager
+    kubectl logs -n flink taskmanager-test-0 -c taskmanager
 
 Force deletion of pods if Kubernetes get stuck:
 
-    kubectl delete pod flink-jobmanager-test-0 --grace-period=0 --force -n flink
-    kubectl delete pod flink-taskmanager-test-0 --grace-period=0 --force -n flink
+    kubectl delete pod jobmanager-test-0 --grace-period=0 --force -n flink
+    kubectl delete pod taskmanager-test-0 --grace-period=0 --force -n flink
 
 ## Patch Flink Cluster resource     
 

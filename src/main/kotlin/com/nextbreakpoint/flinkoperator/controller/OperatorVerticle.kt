@@ -390,10 +390,9 @@ class OperatorVerticle : AbstractVerticle() {
 
         context.runOnContext {
             adapter.watchClusters(namespace)
-            adapter.watchJobs(namespace)
             adapter.watchServices(namespace)
-            adapter.watchStatefuleSets(namespace)
-            adapter.watchPersistentVolumeClaims(namespace)
+            adapter.watchPods(namespace)
+            adapter.watchJobs(namespace)
 
             startReconciliation(cache, gauges, controller)
         }

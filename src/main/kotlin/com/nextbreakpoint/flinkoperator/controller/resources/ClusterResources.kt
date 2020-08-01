@@ -1,32 +1,32 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
+import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 
 data class ClusterResources(
-    val jobmanagerService: V1Service?,
-    val jobmanagerStatefulSet: V1StatefulSet?,
-    val taskmanagerStatefulSet: V1StatefulSet?
+    val service: V1Service?,
+    val jobmanagerPod: V1Pod?,
+    val taskmanagerPod: V1Pod?
 ) {
-    fun withJobManagerService(jobmanagerService: V1Service?) =
+    fun withService(jobmanagerService: V1Service?) =
         ClusterResources(
-            jobmanagerService = jobmanagerService,
-            jobmanagerStatefulSet = this.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = this.taskmanagerStatefulSet
+            service = jobmanagerService,
+            jobmanagerPod = this.jobmanagerPod,
+            taskmanagerPod = this.taskmanagerPod
         )
 
-    fun withJobManagerStatefulSet(jobmanagerStatefulSet: V1StatefulSet?) =
+    fun withJobManagerPod(jobmanagerPod: V1Pod?) =
         ClusterResources(
-            jobmanagerService = this.jobmanagerService,
-            jobmanagerStatefulSet = jobmanagerStatefulSet,
-            taskmanagerStatefulSet = this.taskmanagerStatefulSet
+            service = this.service,
+            jobmanagerPod = jobmanagerPod,
+            taskmanagerPod = this.taskmanagerPod
         )
 
-    fun withTaskManagerStatefulSet(taskmanagerStatefulSet: V1StatefulSet?) =
+    fun withTaskManagerPod(taskmanagerPod: V1Pod?) =
         ClusterResources(
-            jobmanagerService = this.jobmanagerService,
-            jobmanagerStatefulSet = this.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = taskmanagerStatefulSet
+            service = this.service,
+            jobmanagerPod = this.jobmanagerPod,
+            taskmanagerPod = taskmanagerPod
         )
 }
 

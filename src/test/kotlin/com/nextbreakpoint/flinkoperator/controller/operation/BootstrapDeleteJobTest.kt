@@ -28,9 +28,9 @@ class BootstrapDeleteJobTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.deleteBootstrapJobs(eq(clusterSelector))).thenThrow(RuntimeException::class.java)
+        given(kubeClient.deleteBootstrapJob(eq(clusterSelector))).thenThrow(RuntimeException::class.java)
         val result = command.execute(clusterSelector, null)
-        verify(kubeClient, times(1)).deleteBootstrapJobs(eq(clusterSelector))
+        verify(kubeClient, times(1)).deleteBootstrapJob(eq(clusterSelector))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -41,8 +41,8 @@ class BootstrapDeleteJobTest {
     @Test
     fun `should delete bootstrap job and pods`() {
         val result = command.execute(clusterSelector, null)
-        verify(kubeClient, times(1)).deleteBootstrapJobs(eq(clusterSelector))
-        verify(kubeClient, times(1)).deleteBootstrapPods(eq(clusterSelector))
+        verify(kubeClient, times(1)).deleteBootstrapJob(eq(clusterSelector))
+        verify(kubeClient, times(1)).deleteBootstrapPod(eq(clusterSelector))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()

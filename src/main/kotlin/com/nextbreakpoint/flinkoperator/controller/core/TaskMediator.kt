@@ -1,10 +1,12 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
-import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScale
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.model.DeleteOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
+import com.nextbreakpoint.flinkoperator.common.model.PodReplicas
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
@@ -12,7 +14,6 @@ import com.nextbreakpoint.flinkoperator.controller.resources.DefaultBootstrapJob
 import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 import org.apache.log4j.Logger
 import org.joda.time.DateTime
 
@@ -41,11 +42,11 @@ class TaskMediator(
     fun deleteBootstrapJob(clusterSelector: ClusterSelector) : OperationResult<Void?> =
         controller.deleteBootstrapJob(clusterSelector)
 
-    fun terminatePods(clusterSelector: ClusterSelector) : OperationResult<Void?> =
-        controller.terminatePods(clusterSelector)
+    fun createPods(clusterSelector: ClusterSelector, options: PodReplicas): OperationResult<Set<String>> =
+        controller.createPods(clusterSelector, options)
 
-    fun restartPods(clusterSelector: ClusterSelector, options: ClusterScaling): OperationResult<Void?> =
-        controller.restartPods(clusterSelector, options)
+    fun deletePods(clusterSelector: ClusterSelector, options: DeleteOptions) : OperationResult<Void?> =
+        controller.deletePods(clusterSelector, options)
 
     fun arePodsRunning(clusterSelector: ClusterSelector): OperationResult<Boolean> =
         controller.arePodsRunning(clusterSelector)
@@ -62,7 +63,7 @@ class TaskMediator(
     fun cancelJob(clusterSelector: ClusterSelector, options: SavepointOptions): OperationResult<SavepointRequest?> =
         controller.cancelJob(clusterSelector, options)
 
-    fun isClusterReady(clusterSelector: ClusterSelector, options: ClusterScaling): OperationResult<Boolean> =
+    fun isClusterReady(clusterSelector: ClusterSelector, options: ClusterScale): OperationResult<Boolean> =
         controller.isClusterReady(clusterSelector, options)
 
     fun isJobFinished(clusterSelector: ClusterSelector): OperationResult<Boolean> =
@@ -74,23 +75,14 @@ class TaskMediator(
     fun isJobFailed(clusterSelector: ClusterSelector): OperationResult<Boolean> =
         controller.isJobFailed(clusterSelector)
 
-    fun createJobManagerService(clusterSelector: ClusterSelector, service: V1Service): OperationResult<String?> =
-        controller.createJobManagerService(clusterSelector, service)
+    fun createService(clusterSelector: ClusterSelector, service: V1Service): OperationResult<String?> =
+        controller.createService(clusterSelector, service)
 
-    fun deleteJobManagerService(clusterSelector: ClusterSelector): OperationResult<Void?> =
-        controller.deleteJobManagerService(clusterSelector)
-
-    fun createStatefulSet(clusterSelector: ClusterSelector, statefulSet: V1StatefulSet): OperationResult<String?> =
-        controller.createStatefulSet(clusterSelector, statefulSet)
-
-    fun deleteStatefulSets(clusterSelector: ClusterSelector): OperationResult<Void?> =
-        controller.deleteStatefulSets(clusterSelector)
-
-    fun deletePersistentVolumeClaims(clusterSelector: ClusterSelector): OperationResult<Void?> =
-        controller.deletePersistentVolumeClaims(clusterSelector)
+    fun deleteService(clusterSelector: ClusterSelector): OperationResult<Void?> =
+        controller.deleteService(clusterSelector)
 
     fun refreshStatus(logger: Logger, statusTimestamp: DateTime, actionTimestamp: DateTime, hasFinalizer: Boolean) {
-        val taskManagers = resources.taskmanagerStatefulSet?.status?.readyReplicas ?: 0
+        val taskManagers = resources.taskmanagerPods.size
         if (Status.getActiveTaskManagers(cluster) != taskManagers) {
             Status.setActiveTaskManagers(cluster, taskManagers)
         }
@@ -301,32 +293,52 @@ class TaskMediator(
         return createBootstrapJob(clusterSelector, resource)
     }
 
-    fun createJobManagerService(clusterSelector: ClusterSelector): OperationResult<String?> {
-        val resource = DefaultClusterResourcesFactory.createJobManagerService(
+    fun createService(clusterSelector: ClusterSelector): OperationResult<String?> {
+        val resource = DefaultClusterResourcesFactory.createService(
             clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
         )
 
-        return createJobManagerService(clusterSelector, resource)
+        return createService(clusterSelector, resource)
     }
 
-    fun createJobManagerStatefulSet(clusterSelector: ClusterSelector): OperationResult<String?> {
-        val resource = DefaultClusterResourcesFactory.createJobManagerStatefulSet(
+    fun createJobManagerPods(clusterSelector: ClusterSelector, replicas: Int): OperationResult<Set<String>> {
+        if (resources.jobmanagerPods.size == replicas) {
+            return OperationResult(OperationStatus.OK, setOf())
+        }
+
+        val resource = DefaultClusterResourcesFactory.createJobManagerPod(
             clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
         )
 
-        return createStatefulSet(clusterSelector, resource)
+        return if (resources.jobmanagerPods.size > replicas) {
+            deletePods(clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = resources.jobmanagerPods.size - replicas))
+            OperationResult(OperationStatus.OK, setOf())
+        } else {
+            createPods(clusterSelector, PodReplicas(resource, replicas - resources.jobmanagerPods.size))
+            OperationResult(OperationStatus.OK, setOf())
+        }
     }
 
-    fun createTaskManagerStatefulSet(clusterSelector: ClusterSelector): OperationResult<String?> {
-        val resource = DefaultClusterResourcesFactory.createTaskManagerStatefulSet(
+    fun createTaskManagerPods(clusterSelector: ClusterSelector, replicas: Int): OperationResult<Set<String>> {
+        if (resources.taskmanagerPods.size == replicas) {
+            return OperationResult(OperationStatus.OK, setOf())
+        }
+
+        val resource = DefaultClusterResourcesFactory.createTaskManagerPod(
             clusterSelector.namespace, clusterSelector.uuid, "flink-operator", cluster
         )
 
-        return createStatefulSet(clusterSelector, resource)
+        return if (resources.taskmanagerPods.size > replicas) {
+            deletePods(clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = resources.taskmanagerPods.size - replicas))
+            OperationResult(OperationStatus.OK, setOf())
+        } else {
+            createPods(clusterSelector, PodReplicas(resource, replicas - resources.taskmanagerPods.size))
+            OperationResult(OperationStatus.OK, setOf())
+        }
     }
 
     fun getClusterScale() =
-        ClusterScaling(
+        ClusterScale(
             taskManagers = Status.getTaskManagers(cluster), taskSlots = Status.getTaskSlots(cluster)
         )
 
@@ -338,22 +350,18 @@ class TaskMediator(
 
     fun isSavepointRequired(): Boolean = !Annotations.isWithoutSavepoint(cluster) && !Annotations.isDeleteResources(cluster)
 
-    fun getSavepointOtions() =
+    fun getSavepointOptions() =
         SavepointOptions(
             targetPath = Configuration.getSavepointTargetPath(cluster)
         )
 
     fun doesBootstrapJobExists(): Boolean = resources.bootstrapJob != null
 
-    fun doesJobManagerServiceExists(): Boolean = resources.jobmanagerService != null
+    fun doesServiceExists(): Boolean = resources.service != null
 
-    fun doesJobManagerStatefulSetExists(): Boolean = resources.jobmanagerStatefulSet != null
+    fun doesJobManagerPodsExists(): Boolean = resources.jobmanagerPods.isNotEmpty()
 
-    fun doesTaskManagerStatefulSetExists(): Boolean = resources.taskmanagerStatefulSet != null
-
-    fun doesJobManagerPVCExists(): Boolean = resources.jobmanagerPVC != null
-
-    fun doesTaskManagerPVCExists(): Boolean = resources.taskmanagerPVC != null
+    fun doesTaskManagerPodsExists(): Boolean = resources.taskmanagerPods.isNotEmpty()
 
     fun getManualAction(): ManualAction = Annotations.getManualAction(cluster)
 
@@ -363,7 +371,7 @@ class TaskMediator(
 
     fun getDesiredTaskManagers(): Int = cluster.spec?.taskManagers ?: 1
 
-    fun getJobManagerReplicas(): Int = resources.jobmanagerStatefulSet?.status?.replicas ?: 0
+    fun getJobManagerReplicas(): Int = resources.jobmanagerPods.size
 
-    fun getTaskManagerReplicas(): Int = resources.taskmanagerStatefulSet?.status?.replicas ?: 0
+    fun getTaskManagerReplicas(): Int = resources.taskmanagerPods.size
 }

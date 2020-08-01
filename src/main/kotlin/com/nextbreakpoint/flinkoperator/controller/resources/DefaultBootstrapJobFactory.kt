@@ -38,7 +38,8 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
             Pair("owner", clusterOwner),
             Pair("name", clusterSelector.name),
             Pair("uid", clusterSelector.uuid),
-            Pair("component", "flink")
+            Pair("component", "flink"),
+            Pair("job", "bootstrap")
         )
 
         val podNameEnvVar =
@@ -69,21 +70,21 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
 
         val pullSecrets =
             createObjectReferenceListOrNull(
-                bootstrap?.pullSecrets
+                bootstrap.pullSecrets
             )
 
         val jobPodSpec = V1PodSpecBuilder()
             .addToContainers(V1Container())
             .editFirstContainer()
-            .withName("flink-bootstrap")
+            .withName("bootstrap")
             .withImage(bootstrap.image)
-            .withImagePullPolicy(bootstrap?.pullPolicy ?: "Always")
+            .withImagePullPolicy(bootstrap.pullPolicy ?: "Always")
             .withArgs(arguments)
             .addToEnv(podNameEnvVar)
             .addToEnv(podNamespaceEnvVar)
             .withResources(createResourceRequirements())
             .endContainer()
-            .withServiceAccountName(bootstrap?.serviceAccount ?: "default")
+            .withServiceAccountName(bootstrap.serviceAccount ?: "default")
             .withImagePullSecrets(pullSecrets)
             .withRestartPolicy("OnFailure")
             .withAffinity(jobAffinity)
@@ -91,7 +92,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
 
         val job = V1JobBuilder()
             .editOrNewMetadata()
-            .withName("flink-bootstrap-${clusterSelector.name}")
+            .withGenerateName("bootstrap-${clusterSelector.name}-")
             .withLabels(jobLabels)
             .endMetadata()
             .editOrNewSpec()
@@ -101,7 +102,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
             .withTtlSecondsAfterFinished(30)
             .editOrNewTemplate()
             .editOrNewMetadata()
-            .withName("flink-bootstrap-${clusterSelector.name}")
+            .withGenerateName("bootstrap-${clusterSelector.name}-")
             .withLabels(jobLabels)
             .endMetadata()
             .withSpec(jobPodSpec)

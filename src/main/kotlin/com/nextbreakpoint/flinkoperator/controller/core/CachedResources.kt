@@ -2,82 +2,49 @@ package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import io.kubernetes.client.models.V1Job
-import io.kubernetes.client.models.V1PersistentVolumeClaim
+import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 
 data class CachedResources(
     val flinkCluster: V1FlinkCluster? = null,
     val bootstrapJob: V1Job? = null,
-    val jobmanagerService: V1Service? = null,
-    val jobmanagerStatefulSet: V1StatefulSet? = null,
-    val taskmanagerStatefulSet: V1StatefulSet? = null,
-    val jobmanagerPVC: V1PersistentVolumeClaim? = null,
-    val taskmanagerPVC: V1PersistentVolumeClaim? = null
+    val jobmanagerPods: Set<V1Pod> = setOf(),
+    val taskmanagerPods: Set<V1Pod> = setOf(),
+    val service: V1Service? = null
 ) {
-    fun withBootstrap(resource: V1Job?) =
+    fun withBootstrapJob(resource: V1Job?) =
         CachedResources(
             flinkCluster = this.flinkCluster,
             bootstrapJob = resource,
-            jobmanagerService = this.jobmanagerService,
-            jobmanagerStatefulSet = this.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = this.taskmanagerStatefulSet,
-            jobmanagerPVC = this.jobmanagerPVC,
-            taskmanagerPVC = this.taskmanagerPVC
+            jobmanagerPods = this.jobmanagerPods,
+            taskmanagerPods = this.taskmanagerPods,
+            service = this.service
         )
 
-    fun withJobManagerService(resource: V1Service?) =
+    fun withService(resource: V1Service?) =
         CachedResources(
             flinkCluster = this.flinkCluster,
             bootstrapJob = this.bootstrapJob,
-            jobmanagerService = resource,
-            jobmanagerStatefulSet = this.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = this.taskmanagerStatefulSet,
-            jobmanagerPVC = this.jobmanagerPVC,
-            taskmanagerPVC = this.taskmanagerPVC
+            jobmanagerPods = this.jobmanagerPods,
+            taskmanagerPods = this.taskmanagerPods,
+            service = resource
         )
 
-    fun withJobManagerStatefulSet(resource: V1StatefulSet?) =
+    fun withJobManagerPods(resources: Set<V1Pod>) =
         CachedResources(
             flinkCluster = this.flinkCluster,
             bootstrapJob = this.bootstrapJob,
-            jobmanagerService = this.jobmanagerService,
-            jobmanagerStatefulSet = resource,
-            taskmanagerStatefulSet = this.taskmanagerStatefulSet,
-            jobmanagerPVC = this.jobmanagerPVC,
-            taskmanagerPVC = this.taskmanagerPVC
+            jobmanagerPods = resources,
+            taskmanagerPods = this.taskmanagerPods,
+            service = this.service
         )
 
-    fun withTaskManagerStatefulSet(resource: V1StatefulSet?) =
+    fun withTaskManagerPods(resources: Set<V1Pod>) =
         CachedResources(
             flinkCluster = this.flinkCluster,
             bootstrapJob = this.bootstrapJob,
-            jobmanagerService = this.jobmanagerService,
-            jobmanagerStatefulSet = this.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = resource,
-            jobmanagerPVC = this.jobmanagerPVC,
-            taskmanagerPVC = this.taskmanagerPVC
-        )
-
-    fun withJobManagerPVC(resource: V1PersistentVolumeClaim?) =
-        CachedResources(
-            flinkCluster = this.flinkCluster,
-            bootstrapJob = this.bootstrapJob,
-            jobmanagerService = this.jobmanagerService,
-            jobmanagerStatefulSet = this.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = this.taskmanagerStatefulSet,
-            jobmanagerPVC = resource,
-            taskmanagerPVC = this.taskmanagerPVC
-        )
-
-    fun withTaskManagerPVC(resource: V1PersistentVolumeClaim?) =
-        CachedResources(
-            flinkCluster = this.flinkCluster,
-            bootstrapJob = this.bootstrapJob,
-            jobmanagerService = this.jobmanagerService,
-            jobmanagerStatefulSet = this.jobmanagerStatefulSet,
-            taskmanagerStatefulSet = this.taskmanagerStatefulSet,
-            jobmanagerPVC = this.jobmanagerPVC,
-            taskmanagerPVC = resource
+            jobmanagerPods = this.jobmanagerPods,
+            taskmanagerPods = resources,
+            service = this.service
         )
 }

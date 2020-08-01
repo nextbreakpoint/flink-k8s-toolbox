@@ -16,14 +16,14 @@ class ClusterDeleteService(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
 
     override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Void?> {
         return try {
-            kubeClient.deleteServices(clusterSelector)
+            kubeClient.deleteService(clusterSelector)
 
             OperationResult(
                 OperationStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterSelector.name}] Can't delete resources", e)
+            logger.error("[name=${clusterSelector.name}] Can't delete service", e)
 
             OperationResult(
                 OperationStatus.ERROR,

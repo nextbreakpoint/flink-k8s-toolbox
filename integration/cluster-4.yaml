@@ -48,11 +48,16 @@ spec:
       - name: config-vol
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
+      - name: data-vol
+        mountPath: /data
     volumes:
       - name: config-vol
         configMap:
           name: flink-config
           defaultMode: 0777
+      - name: data-vol
+        hostPath:
+          path: /data
     resources:
       limits:
         cpu: '0.2'
@@ -85,7 +90,7 @@ spec:
       - name: config-vol
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
-      - name: data-vol
+      - name: source-vol
         mountPath: /tmp/workshop/sensor-events/data.csv
         subPath: sensor-events.csv
     volumes:
@@ -93,10 +98,13 @@ spec:
         configMap:
           name: flink-config
           defaultMode: 0777
-      - name: data-vol
+      - name: source-vol
         configMap:
           name: flink-data
           defaultMode: 0777
+      - name: data-vol
+        hostPath:
+          path: /data
     resources:
       limits:
         cpu: '0.2'
