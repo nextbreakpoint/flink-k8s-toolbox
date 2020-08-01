@@ -172,6 +172,6 @@ spec:
         memory: 600Mi
   operator:
     savepointMode: Manual
-    savepointInterval: 60
+    savepointInterval: 300
     savepointTargetPath: file:///var/savepoints
     restartPolicy: Always
