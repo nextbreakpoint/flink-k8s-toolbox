@@ -43,6 +43,13 @@ class SavepointQuery(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeC
 
             val requestsCompleted = savepointRequestsStatus.filter { it.value.status == "COMPLETED" }
 
+            if (requestsCompleted.isEmpty()) {
+                return OperationResult(
+                    OperationStatus.ERROR,
+                    null
+                )
+            }
+
             val savepointInfo = requestsCompleted[params.jobId]
 
             if (savepointInfo?.location != null) {
