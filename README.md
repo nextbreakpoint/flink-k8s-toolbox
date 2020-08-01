@@ -203,15 +203,15 @@ Install the operator's CRD resource with Helm command:
 
 Install the operator's default roles with Helm command:
 
-    helm install flink-k8s-toolbox-roles helm/flink-k8s-toolbox-roles --set namespace=flink-jobs
+    helm install flink-k8s-toolbox-roles helm/flink-k8s-toolbox-roles --namespace flink-jobs
 
 Install the operator's resources with SSL enabled:
 
-    helm install flink-k8s-toolbox-operator --namespace flink-operator helm/flink-k8s-toolbox-operator --set namespace=flink-jobs --set secretName=flink-operator-ssl
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink-operator --set namespace=flink-jobs --set secretName=flink-operator-ssl
 
 Or if you prefer install the operator's resources with SSL disabled:
 
-    helm install flink-k8s-toolbox-operator --namespace flink-operator helm/flink-k8s-toolbox-operator --set namespace=flink-jobs
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink-operator --set namespace=flink-jobs
 
 Run the operator with command:
 
