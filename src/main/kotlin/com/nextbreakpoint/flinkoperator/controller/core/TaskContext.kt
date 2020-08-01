@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.model.DeleteOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import org.apache.log4j.Logger
@@ -101,11 +102,11 @@ class TaskContext(
     }
 
     fun cancelJob(): Boolean {
-        val jobManagerServiceExists = mediator.doesJobManagerServiceExists()
-        val jobManagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
-        val taskManagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+        val serviceExists = mediator.doesServiceExists()
+        val jobManagerPodExists = mediator.doesJobManagerPodsExists()
+        val taskManagerPodExists = mediator.doesTaskManagerPodsExists()
 
-        if (!jobManagerServiceExists || !jobManagerStatefulSetExists || !taskManagerStatefulSetExists) {
+        if (!serviceExists || !jobManagerPodExists || !taskManagerPodExists) {
             return true
         }
 
@@ -119,7 +120,7 @@ class TaskContext(
             val savepointRequest = mediator.getSavepointRequest()
 
             if (savepointRequest == null) {
-                val cancelResult = mediator.cancelJob(mediator.clusterSelector, mediator.getSavepointOtions())
+                val cancelResult = mediator.cancelJob(mediator.clusterSelector, mediator.getSavepointOptions())
 
                 if (!cancelResult.isSuccessful()) {
                     logger.warn("Can't cancel the job")
@@ -187,27 +188,25 @@ class TaskContext(
     }
 
     fun startCluster(): Boolean {
-        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
-        val jobmanagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
-        val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+        val serviceExists = mediator.doesServiceExists()
+        val jobmanagerPodExists = mediator.doesJobManagerPodsExists()
+        val taskmanagerPodExists = mediator.doesTaskManagerPodsExists()
 
-        if (!jobmanagerServiceExists || !jobmanagerStatefulSetExists || !taskmanagerStatefulSetExists) {
+        if (!serviceExists || !jobmanagerPodExists || !taskmanagerPodExists) {
             return false
         }
 
-        val clusterScaling = mediator.getClusterScale()
+        val clusterScale = mediator.getClusterScale()
 
         val jobmanagerReplicas = mediator.getJobManagerReplicas()
         val taskmanagerReplicas = mediator.getTaskManagerReplicas()
 
-        if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScaling.taskManagers) {
-            logger.info("Updating replicas...")
-            mediator.restartPods(mediator.clusterSelector, clusterScaling)
+        if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScale.taskManagers) {
             return false
         }
 
         if (!mediator.isBootstrapPresent()) {
-            val clusterReadyResult = mediator.isClusterReady(mediator.clusterSelector, clusterScaling)
+            val clusterReadyResult = mediator.isClusterReady(mediator.clusterSelector, mediator.getClusterScale())
 
             if (!clusterReadyResult.isSuccessful() || !clusterReadyResult.output) {
                 return false
@@ -227,7 +226,7 @@ class TaskContext(
                 return true
             }
         } else {
-            val clusterReadyResult = mediator.isClusterReady(mediator.clusterSelector, clusterScaling)
+            val clusterReadyResult = mediator.isClusterReady(mediator.clusterSelector, mediator.getClusterScale())
 
             if (!clusterReadyResult.isSuccessful() || !clusterReadyResult.output) {
                 return false
@@ -267,7 +266,8 @@ class TaskContext(
         val terminatedResult = mediator.arePodsTerminated(mediator.clusterSelector)
 
         if (!terminatedResult.isSuccessful() || !terminatedResult.output) {
-            mediator.terminatePods(mediator.clusterSelector)
+            mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = mediator.getJobManagerReplicas()))
+            mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = mediator.getTaskManagerReplicas()))
 
             return false
         }
@@ -275,80 +275,73 @@ class TaskContext(
         val bootstrapExists = mediator.doesBootstrapJobExists()
 
         if (bootstrapExists) {
-            val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
+            val deleteResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
 
-            if (bootstrapResult.isSuccessful()) {
+            if (deleteResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
 
             return false
         }
 
-        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
+        val serviceExists = mediator.doesServiceExists()
 
-        if (jobmanagerServiceExists) {
-            val serviceResult = mediator.deleteJobManagerService(mediator.clusterSelector)
+        if (serviceExists) {
+            val deleteResult = mediator.deleteService(mediator.clusterSelector)
 
-            if (serviceResult.isSuccessful()) {
+            if (deleteResult.isSuccessful()) {
                 logger.info("JobManager service deleted")
             }
         }
 
-        return !jobmanagerServiceExists
+        return !serviceExists
     }
 
     fun terminateCluster(): Boolean {
         val terminatedResult = mediator.arePodsTerminated(mediator.clusterSelector)
 
         if (!terminatedResult.isSuccessful() || !terminatedResult.output) {
-            mediator.terminatePods(mediator.clusterSelector)
+            mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = mediator.getJobManagerReplicas()))
+            mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = mediator.getTaskManagerReplicas()))
 
             return false
         }
 
-        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
-        val jobmanagerStatefuleSetExists = mediator.doesJobManagerStatefulSetExists()
-        val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
-        val jomanagerPVCExists = mediator.doesJobManagerPVCExists()
-        val taskmanagerPVCExists = mediator.doesTaskManagerPVCExists()
-
         val bootstrapExists = mediator.doesBootstrapJobExists()
 
         if (bootstrapExists) {
-            val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
+            val deleteResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
 
-            if (bootstrapResult.isSuccessful()) {
+            if (deleteResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
             }
 
             return false
         }
 
-        if (jobmanagerServiceExists) {
-            val serviceResult = mediator.deleteJobManagerService(mediator.clusterSelector)
+        val serviceExists = mediator.doesServiceExists()
 
-            if (serviceResult.isSuccessful()) {
+        if (serviceExists) {
+            val deleteResult = mediator.deleteService(mediator.clusterSelector)
+
+            if (deleteResult.isSuccessful()) {
                 logger.info("JobManager service deleted")
             }
         }
 
-        if (jobmanagerStatefuleSetExists || taskmanagerStatefulSetExists) {
-            val statefulSetsResult = mediator.deleteStatefulSets(mediator.clusterSelector)
+        val jobmanagerPodsExists = mediator.doesJobManagerPodsExists()
+        val taskmanagerPodsExists = mediator.doesTaskManagerPodsExists()
 
-            if (statefulSetsResult.isSuccessful()) {
+        if (jobmanagerPodsExists || taskmanagerPodsExists) {
+            val deleteJobManagerPodsResult = mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = mediator.getJobManagerReplicas()))
+            val deleteTaskManagerPodsResult = mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = mediator.getTaskManagerReplicas()))
+
+            if (deleteJobManagerPodsResult.isSuccessful() && deleteTaskManagerPodsResult.isSuccessful()) {
                 logger.info("JobManager and TaskManager deleted")
             }
         }
 
-        if (jomanagerPVCExists || taskmanagerPVCExists) {
-            val persistenVolumeClaimsResult = mediator.deletePersistentVolumeClaims(mediator.clusterSelector)
-
-            if (persistenVolumeClaimsResult.isSuccessful()) {
-                logger.info("Persistent volume claims deleted")
-            }
-        }
-
-        return !jobmanagerServiceExists && !jobmanagerStatefuleSetExists && !taskmanagerStatefulSetExists && !jomanagerPVCExists && !taskmanagerPVCExists
+        return !serviceExists && !jobmanagerPodsExists && !taskmanagerPodsExists
     }
 
     fun resetCluster(): Boolean {
@@ -368,20 +361,20 @@ class TaskContext(
     }
 
     fun hasResourceDiverged(): Boolean {
-        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
-        val jobmanagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
-        val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+        val serviceExists = mediator.doesServiceExists()
+        val jobmanagerPodExists = mediator.doesJobManagerPodsExists()
+        val taskmanagerPodExists = mediator.doesTaskManagerPodsExists()
 
-        if (!jobmanagerServiceExists || !jobmanagerStatefulSetExists || !taskmanagerStatefulSetExists) {
+        if (!serviceExists || !jobmanagerPodExists || !taskmanagerPodExists) {
             return true
         }
 
-        val clusterScaling = mediator.getClusterScale()
+        val clusterScale = mediator.getClusterScale()
 
         val jobmanagerReplicas = mediator.getJobManagerReplicas()
         val taskmanagerReplicas = mediator.getTaskManagerReplicas()
 
-        if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScaling.taskManagers) {
+        if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScale.taskManagers) {
             return true
         }
 
@@ -458,37 +451,49 @@ class TaskContext(
         mediator.removeFinalizer()
     }
 
-    fun ensureServiceExist() {
-        val jobmanagerServiceExists = mediator.doesJobManagerServiceExists()
+    fun ensureServiceExist(): Boolean {
+        val serviceExists = mediator.doesServiceExists()
 
-        if (!jobmanagerServiceExists) {
-            val serviceResult = mediator.createJobManagerService(mediator.clusterSelector)
+        if (!serviceExists) {
+            val result = mediator.createService(mediator.clusterSelector)
 
-            if (serviceResult.isSuccessful()) {
-                logger.info("Service created: ${serviceResult.output}")
+            if (result.isSuccessful()) {
+                logger.info("Service created: ${result.output}")
             }
+
+            return false
         }
+
+        return true
     }
 
-    fun ensurePodsExists() {
-        val jobmanagerStatefulSetExists = mediator.doesJobManagerStatefulSetExists()
-        val taskmanagerStatefulSetExists = mediator.doesTaskManagerStatefulSetExists()
+    fun ensurePodsExists(): Boolean {
+        val clusterScale = mediator.getClusterScale()
 
-        if (!jobmanagerStatefulSetExists) {
-            val statefulSetResult = mediator.createJobManagerStatefulSet(mediator.clusterSelector)
+        val jobmanagerReplicas = mediator.getJobManagerReplicas()
+        val taskmanagerReplicas = mediator.getTaskManagerReplicas()
 
-            if (statefulSetResult.isSuccessful()) {
-                logger.info("JobManager created: ${statefulSetResult.output}")
+        if (jobmanagerReplicas != 1) {
+            val result = mediator.createJobManagerPods(mediator.clusterSelector, 1)
+
+            if (result.isSuccessful()) {
+                logger.info("JobManager created: ${result.output}")
             }
+
+            return false
         }
 
-        if (!taskmanagerStatefulSetExists) {
-            val statefulSetResult = mediator.createTaskManagerStatefulSet(mediator.clusterSelector)
+        if (taskmanagerReplicas != clusterScale.taskManagers) {
+            val result = mediator.createTaskManagerPods(mediator.clusterSelector, clusterScale.taskManagers)
 
-            if (statefulSetResult.isSuccessful()) {
-                logger.info("TaskManager created: ${statefulSetResult.output}")
+            if (result.isSuccessful()) {
+                logger.info("TaskManager created: ${result.output}")
             }
+
+            return false
         }
+
+        return true
     }
 
     fun executeManualAction(acceptedActions: Set<ManualAction>) {
@@ -534,7 +539,7 @@ class TaskContext(
                 if (acceptedActions.contains(ManualAction.TRIGGER_SAVEPOINT)) {
                     if (mediator.isBootstrapPresent()) {
                         if (mediator.getSavepointRequest() == null) {
-                            val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOtions())
+                            val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOptions())
                             if (response.isSuccessful() && response.output != null) {
                                 logger.info("Savepoint requested created. Waiting for savepoint...")
                                 mediator.setSavepointRequest(response.output)
@@ -599,7 +604,7 @@ class TaskContext(
                 val savepointIntervalInSeconds = mediator.getSavepointInterval()
 
                 if (mediator.timeSinceLastSavepointRequestInSeconds() >= savepointIntervalInSeconds) {
-                    val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOtions())
+                    val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOptions())
 
                     if (response.isSuccessful() && response.output != null) {
                         logger.info("Savepoint requested created. Waiting for savepoint...")

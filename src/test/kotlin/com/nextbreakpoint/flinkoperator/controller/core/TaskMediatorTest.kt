@@ -1,16 +1,17 @@
 package com.nextbreakpoint.flinkoperator.controller.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
-import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScale
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.model.DeleteOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
+import com.nextbreakpoint.flinkoperator.common.model.PodReplicas
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
-import io.kubernetes.client.models.V1StatefulSetStatus
 import org.apache.log4j.Logger
 import org.assertj.core.api.Assertions.assertThat
 import org.joda.time.DateTime
@@ -24,15 +25,15 @@ class TaskMediatorTest {
     private val clusterSelector = ClusterSelector(name = "test", namespace = "flink", uuid = "123")
     private val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
     private val savepointOptions = SavepointOptions(targetPath = "file:///tmp")
-    private val clusterScaling = ClusterScaling(taskManagers = 1, taskSlots = 1)
+    private val podReplicas = PodReplicas(pod = TestFactory.aTaskManagerPod(cluster,"1"), replicas = 2)
+    private val clusterScale = ClusterScale(taskManagers = 2, taskSlots = 2)
+    private val deleteOptions = DeleteOptions(label = "role", value = "jobmanager", limit = 1)
     private val resources = CachedResources(
         flinkCluster = cluster,
         bootstrapJob = TestFactory.aBootstrapJob(cluster),
-        jobmanagerService = TestFactory.aJobManagerService(cluster),
-        jobmanagerStatefulSet = TestFactory.aJobManagerStatefulSet(cluster),
-        taskmanagerStatefulSet = TestFactory.aTaskManagerStatefulSet(cluster),
-        jobmanagerPVC = TestFactory.aJobManagerPersistenVolumeClaim(cluster),
-        taskmanagerPVC = TestFactory.aTaskManagerPersistenVolumeClaim(cluster)
+        service = TestFactory.aJobManagerService(cluster),
+        jobmanagerPods = setOf(TestFactory.aJobManagerPod(cluster,"1")),
+        taskmanagerPods = setOf(TestFactory.aTaskManagerPod(cluster,"1"))
     )
     private val logger = mock(Logger::class.java)
     private val controller = mock(OperationController::class.java)
@@ -120,7 +121,7 @@ class TaskMediatorTest {
     fun `should return savepoint options`() {
         cluster.spec?.operator?.savepointTargetPath = "file:///tmp"
         val savepointOptions = savepointOptions
-        assertThat(context.getSavepointOtions()).isEqualTo(savepointOptions)
+        assertThat(context.getSavepointOptions()).isEqualTo(savepointOptions)
     }
 
     @Test
@@ -307,10 +308,10 @@ class TaskMediatorTest {
 
     @Test
     fun `should return cluster scale`() {
-        assertThat(context.getClusterScale()).isEqualTo(ClusterScaling(taskSlots = 0, taskManagers = 0))
+        assertThat(context.getClusterScale()).isEqualTo(ClusterScale(taskSlots = 0, taskManagers = 0))
         Status.setTaskManagers(cluster, 4)
         Status.setTaskSlots(cluster, 2)
-        assertThat(context.getClusterScale()).isEqualTo(ClusterScaling(taskSlots = 2, taskManagers = 4))
+        assertThat(context.getClusterScale()).isEqualTo(ClusterScale(taskSlots = 2, taskManagers = 4))
     }
 
     @Test
@@ -350,17 +351,23 @@ class TaskMediatorTest {
 
     @Test
     fun `should return number of jobmanager replicas`() {
-        assertThat(context.getJobManagerReplicas()).isEqualTo(0)
-        resources.jobmanagerStatefulSet?.status = V1StatefulSetStatus()
-        resources.jobmanagerStatefulSet?.status?.replicas = 4
-        assertThat(context.getJobManagerReplicas()).isEqualTo(4)
+        val resources = resources.withJobManagerPods(setOf(
+            TestFactory.aJobManagerPod(cluster,"1"),
+            TestFactory.aJobManagerPod(cluster,"2")
+        ))
+        val context = TaskMediator(clusterSelector, cluster, resources, controller)
+        assertThat(context.getJobManagerReplicas()).isEqualTo(2)
     }
 
     @Test
     fun `should return number of taskmanager replicas`() {
-        assertThat(context.getTaskManagerReplicas()).isEqualTo(0)
-        resources.taskmanagerStatefulSet?.status = V1StatefulSetStatus()
-        resources.taskmanagerStatefulSet?.status?.replicas = 4
+        val resources = resources.withTaskManagerPods(setOf(
+            TestFactory.aTaskManagerPod(cluster,"1"),
+            TestFactory.aTaskManagerPod(cluster,"2"),
+            TestFactory.aTaskManagerPod(cluster,"3"),
+            TestFactory.aTaskManagerPod(cluster,"4")
+        ))
+        val context = TaskMediator(clusterSelector, cluster, resources, controller)
         assertThat(context.getTaskManagerReplicas()).isEqualTo(4)
     }
 
@@ -375,49 +382,33 @@ class TaskMediatorTest {
     @Test
     fun `should return true when bootstrap exists otherwise false`() {
         assertThat(context.doesBootstrapJobExists()).isTrue()
-        val newResource = resources.withBootstrap(null)
+        val newResource = resources.withBootstrapJob(null)
         val newMediator = TaskMediator(clusterSelector, cluster, newResource, controller)
         assertThat(newMediator.doesBootstrapJobExists()).isFalse()
     }
 
     @Test
     fun `should return true when jobmanager service exists otherwise false`() {
-        assertThat(context.doesJobManagerServiceExists()).isTrue()
-        val newResource = resources.withJobManagerService(null)
+        assertThat(context.doesServiceExists()).isTrue()
+        val newResource = resources.withService(null)
         val newMediator = TaskMediator(clusterSelector, cluster, newResource, controller)
-        assertThat(newMediator.doesJobManagerServiceExists()).isFalse()
+        assertThat(newMediator.doesServiceExists()).isFalse()
     }
 
     @Test
-    fun `should return true when jobmanager statefulset exists otherwise false`() {
-        assertThat(context.doesJobManagerStatefulSetExists()).isTrue()
-        val newResource = resources.withJobManagerStatefulSet(null)
+    fun `should return true when jobmanager pod exists otherwise false`() {
+        assertThat(context.doesJobManagerPodsExists()).isTrue()
+        val newResource = resources.withJobManagerPods(setOf())
         val newMediator = TaskMediator(clusterSelector, cluster, newResource, controller)
-        assertThat(newMediator.doesJobManagerStatefulSetExists()).isFalse()
+        assertThat(newMediator.doesJobManagerPodsExists()).isFalse()
     }
 
     @Test
-    fun `should return true when taskmanager statefulset exists otherwise false`() {
-        assertThat(context.doesTaskManagerStatefulSetExists()).isTrue()
-        val newResource = resources.withTaskManagerStatefulSet(null)
+    fun `should return true when taskmanager pod exists otherwise false`() {
+        assertThat(context.doesTaskManagerPodsExists()).isTrue()
+        val newResource = resources.withTaskManagerPods(setOf())
         val newMediator = TaskMediator(clusterSelector, cluster, newResource, controller)
-        assertThat(newMediator.doesTaskManagerStatefulSetExists()).isFalse()
-    }
-
-    @Test
-    fun `should return true when jobmanager persistent volume claim exists otherwise false`() {
-        assertThat(context.doesJobManagerPVCExists()).isTrue()
-        val newResource = resources.withJobManagerPVC(null)
-        val newMediator = TaskMediator(clusterSelector, cluster, newResource, controller)
-        assertThat(newMediator.doesJobManagerPVCExists()).isFalse()
-    }
-
-    @Test
-    fun `should return true when taskmanager persistent volume claim exists otherwise false`() {
-        assertThat(context.doesTaskManagerPVCExists()).isTrue()
-        val newResource = resources.withTaskManagerPVC(null)
-        val newMediator = TaskMediator(clusterSelector, cluster, newResource, controller)
-        assertThat(newMediator.doesTaskManagerPVCExists()).isFalse()
+        assertThat(newMediator.doesTaskManagerPodsExists()).isFalse()
     }
 
     @Test
@@ -442,10 +433,13 @@ class TaskMediatorTest {
         Status.setSavepointMode(cluster, "Manual")
         Status.setRestartPolicy(cluster, "Always")
 
-        cluster.spec?.taskManagers = 2
-
-        resources.taskmanagerStatefulSet?.status = V1StatefulSetStatus()
-        resources.taskmanagerStatefulSet?.status?.readyReplicas = 4
+        val resources = resources.withTaskManagerPods(setOf(
+            TestFactory.aTaskManagerPod(cluster,"1"),
+            TestFactory.aTaskManagerPod(cluster,"2"),
+            TestFactory.aTaskManagerPod(cluster,"3"),
+            TestFactory.aTaskManagerPod(cluster,"4")
+        ))
+        val context = TaskMediator(clusterSelector, cluster, resources, controller)
 
         cluster.metadata.finalizers = listOf("finalizer.nextbreakpoint.com")
 
@@ -488,25 +482,9 @@ class TaskMediatorTest {
     @Test
     fun `should create jobmanager service resource`() {
         context.initializeStatus()
-        given(controller.createJobManagerService(eq(clusterSelector), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "xxx"))
-        assertThat(context.createJobManagerService(clusterSelector)).isNotNull()
-        verify(controller, times(1)).createJobManagerService(eq(clusterSelector), any())
-    }
-
-    @Test
-    fun `should create jobmanager statefulset resource`() {
-        context.initializeStatus()
-        given(controller.createStatefulSet(eq(clusterSelector), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "xxx"))
-        assertThat(context.createJobManagerStatefulSet(clusterSelector)).isNotNull()
-        verify(controller, times(1)).createStatefulSet(eq(clusterSelector), any())
-    }
-
-    @Test
-    fun `should create taskmanager statefulset resource`() {
-        context.initializeStatus()
-        given(controller.createStatefulSet(eq(clusterSelector), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "xxx"))
-        assertThat(context.createTaskManagerStatefulSet(clusterSelector)).isNotNull()
-        verify(controller, times(1)).createStatefulSet(eq(clusterSelector), any())
+        given(controller.createService(eq(clusterSelector), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = "xxx"))
+        assertThat(context.createService(clusterSelector)).isNotNull()
+        verify(controller, times(1)).createService(eq(clusterSelector), any())
     }
 
     @Test
@@ -548,52 +526,30 @@ class TaskMediatorTest {
     @Test
     fun `should create service`() {
         val resource = TestFactory.aJobManagerService(cluster)
-        given(controller.createJobManagerService(eq(clusterSelector), eq(resource))).thenReturn(OperationResult(status = OperationStatus.OK, output = "xxx"))
-        assertThat(context.createJobManagerService(clusterSelector, resource)).isNotNull()
-        verify(controller, times(1)).createJobManagerService(eq(clusterSelector), eq(resource))
+        given(controller.createService(eq(clusterSelector), eq(resource))).thenReturn(OperationResult(status = OperationStatus.OK, output = "xxx"))
+        assertThat(context.createService(clusterSelector, resource)).isNotNull()
+        verify(controller, times(1)).createService(eq(clusterSelector), eq(resource))
     }
 
     @Test
     fun `should delete service`() {
-        given(controller.deleteJobManagerService(eq(clusterSelector))).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        assertThat(context.deleteJobManagerService(clusterSelector)).isNotNull()
-        verify(controller, times(1)).deleteJobManagerService(eq(clusterSelector))
+        given(controller.deleteService(eq(clusterSelector))).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
+        assertThat(context.deleteService(clusterSelector)).isNotNull()
+        verify(controller, times(1)).deleteService(eq(clusterSelector))
     }
 
     @Test
-    fun `should create statefulset`() {
-        val resource = TestFactory.aJobManagerStatefulSet(cluster)
-        given(controller.createStatefulSet(eq(clusterSelector), eq(resource))).thenReturn(OperationResult(status = OperationStatus.OK, output = "xxx"))
-        assertThat(context.createStatefulSet(clusterSelector, resource)).isNotNull()
-        verify(controller, times(1)).createStatefulSet(eq(clusterSelector), eq(resource))
+    fun `should create pods`() {
+        given(controller.createPods(eq(clusterSelector), eq(podReplicas))).thenReturn(OperationResult(status = OperationStatus.OK, output = setOf("1", "2")))
+        assertThat(context.createPods(clusterSelector, podReplicas)).isNotNull()
+        verify(controller, times(1)).createPods(eq(clusterSelector), eq(podReplicas))
     }
 
     @Test
-    fun `should delete statefulsets`() {
-        given(controller.deleteStatefulSets(eq(clusterSelector))).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        assertThat(context.deleteStatefulSets(clusterSelector)).isNotNull()
-        verify(controller, times(1)).deleteStatefulSets(eq(clusterSelector))
-    }
-
-    @Test
-    fun `should delete persistent volume claims`() {
-        given(controller.deletePersistentVolumeClaims(eq(clusterSelector))).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        assertThat(context.deletePersistentVolumeClaims(clusterSelector)).isNotNull()
-        verify(controller, times(1)).deletePersistentVolumeClaims(eq(clusterSelector))
-    }
-
-    @Test
-    fun `should terminate pods`() {
-        given(controller.terminatePods(eq(clusterSelector))).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        assertThat(context.terminatePods(clusterSelector)).isNotNull()
-        verify(controller, times(1)).terminatePods(eq(clusterSelector))
-    }
-
-    @Test
-    fun `should restart pods`() {
-        given(controller.restartPods(eq(clusterSelector), eq(clusterScaling))).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
-        assertThat(context.restartPods(clusterSelector, clusterScaling)).isNotNull()
-        verify(controller, times(1)).restartPods(eq(clusterSelector), eq(clusterScaling))
+    fun `should delete pod`() {
+        given(controller.deletePods(eq(clusterSelector), any())).thenReturn(OperationResult(status = OperationStatus.OK, output = null))
+        assertThat(context.deletePods(clusterSelector, deleteOptions)).isNotNull()
+        verify(controller, times(1)).deletePods(eq(clusterSelector), eq(deleteOptions))
     }
 
     @Test
@@ -634,9 +590,9 @@ class TaskMediatorTest {
 
     @Test
     fun `should verify that cluster is ready`() {
-        given(controller.isClusterReady(eq(clusterSelector), eq(clusterScaling))).thenReturn(OperationResult(status = OperationStatus.OK, output = true))
-        assertThat(context.isClusterReady(clusterSelector, clusterScaling)).isNotNull()
-        verify(controller, times(1)).isClusterReady(eq(clusterSelector), eq(clusterScaling))
+        given(controller.isClusterReady(eq(clusterSelector), eq(clusterScale))).thenReturn(OperationResult(status = OperationStatus.OK, output = true))
+        assertThat(context.isClusterReady(clusterSelector, clusterScale)).isNotNull()
+        verify(controller, times(1)).isClusterReady(eq(clusterSelector), eq(clusterScale))
     }
 
     @Test

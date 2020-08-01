@@ -36,8 +36,13 @@ class OnStarting : Task() {
             return
         }
 
-        context.ensurePodsExists()
-        context.ensureServiceExist()
+        if (!context.ensurePodsExists()) {
+            return
+        }
+
+        if (!context.ensureServiceExist()) {
+            return
+        }
 
         if (context.startCluster()) {
             context.onClusterStarted()

@@ -10,22 +10,22 @@ class ClusterResourcesBuilder(
     private val flinkCluster: V1FlinkCluster
 ) {
     fun build(): ClusterResources {
-        val jobmanagerService = factory.createJobManagerService(
+        val service = factory.createService(
             namespace, clusterSelector, clusterOwner, flinkCluster
         )
 
-        val jobmanagerStatefulSet = factory.createJobManagerStatefulSet(
+        val jobmanagerPod = factory.createJobManagerPod(
             namespace, clusterSelector, clusterOwner, flinkCluster
         )
 
-        val taskmanagerStatefulSet = factory.createTaskManagerStatefulSet(
+        val taskmanagerPod = factory.createTaskManagerPod(
             namespace, clusterSelector, clusterOwner, flinkCluster
         )
 
         return ClusterResources(
-            jobmanagerService = jobmanagerService,
-            jobmanagerStatefulSet = jobmanagerStatefulSet,
-            taskmanagerStatefulSet = taskmanagerStatefulSet
+            service = service,
+            jobmanagerPod = jobmanagerPod,
+            taskmanagerPod = taskmanagerPod
         )
     }
 }

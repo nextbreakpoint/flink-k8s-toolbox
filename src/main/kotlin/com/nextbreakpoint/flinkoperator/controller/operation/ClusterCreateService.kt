@@ -24,7 +24,7 @@ class ClusterCreateService(flinkOptions: FlinkOptions, flinkClient: FlinkClient,
                 serviceOut.metadata.name
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterSelector.name}] Can't create resources", e)
+            logger.error("[name=${clusterSelector.name}] Can't create service", e)
 
             OperationResult(
                 OperationStatus.ERROR,

@@ -14,14 +14,15 @@ class DefaultBootstrapJobFactoryTest {
 
         assertThat(job).isNotNull()
 
-        assertThat(job.metadata?.name).isEqualTo("flink-bootstrap-${cluster.metadata.name}")
+        assertThat(job.metadata?.generateName).isEqualTo("bootstrap-${cluster.metadata.name}-")
 
         val labels = job.metadata?.labels
-        assertThat(labels).hasSize(4)
+        assertThat(labels).hasSize(5)
         assertThat(labels?.get("owner")).isEqualTo("myself")
         assertThat(labels?.get("name")).isEqualTo(cluster.metadata.name)
         assertThat(labels?.get("uid")).isEqualTo("xxx")
         assertThat(labels?.get("component")).isEqualTo("flink")
+        assertThat(labels?.get("job")).isEqualTo("bootstrap")
 
         assertThat(job.spec?.parallelism).isEqualTo(1)
         assertThat(job.spec?.completions).isEqualTo(1)

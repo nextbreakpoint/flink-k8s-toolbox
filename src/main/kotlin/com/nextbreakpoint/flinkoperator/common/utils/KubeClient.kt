@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
+import com.nextbreakpoint.flinkoperator.common.model.DeleteOptions
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import io.kubernetes.client.ApiClient
@@ -19,10 +20,9 @@ import io.kubernetes.client.custom.V1Patch
 import io.kubernetes.client.models.V1DeleteOptions
 import io.kubernetes.client.models.V1Deployment
 import io.kubernetes.client.models.V1Job
-import io.kubernetes.client.models.V1PersistentVolumeClaim
+import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1PodList
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.Watch
 import io.kubernetes.client.util.Watchable
@@ -334,29 +334,10 @@ object KubeClient {
             object : TypeToken<Watch.Response<V1Job>>() {}.type
         )
 
-    fun watchStatefulSets(namespace: String): Watchable<V1StatefulSet> =
-        Watch.createWatch(
-            appsApiWatch.apiClient,
-            appsApiWatch.listNamespacedStatefulSetCall(
-                namespace,
-                null,
-                null,
-                null,
-                "component=flink,owner=flink-operator",
-                null,
-                null,
-                600,
-                true,
-                null,
-                null
-            ),
-            object : TypeToken<Watch.Response<V1StatefulSet>>() {}.type
-        )
-
-    fun watchPersistentVolumeClaims(namespace: String): Watchable<V1PersistentVolumeClaim> =
+    fun watchPods(namespace: String): Watchable<V1Pod> =
         Watch.createWatch(
             coreApiWatch.apiClient,
-            coreApiWatch.listNamespacedPersistentVolumeClaimCall(
+            coreApiWatch.listNamespacedPodCall(
                 namespace,
                 null,
                 null,
@@ -369,8 +350,27 @@ object KubeClient {
                 null,
                 null
             ),
-            object : TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {}.type
+            object : TypeToken<Watch.Response<V1Pod>>() {}.type
         )
+
+//    fun watchPersistentVolumeClaims(namespace: String): Watchable<V1PersistentVolumeClaim> =
+//        Watch.createWatch(
+//            coreApiWatch.apiClient,
+//            coreApiWatch.listNamespacedPersistentVolumeClaimCall(
+//                namespace,
+//                null,
+//                null,
+//                null,
+//                "component=flink,owner=flink-operator",
+//                null,
+//                null,
+//                600,
+//                true,
+//                null,
+//                null
+//            ),
+//            object : TypeToken<Watch.Response<V1PersistentVolumeClaim>>() {}.type
+//        )
 
 //    fun listFlinkClusters(namespace: String): List<V1FlinkCluster> {
 //        val response = objectApi.listNamespacedCustomObjectCall(
@@ -663,12 +663,12 @@ object KubeClient {
 //        }
 //    }
 
-    fun createStatefulSet(
+    fun createPod(
         clusterSelector: ClusterSelector,
-        resource: V1StatefulSet
-    ): V1StatefulSet {
+        resource: V1Pod
+    ): V1Pod {
         try {
-            return appsApi.createNamespacedStatefulSet(
+            return coreApi.createNamespacedPod(
                 clusterSelector.namespace,
                 resource,
                 null,
@@ -687,7 +687,7 @@ object KubeClient {
 //    ): V1Service {
 //        try {
 //            return coreApi.replaceNamespacedService(
-//                "flink-jobmanager-${clusterSelector.name}",
+//                "jobmanager-${clusterSelector.name}",
 //                clusterSelector.namespace,
 //                resources.jobmanagerService,
 //                null,
@@ -706,7 +706,7 @@ object KubeClient {
 //    ): V1StatefulSet {
 //        try {
 //            return appsApi.replaceNamespacedStatefulSet(
-//                "flink-jobmanager-${clusterSelector.name}",
+//                "jobmanager-${clusterSelector.name}",
 //                clusterSelector.namespace,
 //                resources.jobmanagerStatefulSet,
 //                null,
@@ -738,7 +738,7 @@ object KubeClient {
 //        }
 //    }
 
-    fun deleteServices(clusterSelector: ClusterSelector) {
+    fun deleteService(clusterSelector: ClusterSelector) {
         val services = coreApi.listNamespacedService(
             clusterSelector.namespace,
             null,
@@ -777,13 +777,13 @@ object KubeClient {
         }
     }
 
-    fun deleteStatefulSets(clusterSelector: ClusterSelector) {
-        val statefulSets = appsApi.listNamespacedStatefulSet(
+    fun deletePods(clusterSelector: ClusterSelector, options: DeleteOptions) {
+        val pods = coreApi.listNamespacedPod(
             clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,${options.label}=${options.value}",
             null,
             null,
             5,
@@ -792,12 +792,12 @@ object KubeClient {
 
         val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
 
-        statefulSets.items.forEach { statefulSet ->
+        pods.items.take(options.limit).forEach { pod ->
             try {
-                logger.debug("Removing StatefulSet ${statefulSet.metadata.name}...")
+                logger.debug("Removing Pod ${pod.metadata.name}...")
 
-                val status = appsApi.deleteNamespacedStatefulSet(
-                    statefulSet.metadata.name,
+                val status = coreApi.deleteNamespacedPod(
+                    pod.metadata.name,
                     clusterSelector.namespace,
                     null,
                     deleteOptions,
@@ -816,46 +816,46 @@ object KubeClient {
         }
     }
 
-    fun deletePersistentVolumeClaims(clusterSelector: ClusterSelector) {
-        val volumeClaims = coreApi.listNamespacedPersistentVolumeClaim(
-            clusterSelector.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        )
+//    fun deletePersistentVolumeClaims(clusterSelector: ClusterSelector) {
+//        val volumeClaims = coreApi.listNamespacedPersistentVolumeClaim(
+//            clusterSelector.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//
+//        val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
+//
+//        volumeClaims.items.forEach { volumeClaim ->
+//            try {
+//                logger.debug("Removing Persistent Volume Claim ${volumeClaim.metadata.name}...")
+//
+//                val status = coreApi.deleteNamespacedPersistentVolumeClaim(
+//                    volumeClaim.metadata.name,
+//                    clusterSelector.namespace,
+//                    null,
+//                    deleteOptions,
+//                    null,
+//                    5,
+//                    null,
+//                    null
+//                )
+//
+//                logger.debug("Response status: ${status.reason}")
+//
+////                status.details.causes.forEach { logger.debug(it.message) }
+//            } catch (e: Exception) {
+//                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
+//            }
+//        }
+//    }
 
-        val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
-
-        volumeClaims.items.forEach { volumeClaim ->
-            try {
-                logger.debug("Removing Persistent Volume Claim ${volumeClaim.metadata.name}...")
-
-                val status = coreApi.deleteNamespacedPersistentVolumeClaim(
-                    volumeClaim.metadata.name,
-                    clusterSelector.namespace,
-                    null,
-                    deleteOptions,
-                    null,
-                    5,
-                    null,
-                    null
-                )
-
-                logger.debug("Response status: ${status.reason}")
-
-//                status.details.causes.forEach { logger.debug(it.message) }
-            } catch (e: Exception) {
-                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
-            }
-        }
-    }
-
-    fun deleteBootstrapJobs(clusterSelector: ClusterSelector) {
+    fun deleteBootstrapJob(clusterSelector: ClusterSelector) {
         val jobs = batchApi.listNamespacedJob(
             clusterSelector.namespace,
             null,
@@ -1185,13 +1185,13 @@ object KubeClient {
         }
     }
 
-    fun deleteBootstrapPods(clusterSelector: ClusterSelector) {
+    fun deleteBootstrapPod(clusterSelector: ClusterSelector) {
         val pods = coreApi.listNamespacedPod(
             clusterSelector.namespace,
             null,
             null,
             null,
-            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,job-name=flink-bootstrap-${clusterSelector.name}",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,job=bootstrap",
             null,
             null,
             5,

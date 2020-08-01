@@ -32,7 +32,6 @@ class OnSuspendedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).suspendCluster()
-        inOrder.verify(context, times(1)).ensurePodsExists()
         inOrder.verify(context, times(1)).isManualActionPresent()
         verifyNoMoreInteractions(context)
     }
@@ -64,7 +63,6 @@ class OnSuspendedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).suspendCluster()
-        inOrder.verify(context, times(1)).ensurePodsExists()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).executeManualAction(actions)
         verifyNoMoreInteractions(context)

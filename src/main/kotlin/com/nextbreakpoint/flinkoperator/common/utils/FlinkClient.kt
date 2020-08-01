@@ -375,17 +375,17 @@ object FlinkClient {
 
                         it.first to SavepointInfo("IN_PROGRESS", null)
                     } else {
-                        val operation = asynchronousOperationResult.operation as? Map<String, String>
+                        val operation = asynchronousOperationResult.operation as? Map<String, Object>
                         logger.debug("operation: $operation")
-                        val location = operation?.get("location")
-                        val failureCause = operation?.get("failure-cause")
+                        val location = operation?.get("location") as? String
+                        val failureCause = operation?.get("failure-cause") as? Map<String, Object>
 
                         if (failureCause == null) {
                             logger.info("[$address] Savepoint completed for job ${it.first}")
 
                             it.first to SavepointInfo("COMPLETED", location)
                         } else {
-                            logger.info("[$address] Savepoint failed for job ${it.first}")
+                            logger.info("[$address] Savepoint failed for job ${it.first} (${failureCause})")
 
                             it.first to SavepointInfo("FAILED", null)
                         }

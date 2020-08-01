@@ -5,7 +5,6 @@ import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.TestFactory
-import org.apache.log4j.Logger
 import org.assertj.core.api.Assertions.assertThat
 import org.joda.time.DateTime
 import org.junit.jupiter.api.Test
@@ -20,13 +19,10 @@ class TaskControllerTest {
     private val resources = CachedResources(
         flinkCluster = cluster,
         bootstrapJob = TestFactory.aBootstrapJob(cluster),
-        jobmanagerService = TestFactory.aJobManagerService(cluster),
-        jobmanagerStatefulSet = TestFactory.aJobManagerStatefulSet(cluster),
-        taskmanagerStatefulSet = TestFactory.aTaskManagerStatefulSet(cluster),
-        jobmanagerPVC = TestFactory.aJobManagerPersistenVolumeClaim(cluster),
-        taskmanagerPVC = TestFactory.aTaskManagerPersistenVolumeClaim(cluster)
+        service = TestFactory.aJobManagerService(cluster),
+        jobmanagerPods = setOf(TestFactory.aJobManagerPod(cluster,"1")),
+        taskmanagerPods = setOf(TestFactory.aTaskManagerPod(cluster,"1"))
     )
-    private val logger = mock(Logger::class.java)
     private val task = spy(DummyTask(cluster))
     private val controller = mock(OperationController::class.java)
     private val tasks = mapOf(
