@@ -27,6 +27,8 @@ class OnStartingTest {
         given(context.hasResourceChanged()).thenReturn(false)
         given(context.hasScaleChanged()).thenReturn(false)
         given(context.startCluster()).thenReturn(false)
+        given(context.ensurePodsExists()).thenReturn(true)
+        given(context.ensureServiceExist()).thenReturn(true)
     }
 
     @Test
@@ -101,6 +103,35 @@ class OnStartingTest {
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).hasScaleChanged()
         inOrder.verify(context, times(1)).onResourceScaled()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when pods are not ready`() {
+        given(context.ensurePodsExists()).thenReturn(false)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isManualActionPresent()
+        inOrder.verify(context, times(1)).hasResourceChanged()
+        inOrder.verify(context, times(1)).hasScaleChanged()
+        inOrder.verify(context, times(1)).ensurePodsExists()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when service is not ready`() {
+        given(context.ensureServiceExist()).thenReturn(false)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isManualActionPresent()
+        inOrder.verify(context, times(1)).hasResourceChanged()
+        inOrder.verify(context, times(1)).hasScaleChanged()
+        inOrder.verify(context, times(1)).ensurePodsExists()
+        inOrder.verify(context, times(1)).ensureServiceExist()
         verifyNoMoreInteractions(context)
     }
 

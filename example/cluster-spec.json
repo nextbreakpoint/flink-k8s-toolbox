@@ -35,15 +35,15 @@
       },
       {
         "name": "FLINK_SAVEPOINTS_LOCATION",
-        "value": "file:///var/savepoints"
+        "value": "file:///data/savepoints"
       },
       {
         "name": "FLINK_CHECKPOINTS_LOCATION",
-        "value": "file:///var/checkpoints"
+        "value": "file:///data/checkpoints"
       },
       {
         "name": "FLINK_FS_CHECKPOINTS_LOCATION",
-        "value": "file:///var/fs_checkpoints"
+        "value": "file:///data/fs_checkpoints"
       }
     ],
     "environmentFrom": [
@@ -70,8 +70,8 @@
         "subPath": "flink-conf.yaml"
       },
       {
-        "name": "jobmanager",
-        "mountPath": "/var"
+        "name": "data-vol",
+        "mountPath": "/data"
       }
     ],
     "volumes": [
@@ -80,6 +80,12 @@
         "configMap": {
           "name": "flink-config",
           "defaultMode": "511"
+        }
+      },
+      {
+        "name": "data-vol",
+        "hostPath": {
+          "path": "/var/data"
         }
       }
     ],
@@ -129,22 +135,6 @@
         "name": "prometheus",
         "containerPort": 9999,
         "protocol": "TCP"
-      }
-    ],
-    "persistentVolumeClaimsTemplates": [
-      {
-        "metadata": {
-          "name": "jobmanager"
-        },
-        "spec": {
-          "storageClassName": "standard",
-          "accessModes": [ "ReadWriteOnce" ],
-          "resources": {
-            "requests": {
-              "storage": "1Gi"
-            }
-          }
-        }
       }
     ],
     "resources": {
@@ -178,15 +168,15 @@
       },
       {
         "name": "FLINK_SAVEPOINTS_LOCATION",
-        "value": "file:///var/savepoints"
+        "value": "file:///data/savepoints"
       },
       {
         "name": "FLINK_CHECKPOINTS_LOCATION",
-        "value": "file:///var/checkpoints"
+        "value": "file:///data/checkpoints"
       },
       {
         "name": "FLINK_FS_CHECKPOINTS_LOCATION",
-        "value": "file:///var/fs_checkpoints"
+        "value": "file:///data/fs_checkpoints"
       }
     ],
     "volumeMounts": [
@@ -206,8 +196,8 @@
         "subPath": "flink-conf.yaml"
       },
       {
-        "name": "taskmanager",
-        "mountPath": "/var"
+        "name": "data-vol",
+        "mountPath": "/data"
       }
     ],
     "volumes": [
@@ -216,6 +206,12 @@
         "configMap": {
           "name": "flink-config",
           "defaultMode": "511"
+        }
+      },
+      {
+        "name": "data-vol",
+        "hostPath": {
+          "path": "/var/data"
         }
       }
     ],
@@ -267,22 +263,6 @@
         "protocol": "TCP"
       }
     ],
-    "persistentVolumeClaimsTemplates": [
-      {
-        "metadata": {
-          "name": "taskmanager"
-        },
-        "spec": {
-          "storageClassName": "standard",
-          "accessModes": [ "ReadWriteOnce" ],
-          "resources": {
-            "requests": {
-              "storage": "5Gi"
-            }
-          }
-        }
-      }
-    ],
     "resources": {
       "limits": {
         "cpu": "1",
@@ -297,7 +277,7 @@
   "operator": {
     "savepointMode": "Automatic",
     "savepointInterval": 300,
-    "savepointTargetPath": "file:///var/savepoints",
+    "savepointTargetPath": "file:///data/savepoints",
     "restartPolicy": "Always"
   }
 }

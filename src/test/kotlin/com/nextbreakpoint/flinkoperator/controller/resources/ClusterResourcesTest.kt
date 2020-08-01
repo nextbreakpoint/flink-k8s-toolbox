@@ -1,55 +1,55 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
+import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1Service
-import io.kubernetes.client.models.V1StatefulSet
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 
 class ClusterResourcesTest {
-    private val jobmanagerService = mock(V1Service::class.java)
-    private val jobmanagerStatefulSet = mock(V1StatefulSet::class.java)
-    private val taskmanagerStatefulSet = mock(V1StatefulSet::class.java)
+    private val service = mock(V1Service::class.java)
+    private val jobmanagerPod = mock(V1Pod::class.java)
+    private val taskmanagerPod = mock(V1Pod::class.java)
 
     private val clusterResources = ClusterResources(
-        jobmanagerService = jobmanagerService,
-        jobmanagerStatefulSet = jobmanagerStatefulSet,
-        taskmanagerStatefulSet = taskmanagerStatefulSet
+        service = service,
+        jobmanagerPod = jobmanagerPod,
+        taskmanagerPod = taskmanagerPod
     )
 
     @Test
     fun `should copy resources and modify job manager service`() {
-        assertThat(clusterResources.jobmanagerService).isEqualTo(jobmanagerService)
+        assertThat(clusterResources.service).isEqualTo(service)
 
-        val resources = clusterResources.withJobManagerService(null)
+        val resources = clusterResources.withService(null)
 
         assertThat(resources).isNotNull()
-        assertThat(resources.jobmanagerService).isNull()
-        assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
-        assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
+        assertThat(resources.service).isNull()
+        assertThat(resources.jobmanagerPod).isEqualTo(jobmanagerPod)
+        assertThat(resources.taskmanagerPod).isEqualTo(taskmanagerPod)
     }
 
     @Test
-    fun `should copy resources and modify job manager statefulset`() {
-        assertThat(clusterResources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
+    fun `should copy resources and modify job manager pod`() {
+        assertThat(clusterResources.jobmanagerPod).isEqualTo(jobmanagerPod)
 
-        val resources = clusterResources.withJobManagerStatefulSet(null)
+        val resources = clusterResources.withJobManagerPod(null)
 
         assertThat(resources).isNotNull()
-        assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
-        assertThat(resources.jobmanagerStatefulSet).isNull()
-        assertThat(resources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
+        assertThat(resources.service).isEqualTo(service)
+        assertThat(resources.jobmanagerPod).isNull()
+        assertThat(resources.taskmanagerPod).isEqualTo(taskmanagerPod)
     }
 
     @Test
-    fun `should copy resources and modify task manager statefulset`() {
-        assertThat(clusterResources.taskmanagerStatefulSet).isEqualTo(taskmanagerStatefulSet)
+    fun `should copy resources and modify task manager pod`() {
+        assertThat(clusterResources.taskmanagerPod).isEqualTo(taskmanagerPod)
 
-        val resources = clusterResources.withTaskManagerStatefulSet(null)
+        val resources = clusterResources.withTaskManagerPod(null)
 
         assertThat(resources).isNotNull()
-        assertThat(resources.jobmanagerService).isEqualTo(jobmanagerService)
-        assertThat(resources.jobmanagerStatefulSet).isEqualTo(jobmanagerStatefulSet)
-        assertThat(resources.taskmanagerStatefulSet).isNull()
+        assertThat(resources.service).isEqualTo(service)
+        assertThat(resources.jobmanagerPod).isEqualTo(jobmanagerPod)
+        assertThat(resources.taskmanagerPod).isNull()
     }
 }

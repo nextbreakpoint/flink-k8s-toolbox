@@ -2,7 +2,7 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkclient.model.ClusterOverviewWithVersion
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
-import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScale
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
@@ -24,7 +24,7 @@ class ClusterIsReadyTest {
     private val flinkClient = mock(FlinkClient::class.java)
     private val flinkAddress = FlinkAddress(host = "localhost", port = 8080)
     private val kubeClient = mock(KubeClient::class.java)
-    private val clusterScaling = ClusterScaling(taskManagers = 2, taskSlots = 1)
+    private val clusterScale = ClusterScale(taskManagers = 2, taskSlots = 1)
     private val command = ClusterIsReady(flinkOptions, flinkClient, kubeClient)
 
     @BeforeEach
@@ -39,7 +39,7 @@ class ClusterIsReadyTest {
     @Test
     fun `should fail when kubeClient throws exception`() {
         given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScale)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
@@ -51,7 +51,7 @@ class ClusterIsReadyTest {
     @Test
     fun `should fail when flinkClient throws exception`() {
         given(flinkClient.getOverview(eq(flinkAddress))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScale)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
@@ -67,7 +67,7 @@ class ClusterIsReadyTest {
         overview.slotsAvailable = 2
         overview.taskmanagers = 0
         given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterSelector, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScale)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
@@ -83,7 +83,7 @@ class ClusterIsReadyTest {
         overview.slotsAvailable = 0
         overview.taskmanagers = 2
         given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterSelector, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScale)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
@@ -99,7 +99,7 @@ class ClusterIsReadyTest {
         overview.slotsAvailable = 2
         overview.taskmanagers = 2
         given(flinkClient.getOverview(eq(flinkAddress))).thenReturn(overview)
-        val result = command.execute(clusterSelector, clusterScaling)
+        val result = command.execute(clusterSelector, clusterScale)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)

@@ -1,8 +1,9 @@
 package com.nextbreakpoint.flinkoperator.mediator.core
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
-import com.nextbreakpoint.flinkoperator.common.model.ClusterScaling
+import com.nextbreakpoint.flinkoperator.common.model.ClusterScale
 import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.model.DeleteOptions
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.model.SavepointOptions
 import com.nextbreakpoint.flinkoperator.common.model.SavepointRequest
@@ -13,22 +14,23 @@ import com.nextbreakpoint.flinkoperator.controller.core.TaskMediator
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
-import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.apache.log4j.Logger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class TaskContextTest {
-    private val cluster = TestFactory.aCluster(name = "test", namespace = "flink")
     private val clusterSelector = ClusterSelector(name = "test", namespace = "flink", uuid = "123")
     private val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
     private val savepointOptions = SavepointOptions(targetPath = "file:///tmp")
-    private val clusterScaling = ClusterScaling(taskManagers = 1, taskSlots = 1)
+    private val jobmanagerDeleteOptions = DeleteOptions(label = "role", value = "jobmanager", limit = 1)
+    private val taskmanagerDeleteOptions = DeleteOptions(label = "role", value = "taskmanager", limit = 2)
+    private val clusterScale = ClusterScale(taskManagers = 2, taskSlots = 1)
     private val logger = mock(Logger::class.java)
     private val mediator = mock(TaskMediator::class.java)
     private val context = TaskContext(logger, mediator)
@@ -43,17 +45,17 @@ class TaskContextTest {
         given(mediator.isJobFailed(any())).thenReturn(OperationResult(OperationStatus.OK, false))
         given(mediator.arePodsRunning(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.getJobManagerReplicas()).thenReturn(1)
-        given(mediator.getTaskManagerReplicas()).thenReturn(1)
-        given(mediator.getClusterScale()).thenReturn(clusterScaling)
+        given(mediator.getTaskManagerReplicas()).thenReturn(2)
+        given(mediator.getClusterScale()).thenReturn(clusterScale)
         given(mediator.doesBootstrapJobExists()).thenReturn(true)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(true)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(true)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(true)
+        given(mediator.doesServiceExists()).thenReturn(true)
+        given(mediator.doesJobManagerPodsExists()).thenReturn(true)
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(true)
         given(mediator.timeSinceLastUpdateInSeconds()).thenReturn(2L)
         given(mediator.timeSinceLastSavepointRequestInSeconds()).thenReturn(30L)
         given(mediator.createBootstrapJob(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.getSavepointRequest()).thenReturn(null)
-        given(mediator.getSavepointOtions()).thenReturn(savepointOptions)
+        given(mediator.getSavepointOptions()).thenReturn(savepointOptions)
     }
 
     @Test
@@ -175,25 +177,25 @@ class TaskContextTest {
 
     @Test
     fun `cancelJob should return true when jobmanager service is not present`() {
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(false)
         val result = context.cancelJob()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
+        verify(mediator, times(1)).doesServiceExists()
         assertThat(result).isTrue()
     }
 
     @Test
     fun `cancelJob should return true when jobmanager pod is not present`() {
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
+        given(mediator.doesJobManagerPodsExists()).thenReturn(false)
         val result = context.cancelJob()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
         assertThat(result).isTrue()
     }
 
     @Test
     fun `cancelJob should return true when taskmanager pod is not present`() {
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(false)
         val result = context.cancelJob()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         assertThat(result).isTrue()
     }
 
@@ -327,74 +329,55 @@ class TaskContextTest {
 
     @Test
     fun `startCluster should return false when jobmanager service is not present`() {
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(false)
         val result = context.startCluster()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
+        verify(mediator, times(1)).doesServiceExists()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `startCluster should return false when jobmanager pod is not present`() {
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
+        given(mediator.doesJobManagerPodsExists()).thenReturn(false)
         val result = context.startCluster()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `startCluster should return false when taskmanager pod is not present`() {
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(false)
         val result = context.startCluster()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `startCluster should return false when jobmanager replicas is not one`() {
-        given(mediator.getJobManagerReplicas()).thenReturn(0)
-        val result = context.startCluster()
-        verify(mediator, times(1)).getJobManagerReplicas()
-        verify(mediator, times(1)).restartPods(any(), any())
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `startCluster should return false when taskmanager replicas is not the same as current resource taskmanagers`() {
-        given(mediator.getTaskManagerReplicas()).thenReturn(0)
-        val result = context.startCluster()
-        verify(mediator, times(1)).getClusterScale()
-        verify(mediator, times(1)).getTaskManagerReplicas()
-        verify(mediator, times(1)).restartPods(any(), any())
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `startCluster should return false when bootstrap in not defined and there is an error checking cluster is ready`() {
         given(mediator.isBootstrapPresent()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.ERROR, false))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.ERROR, false))
         val result = context.startCluster()
         verify(mediator, times(1)).isBootstrapPresent()
-        verify(mediator, times(1)).isClusterReady(any(), eq(clusterScaling))
+        verify(mediator, times(1)).isClusterReady(any(), eq(clusterScale))
         assertThat(result).isFalse()
     }
 
     @Test
     fun `startCluster should return false when bootstrap in not defined and cluster is not ready`() {
         given(mediator.isBootstrapPresent()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.OK, false))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.OK, false))
         val result = context.startCluster()
         verify(mediator, times(1)).isBootstrapPresent()
-        verify(mediator, times(1)).isClusterReady(any(), eq(clusterScaling))
+        verify(mediator, times(1)).isClusterReady(any(), eq(clusterScale))
         assertThat(result).isFalse()
     }
 
     @Test
     fun `startCluster should return true when bootstrap in not defined and cluster is ready`() {
         given(mediator.isBootstrapPresent()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.OK, true))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.OK, true))
         val result = context.startCluster()
         verify(mediator, times(1)).isBootstrapPresent()
-        verify(mediator, times(1)).isClusterReady(any(), eq(clusterScaling))
+        verify(mediator, times(1)).isClusterReady(any(), eq(clusterScale))
         assertThat(result).isTrue()
     }
 
@@ -435,7 +418,7 @@ class TaskContextTest {
     fun `startCluster should return false when bootstrap job is not present and there is an error checking readiness`() {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.ERROR, false))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.ERROR, false))
         val result = context.startCluster()
         verify(mediator, times(1)).isBootstrapPresent()
         verify(mediator, times(1)).doesBootstrapJobExists()
@@ -447,7 +430,7 @@ class TaskContextTest {
     fun `startCluster should return false when bootstrap job is not present and cluster is not ready`() {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.OK, false))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.OK, false))
         val result = context.startCluster()
         verify(mediator, times(1)).isBootstrapPresent()
         verify(mediator, times(1)).doesBootstrapJobExists()
@@ -459,7 +442,7 @@ class TaskContextTest {
     fun `startCluster should return false when bootstrap job is not present and cluster is ready but jar hasn't been removed`() {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.OK, true))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.removeJar(any())).thenReturn(OperationResult(OperationStatus.ERROR, null))
         val result = context.startCluster()
         verify(mediator, times(1)).isBootstrapPresent()
@@ -473,7 +456,7 @@ class TaskContextTest {
     fun `startCluster should return false when bootstrap job is not present and cluster is ready and jar has been removed but there is an error stopping job`() {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.OK, true))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.removeJar(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.stopJob(any())).thenReturn(OperationResult(OperationStatus.ERROR, false))
         val result = context.startCluster()
@@ -489,7 +472,7 @@ class TaskContextTest {
     fun `startCluster should return false when bootstrap job is not present and cluster is ready and jar has been removed but job hasn't been stopped`() {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.OK, true))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.removeJar(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.stopJob(any())).thenReturn(OperationResult(OperationStatus.OK, false))
         val result = context.startCluster()
@@ -505,7 +488,7 @@ class TaskContextTest {
     fun `startCluster should return false when bootstrap job is not present and cluster is ready and jar has been removed and job has been stopped but bootstrap job hasn't been created`() {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.OK, true))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.removeJar(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.stopJob(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.createBootstrapJob(any())).thenReturn(OperationResult(OperationStatus.ERROR, "test"))
@@ -523,7 +506,7 @@ class TaskContextTest {
     fun `startCluster should return false when bootstrap job is not present and cluster is ready and jar has been removed and job has been stopped and bootstrap job has ben created`() {
         given(mediator.isBootstrapPresent()).thenReturn(true)
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.isClusterReady(any(), eq(clusterScaling))).thenReturn(OperationResult(OperationStatus.OK, true))
+        given(mediator.isClusterReady(any(), eq(clusterScale))).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.removeJar(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.stopJob(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.createBootstrapJob(any())).thenReturn(OperationResult(OperationStatus.OK, "test"))
@@ -542,7 +525,8 @@ class TaskContextTest {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, false))
         val result = context.suspendCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).terminatePods(any())
+        verify(mediator, times(1)).deletePods(any(), eq(jobmanagerDeleteOptions))
+        verify(mediator, times(1)).deletePods(any(), eq(taskmanagerDeleteOptions))
         assertThat(result).isFalse()
     }
 
@@ -551,21 +535,22 @@ class TaskContextTest {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.ERROR, false))
         val result = context.suspendCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).terminatePods(any())
+        verify(mediator, times(1)).deletePods(any(), eq(jobmanagerDeleteOptions))
+        verify(mediator, times(1)).deletePods(any(), eq(taskmanagerDeleteOptions))
         assertThat(result).isFalse()
     }
 
     @Test
     fun `suspendCluster should return false when pods have been stopped but jobmanager service is present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.deleteJobManagerService(any())).thenReturn(OperationResult(OperationStatus.OK, null))
+        given(mediator.deleteService(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(true)
+        given(mediator.doesServiceExists()).thenReturn(true)
         val result = context.suspendCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
         verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).deleteJobManagerService(any())
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).deleteService(any())
         assertThat(result).isFalse()
     }
 
@@ -573,11 +558,11 @@ class TaskContextTest {
     fun `suspendCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap job is not present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(false)
         val result = context.suspendCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
         verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
+        verify(mediator, times(1)).doesServiceExists()
         assertThat(result).isTrue()
     }
 
@@ -586,7 +571,8 @@ class TaskContextTest {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, false))
         val result = context.terminateCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).terminatePods(any())
+        verify(mediator, times(1)).deletePods(any(), eq(jobmanagerDeleteOptions))
+        verify(mediator, times(1)).deletePods(any(), eq(taskmanagerDeleteOptions))
         assertThat(result).isFalse()
     }
 
@@ -595,7 +581,8 @@ class TaskContextTest {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.ERROR, false))
         val result = context.terminateCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).terminatePods(any())
+        verify(mediator, times(1)).deletePods(any(), eq(jobmanagerDeleteOptions))
+        verify(mediator, times(1)).deletePods(any(), eq(taskmanagerDeleteOptions))
         assertThat(result).isFalse()
     }
 
@@ -604,19 +591,12 @@ class TaskContextTest {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
         given(mediator.deleteBootstrapJob(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.doesBootstrapJobExists()).thenReturn(true)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesJobManagerPVCExists()).thenReturn(false)
-        given(mediator.doesTaskManagerPVCExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(false)
+        given(mediator.doesJobManagerPodsExists()).thenReturn(false)
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(false)
         val result = context.terminateCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
         verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).doesJobManagerPVCExists()
-        verify(mediator, times(1)).doesTaskManagerPVCExists()
         verify(mediator, times(1)).deleteBootstrapJob(any())
         assertThat(result).isFalse()
     }
@@ -624,130 +604,72 @@ class TaskContextTest {
     @Test
     fun `terminateCluster should return false when pods have been stopped but jobmanager service is present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.deleteJobManagerService(any())).thenReturn(OperationResult(OperationStatus.OK, null))
+        given(mediator.deleteService(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(true)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesJobManagerPVCExists()).thenReturn(false)
-        given(mediator.doesTaskManagerPVCExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(true)
+        given(mediator.doesJobManagerPodsExists()).thenReturn(false)
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(false)
         val result = context.terminateCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
         verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).doesJobManagerPVCExists()
-        verify(mediator, times(1)).doesTaskManagerPVCExists()
-        verify(mediator, times(1)).deleteJobManagerService(any())
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
+        verify(mediator, times(1)).deleteService(any())
         assertThat(result).isFalse()
     }
 
     @Test
-    fun `terminateCluster should return false when pods have been stopped but jobmanager statefulset is present`() {
+    fun `terminateCluster should return false when pods have been stopped but jobmanager pod is present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.deleteStatefulSets(any())).thenReturn(OperationResult(OperationStatus.OK, null))
+        given(mediator.deletePods(any(), any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(true)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesJobManagerPVCExists()).thenReturn(false)
-        given(mediator.doesTaskManagerPVCExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(false)
+        given(mediator.doesJobManagerPodsExists()).thenReturn(true)
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(false)
         val result = context.terminateCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
         verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).doesJobManagerPVCExists()
-        verify(mediator, times(1)).doesTaskManagerPVCExists()
-        verify(mediator, times(1)).deleteStatefulSets(any())
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
+        verify(mediator, times(1)).deletePods(any(), eq(jobmanagerDeleteOptions))
+        verify(mediator, times(1)).deletePods(any(), eq(taskmanagerDeleteOptions))
         assertThat(result).isFalse()
     }
 
     @Test
-    fun `terminateCluster should return false when pods have been stopped but taskmanager statefulset is present`() {
+    fun `terminateCluster should return false when pods have been stopped but taskmanager pod is present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.deleteStatefulSets(any())).thenReturn(OperationResult(OperationStatus.OK, null))
+        given(mediator.deletePods(any(), any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(true)
-        given(mediator.doesJobManagerPVCExists()).thenReturn(false)
-        given(mediator.doesTaskManagerPVCExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(false)
+        given(mediator.doesJobManagerPodsExists()).thenReturn(false)
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(true)
         val result = context.terminateCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
         verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).doesJobManagerPVCExists()
-        verify(mediator, times(1)).doesTaskManagerPVCExists()
-        verify(mediator, times(1)).deleteStatefulSets(any())
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
+        verify(mediator, times(1)).deletePods(any(), eq(jobmanagerDeleteOptions))
+        verify(mediator, times(1)).deletePods(any(), eq(taskmanagerDeleteOptions))
         assertThat(result).isFalse()
     }
 
     @Test
-    fun `terminateCluster should return false when pods have been stopped but jobmanager pvc is present`() {
+    fun `terminateCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap job is not present and pods are not present and pvcs are not present`() {
         given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.deletePersistentVolumeClaims(any())).thenReturn(OperationResult(OperationStatus.OK, null))
         given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesJobManagerPVCExists()).thenReturn(true)
-        given(mediator.doesTaskManagerPVCExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(false)
+        given(mediator.doesJobManagerPodsExists()).thenReturn(false)
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(false)
         val result = context.terminateCluster()
         verify(mediator, times(1)).arePodsTerminated(any())
         verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).doesJobManagerPVCExists()
-        verify(mediator, times(1)).doesTaskManagerPVCExists()
-        verify(mediator, times(1)).deletePersistentVolumeClaims(any())
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `terminateCluster should return false when pods have been stopped but taskmanager pvc is present`() {
-        given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.deletePersistentVolumeClaims(any())).thenReturn(OperationResult(OperationStatus.OK, null))
-        given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesJobManagerPVCExists()).thenReturn(false)
-        given(mediator.doesTaskManagerPVCExists()).thenReturn(true)
-        val result = context.terminateCluster()
-        verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).doesJobManagerPVCExists()
-        verify(mediator, times(1)).doesTaskManagerPVCExists()
-        verify(mediator, times(1)).deletePersistentVolumeClaims(any())
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `terminateCluster should return true when pods have been stopped and jobmanager service is not present and bootstrap job is not present and statefulsets are not present and pvcs are not present`() {
-        given(mediator.arePodsTerminated(any())).thenReturn(OperationResult(OperationStatus.OK, true))
-        given(mediator.doesBootstrapJobExists()).thenReturn(false)
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.doesJobManagerPVCExists()).thenReturn(false)
-        given(mediator.doesTaskManagerPVCExists()).thenReturn(false)
-        val result = context.terminateCluster()
-        verify(mediator, times(1)).arePodsTerminated(any())
-        verify(mediator, times(1)).doesBootstrapJobExists()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).doesJobManagerPVCExists()
-        verify(mediator, times(1)).doesTaskManagerPVCExists()
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         assertThat(result).isTrue()
     }
 
@@ -772,31 +694,31 @@ class TaskContextTest {
 
     @Test
     fun `hasResourceDiverged should return true when jobmanager service is not present`() {
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
+        given(mediator.doesServiceExists()).thenReturn(false)
         val result = context.hasResourceDiverged()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         assertThat(result).isTrue()
     }
 
     @Test
-    fun `hasResourceDiverged should return true when jobmanager statefulset is not present`() {
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
+    fun `hasResourceDiverged should return true when jobmanager pod is not present`() {
+        given(mediator.doesJobManagerPodsExists()).thenReturn(false)
         val result = context.hasResourceDiverged()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         assertThat(result).isTrue()
     }
 
     @Test
-    fun `hasResourceDiverged should return true when taskmanager statefulset is not present`() {
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
+    fun `hasResourceDiverged should return true when taskmanager pod is not present`() {
+        given(mediator.doesTaskManagerPodsExists()).thenReturn(false)
         val result = context.hasResourceDiverged()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         assertThat(result).isTrue()
     }
 
@@ -804,9 +726,9 @@ class TaskContextTest {
     fun `hasResourceDiverged should return true when jobmanager replicas is not equals to desired value`() {
         given(mediator.getJobManagerReplicas()).thenReturn(0)
         val result = context.hasResourceDiverged()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         verify(mediator, times(1)).getClusterScale()
         verify(mediator, times(1)).getJobManagerReplicas()
         verify(mediator, times(1)).getTaskManagerReplicas()
@@ -817,9 +739,9 @@ class TaskContextTest {
     fun `hasResourceDiverged should return true when taskmanager replicas is not equals to desired value`() {
         given(mediator.getTaskManagerReplicas()).thenReturn(0)
         val result = context.hasResourceDiverged()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         verify(mediator, times(1)).getClusterScale()
         verify(mediator, times(1)).getJobManagerReplicas()
         verify(mediator, times(1)).getTaskManagerReplicas()
@@ -829,9 +751,9 @@ class TaskContextTest {
     @Test
     fun `hasResourceDiverged should return false when jobmanager and taskmanager replicas are equal to desired value`() {
         val result = context.hasResourceDiverged()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).doesJobManagerPodsExists()
+        verify(mediator, times(1)).doesTaskManagerPodsExists()
         verify(mediator, times(1)).getClusterScale()
         verify(mediator, times(1)).getJobManagerReplicas()
         verify(mediator, times(1)).getTaskManagerReplicas()
@@ -1058,50 +980,55 @@ class TaskContextTest {
 
     @Test
     fun `ensureServiceExist should do nothing when jobmanager service exists`() {
-        given(mediator.doesJobManagerServiceExists()).thenReturn(true)
+        given(mediator.doesServiceExists()).thenReturn(true)
         context.ensureServiceExist()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
+        verify(mediator, times(1)).doesServiceExists()
     }
 
     @Test
     fun `ensureServiceExist should create resource when jobmanager service doesn't exists`() {
-        given(mediator.doesJobManagerServiceExists()).thenReturn(false)
-        given(mediator.createJobManagerService(any())).thenReturn(OperationResult(OperationStatus.OK, "test"))
+        given(mediator.doesServiceExists()).thenReturn(false)
+        given(mediator.createService(any())).thenReturn(OperationResult(OperationStatus.OK, "test"))
         context.ensureServiceExist()
-        verify(mediator, times(1)).doesJobManagerServiceExists()
-        verify(mediator, times(1)).createJobManagerService(eq(clusterSelector))
+        verify(mediator, times(1)).doesServiceExists()
+        verify(mediator, times(1)).createService(eq(clusterSelector))
     }
 
     @Test
-    fun `ensurePodsExists should do nothing when jobmanager statefulset exists`() {
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(true)
+    fun `ensurePodsExists should do nothing when replicas are correct`() {
+        given(mediator.getClusterScale()).thenReturn(clusterScale)
+        given(mediator.getJobManagerReplicas()).thenReturn(1)
+        given(mediator.getTaskManagerReplicas()).thenReturn(2)
         context.ensurePodsExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
+        verify(mediator, times(1)).getClusterScale()
+        verify(mediator, times(1)).getJobManagerReplicas()
+        verify(mediator, times(1)).getTaskManagerReplicas()
     }
 
     @Test
-    fun `ensurePodsExists should do nothing when jobmanager statefulset doesn't exists`() {
-        given(mediator.doesJobManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.createJobManagerStatefulSet(any())).thenReturn(OperationResult(OperationStatus.OK, "test"))
+    fun `ensurePodsExists create pods when jobmanager replicas is incorrect`() {
+        given(mediator.getClusterScale()).thenReturn(clusterScale)
+        given(mediator.getJobManagerReplicas()).thenReturn(0)
+        given(mediator.getTaskManagerReplicas()).thenReturn(2)
+        given(mediator.createJobManagerPods(any(), anyInt())).thenReturn(OperationResult(OperationStatus.OK, setOf("test")))
         context.ensurePodsExists()
-        verify(mediator, times(1)).doesJobManagerStatefulSetExists()
-        verify(mediator, times(1)).createJobManagerStatefulSet(eq(clusterSelector))
+        verify(mediator, times(1)).getClusterScale()
+        verify(mediator, times(1)).getJobManagerReplicas()
+        verify(mediator, times(1)).getTaskManagerReplicas()
+        verify(mediator, times(1)).createJobManagerPods(eq(clusterSelector), eq(1))
     }
 
     @Test
-    fun `ensurePodsExists should do nothing when taskmanager statefulset exists`() {
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(true)
+    fun `ensurePodsExists create pods when taskmanager replicas is incorrect`() {
+        given(mediator.getClusterScale()).thenReturn(clusterScale)
+        given(mediator.getJobManagerReplicas()).thenReturn(1)
+        given(mediator.getTaskManagerReplicas()).thenReturn(1)
+        given(mediator.createTaskManagerPods(any(), anyInt())).thenReturn(OperationResult(OperationStatus.OK, setOf("test")))
         context.ensurePodsExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-    }
-
-    @Test
-    fun `ensurePodsExists should do nothing when taskmanager statefulset doesn't exists`() {
-        given(mediator.doesTaskManagerStatefulSetExists()).thenReturn(false)
-        given(mediator.createTaskManagerStatefulSet(any())).thenReturn(OperationResult(OperationStatus.OK, "test"))
-        context.ensurePodsExists()
-        verify(mediator, times(1)).doesTaskManagerStatefulSetExists()
-        verify(mediator, times(1)).createTaskManagerStatefulSet(eq(clusterSelector))
+        verify(mediator, times(1)).getClusterScale()
+        verify(mediator, times(1)).getJobManagerReplicas()
+        verify(mediator, times(1)).getTaskManagerReplicas()
+        verify(mediator, times(1)).createTaskManagerPods(eq(clusterSelector), eq(2))
     }
 
     @Test
@@ -1268,7 +1195,7 @@ class TaskContextTest {
         given(mediator.getSavepointMode()).thenReturn("AUTOMATIC")
         given(mediator.timeSinceLastSavepointRequestInSeconds()).thenReturn(90)
         given(mediator.getSavepointInterval()).thenReturn(60)
-        given(mediator.getSavepointOtions()).thenReturn(savepointOptions)
+        given(mediator.getSavepointOptions()).thenReturn(savepointOptions)
         given(mediator.triggerSavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.ERROR, savepointRequest))
         context.updateSavepoint()
         verify(mediator, times(1)).clusterSelector
@@ -1289,7 +1216,7 @@ class TaskContextTest {
         given(mediator.getSavepointMode()).thenReturn("AUTOMATIC")
         given(mediator.timeSinceLastSavepointRequestInSeconds()).thenReturn(90)
         given(mediator.getSavepointInterval()).thenReturn(60)
-        given(mediator.getSavepointOtions()).thenReturn(savepointOptions)
+        given(mediator.getSavepointOptions()).thenReturn(savepointOptions)
         given(mediator.triggerSavepoint(any(), any())).thenReturn(OperationResult(OperationStatus.OK, savepointRequest))
         context.updateSavepoint()
         verify(mediator, times(1)).clusterSelector

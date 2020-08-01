@@ -47,13 +47,16 @@ spec:
       - name: config-vol
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
-      - name: jobmanager
-        mountPath: /var
+      - name: data-vol
+        mountPath: /data
     volumes:
       - name: config-vol
         configMap:
           name: flink-config
           defaultMode: 0777
+      - name: data-vol
+        hostPath:
+          path: /var/data
     initContainers:
       - image: busybox
         command:
@@ -85,16 +88,6 @@ spec:
       - name: prometheus
         containerPort: 9999
         protocol: TCP
-    persistentVolumeClaimsTemplates:
-      - metadata:
-          name: jobmanager
-        spec:
-          storageClassName: standard
-          accessModes:
-           - ReadWriteOnce
-          resources:
-            requests:
-              storage: 1Gi
     resources:
       limits:
         cpu: '1'
@@ -129,13 +122,16 @@ spec:
       - name: config-vol
         mountPath: /opt/flink/conf/flink-conf-template.yaml
         subPath: flink-conf.yaml
-      - name: taskmanager
-        mountPath: /var
+      - name: data-vol
+        mountPath: /data
     volumes:
       - name: config-vol
         configMap:
           name: flink-config
           defaultMode: 0777
+      - name: data-vol
+        hostPath:
+          path: /var/data
     initContainers:
       - image: busybox
         command:
@@ -167,16 +163,6 @@ spec:
       - name: prometheus
         containerPort: 9999
         protocol: TCP
-    persistentVolumeClaimsTemplates:
-      - metadata:
-          name: taskmanager
-        spec:
-          storageClassName: standard
-          accessModes:
-           - ReadWriteOnce
-          resources:
-            requests:
-              storage: 5Gi
     resources:
       limits:
         cpu: '1'

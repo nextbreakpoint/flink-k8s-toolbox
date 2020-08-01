@@ -1,10 +1,12 @@
 package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
+import com.nextbreakpoint.flinkoperator.common.model.DeleteOptions
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
+import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.any
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.given
 import org.assertj.core.api.Assertions.assertThat
@@ -15,12 +17,13 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
-class ClusterDeleteStatefulSetsTest {
+class ClusterDeletePodsTest {
     private val clusterSelector = ClusterSelector(namespace = "flink", name = "test", uuid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
-    private val command = ClusterDeleteStatefulSets(flinkOptions, flinkClient, kubeClient)
+    private val command = ClusterDeletePods(flinkOptions, flinkClient, kubeClient)
+    private val deleteOptions = DeleteOptions(label = "role", value = "jobmanager", limit = 1)
 
     @BeforeEach
     fun configure() {
@@ -28,9 +31,9 @@ class ClusterDeleteStatefulSetsTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.deleteStatefulSets(eq(clusterSelector))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, null)
-        verify(kubeClient, times(1)).deleteStatefulSets(eq(clusterSelector))
+        given(kubeClient.deletePods(eq(clusterSelector), any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute(clusterSelector, deleteOptions)
+        verify(kubeClient, times(1)).deletePods(eq(clusterSelector), eq(deleteOptions))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -39,9 +42,9 @@ class ClusterDeleteStatefulSetsTest {
     }
 
     @Test
-    fun `should delete jobmanager and taskamanager statefulsets`() {
-        val result = command.execute(clusterSelector, null)
-        verify(kubeClient, times(1)).deleteStatefulSets(eq(clusterSelector))
+    fun `should return expected result`() {
+        val result = command.execute(clusterSelector, deleteOptions)
+        verify(kubeClient, times(1)).deletePods(eq(clusterSelector), eq(deleteOptions))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()

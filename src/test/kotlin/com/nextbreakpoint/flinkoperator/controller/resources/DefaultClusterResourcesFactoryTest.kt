@@ -9,11 +9,11 @@ class DefaultClusterResourcesFactoryTest {
 
     @Test
     fun `should create job manager service`() {
-        val service = DefaultClusterResourcesFactory.createJobManagerService("test", "xxx", "myself", cluster)
+        val service = DefaultClusterResourcesFactory.createService("test", "xxx", "myself", cluster)
 
         assertThat(service).isNotNull()
 
-        assertThat(service.metadata?.name).isEqualTo("flink-jobmanager-${cluster.metadata.name}")
+        assertThat(service.metadata?.name).isEqualTo("jobmanager-${cluster.metadata.name}")
 
         val labels = service.metadata?.labels
         assertThat(labels).hasSize(5)
@@ -42,14 +42,14 @@ class DefaultClusterResourcesFactoryTest {
     }
 
     @Test
-    fun `should create job manager statefulset`() {
-        val statefulset = DefaultClusterResourcesFactory.createJobManagerStatefulSet("test", "xxx", "myself", cluster)
+    fun `should create job manager pod`() {
+        val pod = DefaultClusterResourcesFactory.createJobManagerPod("test", "xxx", "myself", cluster)
 
-        assertThat(statefulset).isNotNull()
+        assertThat(pod).isNotNull()
 
-        assertThat(statefulset.metadata?.name).isEqualTo("flink-jobmanager-${cluster.metadata.name}")
+        assertThat(pod.metadata?.generateName).isEqualTo("jobmanager-${cluster.metadata.name}-")
 
-        val labels = statefulset.metadata?.labels
+        val labels = pod.metadata?.labels
         assertThat(labels).hasSize(5)
         assertThat(labels?.get("owner")).isEqualTo("myself")
         assertThat(labels?.get("name")).isEqualTo(cluster.metadata.name)
@@ -57,24 +57,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(labels?.get("component")).isEqualTo("flink")
         assertThat(labels?.get("role")).isEqualTo("jobmanager")
 
-        assertThat(statefulset.spec?.replicas).isEqualTo(0)
-        assertThat(statefulset.spec?.updateStrategy).isNotNull()
-        assertThat(statefulset.spec?.serviceName).isEqualTo("jobmanager")
-        assertThat(statefulset.spec?.selector).isNotNull()
-
-        val matchLabels = statefulset.spec?.selector?.matchLabels
-        assertThat(matchLabels).hasSize(5)
-        assertThat(matchLabels?.get("owner")).isNotNull()
-        assertThat(matchLabels?.get("name")).isNotNull()
-        assertThat(matchLabels?.get("uid")).isEqualTo("xxx")
-        assertThat(matchLabels?.get("component")).isNotNull()
-        assertThat(matchLabels?.get("role")).isNotNull()
-
-        assertThat(statefulset.spec?.volumeClaimTemplates).hasSize(1)
-        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.storageClassName).isEqualTo("hostpath")
-        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.toSuffixedString()).isEqualTo("1Gi")
-
-        val podSpec = statefulset.spec?.template?.spec
+        val podSpec = pod.spec
         assertThat(podSpec?.serviceAccountName).isEqualTo("jobmanager-test")
         assertThat(podSpec?.imagePullSecrets).hasSize(1)
         assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo("flink-regcred")
@@ -108,14 +91,14 @@ class DefaultClusterResourcesFactoryTest {
     }
 
     @Test
-    fun `should create task manager statefulset`() {
-        val statefulset = DefaultClusterResourcesFactory.createTaskManagerStatefulSet("test", "xxx", "myself", cluster)
+    fun `should create task manager pod`() {
+        val pod = DefaultClusterResourcesFactory.createTaskManagerPod("test", "xxx", "myself", cluster)
 
-        assertThat(statefulset).isNotNull()
+        assertThat(pod).isNotNull()
 
-        assertThat(statefulset.metadata?.name).isEqualTo("flink-taskmanager-${cluster.metadata.name}")
+        assertThat(pod.metadata?.generateName).isEqualTo("taskmanager-${cluster.metadata.name}-")
 
-        val labels = statefulset.metadata?.labels
+        val labels = pod.metadata?.labels
         assertThat(labels).hasSize(5)
         assertThat(labels?.get("owner")).isEqualTo("myself")
         assertThat(labels?.get("name")).isEqualTo(cluster.metadata.name)
@@ -123,24 +106,7 @@ class DefaultClusterResourcesFactoryTest {
         assertThat(labels?.get("component")).isEqualTo("flink")
         assertThat(labels?.get("role")).isEqualTo("taskmanager")
 
-        assertThat(statefulset.spec?.replicas).isEqualTo(0)
-        assertThat(statefulset.spec?.updateStrategy).isNotNull()
-        assertThat(statefulset.spec?.serviceName).isEqualTo("taskmanager")
-        assertThat(statefulset.spec?.selector).isNotNull()
-
-        val matchLabels = statefulset.spec?.selector?.matchLabels
-        assertThat(matchLabels).hasSize(5)
-        assertThat(matchLabels?.get("owner")).isNotNull()
-        assertThat(matchLabels?.get("name")).isNotNull()
-        assertThat(matchLabels?.get("uid")).isNotNull()
-        assertThat(matchLabels?.get("component")).isNotNull()
-        assertThat(matchLabels?.get("role")).isNotNull()
-
-        assertThat(statefulset.spec?.volumeClaimTemplates).hasSize(1)
-        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.storageClassName).isEqualTo("hostpath")
-        assertThat(statefulset.spec?.volumeClaimTemplates?.get(0)?.spec?.resources?.requests?.get("storage")?.toSuffixedString()).isEqualTo("5Gi")
-
-        val podSpec = statefulset.spec?.template?.spec
+        val podSpec = pod.spec
         assertThat(podSpec?.serviceAccountName).isEqualTo("taskmanager-test")
         assertThat(podSpec?.imagePullSecrets).hasSize(1)
         assertThat(podSpec?.imagePullSecrets?.get(0)?.name).isEqualTo("flink-regcred")
