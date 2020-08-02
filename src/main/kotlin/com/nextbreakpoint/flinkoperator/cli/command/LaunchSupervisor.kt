@@ -28,24 +28,32 @@ class LaunchSupervisor : LaunchCommand<SupervisorOptions> {
 
         val controller = OperationController(flinkOptions, kubeClient = kubeClient, flinkClient = flinkClient)
 
-        val supervisor = Supervisor.create(controller, Supervisor::class.java.name + " | " + args.clusterName)
+        val loggerName = Supervisor::class.java.name + " | " + args.clusterName
+        val supervisor = Supervisor.create(controller, loggerName)
 
         cacheAdapter.watchClusters(namespace)
         cacheAdapter.watchServices(namespace)
         cacheAdapter.watchJobs(namespace)
         cacheAdapter.watchPods(namespace)
 
-        while (!Thread.interrupted()) {
-            TimeUnit.SECONDS.sleep(args.pollingInterval)
+        val clusterSelectorNoUid = ClusterSelector(namespace = namespace, name = args.clusterName, uuid = "")
 
-            try {
-                val clusterSelector = supervisorCache.findClusterSelector(namespace = namespace, name = args.clusterName)
+        while (!Thread.interrupted()) {
+            reconcile(supervisor, supervisorCache, clusterSelectorNoUid)
+
+            TimeUnit.SECONDS.sleep(args.pollingInterval)
+        }
+    }
+
+    private fun reconcile(supervisor: Supervisor, supervisorCache: SupervisorCache, clusterSelectorNoUid: ClusterSelector) {
+        try {
+            val clusterSelector = supervisorCache.findClusterSelector(namespace = clusterSelectorNoUid.namespace, name = clusterSelectorNoUid.name)
+            if (clusterSelector != null) {
                 val resources = supervisorCache.getCachedResources(clusterSelector)
                 supervisor.reconcile(clusterSelector, resources)
-            } catch (e : Exception) {
-                val clusterSelector = ClusterSelector(namespace = namespace, name = args.clusterName, uuid = "")
-                logger.error("Error occurred while supervising cluster ${clusterSelector.name}", e)
             }
+        } catch (e: Exception) {
+            logger.error("Error occurred while reconciling cluster $clusterSelectorNoUid", e)
         }
     }
 }

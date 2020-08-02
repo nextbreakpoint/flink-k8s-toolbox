@@ -15,16 +15,17 @@ class Operator(
     companion object {
         fun create(controller: OperationController, loggerName: String): Operator {
             val logger = Logger.getLogger(loggerName)
-
             return Operator(controller, logger)
         }
     }
 
     fun reconcile(clusterSelector: ClusterSelector, resources: OperatorCachedResources) {
-        try {
-            val cluster = resources.flinkCluster ?: throw RuntimeException("Cluster not present")
+        val cluster = resources.flinkCluster ?: throw RuntimeException("Cluster not present")
 
-            if (Status.getClusterStatus(cluster) == ClusterStatus.Terminated) {
+        if (Status.getClusterStatus(cluster) == ClusterStatus.Terminated) {
+            val lastUpdateTimestamp = Status.getStatusTimestamp(cluster).toInstant().millis
+
+            if (System.currentTimeMillis() - lastUpdateTimestamp > 30000) {
                 if (resources.supervisorDeployment != null) {
                     logger.info("Cluster is terminated. Delete supervisor")
 
@@ -53,42 +54,42 @@ class Operator(
                     }
                 }
             } else {
-                if (resources.supervisorDeployment == null) {
-                    if (resources.supervisorPod == null) {
-                        logger.info("Create supervisor")
+                logger.info("Cluster is terminated")
+            }
+        } else {
+            if (resources.supervisorDeployment == null) {
+                if (resources.supervisorPod == null) {
+                    logger.info("Create supervisor")
 
-                        val deployment = SupervisorResourcesDefaultFactory.createSupervisorDeployment(
-                            clusterSelector, "flink-operator", cluster.spec.operator
-                        )
+                    val deployment = SupervisorResourcesDefaultFactory.createSupervisorDeployment(
+                        clusterSelector, "flink-operator", cluster.spec.operator
+                    )
 
-                        controller.createSupervisorDeployment(clusterSelector, deployment)
-                    } else {
-                        if (resources.supervisorPod.metadata.deletionTimestamp != null) {
-                            logger.warn("Supervisor pod deleted. Await termination")
-                        } else {
-                            logger.warn("Found supervisor pod. Terminate pod")
-
-                            controller.deletePods(clusterSelector, DeleteOptions("role", "supervisor", 1))
-                        }
-                    }
+                    controller.createSupervisorDeployment(clusterSelector, deployment)
                 } else {
-                    val deployedDigest = resources.supervisorDeployment.metadata.annotations["flink-operator/deployment-digest"]
+                    if (resources.supervisorPod.metadata.deletionTimestamp != null) {
+                        logger.warn("Supervisor pod deleted. Await termination")
+                    } else {
+                        logger.warn("Found supervisor pod. Terminate pod")
 
-                    val declaredDigest = ClusterResource.computeDigest(cluster.spec.operator)
-
-                    if (deployedDigest == null || deployedDigest != declaredDigest) {
-                        logger.info("Detected change. Recreate supervisor")
-
-                        controller.deleteSupervisorDeployment(clusterSelector)
+                        controller.deletePods(clusterSelector, DeleteOptions("role", "supervisor", 1))
                     }
                 }
+            } else {
+                val deployedDigest = resources.supervisorDeployment.metadata.annotations["flink-operator/deployment-digest"]
 
-                if (resources.supervisorDeployment != null && resources.supervisorPod == null) {
-                    logger.warn("Supervisor pod not found")
+                val declaredDigest = ClusterResource.computeDigest(cluster.spec.operator)
+
+                if (deployedDigest == null || deployedDigest != declaredDigest) {
+                    logger.info("Detected change. Recreate supervisor")
+
+                    controller.deleteSupervisorDeployment(clusterSelector)
                 }
             }
-        } catch (e : Exception) {
-            logger.error("Error occurred while reconciling cluster ${clusterSelector.name}", e)
+
+            if (resources.supervisorDeployment != null && resources.supervisorPod == null) {
+                logger.warn("Supervisor pod not found")
+            }
         }
     }
 
