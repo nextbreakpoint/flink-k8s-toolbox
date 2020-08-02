@@ -31,6 +31,11 @@ class OnFailed : Task() {
                 context.onResourceChanged()
                 return
             }
+
+            if (context.hasTaskTimedOut()) {
+                context.onClusterReadyToRestart()
+                return
+            }
         }
     }
 }

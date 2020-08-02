@@ -6,8 +6,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
-class CacheTest {
-    private val cache = Cache()
+class SupervisorCacheTest {
+    private val cache = SupervisorCache(namespace = "flink", clusterName = "test")
 
     @Test
     fun `cache is empty`() {

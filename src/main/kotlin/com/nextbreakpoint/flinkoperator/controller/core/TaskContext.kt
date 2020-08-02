@@ -8,119 +8,119 @@ import org.apache.log4j.Logger
 
 class TaskContext(
     private val logger: Logger,
-    private val mediator: TaskMediator
+    private val controller: TaskController
 ) {
     fun onTaskTimeOut() {
         logger.info("Timeout occurred")
-        mediator.setClusterStatus(ClusterStatus.Failed)
+        controller.setClusterStatus(ClusterStatus.Failed)
     }
 
     fun onClusterTerminated() {
         logger.info("Cluster terminated")
-        mediator.setClusterStatus(ClusterStatus.Terminated)
+        controller.setClusterStatus(ClusterStatus.Terminated)
     }
 
     fun onClusterSuspended() {
         logger.info("Cluster suspended")
-        mediator.setClusterStatus(ClusterStatus.Suspended)
+        controller.setClusterStatus(ClusterStatus.Suspended)
     }
 
     fun onClusterStarted() {
         logger.info("Cluster started")
-        mediator.setClusterStatus(ClusterStatus.Running)
+        controller.setClusterStatus(ClusterStatus.Running)
     }
 
     fun onClusterReadyToRestart() {
         logger.info("Cluster restarted")
-        mediator.setClusterStatus(ClusterStatus.Updating)
+        controller.setClusterStatus(ClusterStatus.Updating)
     }
 
     fun onClusterReadyToUpdate() {
         logger.info("Resource updated")
-        mediator.updateStatus()
-        mediator.updateDigests()
-        mediator.setClusterStatus(ClusterStatus.Starting)
+        controller.updateStatus()
+        controller.updateDigests()
+        controller.setClusterStatus(ClusterStatus.Starting)
     }
 
     fun onClusterReadyToScale() {
         logger.info("Cluster scaled")
-        mediator.rescaleCluster()
+        controller.rescaleCluster()
 
-        if (mediator.getTaskManagers() == 0) {
-            mediator.setClusterStatus(ClusterStatus.Stopping)
+        if (controller.getTaskManagers() == 0) {
+            controller.setClusterStatus(ClusterStatus.Stopping)
         } else {
-            mediator.setClusterStatus(ClusterStatus.Starting)
+            controller.setClusterStatus(ClusterStatus.Starting)
         }
     }
 
     fun onClusterReadyToStop() {
         logger.warn("Job cancelled")
-        mediator.setClusterStatus(ClusterStatus.Stopping)
+        controller.setClusterStatus(ClusterStatus.Stopping)
     }
 
     fun onJobFinished() {
         logger.info("Job finished")
-        mediator.setDeleteResources(false)
-        mediator.setClusterStatus(ClusterStatus.Finished)
+        controller.setDeleteResources(false)
+        controller.setClusterStatus(ClusterStatus.Finished)
     }
 
     fun onJobFailed() {
         logger.warn("Job failed")
-        mediator.setDeleteResources(false)
-        mediator.setClusterStatus(ClusterStatus.Failed)
+        controller.setDeleteResources(false)
+        controller.setClusterStatus(ClusterStatus.Failed)
     }
 
     fun onResourceInitialise() {
         logger.info("Cluster initialised")
-        mediator.initializeAnnotations()
-        mediator.initializeStatus()
-        mediator.updateDigests()
-        mediator.addFinalizer()
-        mediator.setClusterStatus(ClusterStatus.Starting)
+        controller.initializeAnnotations()
+        controller.initializeStatus()
+        controller.updateDigests()
+        controller.addFinalizer()
+        controller.setClusterStatus(ClusterStatus.Starting)
     }
 
     fun onResourceDiverged() {
         logger.info("Cluster diverged")
-        mediator.setClusterStatus(ClusterStatus.Restarting)
+        controller.setClusterStatus(ClusterStatus.Restarting)
     }
 
     fun onResourceDeleted() {
         logger.info("Resource deleted")
-        mediator.setDeleteResources(true)
-        mediator.resetManualAction()
-        mediator.setClusterStatus(ClusterStatus.Stopping)
+        controller.setDeleteResources(true)
+        controller.resetManualAction()
+        controller.setClusterStatus(ClusterStatus.Stopping)
     }
 
     fun onResourceChanged() {
         logger.info("Resource changed")
-        mediator.setClusterStatus(ClusterStatus.Restarting)
+        controller.setClusterStatus(ClusterStatus.Restarting)
     }
 
     fun onResourceScaled() {
         logger.info("Resource scaled")
-        mediator.setClusterStatus(ClusterStatus.Scaling)
+        controller.setClusterStatus(ClusterStatus.Scaling)
     }
 
     fun cancelJob(): Boolean {
-        val serviceExists = mediator.doesServiceExists()
-        val jobManagerPodExists = mediator.doesJobManagerPodsExists()
-        val taskManagerPodExists = mediator.doesTaskManagerPodsExists()
+        val serviceExists = controller.doesServiceExists()
+        val jobManagerPodExists = controller.doesJobManagerPodsExists()
+        val taskManagerPodExists = controller.doesTaskManagerPodsExists()
 
         if (!serviceExists || !jobManagerPodExists || !taskManagerPodExists) {
             return true
         }
 
-        val podsRunningResult = mediator.arePodsRunning(mediator.clusterSelector)
+        val podsRunningResult = controller.arePodsRunning(controller.clusterSelector)
 
         if (podsRunningResult.isSuccessful() && !podsRunningResult.output) {
             return true
         }
 
-        if (mediator.isBootstrapPresent() && mediator.isSavepointRequired()) {
-            val savepointRequest = mediator.getSavepointRequest()
+        if (controller.isBootstrapPresent() && controller.isSavepointRequired()) {
+            val savepointRequest = controller.getSavepointRequest()
 
             if (savepointRequest == null) {
-                val cancelResult = mediator.cancelJob(mediator.clusterSelector, mediator.getSavepointOptions())
+                val cancelResult = controller.cancelJob(controller.clusterSelector, controller.getSavepointOptions())
 
                 if (!cancelResult.isSuccessful()) {
                     logger.warn("Can't cancel the job")
@@ -137,11 +137,11 @@ class TaskContext(
                     return true
                 } else {
                     logger.info("Cancelling job with savepoint...")
-                    mediator.setSavepointRequest(cancelResult.output)
+                    controller.setSavepointRequest(cancelResult.output)
                     return false
                 }
             } else {
-                val querySavepointResult = mediator.querySavepoint(mediator.clusterSelector, savepointRequest)
+                val querySavepointResult = controller.querySavepoint(controller.clusterSelector, savepointRequest)
 
                 if (!querySavepointResult.isSuccessful()) {
                     logger.warn("Can't cancel job with savepoint")
@@ -150,25 +150,25 @@ class TaskContext(
 
                 if (querySavepointResult.output != null) {
                     logger.info("Job stopped with savepoint (${querySavepointResult.output})")
-                    mediator.resetSavepointRequest()
-                    mediator.setSavepointPath(querySavepointResult.output)
+                    controller.resetSavepointRequest()
+                    controller.setSavepointPath(querySavepointResult.output)
                     return true
                 }
 
                 logger.info("Savepoint is in progress...")
 
-                val seconds = mediator.timeSinceLastUpdateInSeconds()
+                val seconds = controller.timeSinceLastUpdateInSeconds()
 
                 if (seconds > Timeout.TASK_TIMEOUT) {
                     logger.error("Giving up after $seconds seconds")
-                    mediator.resetSavepointRequest()
+                    controller.resetSavepointRequest()
                     return true
                 }
             }
         } else {
             logger.info("Savepoint not required")
 
-            val stopResult = mediator.stopJob(mediator.clusterSelector)
+            val stopResult = controller.stopJob(controller.clusterSelector)
 
             if (!stopResult.isSuccessful()) {
                 logger.warn("Can't stop the job")
@@ -188,25 +188,25 @@ class TaskContext(
     }
 
     fun startCluster(): Boolean {
-        val serviceExists = mediator.doesServiceExists()
-        val jobmanagerPodExists = mediator.doesJobManagerPodsExists()
-        val taskmanagerPodExists = mediator.doesTaskManagerPodsExists()
+        val serviceExists = controller.doesServiceExists()
+        val jobmanagerPodExists = controller.doesJobManagerPodsExists()
+        val taskmanagerPodExists = controller.doesTaskManagerPodsExists()
 
         if (!serviceExists || !jobmanagerPodExists || !taskmanagerPodExists) {
             return false
         }
 
-        val clusterScale = mediator.getClusterScale()
+        val clusterScale = controller.getClusterScale()
 
-        val jobmanagerReplicas = mediator.getJobManagerReplicas()
-        val taskmanagerReplicas = mediator.getTaskManagerReplicas()
+        val jobmanagerReplicas = controller.getJobManagerReplicas()
+        val taskmanagerReplicas = controller.getTaskManagerReplicas()
 
         if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScale.taskManagers) {
             return false
         }
 
-        if (!mediator.isBootstrapPresent()) {
-            val clusterReadyResult = mediator.isClusterReady(mediator.clusterSelector, mediator.getClusterScale())
+        if (!controller.isBootstrapPresent()) {
+            val clusterReadyResult = controller.isClusterReady(controller.clusterSelector, controller.getClusterScale())
 
             if (!clusterReadyResult.isSuccessful() || !clusterReadyResult.output) {
                 return false
@@ -217,16 +217,16 @@ class TaskContext(
             return true
         }
 
-        if (mediator.doesBootstrapJobExists()) {
+        if (controller.doesBootstrapJobExists()) {
             logger.info("Cluster starting")
 
-            val jobRunningResult = mediator.isJobRunning(mediator.clusterSelector)
+            val jobRunningResult = controller.isJobRunning(controller.clusterSelector)
 
             if (jobRunningResult.isSuccessful() && jobRunningResult.output) {
                 return true
             }
         } else {
-            val clusterReadyResult = mediator.isClusterReady(mediator.clusterSelector, mediator.getClusterScale())
+            val clusterReadyResult = controller.isClusterReady(controller.clusterSelector, controller.getClusterScale())
 
             if (!clusterReadyResult.isSuccessful() || !clusterReadyResult.output) {
                 return false
@@ -234,7 +234,7 @@ class TaskContext(
 
             logger.info("Cluster ready")
 
-            val removeJarResult = mediator.removeJar(mediator.clusterSelector)
+            val removeJarResult = controller.removeJar(controller.clusterSelector)
 
             if (!removeJarResult.isSuccessful()) {
                 return false
@@ -242,7 +242,7 @@ class TaskContext(
 
             logger.info("JARs removed")
 
-            val stopResult = mediator.stopJob(mediator.clusterSelector)
+            val stopResult = controller.stopJob(controller.clusterSelector)
 
             if (!stopResult.isSuccessful() || !stopResult.output) {
                 return false
@@ -250,7 +250,7 @@ class TaskContext(
 
             logger.info("Ready to run job")
 
-            val bootstrapResult = mediator.createBootstrapJob(mediator.clusterSelector)
+            val bootstrapResult = controller.createBootstrapJob(controller.clusterSelector)
 
             if (!bootstrapResult.isSuccessful()) {
                 return false
@@ -263,19 +263,19 @@ class TaskContext(
     }
 
     fun suspendCluster(): Boolean {
-        val terminatedResult = mediator.arePodsTerminated(mediator.clusterSelector)
+        val terminatedResult = controller.arePodsTerminated(controller.clusterSelector)
 
         if (!terminatedResult.isSuccessful() || !terminatedResult.output) {
-            mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = mediator.getJobManagerReplicas()))
-            mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = mediator.getTaskManagerReplicas()))
+            controller.deletePods(controller.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = controller.getJobManagerReplicas()))
+            controller.deletePods(controller.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = controller.getTaskManagerReplicas()))
 
             return false
         }
 
-        val bootstrapExists = mediator.doesBootstrapJobExists()
+        val bootstrapExists = controller.doesBootstrapJobExists()
 
         if (bootstrapExists) {
-            val deleteResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
+            val deleteResult = controller.deleteBootstrapJob(controller.clusterSelector)
 
             if (deleteResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
@@ -284,10 +284,10 @@ class TaskContext(
             return false
         }
 
-        val serviceExists = mediator.doesServiceExists()
+        val serviceExists = controller.doesServiceExists()
 
         if (serviceExists) {
-            val deleteResult = mediator.deleteService(mediator.clusterSelector)
+            val deleteResult = controller.deleteService(controller.clusterSelector)
 
             if (deleteResult.isSuccessful()) {
                 logger.info("JobManager service deleted")
@@ -298,19 +298,19 @@ class TaskContext(
     }
 
     fun terminateCluster(): Boolean {
-        val terminatedResult = mediator.arePodsTerminated(mediator.clusterSelector)
+        val terminatedResult = controller.arePodsTerminated(controller.clusterSelector)
 
         if (!terminatedResult.isSuccessful() || !terminatedResult.output) {
-            mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = mediator.getJobManagerReplicas()))
-            mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = mediator.getTaskManagerReplicas()))
+            controller.deletePods(controller.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = controller.getJobManagerReplicas()))
+            controller.deletePods(controller.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = controller.getTaskManagerReplicas()))
 
             return false
         }
 
-        val bootstrapExists = mediator.doesBootstrapJobExists()
+        val bootstrapExists = controller.doesBootstrapJobExists()
 
         if (bootstrapExists) {
-            val deleteResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
+            val deleteResult = controller.deleteBootstrapJob(controller.clusterSelector)
 
             if (deleteResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
@@ -319,22 +319,22 @@ class TaskContext(
             return false
         }
 
-        val serviceExists = mediator.doesServiceExists()
+        val serviceExists = controller.doesServiceExists()
 
         if (serviceExists) {
-            val deleteResult = mediator.deleteService(mediator.clusterSelector)
+            val deleteResult = controller.deleteService(controller.clusterSelector)
 
             if (deleteResult.isSuccessful()) {
                 logger.info("JobManager service deleted")
             }
         }
 
-        val jobmanagerPodsExists = mediator.doesJobManagerPodsExists()
-        val taskmanagerPodsExists = mediator.doesTaskManagerPodsExists()
+        val jobmanagerPodsExists = controller.doesJobManagerPodsExists()
+        val taskmanagerPodsExists = controller.doesTaskManagerPodsExists()
 
         if (jobmanagerPodsExists || taskmanagerPodsExists) {
-            val deleteJobManagerPodsResult = mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = mediator.getJobManagerReplicas()))
-            val deleteTaskManagerPodsResult = mediator.deletePods(mediator.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = mediator.getTaskManagerReplicas()))
+            val deleteJobManagerPodsResult = controller.deletePods(controller.clusterSelector, DeleteOptions(label = "role", value = "jobmanager", limit = controller.getJobManagerReplicas()))
+            val deleteTaskManagerPodsResult = controller.deletePods(controller.clusterSelector, DeleteOptions(label = "role", value = "taskmanager", limit = controller.getTaskManagerReplicas()))
 
             if (deleteJobManagerPodsResult.isSuccessful() && deleteTaskManagerPodsResult.isSuccessful()) {
                 logger.info("JobManager and TaskManager deleted")
@@ -345,10 +345,10 @@ class TaskContext(
     }
 
     fun resetCluster(): Boolean {
-        val bootstrapExists = mediator.doesBootstrapJobExists()
+        val bootstrapExists = controller.doesBootstrapJobExists()
 
         if (bootstrapExists) {
-            val bootstrapResult = mediator.deleteBootstrapJob(mediator.clusterSelector)
+            val bootstrapResult = controller.deleteBootstrapJob(controller.clusterSelector)
 
             if (bootstrapResult.isSuccessful()) {
                 logger.info("Bootstrap job deleted")
@@ -361,18 +361,18 @@ class TaskContext(
     }
 
     fun hasResourceDiverged(): Boolean {
-        val serviceExists = mediator.doesServiceExists()
-        val jobmanagerPodExists = mediator.doesJobManagerPodsExists()
-        val taskmanagerPodExists = mediator.doesTaskManagerPodsExists()
+        val serviceExists = controller.doesServiceExists()
+        val jobmanagerPodExists = controller.doesJobManagerPodsExists()
+        val taskmanagerPodExists = controller.doesTaskManagerPodsExists()
 
         if (!serviceExists || !jobmanagerPodExists || !taskmanagerPodExists) {
             return true
         }
 
-        val clusterScale = mediator.getClusterScale()
+        val clusterScale = controller.getClusterScale()
 
-        val jobmanagerReplicas = mediator.getJobManagerReplicas()
-        val taskmanagerReplicas = mediator.getTaskManagerReplicas()
+        val jobmanagerReplicas = controller.getJobManagerReplicas()
+        val taskmanagerReplicas = controller.getTaskManagerReplicas()
 
         if (jobmanagerReplicas != 1 || taskmanagerReplicas != clusterScale.taskManagers) {
             return true
@@ -382,7 +382,7 @@ class TaskContext(
     }
 
     fun hasResourceChanged(): Boolean {
-        val changes = mediator.computeChanges()
+        val changes = controller.computeChanges()
 
         if (changes.isNotEmpty()) {
             logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
@@ -393,8 +393,8 @@ class TaskContext(
     }
 
     fun hasJobFinished(): Boolean {
-        if (mediator.isBootstrapPresent()) {
-            val result = mediator.isJobFinished(mediator.clusterSelector)
+        if (controller.isBootstrapPresent()) {
+            val result = controller.isJobFinished(controller.clusterSelector)
 
             if (result.isSuccessful() && result.output) {
                 return true
@@ -405,8 +405,8 @@ class TaskContext(
     }
 
     fun hasJobFailed(): Boolean {
-        if (mediator.isBootstrapPresent()) {
-            val result = mediator.isJobFailed(mediator.clusterSelector)
+        if (controller.isBootstrapPresent()) {
+            val result = controller.isJobFailed(controller.clusterSelector)
 
             if (result.isSuccessful() && result.output) {
                 return true
@@ -417,7 +417,7 @@ class TaskContext(
     }
 
     fun hasTaskTimedOut(): Boolean {
-        val seconds = mediator.timeSinceLastUpdateInSeconds()
+        val seconds = controller.timeSinceLastUpdateInSeconds()
 
         if (seconds > Timeout.TASK_TIMEOUT) {
             logger.error("Giving up after $seconds seconds")
@@ -428,34 +428,34 @@ class TaskContext(
     }
 
     fun hasScaleChanged(): Boolean {
-        val desiredTaskManagers = mediator.getDesiredTaskManagers()
-        val currentTaskManagers = mediator.getTaskManagers()
+        val desiredTaskManagers = controller.getDesiredTaskManagers()
+        val currentTaskManagers = controller.getTaskManagers()
         return currentTaskManagers != desiredTaskManagers
     }
 
-    fun isManualActionPresent() = mediator.getManualAction() != ManualAction.NONE
+    fun isManualActionPresent() = controller.getManualAction() != ManualAction.NONE
 
-    fun isResourceDeleted() = mediator.hasBeenDeleted()
+    fun isResourceDeleted() = controller.hasBeenDeleted()
 
-    fun shouldRestart() = mediator.getRestartPolicy()?.toUpperCase() == "ALWAYS"
+    fun shouldRestart() = controller.getRestartPolicy()?.toUpperCase() == "ALWAYS"
 
-    fun mustTerminateResources() = mediator.isDeleteResources()
+    fun mustTerminateResources() = controller.isDeleteResources()
 
     fun mustRecreateResources(): Boolean {
-        val changes = mediator.computeChanges()
+        val changes = controller.computeChanges()
         return changes.contains("JOB_MANAGER") || changes.contains("TASK_MANAGER") || changes.contains("RUNTIME")
     }
 
     fun removeFinalizer() {
         logger.info("Remove finalizer")
-        mediator.removeFinalizer()
+        controller.removeFinalizer()
     }
 
     fun ensureServiceExist(): Boolean {
-        val serviceExists = mediator.doesServiceExists()
+        val serviceExists = controller.doesServiceExists()
 
         if (!serviceExists) {
-            val result = mediator.createService(mediator.clusterSelector)
+            val result = controller.createService(controller.clusterSelector)
 
             if (result.isSuccessful()) {
                 logger.info("Service created: ${result.output}")
@@ -468,13 +468,13 @@ class TaskContext(
     }
 
     fun ensurePodsExists(): Boolean {
-        val clusterScale = mediator.getClusterScale()
+        val clusterScale = controller.getClusterScale()
 
-        val jobmanagerReplicas = mediator.getJobManagerReplicas()
-        val taskmanagerReplicas = mediator.getTaskManagerReplicas()
+        val jobmanagerReplicas = controller.getJobManagerReplicas()
+        val taskmanagerReplicas = controller.getTaskManagerReplicas()
 
         if (jobmanagerReplicas != 1) {
-            val result = mediator.createJobManagerPods(mediator.clusterSelector, 1)
+            val result = controller.createJobManagerPods(controller.clusterSelector, 1)
 
             if (result.isSuccessful()) {
                 logger.info("JobManager created: ${result.output}")
@@ -484,7 +484,7 @@ class TaskContext(
         }
 
         if (taskmanagerReplicas != clusterScale.taskManagers) {
-            val result = mediator.createTaskManagerPods(mediator.clusterSelector, clusterScale.taskManagers)
+            val result = controller.createTaskManagerPods(controller.clusterSelector, clusterScale.taskManagers)
 
             if (result.isSuccessful()) {
                 logger.info("TaskManager created: ${result.output}")
@@ -503,13 +503,13 @@ class TaskContext(
     fun executeManualAction(acceptedActions: Set<ManualAction>, cancelJob: Boolean) {
         logger.info("Detected manual action")
 
-        val manualAction = mediator.getManualAction()
+        val manualAction = controller.getManualAction()
 
         when (manualAction) {
             ManualAction.START -> {
                 if (acceptedActions.contains(ManualAction.START)) {
                     logger.info("Start cluster")
-                    mediator.setClusterStatus(ClusterStatus.Starting)
+                    controller.setClusterStatus(ClusterStatus.Starting)
                 } else {
                     logger.warn("Action not allowed")
                 }
@@ -518,10 +518,10 @@ class TaskContext(
                 if (acceptedActions.contains(ManualAction.STOP)) {
                     logger.info("Stop cluster")
                     if (cancelJob) {
-                        mediator.setClusterStatus(ClusterStatus.Cancelling)
+                        controller.setClusterStatus(ClusterStatus.Cancelling)
                     } else {
-                        mediator.setDeleteResources(true)
-                        mediator.setClusterStatus(ClusterStatus.Stopping)
+                        controller.setDeleteResources(true)
+                        controller.setClusterStatus(ClusterStatus.Stopping)
                     }
                 } else {
                     logger.warn("Action not allowed")
@@ -530,19 +530,19 @@ class TaskContext(
             ManualAction.FORGET_SAVEPOINT -> {
                 if (acceptedActions.contains(ManualAction.FORGET_SAVEPOINT)) {
                     logger.info("Forget savepoint path")
-                    mediator.setSavepointPath("")
+                    controller.setSavepointPath("")
                 } else {
                     logger.warn("Action not allowed")
                 }
             }
             ManualAction.TRIGGER_SAVEPOINT -> {
                 if (acceptedActions.contains(ManualAction.TRIGGER_SAVEPOINT)) {
-                    if (mediator.isBootstrapPresent()) {
-                        if (mediator.getSavepointRequest() == null) {
-                            val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOptions())
+                    if (controller.isBootstrapPresent()) {
+                        if (controller.getSavepointRequest() == null) {
+                            val response = controller.triggerSavepoint(controller.clusterSelector, controller.getSavepointOptions())
                             if (response.isSuccessful() && response.output != null) {
                                 logger.info("Savepoint requested created. Waiting for savepoint...")
-                                mediator.setSavepointRequest(response.output)
+                                controller.setSavepointRequest(response.output)
                             } else {
                                 logger.error("Savepoint request has failed. Skipping manual savepoint")
                             }
@@ -561,58 +561,56 @@ class TaskContext(
         }
 
         if (manualAction != ManualAction.NONE) {
-            mediator.resetManualAction()
+            controller.resetManualAction()
         }
     }
 
     fun updateSavepoint() {
-        if (!mediator.isBootstrapPresent()) {
+        if (!controller.isBootstrapPresent()) {
             return
         }
 
-        val savepointRequest = mediator.getSavepointRequest()
+        val savepointRequest = controller.getSavepointRequest()
 
         if (savepointRequest != null) {
-            val querySavepointResult = mediator.querySavepoint(mediator.clusterSelector, savepointRequest)
+            val querySavepointResult = controller.querySavepoint(controller.clusterSelector, savepointRequest)
 
             if (!querySavepointResult.isSuccessful()) {
                 logger.warn("Can't create savepoint")
-                mediator.resetSavepointRequest()
+                controller.resetSavepointRequest()
                 return
             }
 
             if (querySavepointResult.output != null) {
                 logger.info("Savepoint created (${querySavepointResult.output})")
-                mediator.resetSavepointRequest()
-                mediator.setSavepointPath(querySavepointResult.output)
+                controller.resetSavepointRequest()
+                controller.setSavepointPath(querySavepointResult.output)
                 return
             }
 
             logger.info("Savepoint is in progress...")
 
-            val seconds = mediator.timeSinceLastUpdateInSeconds()
+            val seconds = controller.timeSinceLastUpdateInSeconds()
 
             if (seconds > Timeout.TASK_TIMEOUT) {
                 logger.error("Giving up after $seconds seconds")
-                mediator.resetSavepointRequest()
+                controller.resetSavepointRequest()
                 return
             }
         } else {
-            val savepointMode = mediator.getSavepointMode()
+            if (controller.getSavepointMode()?.toUpperCase() == "AUTOMATIC") {
+                val savepointIntervalInSeconds = controller.getSavepointInterval()
 
-            if (savepointMode?.toUpperCase() == "AUTOMATIC") {
-                val savepointIntervalInSeconds = mediator.getSavepointInterval()
-
-                if (mediator.timeSinceLastSavepointRequestInSeconds() >= savepointIntervalInSeconds) {
-                    val response = mediator.triggerSavepoint(mediator.clusterSelector, mediator.getSavepointOptions())
+                if (controller.timeSinceLastSavepointRequestInSeconds() >= savepointIntervalInSeconds) {
+                    val response = controller.triggerSavepoint(controller.clusterSelector, controller.getSavepointOptions())
 
                     if (response.isSuccessful() && response.output != null) {
                         logger.info("Savepoint requested created. Waiting for savepoint...")
-                        mediator.setSavepointRequest(response.output)
+                        controller.setSavepointRequest(response.output)
                         return
                     } else {
                         logger.error("Savepoint request failed. Skipping automatic savepoint")
-                        mediator.resetSavepointRequest()
+                        controller.resetSavepointRequest()
                         return
                     }
                 }

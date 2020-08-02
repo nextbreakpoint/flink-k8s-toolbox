@@ -5,7 +5,7 @@ import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1Service
 
-data class CachedResources(
+data class SupervisorCachedResources(
     val flinkCluster: V1FlinkCluster? = null,
     val bootstrapJob: V1Job? = null,
     val jobmanagerPods: Set<V1Pod> = setOf(),
@@ -13,7 +13,7 @@ data class CachedResources(
     val service: V1Service? = null
 ) {
     fun withBootstrapJob(resource: V1Job?) =
-        CachedResources(
+        SupervisorCachedResources(
             flinkCluster = this.flinkCluster,
             bootstrapJob = resource,
             jobmanagerPods = this.jobmanagerPods,
@@ -22,7 +22,7 @@ data class CachedResources(
         )
 
     fun withService(resource: V1Service?) =
-        CachedResources(
+        SupervisorCachedResources(
             flinkCluster = this.flinkCluster,
             bootstrapJob = this.bootstrapJob,
             jobmanagerPods = this.jobmanagerPods,
@@ -31,7 +31,7 @@ data class CachedResources(
         )
 
     fun withJobManagerPods(resources: Set<V1Pod>) =
-        CachedResources(
+        SupervisorCachedResources(
             flinkCluster = this.flinkCluster,
             bootstrapJob = this.bootstrapJob,
             jobmanagerPods = resources,
@@ -40,7 +40,7 @@ data class CachedResources(
         )
 
     fun withTaskManagerPods(resources: Set<V1Pod>) =
-        CachedResources(
+        SupervisorCachedResources(
             flinkCluster = this.flinkCluster,
             bootstrapJob = this.bootstrapJob,
             jobmanagerPods = this.jobmanagerPods,

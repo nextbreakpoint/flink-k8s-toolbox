@@ -26,6 +26,7 @@ class OnFailedTest {
         given(context.suspendCluster()).thenReturn(true)
         given(context.isManualActionPresent()).thenReturn(false)
         given(context.shouldRestart()).thenReturn(false)
+        given(context.hasTaskTimedOut()).thenReturn(false)
     }
 
     @Test
@@ -82,6 +83,7 @@ class OnFailedTest {
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).shouldRestart()
         inOrder.verify(context, times(1)).hasResourceChanged()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
         verifyNoMoreInteractions(context)
     }
 
@@ -97,6 +99,22 @@ class OnFailedTest {
         inOrder.verify(context, times(1)).shouldRestart()
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).onResourceChanged()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when job should restart and timeout happened`() {
+        given(context.shouldRestart()).thenReturn(true)
+        given(context.hasTaskTimedOut()).thenReturn(true)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).suspendCluster()
+        inOrder.verify(context, times(1)).isManualActionPresent()
+        inOrder.verify(context, times(1)).shouldRestart()
+        inOrder.verify(context, times(1)).hasResourceChanged()
+        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).onClusterReadyToRestart()
         verifyNoMoreInteractions(context)
     }
 }

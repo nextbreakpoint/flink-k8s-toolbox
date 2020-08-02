@@ -39,6 +39,9 @@ import com.nextbreakpoint.flinkoperator.controller.operation.RequestSavepointFor
 import com.nextbreakpoint.flinkoperator.controller.operation.RequestSavepointTrigger
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointQuery
 import com.nextbreakpoint.flinkoperator.controller.operation.SavepointTrigger
+import com.nextbreakpoint.flinkoperator.controller.operation.SupervisorCreateDeployment
+import com.nextbreakpoint.flinkoperator.controller.operation.SupervisorDeleteDeployment
+import io.kubernetes.client.models.V1Deployment
 import io.kubernetes.client.models.V1Job
 import io.kubernetes.client.models.V1Service
 
@@ -52,20 +55,20 @@ class OperationController(
     fun requestScaleCluster(clusterSelector: ClusterSelector, options: ScaleOptions): OperationResult<Void?> =
         RequestClusterScale(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, options)
 
-    fun requestStartCluster(clusterSelector: ClusterSelector, options: StartOptions, bridge: CacheBridge) : OperationResult<Void?> =
-        RequestClusterStart(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterSelector, options)
+    fun requestStartCluster(clusterSelector: ClusterSelector, options: StartOptions, context: SupervisorContext) : OperationResult<Void?> =
+        RequestClusterStart(flinkOptions, flinkClient, kubeClient, context).execute(clusterSelector, options)
 
-    fun requestStopCluster(clusterSelector: ClusterSelector, options: StopOptions, bridge: CacheBridge) : OperationResult<Void?> =
-        RequestClusterStop(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterSelector, options)
+    fun requestStopCluster(clusterSelector: ClusterSelector, options: StopOptions, context: SupervisorContext) : OperationResult<Void?> =
+        RequestClusterStop(flinkOptions, flinkClient, kubeClient, context).execute(clusterSelector, options)
 
-    fun createSavepoint(clusterSelector: ClusterSelector, bridge: CacheBridge) : OperationResult<Void?> =
-        RequestSavepointTrigger(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterSelector, null)
+    fun createSavepoint(clusterSelector: ClusterSelector, context: SupervisorContext) : OperationResult<Void?> =
+        RequestSavepointTrigger(flinkOptions, flinkClient, kubeClient, context).execute(clusterSelector, null)
 
-    fun forgetSavepoint(clusterSelector: ClusterSelector, bridge: CacheBridge) : OperationResult<Void?> =
-        RequestSavepointForget(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterSelector, null)
+    fun forgetSavepoint(clusterSelector: ClusterSelector, context: SupervisorContext) : OperationResult<Void?> =
+        RequestSavepointForget(flinkOptions, flinkClient, kubeClient, context).execute(clusterSelector, null)
 
-    fun getClusterStatus(clusterSelector: ClusterSelector, bridge: CacheBridge) : OperationResult<String> =
-        ClusterGetStatus(flinkOptions, flinkClient, kubeClient, bridge).execute(clusterSelector, null)
+    fun getClusterStatus(clusterSelector: ClusterSelector, context: SupervisorContext) : OperationResult<String> =
+        ClusterGetStatus(flinkOptions, flinkClient, kubeClient, context).execute(clusterSelector, null)
 
     fun createFlinkCluster(clusterSelector: ClusterSelector, flinkCluster: V1FlinkCluster) : OperationResult<Void?> =
         FlinkClusterCreate(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, flinkCluster)
@@ -78,6 +81,12 @@ class OperationController(
 
     fun deleteService(clusterSelector: ClusterSelector): OperationResult<Void?> =
         ClusterDeleteService(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
+
+    fun createSupervisorDeployment(clusterSelector: ClusterSelector, deployment: V1Deployment) : OperationResult<String?> =
+        SupervisorCreateDeployment(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, deployment)
+
+    fun deleteSupervisorDeployment(clusterSelector: ClusterSelector) : OperationResult<Void?> =
+        SupervisorDeleteDeployment(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
 
     fun removeJar(clusterSelector: ClusterSelector) : OperationResult<Void?> =
         JarRemove(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
@@ -137,5 +146,9 @@ class OperationController(
 
     fun updateFinalizers(clusterSelector: ClusterSelector, flinkCluster: V1FlinkCluster) {
         kubeClient.updateFinalizers(clusterSelector, flinkCluster.metadata.finalizers)
+    }
+
+    fun updateAnnotations(clusterSelector: ClusterSelector, deployment: V1Deployment) {
+        kubeClient.updateAnnotations(clusterSelector, deployment.metadata.annotations)
     }
 }

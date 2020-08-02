@@ -26,7 +26,7 @@ class ConfigurationTest {
 
     @Test
     fun `the default savepoint interval is 1h`() {
-        assertThat(Configuration.getSavepointInterval(flinkCluster)).isEqualTo(36000L)
+        assertThat(Configuration.getSavepointInterval(flinkCluster)).isEqualTo(3600L)
     }
 
     @Test

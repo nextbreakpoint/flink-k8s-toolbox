@@ -5,7 +5,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
 import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.DefaultClusterResourcesFactory
+import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesDefaultFactory
 import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PodBuilder
@@ -295,7 +295,7 @@ object TestFactory {
 
     fun createClusterResources(uid: String, cluster: V1FlinkCluster): ClusterResources {
         return ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
+            ClusterResourcesDefaultFactory,
             cluster.metadata.namespace,
             uid,
             "flink-operator",

@@ -483,7 +483,7 @@ class ClusterResourcesValidatorTest {
 
     private fun createTestClusterResources(cluster: V1FlinkCluster): ClusterResources {
         val targetResources = ClusterResourcesBuilder(
-            DefaultClusterResourcesFactory,
+            ClusterResourcesDefaultFactory,
             "test",
             clusterSelector,
             "flink-operator",

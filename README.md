@@ -729,28 +729,18 @@ Create a JSON file:
               "name": "flink-config",
               "defaultMode": "511"
             }
-          }
-        ],
-        "persistentVolumeClaimsTemplates": [
+          },
           {
-            "metadata": {
-              "name": "taskmanager"
-            },
-            "spec": {
-              "storageClassName": "hostpath",
-              "accessModes": [ "ReadWriteOnce" ],
-              "resources": {
-                "requests": {
-                  "storage": "5Gi"
-                }
-              }
+            "name": "data-vol",
+            "hostPath": {
+              "path": "/var/data"
             }
           }
         ]
       },
       "operator": {
         "savepointMode": "Automatic",
-        "savepointInterval": 60,
+        "savepointInterval": 300,
         "savepointTargetPath": "file:///var/tmp/test",
         "restartPolicy": "Never"
       }
