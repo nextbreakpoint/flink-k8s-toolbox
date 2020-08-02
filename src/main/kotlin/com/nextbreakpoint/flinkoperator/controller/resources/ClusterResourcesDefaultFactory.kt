@@ -22,7 +22,7 @@ import io.kubernetes.client.models.V1ServiceBuilder
 import io.kubernetes.client.models.V1ServicePort
 import io.kubernetes.client.models.V1WeightedPodAffinityTerm
 
-object DefaultClusterResourcesFactory : ClusterResourcesFactory {
+object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
     override fun createService(
         namespace: String,
         clusterSelector: String,
@@ -165,7 +165,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val jobmanagerContainer = V1ContainerBuilder()
             .withImage(flinkCluster.spec.runtime?.image)
-            .withImagePullPolicy(flinkCluster.spec.runtime?.pullPolicy ?: "Always")
+            .withImagePullPolicy(flinkCluster.spec.runtime?.pullPolicy ?: "IfNotPresent")
             .withName("jobmanager")
             .withArgs(listOf("jobmanager"))
             .addToPorts(port8081)
@@ -183,19 +183,9 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
                     .initialDelaySeconds(15)
                     .periodSeconds(5)
             )
-//            .withReadinessProbe(
-//                V1Probe()
-//                    .tcpSocket(V1TCPSocketAction().port(IntOrString(6123)))
-//                    .initialDelaySeconds(15)
-//                    .periodSeconds(5)
-//            )
             .build()
 
-        val jobmanagerPullSecrets = if (flinkCluster.spec.runtime?.pullSecrets != null) {
-            listOf(
-                V1LocalObjectReference().name(flinkCluster.spec.runtime?.pullSecrets)
-            )
-        } else null
+        val jobmanagerPullSecrets = createObjectReferenceListOrNull(flinkCluster.spec.runtime?.pullSecrets)
 
         val initContainers = flinkCluster.spec.jobManager?.initContainers ?: listOf()
 
@@ -300,7 +290,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
 
         val taskmanagerContainer = V1ContainerBuilder()
             .withImage(flinkCluster.spec.runtime?.image)
-            .withImagePullPolicy(flinkCluster.spec.runtime?.pullPolicy ?: "Always")
+            .withImagePullPolicy(flinkCluster.spec.runtime?.pullPolicy ?: "IfNotPresent")
             .withName("taskmanager")
             .withArgs(listOf("taskmanager"))
             .addToPorts(port6121)
@@ -317,11 +307,7 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
                 jobmanagerSelector, taskmanagerSelector
             )
 
-        val taskmanagerPullSecrets = if (flinkCluster.spec.runtime?.pullSecrets != null) {
-            listOf(
-                V1LocalObjectReference().name(flinkCluster.spec.runtime?.pullSecrets)
-            )
-        } else null
+        val taskmanagerPullSecrets = createObjectReferenceListOrNull(flinkCluster.spec.runtime?.pullSecrets)
 
         val initContainers = flinkCluster.spec.taskManager?.initContainers ?: listOf()
 
@@ -368,6 +354,14 @@ object DefaultClusterResourcesFactory : ClusterResourcesFactory {
                 )
             )
         )
+
+    private fun createObjectReferenceListOrNull(referenceName: String?): List<V1LocalObjectReference>? {
+        return if (referenceName != null) {
+            listOf(
+                V1LocalObjectReference().name(referenceName)
+            )
+        } else null
+    }
 
     private fun createObjectMeta(name: String, labels: Map<String, String>) = V1ObjectMeta().generateName(name).labels(labels)
 

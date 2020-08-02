@@ -6,13 +6,13 @@ import org.apache.log4j.Logger
 import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
 
-class CacheAdapter(
+class OperatorCacheAdapter(
     private val kubeClient: KubeClient,
-    private val cache: Cache,
+    private val operatorCache: OperatorCache,
     private val backoffTime: Long = 5000L
 ) {
     companion object {
-        private val logger: Logger = Logger.getLogger(CacheAdapter::class.simpleName)
+        private val logger: Logger = Logger.getLogger(OperatorCacheAdapter::class.simpleName)
     }
 
     fun watchClusters(namespace: String) =
@@ -20,24 +20,11 @@ class CacheAdapter(
             watchResources(namespace, { namespace ->
                 kubeClient.watchFlickClusters(namespace)
             }, { resource ->
-                cache.onFlinkClusterChanged(resource)
+                operatorCache.onFlinkClusterChanged(resource)
             }, { resource ->
-                cache.onFlinkClusterDeleted(resource)
+                operatorCache.onFlinkClusterDeleted(resource)
             }, {
-                cache.onFlinkClusterDeletedAll()
-            })
-        }
-
-    fun watchServices(namespace: String) =
-        thread {
-            watchResources(namespace, { namespace ->
-                kubeClient.watchServices(namespace)
-            }, { resource ->
-                cache.onServiceChanged(resource)
-            }, { resource ->
-                cache.onServiceDeleted(resource)
-            }, {
-                cache.onServiceDeletedAll()
+                operatorCache.onFlinkClusterDeletedAll()
             })
         }
 
@@ -46,24 +33,24 @@ class CacheAdapter(
             watchResources(namespace, { namespace ->
                 kubeClient.watchPods(namespace)
             }, { resource ->
-                cache.onPodChanged(resource)
+                operatorCache.onPodChanged(resource)
             }, { resource ->
-                cache.onPodDeleted(resource)
+                operatorCache.onPodDeleted(resource)
             }, {
-                cache.onPodDeletedAll()
+                operatorCache.onPodDeletedAll()
             })
         }
 
-    fun watchJobs(namespace: String) =
+    fun watchDeployments(namespace: String) =
         thread {
             watchResources(namespace, { namespace ->
-                kubeClient.watchJobs(namespace)
+                kubeClient.watchDeployments(namespace)
             }, { resource ->
-                cache.onJobChanged(resource)
+                operatorCache.onDeploymentChanged(resource)
             }, { resource ->
-                cache.onJobDeleted(resource)
+                operatorCache.onDeploymentDeleted(resource)
             }, {
-                cache.onJobDeletedAll()
+                operatorCache.onDeploymentDeletedAll()
             })
         }
 

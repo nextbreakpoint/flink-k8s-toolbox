@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.common.crd;
 
 import com.google.gson.annotations.SerializedName;
+import io.kubernetes.client.models.V1ResourceRequirements;
 
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,8 @@ public class V1BootstrapSpec {
     private List<String> arguments;
     @SerializedName("serviceAccount")
     private String serviceAccount;
+    @SerializedName("resources")
+    private V1ResourceRequirements resources;
 
     public String getPullSecrets() {
         return pullSecrets;
@@ -77,6 +80,14 @@ public class V1BootstrapSpec {
         this.serviceAccount = serviceAccount;
     }
 
+    public V1ResourceRequirements getResources() {
+        return resources;
+    }
+
+    public void setResources(V1ResourceRequirements resources) {
+        this.resources = resources;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -88,12 +99,13 @@ public class V1BootstrapSpec {
                 Objects.equals(getClassName(), that.getClassName()) &&
                 Objects.equals(getJarPath(), that.getJarPath()) &&
                 Objects.equals(getArguments(), that.getArguments()) &&
-                Objects.equals(getServiceAccount(), that.getServiceAccount());
+                Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
+                Objects.equals(getResources(), that.getResources());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getPullSecrets(), getPullPolicy(), getImage(), getClassName(), getJarPath(), getArguments(), getServiceAccount());
+        return Objects.hash(getPullSecrets(), getPullPolicy(), getImage(), getClassName(), getJarPath(), getArguments(), getServiceAccount(), getResources());
     }
 
     @Override
@@ -106,6 +118,7 @@ public class V1BootstrapSpec {
                 ", jarPath='" + jarPath + '\'' +
                 ", arguments=" + arguments +
                 ", serviceAccount='" + serviceAccount + '\'' +
+                ", resources=" + resources +
                 '}';
     }
 }

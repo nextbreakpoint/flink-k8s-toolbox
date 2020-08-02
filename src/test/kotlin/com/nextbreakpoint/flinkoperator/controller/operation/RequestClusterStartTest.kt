@@ -8,7 +8,7 @@ import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.CacheBridge
+import com.nextbreakpoint.flinkoperator.controller.core.SupervisorContext
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito
@@ -29,8 +29,8 @@ class RequestClusterStartTest {
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
-    private val adapter = CacheBridge(cluster)
-    private val command = RequestClusterStart(flinkOptions, flinkClient, kubeClient, adapter)
+    private val supervisorContext = SupervisorContext(cluster)
+    private val command = RequestClusterStart(flinkOptions, flinkClient, kubeClient, supervisorContext)
 
     @BeforeEach
     fun configure() {

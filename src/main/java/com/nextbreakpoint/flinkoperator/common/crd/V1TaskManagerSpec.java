@@ -5,7 +5,6 @@ import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ContainerPort;
 import io.kubernetes.client.models.V1EnvFromSource;
 import io.kubernetes.client.models.V1EnvVar;
-import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
@@ -27,8 +26,6 @@ public class V1TaskManagerSpec {
     private List<V1Volume> volumes;
     @SerializedName("volumeMounts")
     private List<V1VolumeMount> volumeMounts;
-    @SerializedName("persistentVolumeClaimsTemplates")
-    private List<V1PersistentVolumeClaim> persistentVolumeClaimsTemplates;
     @SerializedName("annotations")
     private Map<String, String> annotations;
     @SerializedName("extraPorts")
@@ -39,8 +36,6 @@ public class V1TaskManagerSpec {
     private List<V1Container> sideContainers;
     @SerializedName("resources")
     private V1ResourceRequirements resources;
-    @SerializedName("maxHeapMemory")
-    private Integer maxHeapMemory;
 
     public Integer getTaskSlots() {
         return taskSlots;
@@ -95,15 +90,6 @@ public class V1TaskManagerSpec {
         return this;
     }
 
-    public List<V1PersistentVolumeClaim> getPersistentVolumeClaimsTemplates() {
-        return persistentVolumeClaimsTemplates;
-    }
-
-    public V1TaskManagerSpec setPersistentVolumeClaimsTemplates(List<V1PersistentVolumeClaim> persistentVolumeClaimsTemplates) {
-        this.persistentVolumeClaimsTemplates = persistentVolumeClaimsTemplates;
-        return this;
-    }
-
     public Map<String, String> getAnnotations() {
         return annotations;
     }
@@ -144,14 +130,6 @@ public class V1TaskManagerSpec {
         this.resources = resources;
     }
 
-    public Integer getMaxHeapMemory() {
-        return maxHeapMemory;
-    }
-
-    public void setMaxHeapMemory(Integer maxHeapMemory) {
-        this.maxHeapMemory = maxHeapMemory;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -163,18 +141,16 @@ public class V1TaskManagerSpec {
                 Objects.equals(getServiceAccount(), that.getServiceAccount()) &&
                 Objects.equals(getVolumes(), that.getVolumes()) &&
                 Objects.equals(getVolumeMounts(), that.getVolumeMounts()) &&
-                Objects.equals(getPersistentVolumeClaimsTemplates(), that.getPersistentVolumeClaimsTemplates()) &&
                 Objects.equals(getAnnotations(), that.getAnnotations()) &&
                 Objects.equals(getExtraPorts(), that.getExtraPorts()) &&
                 Objects.equals(getInitContainers(), that.getInitContainers()) &&
                 Objects.equals(getSideContainers(), that.getSideContainers()) &&
-                Objects.equals(getResources(), that.getResources()) &&
-                Objects.equals(getMaxHeapMemory(), that.getMaxHeapMemory());
+                Objects.equals(getResources(), that.getResources());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getTaskSlots(), getEnvironment(), getEnvironmentFrom(), getServiceAccount(), getVolumes(), getVolumeMounts(), getPersistentVolumeClaimsTemplates(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers(), getResources(), getMaxHeapMemory());
+        return Objects.hash(getTaskSlots(), getEnvironment(), getEnvironmentFrom(), getServiceAccount(), getVolumes(), getVolumeMounts(), getAnnotations(), getExtraPorts(), getInitContainers(), getSideContainers(), getResources());
     }
 
     @Override
@@ -186,13 +162,11 @@ public class V1TaskManagerSpec {
                 ", serviceAccount='" + serviceAccount + '\'' +
                 ", volumes=" + volumes +
                 ", volumeMounts=" + volumeMounts +
-                ", persistentVolumeClaimsTemplates=" + persistentVolumeClaimsTemplates +
                 ", annotations=" + annotations +
                 ", extraPorts=" + extraPorts +
                 ", initContainers=" + initContainers +
                 ", sideContainers=" + sideContainers +
                 ", resources=" + resources +
-                ", maxHeapMemory=" + maxHeapMemory +
                 '}';
     }
 }

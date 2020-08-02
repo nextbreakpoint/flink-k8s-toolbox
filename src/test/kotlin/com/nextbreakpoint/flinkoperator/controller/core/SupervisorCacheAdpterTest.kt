@@ -15,10 +15,10 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 
-class CacheAdpterTest {
+class SupervisorCacheAdpterTest {
     private val kubeClient = mock(KubeClient::class.java)
-    private val cache = mock(Cache::class.java)
-    private val adapter = CacheAdapter(kubeClient, cache, backoffTime = 1000)
+    private val cache = mock(SupervisorCache::class.java)
+    private val adapter = SupervisorCacheAdapter(kubeClient, cache, backoffTime = 1000)
     private val cluster1 = TestFactory.aCluster(name = "test", namespace = "flink")
     private val cluster2 = TestFactory.aCluster(name = "test", namespace = "flink")
 

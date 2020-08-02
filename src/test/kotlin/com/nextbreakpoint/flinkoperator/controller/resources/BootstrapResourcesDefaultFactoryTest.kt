@@ -5,12 +5,12 @@ import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class DefaultBootstrapJobFactoryTest {
+class BootstrapResourcesDefaultFactoryTest {
     private val cluster = TestFactory.aCluster(name = "test", namespace ="flink", taskManagers = 3, taskSlots = 2)
 
     @Test
     fun `should create bootstrap job when submitting job`() {
-        val job = DefaultBootstrapJobFactory.createBootstrapJob(ClusterSelector(namespace = "flink", name = "test", uuid = "xxx"),"myself", cluster.spec.bootstrap, "tmp/001", 4)
+        val job = BootstrapResourcesDefaultFactory.createBootstrapJob(ClusterSelector(namespace = "flink", name = "test", uuid = "xxx"),"myself", cluster.spec.bootstrap, "tmp/001", 4)
 
         assertThat(job).isNotNull()
 

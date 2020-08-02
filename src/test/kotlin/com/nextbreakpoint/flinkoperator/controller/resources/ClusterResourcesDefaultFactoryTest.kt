@@ -4,12 +4,12 @@ import com.nextbreakpoint.flinkoperator.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class DefaultClusterResourcesFactoryTest {
+class ClusterResourcesDefaultFactoryTest {
     private val cluster = TestFactory.aCluster(name = "test", namespace ="flink", taskManagers = 3, taskSlots = 2)
 
     @Test
     fun `should create job manager service`() {
-        val service = DefaultClusterResourcesFactory.createService("test", "xxx", "myself", cluster)
+        val service = ClusterResourcesDefaultFactory.createService("test", "xxx", "myself", cluster)
 
         assertThat(service).isNotNull()
 
@@ -43,7 +43,7 @@ class DefaultClusterResourcesFactoryTest {
 
     @Test
     fun `should create job manager pod`() {
-        val pod = DefaultClusterResourcesFactory.createJobManagerPod("test", "xxx", "myself", cluster)
+        val pod = ClusterResourcesDefaultFactory.createJobManagerPod("test", "xxx", "myself", cluster)
 
         assertThat(pod).isNotNull()
 
@@ -92,7 +92,7 @@ class DefaultClusterResourcesFactoryTest {
 
     @Test
     fun `should create task manager pod`() {
-        val pod = DefaultClusterResourcesFactory.createTaskManagerPod("test", "xxx", "myself", cluster)
+        val pod = ClusterResourcesDefaultFactory.createTaskManagerPod("test", "xxx", "myself", cluster)
 
         assertThat(pod).isNotNull()
 

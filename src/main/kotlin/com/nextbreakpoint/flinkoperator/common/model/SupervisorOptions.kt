@@ -1,5 +1,7 @@
 package com.nextbreakpoint.flinkoperator.common.model
 
 data class SupervisorOptions(
-    val executionMode: ExecutionMode
+    val clusterName: String,
+    val pollingInterval: Long,
+    val taskTimeout: Long
 )
