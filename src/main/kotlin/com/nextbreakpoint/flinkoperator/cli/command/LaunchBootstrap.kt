@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.cli.command
 
 import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
-import com.nextbreakpoint.flinkoperator.cli.BootstrapCommand
+import com.nextbreakpoint.flinkoperator.cli.LaunchCommand
 import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 import com.nextbreakpoint.flinkoperator.common.model.FlinkAddress
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
@@ -10,16 +10,16 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import org.apache.log4j.Logger
 import java.io.File
 
-class Bootstrap : BootstrapCommand<BootstrapOptions> {
+class LaunchBootstrap : LaunchCommand<BootstrapOptions> {
     companion object {
-        private val logger = Logger.getLogger(Bootstrap::class.simpleName)
+        private val logger = Logger.getLogger(LaunchBootstrap::class.simpleName)
     }
 
-    override fun run(flinkOptions: FlinkOptions, namespace: String, clusterName: String, args: BootstrapOptions) {
+    override fun run(flinkOptions: FlinkOptions, namespace: String, args: BootstrapOptions) {
         try {
             logger.info("Uploading JAR file ${args.jarPath}...")
 
-            val address = KubeClient.findFlinkAddress(flinkOptions, namespace, clusterName)
+            val address = KubeClient.findFlinkAddress(flinkOptions, namespace, args.clusterName)
 
             var count = 0;
 

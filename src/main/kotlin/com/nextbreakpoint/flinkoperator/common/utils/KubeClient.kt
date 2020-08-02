@@ -304,7 +304,7 @@ object KubeClient {
                 null,
                 null,
                 null,
-                "component=flink,owner=flink-operator",
+                "component=flink,owner=flink-operator,role=supervisor",
                 null,
                 null,
                 600,
@@ -323,7 +323,7 @@ object KubeClient {
                 null,
                 null,
                 null,
-                "component=flink,owner=flink-operator",
+                "component=flink,owner=flink-operator,job=bootstrap",
                 null,
                 null,
                 600,
@@ -861,7 +861,7 @@ object KubeClient {
             null,
             null,
             null,
-            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,job=bootstrap",
             null,
             null,
             5,
@@ -1026,164 +1026,164 @@ object KubeClient {
         return jobmanagerPods
     }
 
-    fun restartJobManagerStatefulSets(
-        clusterSelector: ClusterSelector,
-        replicas: Int?
-    ) {
-        val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterSelector.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=jobmanager",
-            null,
-            null,
-            5,
-            null
-        )
+//    fun restartJobManagerStatefulSets(
+//        clusterSelector: ClusterSelector,
+//        replicas: Int?
+//    ) {
+//        val statefulSets = appsApi.listNamespacedStatefulSet(
+//            clusterSelector.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=jobmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//
+//        statefulSets.items.forEach { statefulSet ->
+//            try {
+//                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
+//
+//                val patch = listOf(
+//                    mapOf<String, Any?>(
+//                        "op" to "add",
+//                        "path" to "/spec/replicas",
+//                        "value" to (replicas ?: 1)
+//                    )
+//                )
+//
+//                val response = appsApi.patchNamespacedStatefulSetScaleCall(
+//                    statefulSet.metadata.name,
+//                    clusterSelector.namespace,
+//                    V1Patch(JSON().serialize(patch)),
+//                    null,
+//                    null,
+//                    null,
+//                    null,
+//                    null,
+//                    null
+//                ).execute()
+//
+//                response.body().use { body ->
+//                    if (response.isSuccessful) {
+//                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
+//                    } else {
+//                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+//                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
+//            }
+//        }
+//    }
+//
+//    fun restartTaskManagerStatefulSets(
+//        clusterSelector: ClusterSelector,
+//        replicas: Int?
+//    ) {
+//        val statefulSets = appsApi.listNamespacedStatefulSet(
+//            clusterSelector.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=taskmanager",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//
+//        statefulSets.items.forEach { statefulSet ->
+//            try {
+//                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
+//
+//                val patch = listOf(
+//                    mapOf<String, Any?>(
+//                        "op" to "add",
+//                        "path" to "/spec/replicas",
+//                        "value" to (replicas ?: 1)
+//                    )
+//                )
+//
+//                val response = appsApi.patchNamespacedStatefulSetScaleCall(
+//                    statefulSet.metadata.name,
+//                    clusterSelector.namespace,
+//                    V1Patch(JSON().serialize(patch)),
+//                    null,
+//                    null,
+//                    null,
+//                    null,
+//                    null,
+//                    null
+//                ).execute()
+//
+//                response.body().use { body ->
+//                    if (response.isSuccessful) {
+//                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
+//                    } else {
+//                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+//                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
+//            }
+//        }
+//    }
 
-        statefulSets.items.forEach { statefulSet ->
-            try {
-                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
-
-                val patch = listOf(
-                    mapOf<String, Any?>(
-                        "op" to "add",
-                        "path" to "/spec/replicas",
-                        "value" to (replicas ?: 1)
-                    )
-                )
-
-                val response = appsApi.patchNamespacedStatefulSetScaleCall(
-                    statefulSet.metadata.name,
-                    clusterSelector.namespace,
-                    V1Patch(JSON().serialize(patch)),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ).execute()
-
-                response.body().use { body ->
-                    if (response.isSuccessful) {
-                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
-                    } else {
-                        body.source().use { source -> logger.error(source.readUtf8Line()) }
-                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
-                    }
-                }
-            } catch (e: Exception) {
-                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-            }
-        }
-    }
-
-    fun restartTaskManagerStatefulSets(
-        clusterSelector: ClusterSelector,
-        replicas: Int?
-    ) {
-        val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterSelector.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=taskmanager",
-            null,
-            null,
-            5,
-            null
-        )
-
-        statefulSets.items.forEach { statefulSet ->
-            try {
-                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
-
-                val patch = listOf(
-                    mapOf<String, Any?>(
-                        "op" to "add",
-                        "path" to "/spec/replicas",
-                        "value" to (replicas ?: 1)
-                    )
-                )
-
-                val response = appsApi.patchNamespacedStatefulSetScaleCall(
-                    statefulSet.metadata.name,
-                    clusterSelector.namespace,
-                    V1Patch(JSON().serialize(patch)),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ).execute()
-
-                response.body().use { body ->
-                    if (response.isSuccessful) {
-                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
-                    } else {
-                        body.source().use { source -> logger.error(source.readUtf8Line()) }
-                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
-                    }
-                }
-            } catch (e: Exception) {
-                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-            }
-        }
-    }
-
-    fun terminateStatefulSets(clusterSelector: ClusterSelector) {
-        val statefulSets = appsApi.listNamespacedStatefulSet(
-            clusterSelector.namespace,
-            null,
-            null,
-            null,
-            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
-            null,
-            null,
-            5,
-            null
-        )
-
-        statefulSets.items.forEach { statefulSet ->
-            try {
-                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
-
-                val patch = listOf(
-                    mapOf<String, Any?>(
-                        "op" to "replace",
-                        "path" to "/spec/replicas",
-                        "value" to 0
-                    )
-                )
-
-                val response = appsApi.patchNamespacedStatefulSetScaleCall(
-                    statefulSet.metadata.name,
-                    clusterSelector.namespace,
-                    V1Patch(JSON().serialize(patch)),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ).execute()
-
-                response.body().use { body ->
-                    if (response.isSuccessful) {
-                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
-                    } else {
-                        body.source().use { source -> logger.error(source.readUtf8Line()) }
-                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
-                    }
-                }
-            } catch (e: Exception) {
-                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
-            }
-        }
-    }
+//    fun terminateStatefulSets(clusterSelector: ClusterSelector) {
+//        val statefulSets = appsApi.listNamespacedStatefulSet(
+//            clusterSelector.namespace,
+//            null,
+//            null,
+//            null,
+//            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator",
+//            null,
+//            null,
+//            5,
+//            null
+//        )
+//
+//        statefulSets.items.forEach { statefulSet ->
+//            try {
+//                logger.debug("Scaling StatefulSet ${statefulSet.metadata.name}...")
+//
+//                val patch = listOf(
+//                    mapOf<String, Any?>(
+//                        "op" to "replace",
+//                        "path" to "/spec/replicas",
+//                        "value" to 0
+//                    )
+//                )
+//
+//                val response = appsApi.patchNamespacedStatefulSetScaleCall(
+//                    statefulSet.metadata.name,
+//                    clusterSelector.namespace,
+//                    V1Patch(JSON().serialize(patch)),
+//                    null,
+//                    null,
+//                    null,
+//                    null,
+//                    null,
+//                    null
+//                ).execute()
+//
+//                response.body().use { body ->
+//                    if (response.isSuccessful) {
+//                        logger.debug("StatefulSet ${statefulSet.metadata.name} scaled")
+//                    } else {
+//                        body.source().use { source -> logger.error(source.readUtf8Line()) }
+//                        logger.warn("Can't scale StatefulSet ${statefulSet.metadata.name}")
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                logger.warn("Failed to scale StatefulSet ${statefulSet.metadata.name}", e)
+//            }
+//        }
+//    }
 
     fun deleteBootstrapPod(clusterSelector: ClusterSelector) {
         val pods = coreApi.listNamespacedPod(
@@ -1469,5 +1469,59 @@ object KubeClient {
         client.isDebugging = System.getProperty("kubernetes.client.debugging", "false")!!.toBoolean()
         client.json
         return client
+    }
+
+    fun createSupervisorDeployment(clusterSelector: ClusterSelector, resource: V1Deployment): V1Deployment {
+        try {
+            return appsApi.createNamespacedDeployment(
+                clusterSelector.namespace,
+                resource,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.error(e.responseBody)
+            throw e
+        }
+    }
+
+    fun deleteSupervisorDeployment(clusterSelector: ClusterSelector) {
+        val deployments = appsApi.listNamespacedDeployment(
+            clusterSelector.namespace,
+            null,
+            null,
+            null,
+            "name=${clusterSelector.name},uid=${clusterSelector.uuid},owner=flink-operator,role=supervisor",
+            null,
+            null,
+            5,
+            null
+        )
+
+        val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
+
+        deployments.items.forEach { service ->
+            try {
+                logger.debug("Removing Deployment ${service.metadata.name}...")
+
+                val status = appsApi.deleteNamespacedDeployment(
+                    service.metadata.name,
+                    clusterSelector.namespace,
+                    null,
+                    deleteOptions,
+                    null,
+                    5,
+                    null,
+                    null
+                )
+
+                logger.debug("Response status: ${status.reason}")
+
+//                status.details.causes.forEach { logger.debug(it.message) }
+            } catch (e: Exception) {
+                // ignore. see bug https://github.com/kubernetes/kubernetes/issues/59501
+            }
+        }
     }
 }

@@ -8,7 +8,7 @@ import io.kubernetes.client.models.V1Pod
 import io.kubernetes.client.models.V1Service
 import java.util.concurrent.ConcurrentHashMap
 
-class Cache {
+class SupervisorCache(val namespace: String, val clusterName: String) {
     private val flinkClusters = ConcurrentHashMap<ClusterSelector, V1FlinkCluster>()
     private val bootstrapJobs = ConcurrentHashMap<ClusterSelector, V1Job>()
     private val jobmanagerPods = ConcurrentHashMap<ClusterSelector, MutableMap<String, V1Pod>>()
@@ -28,7 +28,7 @@ class Cache {
             ?: throw RuntimeException("Cluster not found ${clusterSelector.name}")
 
     fun getCachedResources(clusterSelector: ClusterSelector) =
-            CachedResources(
+            SupervisorCachedResources(
                 flinkCluster = flinkClusters[clusterSelector],
                 bootstrapJob = bootstrapJobs[clusterSelector],
                 jobmanagerPods = jobmanagerPods[clusterSelector]?.values?.toSet() ?: setOf(),
@@ -43,6 +43,10 @@ class Cache {
                 uuid = resource.metadata.uid
         )
 
+        if (!acceptClusterSelector(clusterSelector)) {
+            return
+        }
+
         flinkClusters[clusterSelector] = resource
     }
 
@@ -52,6 +56,10 @@ class Cache {
                 name = resource.metadata.name,
                 uuid = resource.metadata.uid
         )
+
+        if (!acceptClusterSelector(clusterSelector)) {
+            return
+        }
 
         flinkClusters.remove(clusterSelector)
     }
@@ -63,11 +71,19 @@ class Cache {
     fun onServiceChanged(resource: V1Service) {
         val clusterSelector = makeClusterSelector(resource.metadata)
 
+        if (!acceptClusterSelector(clusterSelector)) {
+            return
+        }
+
         services[clusterSelector] = resource
     }
 
     fun onServiceDeleted(resource: V1Service) {
         val clusterSelector = makeClusterSelector(resource.metadata)
+
+        if (!acceptClusterSelector(clusterSelector)) {
+            return
+        }
 
         services.remove(clusterSelector)
     }
@@ -75,17 +91,29 @@ class Cache {
     fun onJobChanged(resource: V1Job) {
         val clusterSelector = makeClusterSelector(resource.metadata)
 
+        if (!acceptClusterSelector(clusterSelector)) {
+            return
+        }
+
         bootstrapJobs[clusterSelector] = resource
     }
 
     fun onJobDeleted(resource: V1Job) {
         val clusterSelector = makeClusterSelector(resource.metadata)
 
+        if (!acceptClusterSelector(clusterSelector)) {
+            return
+        }
+
         bootstrapJobs.remove(clusterSelector)
     }
 
     fun onPodChanged(resource: V1Pod) {
         val clusterSelector = makeClusterSelector(resource.metadata)
+
+        if (!acceptClusterSelector(clusterSelector)) {
+            return
+        }
 
         when {
             resource.metadata.labels.get("role") == "jobmanager" -> {
@@ -104,6 +132,10 @@ class Cache {
 
     fun onPodDeleted(resource: V1Pod) {
         val clusterSelector = makeClusterSelector(resource.metadata)
+
+        if (!acceptClusterSelector(clusterSelector)) {
+            return
+        }
 
         when {
             resource.metadata.labels.get("role") == "jobmanager" -> {
@@ -153,4 +185,7 @@ class Cache {
 
     private fun extractClusterSelector(objectMeta: V1ObjectMeta) =
             objectMeta.labels?.get("uid") ?: throw RuntimeException("Missing required label uid")
+
+    private fun acceptClusterSelector(clusterSelector: ClusterSelector) =
+        clusterSelector.namespace == namespace && clusterSelector.name == clusterName
 }

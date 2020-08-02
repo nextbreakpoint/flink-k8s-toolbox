@@ -278,6 +278,8 @@
     "savepointMode": "Automatic",
     "savepointInterval": 300,
     "savepointTargetPath": "file:///data/savepoints",
-    "restartPolicy": "Always"
+    "restartPolicy": "Always",
+    "image": "flink-k8s-toolbox:1.3.5-beta",
+    "serviceAccount": "flink-supervisor"
   }
 }

@@ -1,4 +1,8 @@
 Vagrant.configure(2) do |config|
+  if Vagrant.has_plugin?("vagrant-disksize")
+    config.disksize.size = '40GB'
+  end
+
   config.vm.define "integration" do |s|
     s.ssh.forward_agent = true
     s.vm.box = "ubuntu/bionic64"
@@ -31,4 +35,9 @@ Vagrant.configure(2) do |config|
       #v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
     end
   end
+
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+  end
+
 end

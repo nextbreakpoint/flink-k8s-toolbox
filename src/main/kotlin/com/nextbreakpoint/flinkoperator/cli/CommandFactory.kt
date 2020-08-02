@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.cli
 
 import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
+import com.nextbreakpoint.flinkoperator.common.model.OperatorOptions
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
@@ -9,13 +9,13 @@ import com.nextbreakpoint.flinkoperator.common.model.SupervisorOptions
 import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 
 interface CommandFactory {
-    fun createRunOperatorCommand() : LaunchCommand<OperatorConfig>
+    fun createLaunchOperatorCommand() : LaunchCommand<OperatorOptions>
 
-    fun createBootstrapCommand() : BootstrapCommand<BootstrapOptions>
+    fun createLaunchBootstrapCommand() : LaunchCommand<BootstrapOptions>
 
-    fun createSupervisorCommand() : BootstrapCommand<SupervisorOptions>
+    fun createLaunchSupervisorCommand() : LaunchCommand<SupervisorOptions>
 
-    fun createListClustersCommand() : OperatorCommandNoArgs
+    fun createListClustersCommand() : OperatorCommand
 
     fun createCreateClusterCommand() : ClusterCommand<String>
 

@@ -5,6 +5,7 @@ import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterList
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1JobManagerSpec
+import com.nextbreakpoint.flinkoperator.common.crd.V1OperatorSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1RuntimeSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1TaskManagerSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
@@ -44,6 +45,14 @@ object ClusterResource {
     }
 
     fun computeDigest(spec: V1TaskManagerSpec?): String {
+        return if (spec == null) "" else String(
+            Base64.getEncoder().encode(
+                MessageDigest.getInstance("MD5").digest(JSON().serialize(spec).toByteArray())
+            )
+        )
+    }
+
+    fun computeDigest(spec: V1OperatorSpec?): String {
         return if (spec == null) "" else String(
             Base64.getEncoder().encode(
                 MessageDigest.getInstance("MD5").digest(JSON().serialize(spec).toByteArray())

@@ -11,13 +11,14 @@ import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
 import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.Cache
-import com.nextbreakpoint.flinkoperator.controller.core.CacheAdapter
-import com.nextbreakpoint.flinkoperator.controller.core.CacheBridge
+import com.nextbreakpoint.flinkoperator.controller.core.SupervisorContext
 import com.nextbreakpoint.flinkoperator.controller.core.Command
 import com.nextbreakpoint.flinkoperator.controller.core.OperationController
+import com.nextbreakpoint.flinkoperator.controller.core.Operator
+import com.nextbreakpoint.flinkoperator.controller.core.OperatorCache
+import com.nextbreakpoint.flinkoperator.controller.core.OperatorCacheAdapter
 import com.nextbreakpoint.flinkoperator.controller.core.Status
-import com.nextbreakpoint.flinkoperator.controller.core.TaskController
+import com.nextbreakpoint.flinkoperator.controller.core.Supervisor
 import com.nextbreakpoint.flinkoperator.controller.core.Timeout
 import com.nextbreakpoint.flinkoperator.controller.operation.JobDetails
 import com.nextbreakpoint.flinkoperator.controller.operation.JobManagerMetrics
@@ -97,9 +98,9 @@ class OperatorVerticle : AbstractVerticle() {
 
         val json = JSON()
 
-        val cache = Cache()
+        val operatorCache = OperatorCache()
 
-        val adapter = CacheAdapter(kubeClient, cache)
+        val cacheAdapter = OperatorCacheAdapter(kubeClient, operatorCache)
 
         val controller = OperationController(flinkOptions, flinkClient, kubeClient)
 
@@ -122,7 +123,7 @@ class OperatorVerticle : AbstractVerticle() {
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/start", BiFunction { context, namespace ->
                 json.serialize(
                     Command(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), context.bodyAsString
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
             })
@@ -132,7 +133,7 @@ class OperatorVerticle : AbstractVerticle() {
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/stop", BiFunction { context, namespace ->
                 json.serialize(
                     Command(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), context.bodyAsString
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
             })
@@ -142,7 +143,7 @@ class OperatorVerticle : AbstractVerticle() {
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/scale", BiFunction { context, namespace ->
                 json.serialize(
                     Command(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), context.bodyAsString
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
             })
@@ -152,7 +153,7 @@ class OperatorVerticle : AbstractVerticle() {
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/savepoint/trigger", BiFunction { context, namespace ->
                 json.serialize(
                     Command(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), context.bodyAsString
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), context.bodyAsString
                     )
                 )
             })
@@ -162,7 +163,7 @@ class OperatorVerticle : AbstractVerticle() {
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/savepoint/forget", BiFunction { context, namespace ->
                 json.serialize(
                     Command(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), "{}"
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), "{}"
                     )
                 )
             })
@@ -171,7 +172,7 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.delete("/cluster/:name").handler { routingContext ->
             sendMessageAndWaitForReply(routingContext, namespace, "/cluster/delete", BiFunction { context, namespace ->
                 json.serialize(
-                    cache.findClusterSelector(namespace, context.pathParam("name"))
+                    operatorCache.findClusterSelector(namespace, context.pathParam("name"))
                 )
             })
         }
@@ -188,7 +189,7 @@ class OperatorVerticle : AbstractVerticle() {
         mainRouter.get("/clusters").handler { routingContext ->
             processRequest(routingContext, Function { context ->
                 json.serialize(
-                    cache.getClusterSelectors().map { it.name }.toList()
+                    operatorCache.getClusterSelectors().map { it.name }.toList()
                 )
             })
         }
@@ -197,9 +198,9 @@ class OperatorVerticle : AbstractVerticle() {
             processRequest(routingContext, Function { context ->
                 json.serialize(
                     controller.getClusterStatus(
-                        cache.findClusterSelector(namespace, context.pathParam("name")),
-                        CacheBridge(
-                            cache.getFlinkCluster(cache.findClusterSelector(namespace, context.pathParam("name")))
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")),
+                        SupervisorContext(
+                            operatorCache.getFlinkCluster(operatorCache.findClusterSelector(namespace, context.pathParam("name")))
                         )
                     )
                 )
@@ -210,7 +211,7 @@ class OperatorVerticle : AbstractVerticle() {
             processRequest(routingContext, Function { context ->
                 json.serialize(
                     JobDetails(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), null
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), null
                     )
                 )
             })
@@ -220,7 +221,7 @@ class OperatorVerticle : AbstractVerticle() {
             processRequest(routingContext, Function { context ->
                 json.serialize(
                     JobMetrics(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), null
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), null
                     )
                 )
             })
@@ -230,7 +231,7 @@ class OperatorVerticle : AbstractVerticle() {
             processRequest(routingContext, Function { context ->
                 json.serialize(
                     JobManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), null
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), null
                     )
                 )
             })
@@ -240,7 +241,7 @@ class OperatorVerticle : AbstractVerticle() {
             processRequest(routingContext, Function { context ->
                 json.serialize(
                     TaskManagersList(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), null
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), null
                     )
                 )
             })
@@ -250,7 +251,7 @@ class OperatorVerticle : AbstractVerticle() {
             processRequest(routingContext, Function { context ->
                 json.serialize(
                     TaskManagerDetails(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager"))
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager"))
                     )
                 )
             })
@@ -260,7 +261,7 @@ class OperatorVerticle : AbstractVerticle() {
             processRequest(routingContext, Function { context ->
                 json.serialize(
                     TaskManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelector(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager"))
+                        operatorCache.findClusterSelector(namespace, context.pathParam("name")), TaskManagerId(context.pathParam("taskmanager"))
                     )
                 )
             })
@@ -278,7 +279,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.requestStartCluster(
-                            it.clusterSelector, json.deserialize(it.json, StartOptions::class.java), CacheBridge(cache.getFlinkCluster(it.clusterSelector))
+                            it.clusterSelector, json.deserialize(it.json, StartOptions::class.java), SupervisorContext(operatorCache.getFlinkCluster(it.clusterSelector))
                         )
                     )
                 }
@@ -296,7 +297,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.requestStopCluster(
-                            it.clusterSelector, json.deserialize(it.json, StopOptions::class.java), CacheBridge(cache.getFlinkCluster(it.clusterSelector))
+                            it.clusterSelector, json.deserialize(it.json, StopOptions::class.java), SupervisorContext(operatorCache.getFlinkCluster(it.clusterSelector))
                         )
                     )
                 }
@@ -358,7 +359,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.createSavepoint(
-                            it.clusterSelector, CacheBridge(cache.getFlinkCluster(it.clusterSelector))
+                            it.clusterSelector, SupervisorContext(operatorCache.getFlinkCluster(it.clusterSelector))
                         )
                     )
                 }
@@ -376,7 +377,7 @@ class OperatorVerticle : AbstractVerticle() {
                 Function {
                     json.serialize(
                         controller.forgetSavepoint(
-                            it.clusterSelector, CacheBridge(cache.getFlinkCluster(it.clusterSelector))
+                            it.clusterSelector, SupervisorContext(operatorCache.getFlinkCluster(it.clusterSelector))
                         )
                     )
                 }
@@ -389,27 +390,22 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         context.runOnContext {
-            adapter.watchClusters(namespace)
-            adapter.watchServices(namespace)
-            adapter.watchPods(namespace)
-            adapter.watchJobs(namespace)
+            cacheAdapter.watchClusters(namespace)
+            cacheAdapter.watchDeployments(namespace)
+            cacheAdapter.watchPods(namespace)
 
-            startReconciliation(cache, gauges, controller)
+            thread {
+                while (!Thread.interrupted()) {
+                    updateMetrics(operatorCache, gauges)
+                    reconcileResources(controller, operatorCache)
+                    TimeUnit.SECONDS.sleep(Timeout.POLLING_INTERVAL)
+                }
+            }
         }
 
         return vertx.createHttpServer(serverOptions)
             .requestHandler(mainRouter)
             .rxListen(port)
-    }
-
-    private fun startReconciliation(cache: Cache, gauges: Map<ClusterStatus, AtomicInteger>, controller: OperationController) {
-        thread {
-            while (!Thread.interrupted()) {
-                onUpdateMetrics(cache, gauges)
-                onUpdateClusters(cache, controller)
-                TimeUnit.SECONDS.sleep(Timeout.POLLING_INTERVAL)
-            }
-        }
     }
 
     private fun createServerOptions(
@@ -446,8 +442,8 @@ class OperatorVerticle : AbstractVerticle() {
         }.toMap()
     }
 
-    private fun onUpdateMetrics(cache: Cache, gauges: Map<ClusterStatus, AtomicInteger>) {
-        val clusters = cache.getFlinkClusters()
+    private fun updateMetrics(operatorCache: OperatorCache, gauges: Map<ClusterStatus, AtomicInteger>) {
+        val clusters = operatorCache.getFlinkClusters()
 
         val counters = clusters.foldRight(mutableMapOf<ClusterStatus, Int>()) { flinkCluster, counters ->
                 val status = Status.getClusterStatus(flinkCluster)
@@ -542,16 +538,18 @@ class OperatorVerticle : AbstractVerticle() {
             .subscribe()
     }
 
-    private fun onUpdateClusters(cache: Cache, controller: OperationController) {
-        val resorces = cache.getClusterSelectors().map {
-            clusterSelector -> clusterSelector to cache.getCachedResources(clusterSelector)
+    private fun reconcileResources(controller: OperationController, operatorCache: OperatorCache) {
+        val resources = operatorCache.getClusterSelectors().map {
+            clusterSelector -> clusterSelector to operatorCache.getCachedResources(clusterSelector)
         }.toList()
 
-        resorces.forEach { pair ->
+        resources.forEach { pair ->
             try {
                 logger.debug("Reconciling ${pair.first}...")
 
-                TaskController.create(controller, pair.first).execute(pair.second)
+                val operator = Operator.create(controller, Operator::class.java.name + " | " + pair.first.name)
+
+                operator.reconcile(pair.first, pair.second)
             } catch (e: Exception) {
                 logger.warn("Can't reconcile ${pair.first}", e)
             }

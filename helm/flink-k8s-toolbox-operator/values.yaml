@@ -15,11 +15,11 @@ strategy:
 
 resources:
   requests:
-    memory: "128Mi"
-    cpu: "200m"
+    memory: "256Mi"
+    cpu: "0.1"
   limits:
-    memory: "512Mi"
-    cpu: "1000m"
+    memory: "256Mi"
+    cpu: "0.5"
 
 secretName:
 

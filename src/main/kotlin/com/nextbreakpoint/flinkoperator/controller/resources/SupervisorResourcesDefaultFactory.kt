@@ -1,45 +1,41 @@
 package com.nextbreakpoint.flinkoperator.controller.resources
 
-import com.nextbreakpoint.flinkoperator.common.crd.V1BootstrapSpec
+import com.nextbreakpoint.flinkoperator.common.crd.V1OperatorSpec
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
+import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.models.V1Affinity
 import io.kubernetes.client.models.V1Container
+import io.kubernetes.client.models.V1Deployment
+import io.kubernetes.client.models.V1DeploymentBuilder
+import io.kubernetes.client.models.V1DeploymentStrategy
 import io.kubernetes.client.models.V1EnvVar
 import io.kubernetes.client.models.V1EnvVarSource
-import io.kubernetes.client.models.V1Job
-import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1LabelSelector
 import io.kubernetes.client.models.V1LocalObjectReference
 import io.kubernetes.client.models.V1ObjectFieldSelector
 import io.kubernetes.client.models.V1PodAffinity
 import io.kubernetes.client.models.V1PodAffinityTerm
-import io.kubernetes.client.models.V1PodSpecBuilder
+import io.kubernetes.client.models.V1PodTemplateSpecBuilder
 import io.kubernetes.client.models.V1ResourceRequirements
 import io.kubernetes.client.models.V1WeightedPodAffinityTerm
 
-object DefaultBootstrapJobFactory : BootstrapJobFactory {
-    override fun createBootstrapJob(
+object SupervisorResourcesDefaultFactory : SupervisorResourcesFactory {
+    override fun createSupervisorDeployment(
         clusterSelector: ClusterSelector,
         clusterOwner: String,
-        bootstrap: V1BootstrapSpec,
-        savepointPath: String?,
-        parallelism: Int
-    ): V1Job {
-        if (bootstrap.image == null) {
+        operator: V1OperatorSpec
+    ): V1Deployment {
+        if (operator.image == null) {
             throw RuntimeException("image is required")
         }
 
-        if (bootstrap.jarPath == null) {
-            throw RuntimeException("jarPath is required")
-        }
-
-        val jobLabels = mapOf(
+        val supervisorLabels = mapOf(
             Pair("owner", clusterOwner),
             Pair("name", clusterSelector.name),
             Pair("uid", clusterSelector.uuid),
             Pair("component", "flink"),
-            Pair("job", "bootstrap")
+            Pair("role", "supervisor")
         )
 
         val podNameEnvVar =
@@ -53,68 +49,69 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
             )
 
         val arguments =
-            createBootstrapArguments(
+            createSupervisorArguments(
                 clusterSelector.namespace,
                 clusterSelector.name,
-                bootstrap,
-                savepointPath,
-                parallelism
+                operator
             )
 
-        val jobSelector = V1LabelSelector().matchLabels(jobLabels)
+        val supervisorSelector = V1LabelSelector().matchLabels(supervisorLabels)
 
-        val jobAffinity =
+        val supervisorAffinity =
             createAffinity(
-                jobSelector
+                supervisorSelector
             )
 
         val pullSecrets =
             createObjectReferenceListOrNull(
-                bootstrap.pullSecrets
+                operator.pullSecrets
             )
 
-        val jobPodSpec = V1PodSpecBuilder()
+        val supervisorPodSpec = V1PodTemplateSpecBuilder()
+            .editOrNewMetadata()
+            .withName("supervisor-${clusterSelector.name}")
+            .withLabels(supervisorLabels)
+            .endMetadata()
+            .editOrNewSpec()
             .addToContainers(V1Container())
             .editFirstContainer()
             .withName("bootstrap")
-            .withImage(bootstrap.image)
-            .withImagePullPolicy(bootstrap.pullPolicy ?: "Always")
+            .withImage(operator.image)
+            .withImagePullPolicy(operator.pullPolicy ?: "IfNotPresent")
             .withArgs(arguments)
             .addToEnv(podNameEnvVar)
             .addToEnv(podNamespaceEnvVar)
-            .withResources(createResourceRequirements())
+            .withResources(operator.resources ?: createResourceRequirements())
             .endContainer()
-            .withServiceAccountName(bootstrap.serviceAccount ?: "default")
+            .withServiceAccountName(operator.serviceAccount ?: "default")
             .withImagePullSecrets(pullSecrets)
-            .withRestartPolicy("OnFailure")
-            .withAffinity(jobAffinity)
-            .build()
-
-        val job = V1JobBuilder()
-            .editOrNewMetadata()
-            .withGenerateName("bootstrap-${clusterSelector.name}-")
-            .withLabels(jobLabels)
-            .endMetadata()
-            .editOrNewSpec()
-            .withCompletions(1)
-            .withParallelism(1)
-            .withBackoffLimit(1)
-            .withTtlSecondsAfterFinished(30)
-            .editOrNewTemplate()
-            .editOrNewMetadata()
-            .withGenerateName("bootstrap-${clusterSelector.name}-")
-            .withLabels(jobLabels)
-            .endMetadata()
-            .withSpec(jobPodSpec)
-            .endTemplate()
+            .withRestartPolicy("Always")
+            .withAffinity(supervisorAffinity)
             .endSpec()
             .build()
 
-        return job
+        val deployment = V1DeploymentBuilder()
+            .editOrNewMetadata()
+            .withName("supervisor-${clusterSelector.name}")
+            .withLabels(supervisorLabels)
+            .addToAnnotations("flink-operator/deployment-digest", ClusterResource.computeDigest(operator))
+            .endMetadata()
+            .editOrNewSpec()
+            .withTemplate(supervisorPodSpec)
+            .withSelector(supervisorSelector)
+            .withStrategy(V1DeploymentStrategy().type("Recreate"))
+            .withReplicas(1)
+            .withProgressDeadlineSeconds(180)
+            .withMinReadySeconds(30)
+            .withRevisionHistoryLimit(3)
+            .endSpec()
+            .build()
+
+        return deployment
     }
 
     private fun createAffinity(
-        jobSelector: V1LabelSelector?
+        selector: V1LabelSelector?
     ): V1Affinity = V1Affinity()
         .podAffinity(
             V1PodAffinity().preferredDuringSchedulingIgnoredDuringExecution(
@@ -122,7 +119,7 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
                     V1WeightedPodAffinityTerm().weight(100).podAffinityTerm(
                         V1PodAffinityTerm()
                             .topologyKey("kubernetes.io/hostname")
-                            .labelSelector(jobSelector)
+                            .labelSelector(selector)
                     )
                 )
             )
@@ -136,13 +133,13 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
     private fun createResourceRequirements() = V1ResourceRequirements()
         .limits(
             mapOf(
-                "cpu" to Quantity("1"),
-                "memory" to Quantity("512Mi")
+                "cpu" to Quantity("1.0"),
+                "memory" to Quantity("256Mi")
             )
         )
         .requests(
             mapOf(
-                "cpu" to Quantity("0.2"),
+                "cpu" to Quantity("0.1"),
                 "memory" to Quantity("256Mi")
             )
         )
@@ -155,34 +152,23 @@ object DefaultBootstrapJobFactory : BootstrapJobFactory {
         } else null
     }
 
-    private fun createBootstrapArguments(
+    private fun createSupervisorArguments(
         namespace: String,
         clusterName: String,
-        bootstrap: V1BootstrapSpec,
-        savepointPath: String?,
-        parallelism: Int
+        operator: V1OperatorSpec
     ): List<String> {
         val arguments = mutableListOf<String>()
 
         arguments.addAll(
             listOf(
-                "bootstrap",
+                "supervisor",
                 "run",
                 "--namespace=$namespace",
                 "--cluster-name=$clusterName",
-                "--jar-path=${bootstrap.jarPath}",
-                "--class-name=${bootstrap.className}",
-                "--parallelism=$parallelism"
+                "--polling-interval=${operator.pollingInterval ?: 5}",
+                "--task-timeout=${operator.taskTimeout ?: 300}"
             )
         )
-
-        if (savepointPath != null && savepointPath != "") {
-            arguments.add("--savepoint-path=$savepointPath")
-        }
-
-        bootstrap.arguments.forEach {
-            arguments.add("--argument=$it")
-        }
 
         return arguments.toList()
     }

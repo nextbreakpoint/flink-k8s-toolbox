@@ -13,17 +13,17 @@ metadata:
     heritage: {{ $root.Release.Service }}
 rules:
   - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list", "watch", "create", "delete"]
-  - apiGroups: [""]
-    resources: ["services"]
-    verbs: ["get", "list", "watch", "create", "delete"]
-  - apiGroups: ["batch"]
-    resources: ["jobs"]
+    resources: ["pods", "services"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
     verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: ["nextbreakpoint.com"]
-    resources: ["flinkclusters", "flinkclusters/status", "flinkclusters/scale"]
-    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+    resources: ["flinkclusters"]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkclusters/status", "flinkclusters/scale"]
+    verbs: ["patch"]
 ---
 apiVersion: v1
 kind: ServiceAccount

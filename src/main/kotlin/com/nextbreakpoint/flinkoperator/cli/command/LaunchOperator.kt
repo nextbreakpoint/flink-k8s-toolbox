@@ -1,7 +1,8 @@
 package com.nextbreakpoint.flinkoperator.cli.command
 
 import com.nextbreakpoint.flinkoperator.cli.LaunchCommand
-import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
+import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
+import com.nextbreakpoint.flinkoperator.common.model.OperatorOptions
 import com.nextbreakpoint.flinkoperator.controller.MonitoringVerticle
 import com.nextbreakpoint.flinkoperator.controller.OperatorVerticle
 import io.vertx.core.DeploymentOptions
@@ -15,20 +16,20 @@ import io.vertx.micrometer.VertxPrometheusOptions
 import org.apache.log4j.Logger
 import java.util.concurrent.TimeUnit
 
-class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, LaunchCommand<OperatorConfig> {
+class LaunchOperator : VertxCommandLauncher(), VertxLifecycleHooks, LaunchCommand<OperatorOptions> {
     companion object {
         private val logger = Logger.getLogger(LaunchOperator::class.simpleName)
     }
 
-    override fun run(args: OperatorConfig) {
+    override fun run(flinkOptions: FlinkOptions, namespace: String, args: OperatorOptions) {
         try {
             logger.info("Launching operator...")
 
             val jsonObject = JsonObject()
-                .put("namespace", args.namespace)
-                .put("flink_hostname", args.flinkHostname)
-                .put("port_forward", args.portForward)
-                .put("use_node_port", args.useNodePort)
+                .put("namespace", namespace)
+                .put("flink_hostname", flinkOptions.hostname)
+                .put("port_forward", flinkOptions.portForward)
+                .put("use_node_port", flinkOptions.useNodePort)
                 .put("server_keystore_path", args.keystorePath)
                 .put("server_keystore_secret", args.keystoreSecret)
                 .put("server_truststore_path", args.truststorePath)

@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flinkoperator.common.model
 
 data class BootstrapOptions(
+    val clusterName: String,
     val jarPath: String,
     val className: String,
     val parallelism: Int,

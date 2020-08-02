@@ -2,32 +2,29 @@ package com.nextbreakpoint.flinkoperator.controller.operation
 
 import com.nextbreakpoint.flinkoperator.common.model.ClusterSelector
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
-import com.nextbreakpoint.flinkoperator.controller.core.SupervisorContext
 import com.nextbreakpoint.flinkoperator.controller.core.Operation
 import com.nextbreakpoint.flinkoperator.controller.core.OperationResult
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
+import io.kubernetes.client.models.V1Deployment
 import org.apache.log4j.Logger
 
-class RequestSavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val context: SupervisorContext) : Operation<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
+class SupervisorCreateDeployment(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Operation<V1Deployment, String?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
-        private val logger = Logger.getLogger(RequestSavepointTrigger::class.simpleName)
+        private val logger = Logger.getLogger(SupervisorCreateDeployment::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ClusterSelector, params: Void?): OperationResult<Void?> {
+    override fun execute(clusterSelector: ClusterSelector, params: V1Deployment): OperationResult<String?> {
         return try {
-            context.setManualAction(ManualAction.TRIGGER_SAVEPOINT)
-
-            kubeClient.updateAnnotations(clusterSelector, context.getAnnotations())
+            val jobOut = kubeClient.createSupervisorDeployment(clusterSelector, params)
 
             OperationResult(
                 OperationStatus.OK,
-                null
+                jobOut.metadata.name
             )
         } catch (e : Exception) {
-            logger.error("[name=${clusterSelector.name}] Can't trigger savepoint", e)
+            logger.error("[name=${clusterSelector.name}] Can't create supervisor deployment", e)
 
             OperationResult(
                 OperationStatus.ERROR,

@@ -1,11 +1,7 @@
 package com.nextbreakpoint.flinkoperator.common.model
 
-data class OperatorConfig(
+data class OperatorOptions(
     val port: Int,
-    val namespace: String,
-    val flinkHostname: String?,
-    val portForward: Int?,
-    val useNodePort: Boolean,
     val keystorePath: String?,
     val keystoreSecret: String?,
     val truststorePath: String?,

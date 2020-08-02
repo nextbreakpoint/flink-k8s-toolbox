@@ -8,14 +8,12 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.options.required
-import com.github.ajalt.clikt.parameters.types.choice
-import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.int
+import com.github.ajalt.clikt.parameters.types.long
 import com.nextbreakpoint.flinkoperator.common.model.BootstrapOptions
 import com.nextbreakpoint.flinkoperator.common.model.ConnectionConfig
-import com.nextbreakpoint.flinkoperator.common.model.ExecutionMode
 import com.nextbreakpoint.flinkoperator.common.model.FlinkOptions
-import com.nextbreakpoint.flinkoperator.common.model.OperatorConfig
+import com.nextbreakpoint.flinkoperator.common.model.OperatorOptions
 import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.model.StartOptions
 import com.nextbreakpoint.flinkoperator.common.model.StopOptions
@@ -25,6 +23,7 @@ import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import org.apache.log4j.Logger
 import java.io.File
 import java.nio.file.Files
+import kotlin.system.exitProcess
 
 class Main(private val factory: CommandFactory) {
     companion object {
@@ -39,11 +38,11 @@ class Main(private val factory: CommandFactory) {
 
                 Main(DefaultCommandFactory).run(args)
 
-                System.exit(0)
+                exitProcess(0)
             } catch (e: Exception) {
                 logger.error("Failure", e)
 
-                System.exit(1)
+                exitProcess(1)
             }
         }
     }
@@ -51,7 +50,7 @@ class Main(private val factory: CommandFactory) {
     fun run(args: Array<String>) {
         MainCommand().subcommands(
             Operator().subcommands(
-                RunOperatorCommand(factory)
+                LaunchOperatorCommand(factory)
             ),
             Clusters().subcommands(
                 ListClustersCommand(factory)
@@ -69,10 +68,10 @@ class Main(private val factory: CommandFactory) {
                 ForgetSavepointCommand(factory)
             ),
             Bootstrap().subcommands(
-                BootstrapCommand(factory)
+                LaunchBootstrapCommand(factory)
             ),
             Supervisor().subcommands(
-                SupervisorCommand(factory)
+                LaunchSupervisorCommand(factory)
             ),
             Job().subcommands(
                 GetJobDetailsCommand(factory),
@@ -144,15 +143,17 @@ class Main(private val factory: CommandFactory) {
         private val truststoreSecret: String? by option(help="The truststore secret")
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createListClustersCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ))
+                connectionConfig
+            )
         }
     }
 
@@ -167,15 +168,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterSpec: String by option(help="The specification of the Flink cluster in JSON format").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createCreateClusterCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName, String(Files.readAllBytes(File(clusterSpec).toPath())))
+                connectionConfig, clusterName, String(Files.readAllBytes(File(clusterSpec).toPath()))
+            )
         }
     }
 
@@ -189,15 +192,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createDeleteClusterCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName)
+                connectionConfig, clusterName
+            )
         }
     }
 
@@ -211,15 +216,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createGetClusterStatusCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName)
+                connectionConfig, clusterName
+            )
         }
     }
 
@@ -237,15 +244,17 @@ class Main(private val factory: CommandFactory) {
             val params = StartOptions(
                 withoutSavepoint = withoutSavepoint
             )
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createStartClusterCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName, params)
+                connectionConfig, clusterName, params
+            )
         }
     }
 
@@ -265,15 +274,17 @@ class Main(private val factory: CommandFactory) {
                 withoutSavepoint = withoutSavepoint,
                 deleteResources = deleteResources
             )
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createStopClusterCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName, params)
+                connectionConfig, clusterName, params
+            )
         }
     }
 
@@ -291,15 +302,17 @@ class Main(private val factory: CommandFactory) {
             val params = ScaleOptions(
                 taskManagers = taskManagers
             )
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createScaleClusterCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName, params)
+                connectionConfig, clusterName, params
+            )
         }
     }
 
@@ -313,15 +326,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createTriggerSavepointCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName)
+                connectionConfig, clusterName
+            )
         }
     }
 
@@ -335,15 +350,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createForgetSavepointCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName)
+                connectionConfig, clusterName
+            )
         }
     }
 
@@ -357,15 +374,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createGetJobDetailsCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName)
+                connectionConfig, clusterName
+            )
         }
     }
 
@@ -379,15 +398,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createGetJobMetricsCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName)
+                connectionConfig, clusterName
+            )
         }
     }
 
@@ -401,15 +422,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createGetJobManagerMetricsCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName)
+                connectionConfig, clusterName
+            )
         }
     }
 
@@ -423,15 +446,17 @@ class Main(private val factory: CommandFactory) {
         private val clusterName: String by option(help="The name of the Flink cluster").required()
 
         override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createListTaskManagersCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName)
+                connectionConfig, clusterName
+            )
         }
     }
 
@@ -449,15 +474,17 @@ class Main(private val factory: CommandFactory) {
             val taskManagerId = TaskManagerId(
                 taskmanagerId = taskmanagerId
             )
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createGetTaskManagerDetailsCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName, taskManagerId)
+                connectionConfig, clusterName, taskManagerId
+            )
         }
     }
 
@@ -475,19 +502,21 @@ class Main(private val factory: CommandFactory) {
             val taskManagerId = TaskManagerId(
                 taskmanagerId = taskmanagerId
             )
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
             factory.createGetTaskManagerMetricsCommand().run(
-                ConnectionConfig(
-                    host,
-                    port,
-                    keystorePath,
-                    keystoreSecret,
-                    truststorePath,
-                    truststoreSecret
-                ), clusterName, taskManagerId)
+                connectionConfig, clusterName, taskManagerId
+            )
         }
     }
 
-    class RunOperatorCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Run the Flink Operator") {
+    class LaunchOperatorCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Execute operator process") {
         private val port: Int by option(help="Listen on port").int().default(4444)
         private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
@@ -499,26 +528,29 @@ class Main(private val factory: CommandFactory) {
         private val truststoreSecret: String? by option(help="The operator's truststore secret")
 
         override fun run() {
-            val config = OperatorConfig(
+            val params = OperatorOptions(
                 port = port,
-                flinkHostname = flinkHostname,
-                portForward = portForward,
-                namespace = namespace,
-                useNodePort = kubeConfig != null,
                 keystorePath = keystorePath,
                 keystoreSecret = keystoreSecret,
                 truststorePath = truststorePath,
                 truststoreSecret = truststoreSecret
             )
             KubeClient.configure(kubeConfig)
-            factory.createRunOperatorCommand().run(config)
+            val flinkOptions = FlinkOptions(
+                hostname = flinkHostname,
+                portForward = portForward,
+                useNodePort = kubeConfig != null
+            )
+            factory.createLaunchOperatorCommand().run(
+                flinkOptions, namespace, params
+            )
         }
     }
 
-    class BootstrapCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Upload a JAR file and start a job") {
+    class LaunchBootstrapCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Execute bootstrap process") {
         private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
-        private val kubeConfig: String? by option(help="The path of kuke config")
+        private val kubeConfig: String? by option(help="The path of Kubernetes config")
         private val namespace: String by option(help="The namespace of the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
         private val jarPath: String by option(help="The path of the JAR file to upload").required()
@@ -529,6 +561,7 @@ class Main(private val factory: CommandFactory) {
 
         override fun run() {
             val params = BootstrapOptions(
+                clusterName = clusterName,
                 jarPath = jarPath,
                 className = className,
                 parallelism = parallelism,
@@ -541,21 +574,26 @@ class Main(private val factory: CommandFactory) {
                 portForward = portForward,
                 useNodePort = kubeConfig != null
             )
-            factory.createBootstrapCommand().run(flinkOptions, namespace, clusterName, params)
+            factory.createLaunchBootstrapCommand().run(
+                flinkOptions, namespace, params
+            )
         }
     }
 
-    class SupervisorCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Create supervisor process") {
+    class LaunchSupervisorCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Execute supervisor process") {
         private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
-        private val kubeConfig: String? by option(help="The path of kuke config")
+        private val kubeConfig: String? by option(help="The path of Kubernetes config")
         private val namespace: String by option(help="The namespace of the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
-        private val executionMode: ExecutionMode by option(help="The execution mode").choice("stream", "batch").enum<ExecutionMode>().required()
+        private val pollingInterval: Long by option(help="The polling interval in seconds").long().default(5)
+        private val taskTimeout: Long by option(help="The task timeout in seconds").long().default(300)
 
         override fun run() {
             val params = SupervisorOptions(
-                executionMode = executionMode
+                clusterName = clusterName,
+                pollingInterval = pollingInterval,
+                taskTimeout = taskTimeout
             )
             KubeClient.configure(kubeConfig)
             val flinkOptions = FlinkOptions(
@@ -563,7 +601,9 @@ class Main(private val factory: CommandFactory) {
                 portForward = portForward,
                 useNodePort = kubeConfig != null
             )
-            factory.createSupervisorCommand().run(flinkOptions, namespace, clusterName, params)
+            factory.createLaunchSupervisorCommand().run(
+                flinkOptions, namespace, params
+            )
         }
     }
 }

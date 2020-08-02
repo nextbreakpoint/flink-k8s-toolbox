@@ -3,7 +3,7 @@ package com.nextbreakpoint.flinkoperator.controller.core
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.model.ManualAction
 
-class CacheBridge(private val cluster: V1FlinkCluster) {
+class SupervisorContext(private val cluster: V1FlinkCluster) {
     fun setWithoutSavepoint(withoutSavepoint: Boolean) {
         Annotations.setWithoutSavepoint(cluster, withoutSavepoint)
     }

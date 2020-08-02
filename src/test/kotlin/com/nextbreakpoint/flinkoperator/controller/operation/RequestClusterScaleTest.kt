@@ -7,7 +7,7 @@ import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
 import com.nextbreakpoint.flinkoperator.common.utils.FlinkClient
 import com.nextbreakpoint.flinkoperator.common.utils.KubeClient
 import com.nextbreakpoint.flinkoperator.controller.core.Annotations
-import com.nextbreakpoint.flinkoperator.controller.core.Cache
+import com.nextbreakpoint.flinkoperator.controller.core.SupervisorCache
 import com.nextbreakpoint.flinkoperator.controller.core.OperationStatus
 import com.nextbreakpoint.flinkoperator.controller.core.Status
 import com.nextbreakpoint.flinkoperator.testing.KotlinMockito.eq
@@ -28,13 +28,13 @@ class RequestClusterScaleTest {
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
-    private val operatorCache = mock(Cache::class.java)
+    private val supervisorCache = mock(SupervisorCache::class.java)
     private val command = RequestClusterScale(flinkOptions, flinkClient, kubeClient)
 
     @BeforeEach
     fun configure() {
         Status.setClusterStatus(cluster, ClusterStatus.Running)
-        given(operatorCache.getFlinkCluster(eq(clusterSelector))).thenReturn(cluster)
+        given(supervisorCache.getFlinkCluster(eq(clusterSelector))).thenReturn(cluster)
     }
 
     @Test
@@ -44,7 +44,7 @@ class RequestClusterScaleTest {
         verify(kubeClient, times(1)).rescaleCluster(eq(clusterSelector), Mockito.eq(4))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
+        verifyNoMoreInteractions(supervisorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.ERROR)
         assertThat(result.output).isNull()
@@ -57,7 +57,7 @@ class RequestClusterScaleTest {
         verify(kubeClient, times(1)).rescaleCluster(eq(clusterSelector), Mockito.eq(4))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
+        verifyNoMoreInteractions(supervisorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
@@ -71,7 +71,7 @@ class RequestClusterScaleTest {
         verify(kubeClient, times(1)).rescaleCluster(eq(clusterSelector), Mockito.eq(0))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
-        verifyNoMoreInteractions(operatorCache)
+        verifyNoMoreInteractions(supervisorCache)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(OperationStatus.OK)
         assertThat(result.output).isNull()
