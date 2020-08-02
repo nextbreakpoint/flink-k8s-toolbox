@@ -18,31 +18,31 @@ Flink Kubernetes Toolbox contains tools for managing Flink clusters and jobs on 
 
 Main features:
 
-- Automatic creation of JobManager and TaskManagers using StatefulSets
-- Automatic creation of service for accessing JobManager
+- Automatic creation of Supervisor process 
+- Automatic creation of JobManager and TaskManagers
+- Automatic creation of Kubernetes services
 - Support for batch and stream jobs
-- Support for bare cluster or single job cluster
 - Support for init containers and side containers for JobManager and TaskManagers
-- Support for mounted volumes and persistent volumes claims
-- Support for environment variables, including variables from config map
-- Support for resource requirements
+- Support for mounted volumes (same as volumes in Pod specification)
+- Support for environment variables, including variables from ConfigMap or Secret
+- Support for resource requirements (for all components)
 - Support for user defined annotations
 - Support for user defined container ports
 - Support for pull secrets and private registries
 - Support for public Flink images or custom images
 - Support for single job cluster or cluster without job
 - Support separate image for bootstrap (with single JAR file)
-- Configurable task slots and heap memory
-- Configurable savepoints location
+- Configurable task slots
 - Configurable service accounts
+- Configurable savepoints location
 - Configurable periodic savepoints
-- Automatic detection of failure and configurable job restart
+- Automatic recovery from temporary failure
 - Automatic scaling via standard autoscaling interface
 - Automatic restart of the cluster or job when specification changed
 - Automatic creation of savepoint before stopping cluster or job  
 - Automatic recovery from latest savepoint when restarting job  
 - Resource status and printer columns
-- Readiness and Liveness probes for JobManager
+- Readiness probe for JobManager
 - CLI interface for operations and monitoring   
 - Internal metrics compatible with Prometheus  
 
@@ -81,7 +81,7 @@ The tools are distributed under the terms of BSD 3-Clause License.
 ## Flink Operator and Cluster status
 
 The operator detects new resource of kind FlinkCluster (primary resource) in a namespace, and automatically creates other managed
-resources (secondary resources), like StatefulSet, Service, and BatchJob, based on the specification provided in the custom resource.  
+resources (secondary resources), like Pods, Service, and BatchJob, based on the specification provided in the custom resource.  
 The operator persists some status on the resource, and performs several tasks automatically, such as creating savepoints
 or recreating the cluster when the specification changed.
 
