@@ -50,8 +50,9 @@ class StartAndStopTest : IntegrationSetup() {
 
     @AfterEach
     fun printInfo() {
-        describeResources()
+        printSupervisorLogs()
         printOperatorLogs()
+        describeResources()
     }
 
     @Test
@@ -92,6 +93,7 @@ class StartAndStopTest : IntegrationSetup() {
         val terminateWithoutSavepointOptions = StopOptions(withoutSavepoint = true, deleteResources = true)
         stopCluster(name = "cluster-1", options = terminateOptions, port = port)
         stopCluster(name = "cluster-2", options = terminateWithoutSavepointOptions, port = port)
+
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasClusterStatus(redirect = redirect, namespace = namespace, name = "cluster-1", status = ClusterStatus.Terminated)).isTrue()
         }

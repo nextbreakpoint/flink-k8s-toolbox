@@ -20,8 +20,8 @@ class SupervisorCacheTest {
     }
 
     @Test
-    fun `should throw RuntimeException when looking for non existent cluster id`() {
-        assertThatThrownBy { cache.findClusterSelector(namespace = "flink", name = "test") }.isInstanceOf(RuntimeException::class.java)
+    fun `should return null when looking for non existent cluster id`() {
+        assertThat(cache.findClusterSelector(namespace = "flink", name = "test")).isNull()
     }
 
     @Test

@@ -44,36 +44,31 @@ class Supervisor(
         // required for testing
         fun create(controller: OperationController, tasks: Map<ClusterStatus, Task>, loggerName: String): Supervisor {
             val logger = Logger.getLogger(loggerName)
-
             return Supervisor(controller, logger, tasks)
         }
     }
 
     fun reconcile(clusterSelector: ClusterSelector, resources: SupervisorCachedResources) {
-        try {
-            val cluster = resources.flinkCluster ?: throw RuntimeException("Cluster not present")
+        val cluster = resources.flinkCluster ?: throw RuntimeException("Cluster not present")
 
-            logger.info("Resource version: ${cluster.metadata?.resourceVersion}")
+        logger.info("Resource version: ${cluster.metadata?.resourceVersion}")
 
-            val mediator = TaskController(clusterSelector, cluster, resources, controller)
+        val mediator = TaskController(clusterSelector, cluster, resources, controller)
 
-            val actionTimestamp = mediator.getActionTimestamp()
+        val actionTimestamp = mediator.getActionTimestamp()
 
-            val statusTimestamp = mediator.getStatusTimestamp()
+        val statusTimestamp = mediator.getStatusTimestamp()
 
-            val hasFinalizer = mediator.hasFinalizer()
+        val hasFinalizer = mediator.hasFinalizer()
 
-            val status = mediator.getClusterStatus()
+        val status = mediator.getClusterStatus()
 
-            logger.info("Cluster status: $status")
+        logger.info("Cluster status: $status")
 
-            val context = TaskContext(logger, mediator)
+        val context = TaskContext(logger, mediator)
 
-            tasks[status]?.execute(context)
+        tasks[status]?.execute(context)
 
-            mediator.refreshStatus(logger, statusTimestamp, actionTimestamp, hasFinalizer)
-        } catch (e : Exception) {
-            logger.error("Error occurred while reconciling cluster ${clusterSelector.name}", e)
-        }
+        mediator.refreshStatus(logger, statusTimestamp, actionTimestamp, hasFinalizer)
     }
 }

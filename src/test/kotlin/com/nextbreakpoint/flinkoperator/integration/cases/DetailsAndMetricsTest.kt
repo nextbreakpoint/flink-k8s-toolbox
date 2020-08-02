@@ -59,8 +59,9 @@ class DetailsAndMetricsTest : IntegrationSetup() {
 
     @AfterEach
     fun printInfo() {
-        describeResources()
+        printSupervisorLogs()
         printOperatorLogs()
+        describeResources()
     }
 
     @Test
