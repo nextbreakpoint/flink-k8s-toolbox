@@ -20,7 +20,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: ["nextbreakpoint.com"]
     resources: ["flinkclusters"]
-    verbs: ["get", "list", "watch", "create", "delete", "update"]
+    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
   - apiGroups: ["nextbreakpoint.com"]
     resources: ["flinkclusters/status", "flinkclusters/scale"]
     verbs: ["patch"]
