@@ -75,7 +75,7 @@ class SavepointTest : IntegrationSetup() {
         if (updateCluster(redirect = redirect, namespace = namespace, name = "cluster-2", patch = "[{\"op\":\"replace\",\"path\":\"/spec/operator/savepointMode\",\"value\":\"Automatic\"}]") != 0) {
             fail("Can't update cluster")
         }
-        awaitUntilAsserted(timeout = 120) {
+        awaitUntilAsserted(timeout = 180) {
             val pollResponse = getClusterStatus(name = "cluster-2", port = port)
             println(pollResponse)
             assertThat(pollResponse["status"] as String?).isEqualTo("OK")
