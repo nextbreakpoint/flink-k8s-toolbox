@@ -545,13 +545,11 @@ class OperatorVerticle : AbstractVerticle() {
 
         resources.forEach { pair ->
             try {
-                logger.debug("Reconciling ${pair.first}...")
-
-                val operator = Operator.create(controller, Operator::class.java.name + " | " + pair.first.name)
-
+                val loggerName = Operator::class.java.name + " | " + pair.first.name
+                val operator = Operator.create(controller, loggerName)
                 operator.reconcile(pair.first, pair.second)
             } catch (e: Exception) {
-                logger.warn("Can't reconcile ${pair.first}", e)
+                logger.error("Error occurred while reconciling cluster ${pair.first}", e)
             }
         }
     }

@@ -20,7 +20,7 @@ class SupervisorCache(val namespace: String, val clusterName: String) {
     fun findClusterSelector(namespace: String, name: String) =
             flinkClusters.keys.firstOrNull {
                 it.namespace == namespace && it.name == name
-            } ?: throw RuntimeException("Cluster not found")
+            }
 
     fun getFlinkClusters(): List<V1FlinkCluster> = flinkClusters.values.toList()
 

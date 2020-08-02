@@ -5,8 +5,59 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  name: flink-operator
+  namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkclusters"]
+    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkclusters/status", "flinkclusters/scale"]
+    verbs: ["patch"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink-operator
+  namespace: {{ $root.Values.operatorNamespace | default $root.Release.Namespace | quote }}
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: flink-operator
+  namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: flink-operator
+subjects:
+  - kind: ServiceAccount
+    name: flink-operator
+    namespace: {{ $root.Values.operatorNamespace | default $root.Release.Namespace | quote }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
   name: flink-bootstrap
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -23,7 +74,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: flink-bootstrap
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -33,7 +84,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: flink-bootstrap
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -45,13 +96,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: flink-bootstrap
-    namespace: {{ $root.Release.Namespace | quote }}
+    namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: flink-supervisor
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -65,7 +116,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: ["nextbreakpoint.com"]
     resources: ["flinkclusters"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list", "watch", "patch"]
   - apiGroups: ["nextbreakpoint.com"]
     resources: ["flinkclusters/status", "flinkclusters/scale"]
     verbs: ["patch"]
@@ -74,7 +125,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: flink-supervisor
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -84,7 +135,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: flink-supervisor
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -96,4 +147,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: flink-supervisor
-    namespace: {{ $root.Release.Namespace | quote }}
+    namespace: {{ $root.Values.resourcesNamespace | default $root.Release.Namespace | quote }}

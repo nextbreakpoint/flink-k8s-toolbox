@@ -229,9 +229,17 @@ open class IntegrationSetup {
         fun printOperatorLogs() {
             println("Printing operator logs...")
             if (printOperatorLogs(redirect = redirect, namespace = namespace) != 0) {
-                fail("Can't expose the operator")
+                fail("Can't print operator logs")
             }
             println("Operator logs printed")
+        }
+
+        fun printSupervisorLogs() {
+            println("Printing supervisor logs...")
+            if (printSupervisorLogs(redirect = redirect, namespace = namespace) != 0) {
+                fail("Can't print supervisor logs")
+            }
+            println("Supervisor logs printed")
         }
 
         fun installResources() {
@@ -562,6 +570,15 @@ open class IntegrationSetup {
                 "sh",
                 "-c",
                 "kubectl -n $namespace logs --tail=1000 -l app=flink-operator"
+            )
+            return executeCommand(redirect, command)
+        }
+
+        private fun printSupervisorLogs(redirect: Redirect?, namespace: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace logs --tail=1000 -l role=supervisor"
             )
             return executeCommand(redirect, command)
         }
