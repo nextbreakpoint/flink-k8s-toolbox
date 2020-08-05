@@ -576,8 +576,8 @@ class TaskContext(
             val querySavepointResult = controller.querySavepoint(controller.clusterSelector, savepointRequest)
 
             if (!querySavepointResult.isSuccessful()) {
-                logger.warn("Can't create savepoint")
-                controller.resetSavepointRequest()
+                logger.warn("Can't query savepoint")
+//                controller.resetSavepointRequest()
                 return
             }
 
