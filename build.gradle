@@ -121,7 +121,7 @@ shadowJar {
     archiveBaseName = "flink-k8s-toolbox"
     archiveClassifier = "with-dependencies"
     manifest {
-        attributes 'Main-Class': 'com.nextbreakpoint.flinkoperator.cli.Main', \
+        attributes 'Main-Class': 'com.nextbreakpoint.flinkoperator.client.Main', \
                    'Implementation-Title': project.name, \
                    'Implementation-Version': project.version, \
                    'Built-By': System.getProperty('user.name'), \

@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flinkoperator.integration.cases
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.ClusterStatus
 import com.nextbreakpoint.flinkoperator.integration.IntegrationSetup
 import io.kubernetes.client.JSON
 import org.assertj.core.api.Assertions.assertThat
