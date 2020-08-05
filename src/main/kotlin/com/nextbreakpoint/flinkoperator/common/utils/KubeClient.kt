@@ -1467,7 +1467,6 @@ object KubeClient {
         client.httpClient.setWriteTimeout(timeout, TimeUnit.MILLISECONDS)
         client.httpClient.setReadTimeout(timeout, TimeUnit.MILLISECONDS)
         client.isDebugging = System.getProperty("kubernetes.client.debugging", "false")!!.toBoolean()
-        client.json
         return client
     }
 
