@@ -1246,7 +1246,7 @@ class TaskContextTest {
     }
 
     @Test
-    fun `updateSavepoint should not change status when bootstrap is present and savepoint request is present but savepoint can't be completed`() {
+    fun `updateSavepoint should not change status when bootstrap is present and savepoint request is present but savepoint can't be queried`() {
         given(taskController.isBootstrapPresent()).thenReturn(true)
         given(taskController.getSavepointRequest()).thenReturn(savepointRequest)
         given(taskController.timeSinceLastUpdateInSeconds()).thenReturn(60)
@@ -1256,7 +1256,6 @@ class TaskContextTest {
         verify(taskController, times(1)).isBootstrapPresent()
         verify(taskController, times(1)).getSavepointRequest()
         verify(taskController, times(1)).querySavepoint(eq(clusterSelector), eq(savepointRequest))
-        verify(taskController, times(1)).resetSavepointRequest()
         verifyNoMoreInteractions(taskController)
     }
 
