@@ -4,11 +4,11 @@ import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ClusterStatus
-import com.nextbreakpoint.flinkoperator.common.model.ScaleOptions
-import com.nextbreakpoint.flinkoperator.common.model.StartOptions
-import com.nextbreakpoint.flinkoperator.common.model.StopOptions
-import com.nextbreakpoint.flinkoperator.common.model.TaskManagerId
+import com.nextbreakpoint.flinkoperator.common.ClusterStatus
+import com.nextbreakpoint.flinkoperator.common.ScaleOptions
+import com.nextbreakpoint.flinkoperator.common.StartOptions
+import com.nextbreakpoint.flinkoperator.common.StopOptions
+import com.nextbreakpoint.flinkoperator.common.TaskManagerId
 import com.squareup.okhttp.MediaType
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request

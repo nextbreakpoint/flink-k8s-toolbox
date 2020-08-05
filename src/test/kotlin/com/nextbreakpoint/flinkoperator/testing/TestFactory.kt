@@ -2,10 +2,7 @@ package com.nextbreakpoint.flinkoperator.testing
 
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkCluster
 import com.nextbreakpoint.flinkoperator.common.crd.V1FlinkClusterSpec
-import com.nextbreakpoint.flinkoperator.common.utils.ClusterResource
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResources
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesBuilder
-import com.nextbreakpoint.flinkoperator.controller.resources.ClusterResourcesDefaultFactory
+import com.nextbreakpoint.flinkoperator.server.common.Resource
 import io.kubernetes.client.models.V1JobBuilder
 import io.kubernetes.client.models.V1ObjectMeta
 import io.kubernetes.client.models.V1PodBuilder
@@ -13,7 +10,7 @@ import io.kubernetes.client.models.V1ServiceBuilder
 
 object TestFactory {
     fun aCluster(name: String, namespace: String, taskManagers: Int = 1, taskSlots: Int = 1): V1FlinkCluster {
-        val flinkClusterSpec = ClusterResource.parseV1FlinkClusterSpec(
+        val flinkClusterSpec = Resource.parseV1FlinkClusterSpec(
             """
             {
               "taskManagers": $taskManagers,
@@ -292,14 +289,4 @@ object TestFactory {
         .withUid(cluster.metadata.uid)
         .endMetadata()
         .build()
-
-    fun createClusterResources(uid: String, cluster: V1FlinkCluster): ClusterResources {
-        return ClusterResourcesBuilder(
-            ClusterResourcesDefaultFactory,
-            cluster.metadata.namespace,
-            uid,
-            "flink-operator",
-            cluster
-        ).build()
-    }
 }

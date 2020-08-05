@@ -200,20 +200,6 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
-  SUSPENDED -> TERMINATED [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Cluster modified</TD>
-          </TR>
-      </TABLE>
-  > ];
-  TERMINATED -> STARTING [ label = <
-      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
-          <TR>
-              <TD>Start signal received</TD>
-          </TR>
-      </TABLE>
-  > ];
   FAILED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
