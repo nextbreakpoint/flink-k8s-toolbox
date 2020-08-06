@@ -1,9 +1,9 @@
-FROM gradle:5.5.1-jdk8 AS build
+FROM gradle:6.6.1-jdk11 AS build
 ADD . /src
 WORKDIR /src
 RUN gradle --no-daemon clean test shadowJar
 
-FROM adoptopenjdk/openjdk8
+FROM adoptopenjdk/openjdk11
 COPY --from=build /src/build/libs/flink-k8s-toolbox-*-with-dependencies.jar /usr/local/bin/flink-k8s-toolbox.jar
 RUN apt-get update -y && apt-get install -y curl
 WORKDIR /

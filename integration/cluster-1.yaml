@@ -1,56 +1,76 @@
-apiVersion: "nextbreakpoint.com/v1"
+apiVersion: "nextbreakpoint.com/v2"
 kind: FlinkCluster
 metadata:
   name: cluster-1
 spec:
-  taskManagers: 1
+  supervisor:
+    pullPolicy: Never
+    image: integration/flink-jobs:1
+    serviceAccount: flink-supervisor
+    taskTimeout: 180
+    resources:
+      limits:
+        cpu: '1'
+        memory: 200Mi
+      requests:
+        cpu: '0.1'
+        memory: 200Mi
+  jobs:
+    - name: job-0
+      spec:
+        jobParallelism: 1
+        savepoint:
+          savepointMode: Manual
+          savepointInterval: 20
+          savepointTargetPath: s3a://flink/1/savepoints
+          restartPolicy: Never
+        bootstrap:
+          serviceAccount: flink-bootstrap
+          pullPolicy: Never
+          image: integration/flink-jobs:1
+          jarPath: /flink-jobs.jar
+          className: com.nextbreakpoint.flink.jobs.stream.TestJob
+          arguments:
+            - --CONSOLE_OUTPUT
+            - "true"
+          resources:
+            limits:
+              cpu: '1'
+              memory: 200Mi
+            requests:
+              cpu: '0.1'
+              memory: 200Mi
   runtime:
     pullPolicy: Never
     image: integration/flink:1.9.2
-  bootstrap:
-    serviceAccount: flink-bootstrap
-    pullPolicy: Never
-    image: integration/flink-jobs:1
-    jarPath: /flink-jobs.jar
-    className: com.nextbreakpoint.flink.jobs.stream.TestJob
-    arguments:
-      - --CONSOLE_OUTPUT
-      - "true"
-    resources:
-      limits:
-        cpu: '0.05'
-        memory: 200Mi
-      requests:
-        cpu: '0.05'
-        memory: 200Mi
   jobManager:
     serviceMode: NodePort
     annotations:
       managed: true
     environment:
-    - name: FLINK_JM_HEAP
-      value: "256"
-    - name: FLINK_ENVIRONMENT
-      value: test
-    - name: FLINK_GRAPHITE_HOST
-      value: graphite.default.svc.cluster.local
-    - name: FLINK_SAVEPOINTS_LOCATION
-      value: s3a://flink/1/savepoints
-    - name: FLINK_CHECKPOINTS_LOCATION
-      value: file:///var/checkpoints
-    - name: FLINK_FS_CHECKPOINTS_LOCATION
-      value: file:///var/fs_checkpoints
-    - name: FLINK_S3_ENDPOINT
-      value: http://minio-headless:9000
-    - name: FLINK_S3_ACCESS_KEY
-      value: minioaccesskey
-    - name: FLINK_S3_SECRET_KEY
-      value: miniosecretkey
-    - name: FLINK_S3_PATH_STYLE_ACCESS
-      value: "true"
+      - name: FLINK_JM_HEAP
+        value: "256"
+      - name: FLINK_ENVIRONMENT
+        value: test
+      - name: FLINK_GRAPHITE_HOST
+        value: graphite.default.svc.cluster.local
+      - name: FLINK_SAVEPOINTS_LOCATION
+        value: s3a://flink/1/savepoints
+      - name: FLINK_CHECKPOINTS_LOCATION
+        value: file:///var/checkpoints
+      - name: FLINK_FS_CHECKPOINTS_LOCATION
+        value: file:///var/fs_checkpoints
+      - name: FLINK_S3_ENDPOINT
+        value: http://minio-headless:9000
+      - name: FLINK_S3_ACCESS_KEY
+        value: minioaccesskey
+      - name: FLINK_S3_SECRET_KEY
+        value: miniosecretkey
+      - name: FLINK_S3_PATH_STYLE_ACCESS
+        value: "true"
     environmentFrom:
-    - secretRef:
-        name: flink-secrets
+      - secretRef:
+          name: flink-secrets
     volumeMounts:
       - name: config-vol
         mountPath: /hadoop/etc/core-site.xml
@@ -79,10 +99,10 @@ spec:
         name: initializer
         resources:
           limits:
-            cpu: '0.01'
+            cpu: '0.5'
             memory: 128Mi
           requests:
-            cpu: '0.01'
+            cpu: '0.1'
             memory: 64Mi
     sideContainers:
       - image: busybox
@@ -93,10 +113,10 @@ spec:
         name: sidecar
         resources:
           limits:
-            cpu: '0.01'
+            cpu: '0.5'
             memory: 128Mi
           requests:
-            cpu: '0.01'
+            cpu: '0.1'
             memory: 64Mi
     extraPorts:
       - name: prometheus
@@ -104,7 +124,7 @@ spec:
         protocol: TCP
     resources:
       limits:
-        cpu: '0.1'
+        cpu: '0.5'
         memory: 300Mi
       requests:
         cpu: '0.1'
@@ -114,26 +134,26 @@ spec:
     annotations:
       managed: true
     environment:
-    - name: FLINK_TM_HEAP
-      value: "400"
-    - name: FLINK_ENVIRONMENT
-      value: test
-    - name: FLINK_GRAPHITE_HOST
-      value: graphite.default.svc.cluster.local
-    - name: FLINK_SAVEPOINTS_LOCATION
-      value: s3a://flink/1/savepoints
-    - name: FLINK_CHECKPOINTS_LOCATION
-      value: file:///var/checkpoints
-    - name: FLINK_FS_CHECKPOINTS_LOCATION
-      value: file:///var/fs_checkpoints
-    - name: FLINK_S3_ENDPOINT
-      value: http://minio-headless:9000
-    - name: FLINK_S3_ACCESS_KEY
-      value: minioaccesskey
-    - name: FLINK_S3_SECRET_KEY
-      value: miniosecretkey
-    - name: FLINK_S3_PATH_STYLE_ACCESS
-      value: "true"
+      - name: FLINK_TM_HEAP
+        value: "400"
+      - name: FLINK_ENVIRONMENT
+        value: test
+      - name: FLINK_GRAPHITE_HOST
+        value: graphite.default.svc.cluster.local
+      - name: FLINK_SAVEPOINTS_LOCATION
+        value: s3a://flink/1/savepoints
+      - name: FLINK_CHECKPOINTS_LOCATION
+        value: file:///var/checkpoints
+      - name: FLINK_FS_CHECKPOINTS_LOCATION
+        value: file:///var/fs_checkpoints
+      - name: FLINK_S3_ENDPOINT
+        value: http://minio-headless:9000
+      - name: FLINK_S3_ACCESS_KEY
+        value: minioaccesskey
+      - name: FLINK_S3_SECRET_KEY
+        value: miniosecretkey
+      - name: FLINK_S3_PATH_STYLE_ACCESS
+        value: "true"
     volumeMounts:
       - name: config-vol
         mountPath: /hadoop/etc/core-site.xml
@@ -162,10 +182,10 @@ spec:
         name: initializer
         resources:
           limits:
-            cpu: '0.01'
+            cpu: '0.5'
             memory: 128Mi
           requests:
-            cpu: '0.01'
+            cpu: '0.1'
             memory: 64Mi
     sideContainers:
       - image: busybox
@@ -176,10 +196,10 @@ spec:
         name: sidecar
         resources:
           limits:
-            cpu: '0.01'
+            cpu: '0.5'
             memory: 128Mi
           requests:
-            cpu: '0.01'
+            cpu: '0.1'
             memory: 64Mi
     extraPorts:
       - name: prometheus
@@ -187,23 +207,8 @@ spec:
         protocol: TCP
     resources:
       limits:
-        cpu: '0.1'
+        cpu: '1'
         memory: 500Mi
       requests:
         cpu: '0.1'
         memory: 500Mi
-  operator:
-    savepointMode: Manual
-    savepointInterval: 20
-    savepointTargetPath: s3a://flink/1/savepoints
-    restartPolicy: Always
-    image: integration/flink-k8s-toolbox:1.3.5-beta
-    pullPolicy: Never
-    serviceAccount: flink-supervisor
-    resources:
-      limits:
-        cpu: '0.05'
-        memory: 200Mi
-      requests:
-        cpu: '0.05'
-        memory: 200Mi
