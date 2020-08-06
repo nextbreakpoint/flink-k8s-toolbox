@@ -15,6 +15,9 @@ rules:
   - apiGroups: [""]
     resources: ["pods", "services"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["get", "list", "watch", "create", "delete"]
@@ -24,12 +27,28 @@ rules:
   - apiGroups: ["nextbreakpoint.com"]
     resources: ["flinkclusters/status", "flinkclusters/scale"]
     verbs: ["patch"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkjobs"]
+    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkjobs/status", "flinkjobs/scale"]
+    verbs: ["patch"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink-operator
+  namespace: {{ $root.Release.Namespace | quote }}
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: flink-operator
-  namespace: {{ $root.Release.Namespace | quote }}
+  namespace: {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
   labels:
     chart: {{ $chart }}
     release: {{ $root.Release.Name }}
@@ -59,6 +78,12 @@ rules:
   - apiGroups: ["nextbreakpoint.com"]
     resources: ["flinkclusters"]
     verbs: ["get", "list"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkjobs"]
+    verbs: ["get"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkjobs/status"]
+    verbs: ["patch"]
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -106,9 +131,15 @@ rules:
     verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: ["nextbreakpoint.com"]
     resources: ["flinkclusters"]
-    verbs: ["get", "list", "watch", "patch"]
+    verbs: ["get", "list", "watch", "patch", "create", "delete", "update", "patch"]
   - apiGroups: ["nextbreakpoint.com"]
     resources: ["flinkclusters/status", "flinkclusters/scale"]
+    verbs: ["patch"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkjobs"]
+    verbs: ["get", "list", "watch", "patch", "create", "delete", "update", "patch"]
+  - apiGroups: ["nextbreakpoint.com"]
+    resources: ["flinkjobs/status", "flinkjobs/scale"]
     verbs: ["patch"]
 ---
 apiVersion: v1

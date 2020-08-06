@@ -59,7 +59,7 @@ spec:
             - run
             - --namespace
             - {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
-            {{- if $root.Values.secretName}}
+            {{- if $root.Values.secretName }}
             - --keystore-path
             - /etc/keystore.jks
             - --keystore-secret
@@ -69,11 +69,14 @@ spec:
             - --truststore-secret
             - $(TRUSTSTORE_SECRET)
             {{- end}}
+            - --polling-interval
+            - {{ $root.Values.pollingInterval | default 10 | quote }}
+            - --task-timeout
+            - {{ $root.Values.taskTimeout | default 120 | quote }}
+            {{- if $root.Values.dryRun }}
+            - --dry-run
+            {{- end}}
           env:
-            - name: TASK_TIMEOUT
-              value: "{{ $root.Values.taskTimeout }}"
-            - name: POLLING_INTERVAL
-              value: "{{ $root.Values.pollingInterval }}"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
