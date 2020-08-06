@@ -1,0 +1,357 @@
+{{- $name := include "flink-k8s-toolbox.name" . -}}
+{{- $chart := include "flink-k8s-toolbox.chart" . -}}
+{{- $root := . }}
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: flinkjobs.nextbreakpoint.com
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+spec:
+  group: nextbreakpoint.com
+  scope: Namespaced
+  names:
+    plural: flinkjobs
+    singular: flinkjob
+    kind: FlinkJob
+    shortNames:
+    - fj
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: A Flink job specification.
+              type: object
+              nullable: false
+              properties:
+                jobParallelism:
+                  type: integer
+                  nullable: true
+                bootstrap:
+                  description: A Flink bootstrap specification.
+                  type: object
+                  nullable: true
+                  properties:
+                    pullSecrets:
+                      description: Pull scretes to use for pulling from private registry.
+                      type: string
+                      nullable: true
+                    pullPolicy:
+                      description: Policy to use for pulling images. Default value is IfNotPresent.
+                      type: string
+                      nullable: true
+                      enum:
+                        - Never
+                        - Always
+                        - IfNotPresent
+                    image:
+                      description: Image to use for bootstrap job.
+                      type: string
+                      nullable: false
+                    className:
+                      description: Main class to execute.
+                      type: string
+                      nullable: false
+                    jarPath:
+                      description: Path of jar file.
+                      type: string
+                      nullable: false
+                    arguments:
+                      description: Arguments for job.
+                      type: array
+                      nullable: true
+                      items:
+                        type: string
+                    serviceAccount:
+                      description: Service account to use for running the bootstrap job.
+                      type: string
+                      nullable: true
+                    resources:
+                      description: "ResourceRequirements describes the compute resource requirements."
+                      properties:
+                        limits:
+                          additionalProperties:
+                            description: "Quantity is a fixed-point representation of a number. It provides\
+                              \ convenient marshaling/unmarshaling in JSON and YAML, in addition to String()\
+                              \ and AsInt64() accessors.\n\nThe serialization format is:\n\n<quantity> \
+                              \       ::= <signedNumber><suffix>\n  (Note that <suffix> may be empty, from\
+                              \ the \"\" case in <decimalSI>.)\n<digit>           ::= 0 | 1 | ... | 9 <digits>\
+                              \          ::= <digit> | <digit><digits> <number>          ::= <digits> |\
+                              \ <digits>.<digits> | <digits>. | .<digits> <sign>            ::= \"+\" |\
+                              \ \"-\" <signedNumber>    ::= <number> | <sign><number> <suffix>         \
+                              \ ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>        ::= Ki\
+                              \ | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\
+                              <decimalSI>       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024\
+                              \ = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n<decimalExponent>\
+                              \ ::= \"e\" <signedNumber> | \"E\" <signedNumber>\n\nNo matter which of the\
+                              \ three exponent forms is used, no quantity may represent a number greater\
+                              \ than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers\
+                              \ larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded\
+                              \ up to 1m.) This may be extended in the future if we require larger or smaller\
+                              \ quantities.\n\nWhen a Quantity is parsed from a string, it will remember\
+                              \ the type of suffix it had, and will use the same type again when it is serialized.\n\
+                              \nBefore serializing, Quantity will be put in \"canonical form\". This means\
+                              \ that Exponent/suffix will be adjusted up or down (with a corresponding increase\
+                              \ or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No\
+                              \ fractional digits will be emitted\n  c. The exponent (or suffix) is as large\
+                              \ as possible.\nThe sign will be omitted unless the number is negative.\n\n\
+                              Examples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized\
+                              \ as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented\
+                              \ by a floating point number. That is the whole point of this exercise.\n\n\
+                              Non-canonical values will still parse as long as they are well formed, but\
+                              \ will be re-emitted in their canonical form. (So always use canonical form,\
+                              \ or don't diff.)\n\nThis format is intended to make it difficult to use these\
+                              \ numbers without writing some sort of special handling code in the hopes\
+                              \ that that will cause implementors to also use a fixed point implementation."
+                            type: "string"
+                            properties: {}
+                          description: "Limits describes the maximum amount of compute resources allowed.\
+                            \ More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"
+                          type: "object"
+                          properties: {}
+                        requests:
+                          additionalProperties:
+                            description: "Quantity is a fixed-point representation of a number. It provides\
+                              \ convenient marshaling/unmarshaling in JSON and YAML, in addition to String()\
+                              \ and AsInt64() accessors.\n\nThe serialization format is:\n\n<quantity> \
+                              \       ::= <signedNumber><suffix>\n  (Note that <suffix> may be empty, from\
+                              \ the \"\" case in <decimalSI>.)\n<digit>           ::= 0 | 1 | ... | 9 <digits>\
+                              \          ::= <digit> | <digit><digits> <number>          ::= <digits> |\
+                              \ <digits>.<digits> | <digits>. | .<digits> <sign>            ::= \"+\" |\
+                              \ \"-\" <signedNumber>    ::= <number> | <sign><number> <suffix>         \
+                              \ ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>        ::= Ki\
+                              \ | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\
+                              <decimalSI>       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024\
+                              \ = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n<decimalExponent>\
+                              \ ::= \"e\" <signedNumber> | \"E\" <signedNumber>\n\nNo matter which of the\
+                              \ three exponent forms is used, no quantity may represent a number greater\
+                              \ than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers\
+                              \ larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded\
+                              \ up to 1m.) This may be extended in the future if we require larger or smaller\
+                              \ quantities.\n\nWhen a Quantity is parsed from a string, it will remember\
+                              \ the type of suffix it had, and will use the same type again when it is serialized.\n\
+                              \nBefore serializing, Quantity will be put in \"canonical form\". This means\
+                              \ that Exponent/suffix will be adjusted up or down (with a corresponding increase\
+                              \ or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No\
+                              \ fractional digits will be emitted\n  c. The exponent (or suffix) is as large\
+                              \ as possible.\nThe sign will be omitted unless the number is negative.\n\n\
+                              Examples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized\
+                              \ as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented\
+                              \ by a floating point number. That is the whole point of this exercise.\n\n\
+                              Non-canonical values will still parse as long as they are well formed, but\
+                              \ will be re-emitted in their canonical form. (So always use canonical form,\
+                              \ or don't diff.)\n\nThis format is intended to make it difficult to use these\
+                              \ numbers without writing some sort of special handling code in the hopes\
+                              \ that that will cause implementors to also use a fixed point implementation."
+                            type: "string"
+                            properties: {}
+                          description: "Requests describes the minimum amount of compute resources required.\
+                            \ If Requests is omitted for a container, it defaults to Limits if that is explicitly\
+                            \ specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"
+                          type: "object"
+                          properties: {}
+                      type: "object"
+                  required:
+                    - image
+                    - className
+                    - jarPath
+                savepoint:
+                  description: A Flink savepoint specification.
+                  type: object
+                  nullable: false
+                  properties:
+                    savepointMode:
+                      description: Control periodic savepoints. Default value is NANUAL.
+                      type: string
+                      nullable: false
+                      enum:
+                        - Manual
+                        - Automatic
+                    savepointPath:
+                      description: Path of latest savepoint.
+                      type: string
+                      nullable: true
+                    savepointInterval:
+                      description: Interval between savepoints.
+                      type: integer
+                      nullable: false
+                    savepointTargetPath:
+                      description: Location where to create savepoints.
+                      type: string
+                      nullable: false
+                    restartPolicy:
+                      description: Control restart in case of cluster or job failure. Default value is NEVER.
+                      type: string
+                      nullable: false
+                      enum:
+                        - Never
+                        - Always
+                  required:
+                    - savepointMode
+                    - savepointTargetPath
+                    - restartPolicy
+              required:
+                - bootstrap
+                - savepoint
+            status:
+              type: object
+              properties:
+                resourceStatus:
+                  type: string
+                  nullable: false
+                  enum:
+                    - Unknown
+                    - Updating
+                    - Updated
+                supervisorStatus:
+                  type: string
+                  nullable: false
+                  enum:
+                    - Unknown
+                    - Starting
+                    - Started
+                    - Stopping
+                    - Stopped
+                    - Failed
+                    - Terminated
+                clusterName:
+                  type: string
+                clusterUid:
+                  type: string
+                clusterHealth:
+                  type: string
+                labelSelector:
+                  type: string
+                jobParallelism:
+                  type: integer
+                timestamp:
+                  type: string
+                  nullable: false
+                jobId:
+                  type: string
+                jobStatus:
+                  type: string
+                savepointPath:
+                  type: string
+                savepointJobId:
+                  type: string
+                savepointTriggerId:
+                  type: string
+                savepointTimestamp:
+                  type: string
+                savepointRequestTimestamp:
+                  type: string
+                savepointMode:
+                  type: string
+                  nullable: false
+                restartPolicy:
+                  type: string
+                  nullable: false
+                digest:
+                  type: object
+                  properties:
+                    bootstrap:
+                      type: string
+                bootstrap:
+                  type: object
+                  nullable: true
+                  properties:
+                    pullSecrets:
+                      type: string
+                      nullable: false
+                    pullPolicy:
+                      type: string
+                      nullable: false
+                      enum:
+                        - Never
+                        - Always
+                        - IfNotPresent
+                    image:
+                      type: string
+                      nullable: false
+                    className:
+                      type: string
+                      nullable: false
+                    jarPath:
+                      type: string
+                      nullable: false
+                    arguments:
+                      type: array
+                      nullable: true
+                      items:
+                        type: string
+                    serviceAccount:
+                      type: string
+                      nullable: true
+                  required:
+                    - image
+                    - className
+                    - jarPath
+              required:
+                - timestamp
+                - resourceStatus
+                - supervisorStatus
+          required:
+            - spec
+      subresources:
+        status: {}
+        scale:
+          specReplicasPath: .spec.jobParallelism
+          statusReplicasPath: .status.jobParallelism
+          labelSelectorPath: .status.labelSelector
+      additionalPrinterColumns:
+      - name: RESOURCE-STATUS
+        type: string
+        jsonPath: .status.resourceStatus
+      - name: SUPERVISOR-STATUS
+        type: string
+        jsonPath: .status.supervisorStatus
+      - name: CLUSTER-NAME
+        type: string
+        jsonPath: .status.clusterName
+      - name: CLUSTER-HEALTH
+        type: string
+        jsonPath: .status.clusterHealth
+      - name: JOB-STATUS
+        type: string
+        jsonPath: .status.jobStatus
+      - name: JOB-ID
+        type: string
+        jsonPath: .status.jobId
+      - name: JOB-PARALLELISM
+        type: integer
+        jsonPath: .status.jobParallelism
+      - name: JOB-RESTART
+        type: string
+        jsonPath: .status.restartPolicy
+      - name: SAVEPOINT-MODE
+        type: string
+        jsonPath: .status.savepointMode
+      - name: SAVEPOINT-PATH
+        type: string
+        jsonPath: .status.savepointPath
+      - name: SAVEPOINT-AGE
+        type: date
+        jsonPath: .status.savepointTimestamp
+      - name: AGE
+        type: date
+        jsonPath: .metadata.creationTimestamp
+status:
+  acceptedNames:
+    kind: ''
+    plural: ''
+  conditions: []
+  storedVersions: []

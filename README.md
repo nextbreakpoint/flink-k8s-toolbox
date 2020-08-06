@@ -18,7 +18,7 @@ Flink Kubernetes Toolbox contains tools for managing Flink clusters and jobs on 
 
 Main features:
 
-- Automatic creation of Supervisor process 
+- Automatic creation of Supervisor process
 - Automatic creation of JobManager and TaskManagers
 - Automatic creation of Kubernetes services
 - Support for batch and stream jobs
@@ -115,7 +115,7 @@ The possible states of a FlinkCluster resource are represented in this graph:
 
 - **CANCELLING**
 
-  This status means that the cluster is cancelling the job. The operator will attempt to cancel the job creating a savepoint if required. 
+  This status means that the cluster is cancelling the job. The operator will attempt to cancel the job creating a savepoint if required.
 
 - **RESTARTING**
 
@@ -124,10 +124,10 @@ The possible states of a FlinkCluster resource are represented in this graph:
 - **SCALING**
 
   This status means that the cluster is scaling the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator will attempt to cancel the job creating a savepoint if required.
-  
+
 - **UPDATING**
 
-  This status means that the cluster is updating the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator might need to destroy and recreate some resources. 
+  This status means that the cluster is updating the secondary resources. A change has been detected in the primary resource specification and the operator is modifying the secondary resources to reflect that change. The operator might need to destroy and recreate some resources.
 
 - **FAILED**
 
@@ -274,24 +274,24 @@ If that is the case, then you have to fix the resource specification, perhaps yo
 
 The operator's Docker image can be downloaded from Docker Hub:
 
-    docker pull nextbreakpoint/flink-k8s-toolbox:1.3.5-beta
+    docker pull nextbreakpoint/flink-k8s-toolbox:1.4.0-beta
 
 Tag and push the image into your private registry if needed:
 
-    docker tag nextbreakpoint/flink-k8s-toolbox:1.3.5-beta some-registry/flink-k8s-toolbox:1.3.5-beta
+    docker tag nextbreakpoint/flink-k8s-toolbox:1.4.0-beta some-registry/flink-k8s-toolbox:1.4.0-beta
     docker login some-registry
-    docker push some-registry/flink-k8s-toolbox:1.3.5-beta
+    docker push some-registry/flink-k8s-toolbox:1.4.0-beta
 
 ## Run Flink Operator manually
 
 Run the operator using the image on Docker Hub:
 
-    kubectl run flink-operator --restart=Never -n flink-operator --image=nextbreakpoint/flink-k8s-toolbox:1.3.5-beta \
+    kubectl run flink-operator --restart=Never -n flink-operator --image=nextbreakpoint/flink-k8s-toolbox:1.4.0-beta \
         --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink-jobs
 
 Or run the operator using your private registry and pull secrets:
 
-    kubectl run flink-operator --restart=Never -n flink-operator --image=some-registry/flink-k8s-toolbox:1.3.5-beta \
+    kubectl run flink-operator --restart=Never -n flink-operator --image=some-registry/flink-k8s-toolbox:1.4.0-beta \
         --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always", "imagePullSecrets": [{"name": "your-pull-secrets"}] } }' -- operator run --namespace=flink-jobs
 
 Please note that you **MUST** run only one operator for each namespace to avoid conflicts.
@@ -399,7 +399,7 @@ Make sure the CRD has been installed (see above).
 
 Create a Docker file:
 
-    FROM nextbreakpoint/flink-k8s-toolbox:1.3.5-beta
+    FROM nextbreakpoint/flink-k8s-toolbox:1.4.0-beta
     COPY flink-jobs.jar /flink-jobs.jar
 
 where flink-jobs.jar contains the code of your Flink jobs.
@@ -456,23 +456,10 @@ Create a Flink Cluster file:
         environmentFrom:
         - secretRef:
             name: flink-secrets
-        volumeMounts:
-          - name: jobmanager
-            mountPath: /var/tmp
         extraPorts:
           - name: prometheus
             containerPort: 9999
             protocol: TCP
-        persistentVolumeClaimsTemplates:
-          - metadata:
-              name: jobmanager
-            spec:
-              storageClassName: hostpath
-              accessModes:
-               - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 1Gi
       taskManager:
         taskSlots: 1
         annotations:
@@ -482,23 +469,10 @@ Create a Flink Cluster file:
           value: "1024"
         - name: FLINK_GRAPHITE_HOST
           value: graphite.default.svc.cluster.local
-        volumeMounts:
-          - name: taskmanager
-            mountPath: /var/tmp
         extraPorts:
           - name: prometheus
             containerPort: 9999
             protocol: TCP
-        persistentVolumeClaimsTemplates:
-          - metadata:
-              name: taskmanager
-            spec:
-              storageClassName: hostpath
-              accessModes:
-               - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 5Gi
       operator:
         savepointMode: Automatic
         savepointInterval: 60
@@ -537,7 +511,7 @@ Build the uber JAR file with command:
 
 and test the JAR invoking the CLI:
 
-    java -jar build/libs/flink-k8s-toolbox-1.3.5-beta-with-dependencies.jar --help
+    java -jar build/libs/flink-k8s-toolbox-1.4.0-beta-with-dependencies.jar --help
 
 Please note that Java 8 is required to build the JAR. Define JAVA_HOME variable to specify the correct JDK:  
 
@@ -546,17 +520,17 @@ Please note that Java 8 is required to build the JAR. Define JAVA_HOME variable 
 
 Build a Docker image with command:
 
-    docker build -t flink-k8s-toolbox:1.3.5-beta .
+    docker build -t flink-k8s-toolbox:1.4.0-beta .
 
 and test the image printing the CLI usage:
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta --help
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta --help
 
 Tag and push the image to your Docker registry if needed:
 
-    docker tag flink-k8s-toolbox:1.3.5-beta some-registry/flink-k8s-toolbox:1.3.5-beta
+    docker tag flink-k8s-toolbox:1.4.0-beta some-registry/flink-k8s-toolbox:1.4.0-beta
     docker login some-registry
-    docker push some-registry/flink-k8s-toolbox:1.3.5-beta
+    docker push some-registry/flink-k8s-toolbox:1.4.0-beta
 
 ## Run automated tests of Flink Operator
 
@@ -596,7 +570,7 @@ the Job Manager and the Task Managers.
 
 Print the CLI usage:
 
-    docker run --rm -it nextbreakpoint/flink-k8s-toolbox:1.3.5-beta --help
+    docker run --rm -it nextbreakpoint/flink-k8s-toolbox:1.4.0-beta --help
 
 The output should look like:
 
@@ -620,7 +594,7 @@ The output should look like:
 
 Create a Docker file like:
 
-    FROM nextbreakpoint/flink-k8s-toolbox:1.3.5-beta
+    FROM nextbreakpoint/flink-k8s-toolbox:1.4.0-beta
     COPY flink-jobs.jar /flink-jobs.jar
 
 where flink-jobs.jar contains the code of your Flink job.
@@ -673,34 +647,12 @@ Create a JSON file:
             }
           }
         ],
-        "volumeMounts": [
-          {
-            "name": "jobmanager",
-            "mountPath": "/var/tmp"
-          }
-        ],
         "volumes": [
           {
             "name": "config-vol",
             "configMap": {
               "name": "flink-config",
               "defaultMode": "511"
-            }
-          }
-        ],
-        "persistentVolumeClaimsTemplates": [
-          {
-            "metadata": {
-              "name": "jobmanager"
-            },
-            "spec": {
-              "storageClassName": "hostpath",
-              "accessModes": [ "ReadWriteOnce" ],
-              "resources": {
-                "requests": {
-                  "storage": "1Gi"
-                }
-              }
             }
           }
         ]
@@ -714,12 +666,6 @@ Create a JSON file:
           {
             "name": "FLINK_GRAPHITE_HOST",
             "value": "graphite.default.svc.cluster.local"
-          }
-        ],
-        "volumeMounts": [
-          {
-            "name": "taskmanager",
-            "mountPath": "/var/tmp"
           }
         ],
         "volumes": [
@@ -749,11 +695,11 @@ Create a JSON file:
 
 Execute the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster create --cluster-name=test --cluster-spec=test.json --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster create --cluster-name=test --cluster-spec=test.json --host=$OPERATOR_HOST --port=4444
 
 Pass keystore and truststore if SSL is enabled:
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster create --cluster-name=test --cluster-spec=test.json --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster create --cluster-name=test --cluster-spec=test.json --host=$OPERATOR_HOST --port=4444
     --keystore-path=secrets/keystore-operator-cli.jks --truststore-path=secrets/truststore-operator-cli.jks --keystore-secret=keystore-password --truststore-secret=truststore-password
 
 If you expose the operator on a port of Docker's host:
@@ -764,77 +710,77 @@ If you expose the operator on a port of Docker's host:
 
 Show more options with the command:
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster create --help
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster create --help
 
 Get the list of clusters
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta clusters list --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta clusters list --host=$OPERATOR_HOST --port=4444
 
 Get the status of a cluster
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Use jq to format the output:
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444 | jq -r
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444 | jq -r
 
 Delete a cluster
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster delete --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster delete --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Stop a running cluster
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster stop --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster stop --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Restart a stopped or failed cluster
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster start --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster start --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Start a cluster and run the job without savepoint
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster start --cluster-name=test --without-savepoint --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster start --cluster-name=test --without-savepoint --host=$OPERATOR_HOST --port=4444
 
 Stop a cluster without creating a savepoint
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster stop --cluster-name=test --without-savepoint --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster stop --cluster-name=test --without-savepoint --host=$OPERATOR_HOST --port=4444
 
 Create a new savepoint
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta savepoint trigger --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta savepoint trigger --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Get the status of a cluster
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster status --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Rescale a cluster (with savepoint)
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta cluster scale --cluster-name=test --task-managers=4 --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta cluster scale --cluster-name=test --task-managers=4 --host=$OPERATOR_HOST --port=4444
 
 Get the details of the running job
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta job details --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta job details --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Get the metrics of the running job
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta job metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta job metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Get a list of Task Managers
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta taskmanagers list --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta taskmanagers list --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Get the metrics of the Job Manager
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta jobmanager metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta jobmanager metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 Get the metrics of a Task Manager
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta taskmanager metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta taskmanager metrics --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 You will be asked to provide a Task Manager id which you can get from the list of Task Managers.   
 
 Get the details of a Task Manager
 
-    docker run --rm -it flink-k8s-toolbox:1.3.5-beta taskmanager details --cluster-name=test --host=$OPERATOR_HOST --port=4444
+    docker run --rm -it flink-k8s-toolbox:1.4.0-beta taskmanager details --cluster-name=test --host=$OPERATOR_HOST --port=4444
 
 You will be asked to provide a Task Manager id which you can get from the list of Task Managers.   
 
@@ -844,11 +790,11 @@ Flink jobs must be packaged in a regular JAR file and uploaded to the JobManager
 
 Upload a JAR file using the command:
 
-    java -jar flink-k8s-toolbox-1.3.5-beta.jar bootstrap run --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar flink-k8s-toolbox-1.4.0-beta.jar bootstrap run --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 When running outside Kubernetes use the command:
 
-    java -jar flink-k8s-toolbox-1.3.5-beta.jar bootstrap run --kube-config=/your-kube-config --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
+    java -jar flink-k8s-toolbox-1.4.0-beta.jar bootstrap run --kube-config=/your-kube-config --cluster-name=test --class-name=your-main-class --jar-path=/your-job-jar.jar
 
 ## How to run the Operator for testing
 
@@ -856,11 +802,11 @@ The Flink Operator can be executed as Docker image or JAR file, pointing to a lo
 
 Run the operator with a given namespace and Kubernetes config using the JAR file:
 
-    java -jar flink-k8s-toolbox:1.3.5-beta.jar operator run --namespace=test --kube-config=~/.kube/config
+    java -jar flink-k8s-toolbox:1.4.0-beta.jar operator run --namespace=test --kube-config=~/.kube/config
 
 Run the operator with a given namespace and Kubernetes config using the Docker image:
 
-    docker run --rm -it -v ~/.kube/config:/kube/config flink-k8s-toolbox:1.3.5-beta operator run --namespace=test --kube-config=/kube/config
+    docker run --rm -it -v ~/.kube/config:/kube/config flink-k8s-toolbox:1.4.0-beta operator run --namespace=test --kube-config=/kube/config
 
 ## Configure task timeout
 

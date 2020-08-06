@@ -1,27 +1,57 @@
 {
-  "taskManagers": 1,
-  "runtime": {
-    "pullPolicy": "Never",
-    "image": "integration/flink:1.9.2"
-  },
-  "bootstrap": {
-    "serviceAccount": "flink-bootstrap",
-    "pullPolicy": "Never",
+  "supervisor": {
     "image": "integration/flink-jobs:1",
-    "jarPath": "/flink-jobs.jar",
-    "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
-    "arguments": [
-    ],
+    "serviceAccount": "flink-supervisor",
+    "taskTimeout": 120,
     "resources": {
       "limits": {
-        "cpu": "0.05",
+        "cpu": "1",
         "memory": "200Mi"
       },
       "requests": {
-        "cpu": "0.05",
+        "cpu": "0.1",
         "memory": "200Mi"
       }
     }
+  },
+  "jobs": [
+    {
+      "name": "job-0",
+      "spec": {
+        "jobParallelism": 1,
+        "bootstrap": {
+          "serviceAccount": "flink-bootstrap",
+          "pullPolicy": "Never",
+          "image": "integration/flink-jobs:1",
+          "jarPath": "/flink-jobs.jar",
+          "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
+          "arguments": [
+            "--CONSOLE_OUTPUT",
+            "true"
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "0.2",
+              "memory": "200Mi"
+            },
+            "requests": {
+              "cpu": "0.1",
+              "memory": "200Mi"
+            }
+          }
+        },
+        "savepoint": {
+          "savepointMode": "Manual",
+          "savepointInterval": 60,
+          "savepointTargetPath": "s3a://flink/0/savepoints",
+          "restartPolicy": "Always"
+        }
+      }
+    }
+  ],
+  "runtime": {
+    "pullPolicy": "Never",
+    "image": "integration/flink:1.9.2"
   },
   "jobManager": {
     "serviceMode": "NodePort",
@@ -96,7 +126,7 @@
     ],
     "resources": {
       "limits": {
-        "cpu": "0.1",
+        "cpu": "1",
         "memory": "300Mi"
       },
       "requests": {
@@ -171,31 +201,12 @@
     ],
     "resources": {
       "limits": {
-        "cpu": "0.1",
+        "cpu": "1",
         "memory": "500Mi"
       },
       "requests": {
         "cpu": "0.1",
         "memory": "500Mi"
-      }
-    }
-  },
-  "operator": {
-    "savepointMode": "Manual",
-    "savepointInterval": 60,
-    "savepointTargetPath": "file:///var/savepoints",
-    "restartPolicy": "Always",
-    "image": "integration/flink-k8s-toolbox:1.3.5-beta",
-    "pullPolicy": "Never",
-    "serviceAccount": "flink-supervisor",
-    "resources": {
-      "limits": {
-        "cpu": "0.05",
-        "memory": "200Mi"
-      },
-      "requests": {
-        "cpu": "0.05",
-        "memory": "200Mi"
       }
     }
   }
