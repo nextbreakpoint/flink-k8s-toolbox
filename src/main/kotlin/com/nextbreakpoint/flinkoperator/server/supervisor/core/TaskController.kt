@@ -81,6 +81,9 @@ class TaskController(
     fun isJobFailed(clusterSelector: ClusterSelector): Result<Boolean> =
         controller.isJobFailed(clusterSelector)
 
+    fun isJobCancelled(clusterSelector: ClusterSelector): Result<Boolean> =
+        controller.isJobCancelled(clusterSelector)
+
     fun createService(clusterSelector: ClusterSelector, service: V1Service): Result<String?> =
         controller.createService(clusterSelector, service)
 
