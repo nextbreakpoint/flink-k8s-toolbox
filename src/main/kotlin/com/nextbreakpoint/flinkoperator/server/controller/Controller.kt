@@ -32,6 +32,7 @@ import com.nextbreakpoint.flinkoperator.server.controller.action.JobStart
 import com.nextbreakpoint.flinkoperator.server.controller.action.JobStop
 import com.nextbreakpoint.flinkoperator.server.controller.action.ClusterDeletePods
 import com.nextbreakpoint.flinkoperator.server.controller.action.ClusterCreatePods
+import com.nextbreakpoint.flinkoperator.server.controller.action.JobIsCancelled
 import com.nextbreakpoint.flinkoperator.server.controller.action.RequestClusterScale
 import com.nextbreakpoint.flinkoperator.server.controller.action.RequestClusterStart
 import com.nextbreakpoint.flinkoperator.server.controller.action.RequestClusterStop
@@ -136,6 +137,9 @@ class Controller(
 
     fun isJobFailed(clusterSelector: ClusterSelector): Result<Boolean> =
         JobIsFailed(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
+
+    fun isJobCancelled(clusterSelector: ClusterSelector): Result<Boolean> =
+        JobIsCancelled(flinkOptions, flinkClient, kubeClient).execute(clusterSelector, null)
 
     fun updateStatus(clusterSelector: ClusterSelector, flinkCluster: V1FlinkCluster) {
         kubeClient.updateStatus(clusterSelector, flinkCluster.status)
