@@ -37,6 +37,11 @@ class OnRunning : Task() {
             return
         }
 
+        if (context.hasJobStopped()) {
+            context.onJobStopped()
+            return
+        }
+
         if (context.isManualActionPresent()) {
             context.executeManualAction(actions, true)
             return

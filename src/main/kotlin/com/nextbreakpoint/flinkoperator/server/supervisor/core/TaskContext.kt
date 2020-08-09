@@ -70,6 +70,11 @@ class TaskContext(
         controller.setClusterStatus(ClusterStatus.Failed)
     }
 
+    fun onJobStopped() {
+        logger.warn("Job stopped")
+        controller.setClusterStatus(ClusterStatus.Restarting)
+    }
+
     fun onResourceInitialise() {
         logger.info("Cluster initialised")
         controller.initializeAnnotations()
@@ -407,6 +412,18 @@ class TaskContext(
     fun hasJobFailed(): Boolean {
         if (controller.isBootstrapPresent()) {
             val result = controller.isJobFailed(controller.clusterSelector)
+
+            if (result.isSuccessful() && result.output) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    fun hasJobStopped(): Boolean {
+        if (controller.isBootstrapPresent()) {
+            val result = controller.isJobCancelled(controller.clusterSelector)
 
             if (result.isSuccessful() && result.output) {
                 return true

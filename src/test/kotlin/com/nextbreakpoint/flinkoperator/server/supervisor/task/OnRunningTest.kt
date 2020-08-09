@@ -46,6 +46,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasResourceDiverged()
         inOrder.verify(context, times(1)).hasJobFinished()
         inOrder.verify(context, times(1)).hasJobFailed()
+        inOrder.verify(context, times(1)).hasJobStopped()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).hasScaleChanged()
@@ -113,6 +114,21 @@ class OnRunningTest {
     }
 
     @Test
+    fun `should behave as expected when job has stopped`() {
+        given(context.hasJobStopped()).thenReturn(true)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).resetCluster()
+        inOrder.verify(context, times(1)).hasResourceDiverged()
+        inOrder.verify(context, times(1)).hasJobFinished()
+        inOrder.verify(context, times(1)).hasJobFailed()
+        inOrder.verify(context, times(1)).hasJobStopped()
+        inOrder.verify(context, times(1)).onJobStopped()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
     fun `should behave as expected when manual action is present`() {
         given(context.isManualActionPresent()).thenReturn(true)
         task.execute(context)
@@ -122,6 +138,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasResourceDiverged()
         inOrder.verify(context, times(1)).hasJobFinished()
         inOrder.verify(context, times(1)).hasJobFailed()
+        inOrder.verify(context, times(1)).hasJobStopped()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).executeManualAction(actions, true)
         verifyNoMoreInteractions(context)
@@ -137,6 +154,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasResourceDiverged()
         inOrder.verify(context, times(1)).hasJobFinished()
         inOrder.verify(context, times(1)).hasJobFailed()
+        inOrder.verify(context, times(1)).hasJobStopped()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).onResourceChanged()
@@ -153,6 +171,7 @@ class OnRunningTest {
         inOrder.verify(context, times(1)).hasResourceDiverged()
         inOrder.verify(context, times(1)).hasJobFinished()
         inOrder.verify(context, times(1)).hasJobFailed()
+        inOrder.verify(context, times(1)).hasJobStopped()
         inOrder.verify(context, times(1)).isManualActionPresent()
         inOrder.verify(context, times(1)).hasResourceChanged()
         inOrder.verify(context, times(1)).hasScaleChanged()
