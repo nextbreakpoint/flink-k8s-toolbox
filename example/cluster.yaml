@@ -174,5 +174,5 @@ spec:
     savepointInterval: 300
     savepointTargetPath: file:///var/savepoints
     restartPolicy: Always
-    image: flink-k8s-toolbox:1.3.5-beta
+    image: example/flink-jobs:1
     serviceAccount: flink-supervisor
