@@ -2,9 +2,10 @@ package com.nextbreakpoint.flink.k8s.supervisor.core
 
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.common.ResourceSelector
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
+import com.nextbreakpoint.flink.common.RestartPolicy
+import com.nextbreakpoint.flink.common.SavepointMode
 import com.nextbreakpoint.flink.common.SavepointOptions
 import com.nextbreakpoint.flink.common.SavepointRequest
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
@@ -31,19 +32,16 @@ import org.mockito.Mockito.verify
 
 class JobControllerTest {
     private val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
-    private val job = TestFactory.aFlinkJob(cluster)
-    private val bootstrapJob = TestFactory.aBootstrapJob(cluster)
-    private val flinkJobs = mutableMapOf("test" to job)
-    private val clusterSelector = ResourceSelector(name = "test", namespace = "flink", uid = "123")
-    private val jobSelector = ResourceSelector(name = "test-test", namespace = "flink", uid = "456")
+    private val job = TestFactory.aFlinkJob(name = "test-test", namespace = "flink")
+    private val bootstrapJob = TestFactory.aBootstrapJob(cluster, job)
     private val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
     private val savepointOptions = SavepointOptions(targetPath = "file:///tmp")
     private val clusterResources = ClusterResources(
         flinkCluster = cluster,
-        service = TestFactory.aJobManagerService(cluster),
+        jobmanagerService = TestFactory.aJobManagerService(cluster),
         jobmanagerPods = setOf(TestFactory.aJobManagerPod(cluster, "1")),
         taskmanagerPods = setOf(TestFactory.aTaskManagerPod(cluster, "1")),
-        flinkJobs = flinkJobs
+        flinkJobs = setOf(job)
     )
     private val jobResources = JobResources(
         flinkJob = job,
@@ -51,7 +49,7 @@ class JobControllerTest {
     )
     private val logger = mock(Logger::class.java)
     private val controller = mock(Controller::class.java)
-    private val jobController = JobController(clusterSelector, jobSelector, cluster, job, clusterResources, jobResources, controller)
+    private val jobController = JobController("flink", "test", "test", controller, clusterResources, jobResources, job)
 
     @BeforeEach
     fun setup() {
@@ -88,49 +86,49 @@ class JobControllerTest {
     @Test
     fun `should trigger savepoint`() {
         val result: Result<SavepointRequest?> = Result(status = ResultStatus.OK, output = savepointRequest)
-        given(controller.triggerSavepoint(eq(clusterSelector), eq(savepointOptions), any())).thenReturn(result)
+        given(controller.triggerSavepoint(eq("flink"), eq("test"), eq("test"), eq(savepointOptions), any())).thenReturn(result)
         assertThat(jobController.triggerSavepoint(savepointOptions)).isEqualTo(result)
-        verify(controller, times(1)).triggerSavepoint(eq(clusterSelector), eq(savepointOptions), any())
+        verify(controller, times(1)).triggerSavepoint(eq("flink"), eq("test"), eq("test"), eq(savepointOptions), any())
     }
 
     @Test
     fun `should query savepoint`() {
         val result: Result<String?> = Result(status = ResultStatus.OK, output = "file:///tmp/1")
-        given(controller.querySavepoint(eq(clusterSelector), eq(savepointRequest), any())).thenReturn(result)
+        given(controller.querySavepoint(eq("flink"), eq("test"), eq("test"), eq(savepointRequest), any())).thenReturn(result)
         assertThat(jobController.querySavepoint(savepointRequest)).isEqualTo(result)
-        verify(controller, times(1)).querySavepoint(eq(clusterSelector), eq(savepointRequest), any())
+        verify(controller, times(1)).querySavepoint(eq("flink"), eq("test"), eq("test"), eq(savepointRequest), any())
     }
 
     @Test
     fun `should create bootstrap job`() {
         val result: Result<String?> = Result(status = ResultStatus.OK, output = "jobname")
-        given(controller.createBootstrapJob(eq(clusterSelector), eq(bootstrapJob))).thenReturn(result)
+        given(controller.createBootstrapJob(eq("flink"), eq("test"), eq("test"), eq(bootstrapJob))).thenReturn(result)
         assertThat(jobController.createBootstrapJob(bootstrapJob)).isEqualTo(result)
-        verify(controller, times(1)).createBootstrapJob(eq(clusterSelector), eq(bootstrapJob))
+        verify(controller, times(1)).createBootstrapJob(eq("flink"), eq("test"), eq("test"), eq(bootstrapJob))
     }
 
     @Test
     fun `should delete bootstrap job`() {
         val result: Result<Void?> = Result(status = ResultStatus.OK, output = null)
-        given(controller.deleteBootstrapJob(eq(clusterSelector), eq("test"))).thenReturn(result)
+        given(controller.deleteBootstrapJob(eq("flink"), eq("test"), eq("test"), eq("bootstrap-test-test"))).thenReturn(result)
         assertThat(jobController.deleteBootstrapJob()).isEqualTo(result)
-        verify(controller, times(1)).deleteBootstrapJob(eq(clusterSelector), eq("test"))
+        verify(controller, times(1)).deleteBootstrapJob(eq("flink"), eq("test"), eq("test"), eq("bootstrap-test-test"))
     }
 
     @Test
     fun `should stop job`() {
         val result: Result<Void?> = Result(status = ResultStatus.OK, output = null)
-        given(controller.stopJob(eq(clusterSelector), any())).thenReturn(result)
+        given(controller.stopJob(eq("flink"), eq("test"), eq("test"), any())).thenReturn(result)
         assertThat(jobController.stopJob()).isEqualTo(result)
-        verify(controller, times(1)).stopJob(eq(clusterSelector), any())
+        verify(controller, times(1)).stopJob(eq("flink"), eq("test"), eq("test"), any())
     }
 
     @Test
     fun `should cancel job`() {
         val result: Result<SavepointRequest?> = Result(status = ResultStatus.OK, output = savepointRequest)
-        given(controller.cancelJob(eq(clusterSelector), eq(savepointOptions), any())).thenReturn(result)
+        given(controller.cancelJob(eq("flink"), eq("test"), eq("test"), eq(savepointOptions), any())).thenReturn(result)
         assertThat(jobController.cancelJob(savepointOptions)).isEqualTo(result)
-        verify(controller, times(1)).cancelJob(eq(clusterSelector), eq(savepointOptions), any())
+        verify(controller, times(1)).cancelJob(eq("flink"), eq("test"), eq("test"), eq(savepointOptions), any())
     }
 
     @Test
@@ -160,17 +158,17 @@ class JobControllerTest {
     @Test
     fun `should verify if cluster is ready`() {
         val result: Result<Boolean> = Result(status = ResultStatus.OK, output = true)
-        given(controller.isClusterReady(eq(clusterSelector), eq(2))).thenReturn(result)
+        given(controller.isClusterReady(eq("flink"), eq("test"), eq(2))).thenReturn(result)
         assertThat(jobController.isClusterReady(2)).isEqualTo(result)
-        verify(controller, times(1)).isClusterReady(eq(clusterSelector), eq(2))
+        verify(controller, times(1)).isClusterReady(eq("flink"), eq("test"), eq(2))
     }
 
     @Test
     fun `should verify if cluster is healthy`() {
         val result: Result<Boolean> = Result(status = ResultStatus.OK, output = true)
-        given(controller.isClusterHealthy(eq(clusterSelector))).thenReturn(result)
+        given(controller.isClusterHealthy(eq("flink"), eq("test"))).thenReturn(result)
         assertThat(jobController.isClusterHealthy()).isEqualTo(result)
-        verify(controller, times(1)).isClusterHealthy(eq(clusterSelector))
+        verify(controller, times(1)).isClusterHealthy(eq("flink"), eq("test"))
     }
 
     @Test
@@ -249,21 +247,21 @@ class JobControllerTest {
 
     @Test
     fun `should refresh status`() {
-        FlinkJobStatus.setSavepointMode(job, "Manual")
-        FlinkJobStatus.setRestartPolicy(job, "Always")
+        FlinkJobStatus.setSavepointMode(job, SavepointMode.Manual)
+        FlinkJobStatus.setRestartPolicy(job, RestartPolicy.Always)
 
-        job.metadata.finalizers = listOf("finalizer.nextbreakpoint.com")
+        job.metadata.finalizers = listOf("supervisor.nextbreakpoint.com")
 
         val timestamp = System.currentTimeMillis()
 
         jobController.refreshStatus(logger, DateTime(timestamp), DateTime(timestamp), false)
 
-        assertThat(FlinkJobStatus.getSavepointMode(job)).isEqualTo("Automatic")
-        assertThat(FlinkJobStatus.getRestartPolicy(job)).isEqualTo("Never")
+        assertThat(FlinkJobStatus.getSavepointMode(job)).isEqualTo(SavepointMode.Automatic)
+        assertThat(FlinkJobStatus.getRestartPolicy(job)).isEqualTo(RestartPolicy.Never)
 
-        verify(controller, times(1)).updateStatus(eq(jobSelector), eq(job))
-        verify(controller, times(1)).updateFinalizers(eq(jobSelector), eq(job))
-        verify(controller, times(1)).updateAnnotations(eq(jobSelector), eq(job))
+        verify(controller, times(1)).updateStatus(eq("flink"), eq("test-test"), eq(job))
+        verify(controller, times(1)).updateFinalizers(eq("flink"), eq("test-test"), eq(job))
+        verify(controller, times(1)).updateAnnotations(eq("flink"), eq("test-test"), eq(job))
     }
 
     @Test
@@ -276,7 +274,7 @@ class JobControllerTest {
     @Test
     fun `should return true when resource has finalizer`() {
         assertThat(jobController.hasFinalizer()).isEqualTo(false)
-        job.metadata.finalizers = listOf("finalizer.nextbreakpoint.com")
+        job.metadata.finalizers = listOf("supervisor.nextbreakpoint.com")
         assertThat(jobController.hasFinalizer()).isEqualTo(true)
     }
 
@@ -289,7 +287,7 @@ class JobControllerTest {
 
     @Test
     fun `should remove finalizer`() {
-        job.metadata.finalizers = listOf("finalizer.nextbreakpoint.com")
+        job.metadata.finalizers = listOf("supervisor.nextbreakpoint.com")
         assertThat(jobController.hasFinalizer()).isEqualTo(true)
         jobController.removeFinalizer()
         assertThat(jobController.hasFinalizer()).isEqualTo(false)
@@ -297,31 +295,29 @@ class JobControllerTest {
 
     @Test
     fun `should initialize status`() {
-        assertThat(FlinkJobStatus.getBootstrap(job)).isNull()
         assertThat(FlinkJobStatus.getJobParallelism(job)).isEqualTo(1)
         assertThat(FlinkJobStatus.getSavepointPath(job)).isNull()
         assertThat(FlinkJobStatus.getLabelSelector(job)).isNull()
-        assertThat(FlinkJobStatus.getSavepointMode(job)).isNull()
-        assertThat(FlinkJobStatus.getRestartPolicy(job)).isNull()
+        assertThat(FlinkJobStatus.getSavepointMode(job)).isEqualTo(SavepointMode.Automatic)
+        assertThat(FlinkJobStatus.getRestartPolicy(job)).isEqualTo(RestartPolicy.Always)
         job.spec?.savepoint?.savepointPath = "file:///tmp/1"
         jobController.initializeStatus()
-        assertThat(FlinkJobStatus.getBootstrap(job)).isNotNull()
         assertThat(FlinkJobStatus.getJobParallelism(job)).isEqualTo(2)
         assertThat(FlinkJobStatus.getSavepointPath(job)).isEqualTo("file:///tmp/1")
         assertThat(FlinkJobStatus.getLabelSelector(job)).isNotEmpty()
-        assertThat(FlinkJobStatus.getSavepointMode(job)).isEqualTo("Automatic")
-        assertThat(FlinkJobStatus.getRestartPolicy(job)).isEqualTo("Never")
+        assertThat(FlinkJobStatus.getSavepointMode(job)).isEqualTo(SavepointMode.Automatic)
+        assertThat(FlinkJobStatus.getRestartPolicy(job)).isEqualTo(RestartPolicy.Never)
     }
 
     @Test
     fun `should initialize annotations`() {
         val timestamp = DateTime(System.currentTimeMillis())
         assertThat(FlinkJobAnnotations.getActionTimestamp(job)).isEqualTo(DateTime(0))
-        FlinkJobAnnotations.setManualAction(job, ManualAction.STOP)
+        FlinkJobAnnotations.setRequestedAction(job, Action.STOP)
         FlinkJobAnnotations.setDeleteResources(job, true)
         FlinkJobAnnotations.setWithoutSavepoint(job, true)
         jobController.initializeAnnotations()
-        assertThat(FlinkJobAnnotations.getManualAction(job)).isEqualTo(ManualAction.NONE)
+        assertThat(FlinkJobAnnotations.getRequestedAction(job)).isEqualTo(Action.NONE)
         assertThat(FlinkJobAnnotations.isDeleteResources(job)).isFalse()
         assertThat(FlinkJobAnnotations.isWithoutSavepoint(job)).isFalse()
         assertThat(FlinkJobAnnotations.getActionTimestamp(job)).isGreaterThanOrEqualTo(timestamp)
@@ -330,7 +326,7 @@ class JobControllerTest {
     @Test
     fun `should update digests`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         assertThat(FlinkJobStatus.getBootstrapDigest(job)).isNull()
         jobController.updateDigests()
         assertThat(FlinkJobStatus.getBootstrapDigest(job)).isNotNull()
@@ -340,12 +336,10 @@ class JobControllerTest {
     @Test
     fun `should update status`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
-        assertThat(FlinkJobStatus.getBootstrap(job)).isNull()
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         job.status?.jobParallelism = 4
         job.status?.jobStatus = "test"
         jobController.updateStatus()
-        assertThat(FlinkJobStatus.getBootstrap(job)).isNotNull()
         assertThat(FlinkJobStatus.getJobParallelism(job)).isEqualTo(2)
         assertThat(FlinkJobStatus.getJobStatus(job)).isEqualTo("")
         assertThat(FlinkJobStatus.getStatusTimestamp(job)).isGreaterThanOrEqualTo(timestamp)
@@ -369,7 +363,7 @@ class JobControllerTest {
     @Test
     fun `should update supervisor status`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         assertThat(FlinkJobStatus.getSupervisorStatus(job)).isEqualTo(JobStatus.Unknown)
         jobController.setSupervisorStatus(JobStatus.Started)
         assertThat(jobController.getSupervisorStatus()).isEqualTo(JobStatus.Started)
@@ -387,7 +381,7 @@ class JobControllerTest {
     @Test
     fun `should update resource status`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         assertThat(FlinkJobStatus.getResourceStatus(job)).isEqualTo(ResourceStatus.Unknown)
         jobController.setResourceStatus(ResourceStatus.Updated)
         assertThat(FlinkJobStatus.getResourceStatus(job)).isEqualTo(ResourceStatus.Updated)
@@ -405,18 +399,18 @@ class JobControllerTest {
     fun `should reset action`() {
         val timestamp = DateTime(System.currentTimeMillis())
         assertThat(FlinkJobAnnotations.getActionTimestamp(job)).isEqualTo(DateTime(0))
-        FlinkJobAnnotations.setManualAction(job, ManualAction.STOP)
+        FlinkJobAnnotations.setRequestedAction(job, Action.STOP)
         jobController.resetAction()
-        assertThat(FlinkJobAnnotations.getManualAction(job)).isEqualTo(ManualAction.NONE)
+        assertThat(FlinkJobAnnotations.getRequestedAction(job)).isEqualTo(Action.NONE)
         assertThat(FlinkJobAnnotations.getActionTimestamp(job)).isGreaterThanOrEqualTo(timestamp)
     }
 
     @Test
     fun `should return action`() {
-        FlinkJobAnnotations.setManualAction(job, ManualAction.START)
-        assertThat(jobController.getAction()).isEqualTo(ManualAction.START)
-        FlinkJobAnnotations.setManualAction(job, ManualAction.STOP)
-        assertThat(jobController.getAction()).isEqualTo(ManualAction.STOP)
+        FlinkJobAnnotations.setRequestedAction(job, Action.START)
+        assertThat(jobController.getAction()).isEqualTo(Action.START)
+        FlinkJobAnnotations.setRequestedAction(job, Action.STOP)
+        assertThat(jobController.getAction()).isEqualTo(Action.STOP)
     }
 
     @Test
@@ -476,7 +470,7 @@ class JobControllerTest {
     @Test
     fun `should update savepoint request`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         val savepointRequest = savepointRequest
         assertThat(FlinkJobStatus.getSavepointRequest(job)).isNull()
         jobController.setSavepointRequest(savepointRequest)
@@ -495,7 +489,7 @@ class JobControllerTest {
     @Test
     fun `should reset savepoint request`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         val savepointRequest = savepointRequest
         FlinkJobStatus.setSavepointRequest(job, savepointRequest)
         jobController.resetSavepointRequest()
@@ -506,7 +500,7 @@ class JobControllerTest {
     @Test
     fun `should update savepoint path`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         assertThat(FlinkJobStatus.getSavepointPath(job)).isNull()
         jobController.setSavepointPath("file:///tmp/1")
         assertThat(FlinkJobStatus.getSavepointPath(job)).isEqualTo("file:///tmp/1")
@@ -516,7 +510,7 @@ class JobControllerTest {
     @Test
     fun `should update cluster name`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         assertThat(FlinkJobStatus.getClusterName(job)).isNull()
         jobController.setClusterName("name")
         assertThat(FlinkJobStatus.getClusterName(job)).isEqualTo("name")
@@ -526,7 +520,7 @@ class JobControllerTest {
     @Test
     fun `should update cluster health`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         assertThat(FlinkJobStatus.getClusterHealth(job)).isNull()
         jobController.setClusterHealth("HEALTHY")
         assertThat(FlinkJobStatus.getClusterHealth(job)).isEqualTo("HEALTHY")
@@ -536,7 +530,7 @@ class JobControllerTest {
     @Test
     fun `should update job status`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isEqualTo(DateTime(0))
+        assertThat(FlinkJobStatus.getStatusTimestamp(job)).isLessThan(timestamp)
         assertThat(FlinkJobStatus.getJobStatus(job)).isNull()
         jobController.setJobStatus("RUNNING")
         assertThat(FlinkJobStatus.getJobStatus(job)).isEqualTo("RUNNING")
@@ -545,15 +539,15 @@ class JobControllerTest {
 
     @Test
     fun `should return job restart policy`() {
-        assertThat(jobController.getRestartPolicy()).isNull()
-        FlinkJobStatus.setRestartPolicy(job, "Never")
-        assertThat(jobController.getRestartPolicy()).isEqualTo("Never")
+        assertThat(jobController.getRestartPolicy()).isEqualTo(RestartPolicy.Always)
+        FlinkJobStatus.setRestartPolicy(job, RestartPolicy.Never)
+        assertThat(jobController.getRestartPolicy()).isEqualTo(RestartPolicy.Never)
     }
 
     @Test
     fun `should return savepoint mode`() {
-        FlinkJobStatus.setSavepointMode(job, "Manual")
-        assertThat(jobController.getSavepointMode()).isEqualTo("Manual")
+        FlinkJobStatus.setSavepointMode(job, SavepointMode.Manual)
+        assertThat(jobController.getSavepointMode()).isEqualTo(SavepointMode.Manual)
     }
 
     @Test
@@ -573,13 +567,14 @@ class JobControllerTest {
     @Test
     fun `should return action timestamp`() {
         assertThat(jobController.getActionTimestamp()).isEqualTo(FlinkJobAnnotations.getActionTimestamp(job))
-        FlinkJobAnnotations.setManualAction(job, ManualAction.STOP)
+        FlinkJobAnnotations.setRequestedAction(job, Action.STOP)
         assertThat(jobController.getActionTimestamp()).isEqualTo(FlinkJobAnnotations.getActionTimestamp(job))
     }
 
     @Test
     fun `should return status timestamp`() {
-        assertThat(jobController.getStatusTimestamp()).isEqualTo(FlinkJobStatus.getStatusTimestamp(job))
+        val timestamp = System.currentTimeMillis()
+        assertThat(jobController.getStatusTimestamp()).isGreaterThan(DateTime(timestamp - 60000))
         FlinkJobStatus.setSupervisorStatus(job, JobStatus.Started)
         assertThat(jobController.getStatusTimestamp()).isEqualTo(FlinkJobStatus.getStatusTimestamp(job))
     }
@@ -588,24 +583,24 @@ class JobControllerTest {
     fun `should return true when bootstrap job exist otherwise false`() {
         assertThat(jobController.doesBootstrapJobExists()).isTrue()
         // TODO perhaps we can fin a better way to do this
-        val newResources = jobResources.withBootstrapJob(null)
-        val newController = JobController(clusterSelector, jobSelector, cluster, job, clusterResources, newResources, controller)
+        val newResources = jobResources.withBootstrap(null)
+        val newController = JobController("flink", "test", "test", controller, clusterResources, newResources, job)
         assertThat(newController.doesBootstrapJobExists()).isFalse()
     }
 
     @Test
     fun `should create bootstrap job from job spec`() {
-        FlinkJobStatus.setBootstrap(job, job.spec.bootstrap)
+        cluster.metadata.uid = "123"
         FlinkJobStatus.setSavepointPath(job, "")
         FlinkJobStatus.setJobParallelism(job, 2)
         val job = BootstrapResourcesDefaultFactory.createBootstrapJob(
-            clusterSelector, jobSelector, "flink-operator", "test", job.spec.bootstrap, null, 2, false
+            "flink", "flink-operator", "test", "test", job.spec.bootstrap, null, 2, false
         )
         val result: Result<String?> = Result(status = ResultStatus.OK, output = job.metadata?.name ?: "")
-        given(controller.createBootstrapJob(eq(clusterSelector), eq(job))).thenReturn(result)
+        given(controller.createBootstrapJob(eq("flink"), eq("test"), eq("test"), eq(job))).thenReturn(result)
         assertThat(jobController.createBootstrapJob()).isEqualTo(result)
         verify(controller, times(1)).isDryRun()
-        verify(controller, times(1)).createBootstrapJob(eq(clusterSelector), eq(job))
+        verify(controller, times(1)).createBootstrapJob(eq("flink"), eq("test"), eq("test"), eq(job))
     }
 
     @Test
@@ -630,6 +625,7 @@ class JobControllerTest {
 
     @Test
     fun `should return required task slots`() {
+        FlinkJobStatus.setSupervisorStatus(job, JobStatus.Started)
         FlinkJobStatus.setJobParallelism(job, 0)
         assertThat(jobController.getRequiredTaskSlots()).isEqualTo(0)
         FlinkJobStatus.setJobParallelism(job, 2)
@@ -641,9 +637,9 @@ class JobControllerTest {
     @Test
     fun `should return job parallelism`() {
         job.spec.jobParallelism = 0
-        assertThat(jobController.getJobParallelism()).isEqualTo(0)
+        assertThat(jobController.getDeclaredJobParallelism()).isEqualTo(0)
         job.spec.jobParallelism = 2
-        assertThat(jobController.getJobParallelism()).isEqualTo(2)
+        assertThat(jobController.getDeclaredJobParallelism()).isEqualTo(2)
     }
 
     @Test
@@ -666,8 +662,8 @@ class JobControllerTest {
     fun `should return cluster job status`() {
         FlinkJobStatus.setJobId(job, "123")
         val result: Result<String?> = Result(status = ResultStatus.OK, output = "RUNNING")
-        given(controller.getClusterJobStatus(eq(clusterSelector), eq("123"))).thenReturn(result)
-        assertThat(jobController.getClusterJobStatus()).isEqualTo(result)
-        verify(controller, times(1)).getClusterJobStatus(eq(clusterSelector), eq("123"))
+        given(controller.getJobStatus(eq("flink"), eq("test"), eq("test"), eq("123"))).thenReturn(result)
+        assertThat(jobController.getJobStatus()).isEqualTo(result)
+        verify(controller, times(1)).getJobStatus(eq("flink"), eq("test"), eq("test"), eq("123"))
     }
 }

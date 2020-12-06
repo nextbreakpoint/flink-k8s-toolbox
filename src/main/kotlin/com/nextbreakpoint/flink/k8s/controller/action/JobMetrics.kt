@@ -1,24 +1,22 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.common.JobStats
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.controller.core.Action
+import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import io.kubernetes.client.openapi.JSON
 import org.apache.log4j.Logger
 
-class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Action<String, String>(flinkOptions, flinkClient, kubeClient) {
+class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : JobAction<String, JobStats?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobMetrics::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ResourceSelector, params: String): Result<String> {
+    override fun execute(namespace: String, clusterName: String, jobName: String, params: String): Result<JobStats?> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, namespace, clusterName)
 
             val metrics = flinkClient.getJobMetrics(address, params,
                 "totalNumberOfCheckpoints,numberOfCompletedCheckpoints,numberOfInProgressCheckpoints,numberOfFailedCheckpoints,lastCheckpointDuration,lastCheckpointSize,lastCheckpointRestoreTimestamp,lastCheckpointAlignmentBuffered,lastCheckpointExternalPath,fullRestarts,restartingTime,uptime,downtime"
@@ -44,14 +42,14 @@ class JobMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClien
 
             return Result(
                 ResultStatus.OK,
-                JSON().serialize(metricsResponse)
+                metricsResponse
             )
         } catch (e : Exception) {
             logger.error("Can't get job's metrics ($params)", e)
 
             return Result(
                 ResultStatus.ERROR,
-                "{}"
+                null
             )
         }
     }

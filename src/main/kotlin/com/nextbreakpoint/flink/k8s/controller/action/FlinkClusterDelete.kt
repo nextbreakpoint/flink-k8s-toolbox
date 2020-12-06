@@ -1,29 +1,28 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.controller.core.Action
+import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import org.apache.log4j.Logger
 
-class FlinkClusterDelete(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Action<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
+class FlinkClusterDelete(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(FlinkClusterDelete::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ResourceSelector, params: Void?): Result<Void?> {
+    override fun execute(namespace: String, clusterName: String, params: Void?): Result<Void?> {
         return try {
-            kubeClient.deleteFlinkClusterV2(clusterSelector)
+            kubeClient.deleteFlinkCluster(namespace, clusterName)
 
             Result(
                 ResultStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't delete cluster resource", e)
+            logger.error("Can't delete cluster", e)
 
             Result(
                 ResultStatus.ERROR,

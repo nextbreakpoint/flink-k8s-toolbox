@@ -2,7 +2,6 @@ package com.nextbreakpoint.flink.k8s.controller.action
 
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.FlinkOptions
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.ScaleClusterOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
@@ -22,7 +21,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class RequestClusterScaleTest {
-    private val clusterSelector = ResourceSelector(namespace = "flink", name = "test", uid = "123")
     private val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
@@ -37,9 +35,9 @@ class RequestClusterScaleTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.rescaleCluster(eq(clusterSelector), eq(4))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, ScaleClusterOptions(taskManagers = 4))
-        verify(kubeClient, times(1)).rescaleCluster(eq(clusterSelector), eq(4))
+        given(kubeClient.rescaleCluster(eq("flink"), eq("test"), eq(4))).thenThrow(RuntimeException::class.java)
+        val result = command.execute("flink", "test", ScaleClusterOptions(taskManagers = 4))
+        verify(kubeClient, times(1)).rescaleCluster(eq("flink"), eq("test"), eq(4))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(supervisorCache)
@@ -51,8 +49,8 @@ class RequestClusterScaleTest {
     @Test
     fun `should return expected result when scaling`() {
         val actionTimestamp = FlinkClusterAnnotations.getActionTimestamp(cluster)
-        val result = command.execute(clusterSelector, ScaleClusterOptions(taskManagers = 4))
-        verify(kubeClient, times(1)).rescaleCluster(eq(clusterSelector), eq(4))
+        val result = command.execute("flink", "test", ScaleClusterOptions(taskManagers = 4))
+        verify(kubeClient, times(1)).rescaleCluster(eq("flink"), eq("test"), eq(4))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(supervisorCache)
@@ -65,8 +63,8 @@ class RequestClusterScaleTest {
     @Test
     fun `should return expected result when scaling down to zero`() {
         val actionTimestamp = FlinkClusterAnnotations.getActionTimestamp(cluster)
-        val result = command.execute(clusterSelector, ScaleClusterOptions(taskManagers = 0))
-        verify(kubeClient, times(1)).rescaleCluster(eq(clusterSelector), eq(0))
+        val result = command.execute("flink", "test", ScaleClusterOptions(taskManagers = 0))
+        verify(kubeClient, times(1)).rescaleCluster(eq("flink"), eq("test"), eq(0))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(supervisorCache)

@@ -2,8 +2,7 @@ package com.nextbreakpoint.flink.k8s.controller.action
 
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.FlinkOptions
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.common.ResourceSelector
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.StopOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
@@ -23,7 +22,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class RequestClusterStopTest {
-    private val clusterSelector = ResourceSelector(namespace = "flink", name = "test", uid = "123")
     private val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
@@ -38,9 +36,9 @@ class RequestClusterStopTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        KotlinMockito.given(kubeClient.updateClusterAnnotations(eq(clusterSelector), KotlinMockito.any())).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, StopOptions(withoutSavepoint = true))
-        verify(kubeClient, times(1)).updateClusterAnnotations(eq(clusterSelector), KotlinMockito.any())
+        KotlinMockito.given(kubeClient.updateClusterAnnotations(eq("flink"), eq("test"), KotlinMockito.any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute("flink", "test", StopOptions(withoutSavepoint = true))
+        verify(kubeClient, times(1)).updateClusterAnnotations(eq("flink"), eq("test"), KotlinMockito.any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -52,14 +50,14 @@ class RequestClusterStopTest {
     fun `should return expected result when stopping without savepoint`() {
         FlinkClusterStatus.setSupervisorStatus(cluster, ClusterStatus.Stopping)
         val actionTimestamp = FlinkClusterAnnotations.getActionTimestamp(cluster)
-        val result = command.execute(clusterSelector, StopOptions(withoutSavepoint = true))
-        verify(kubeClient, times(1)).updateClusterAnnotations(eq(clusterSelector), KotlinMockito.any())
+        val result = command.execute("flink", "test", StopOptions(withoutSavepoint = true))
+        verify(kubeClient, times(1)).updateClusterAnnotations(eq("flink"), eq("test"), KotlinMockito.any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.OK)
         assertThat(result.output).isNull()
-        assertThat(FlinkClusterAnnotations.getManualAction(cluster)).isEqualTo(ManualAction.STOP)
+        assertThat(FlinkClusterAnnotations.getRequestedAction(cluster)).isEqualTo(Action.STOP)
         assertThat(FlinkClusterAnnotations.isWithoutSavepoint(cluster)).isEqualTo(true)
         assertThat(FlinkClusterAnnotations.isDeleteResources(cluster)).isEqualTo(false)
         assertThat(FlinkClusterAnnotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)
@@ -69,14 +67,14 @@ class RequestClusterStopTest {
     fun `should return expected result when stopping with savepoint`() {
         FlinkClusterStatus.setSupervisorStatus(cluster, ClusterStatus.Stopping)
         val actionTimestamp = FlinkClusterAnnotations.getActionTimestamp(cluster)
-        val result = command.execute(clusterSelector, StopOptions(withoutSavepoint = false))
-        verify(kubeClient, times(1)).updateClusterAnnotations(eq(clusterSelector), KotlinMockito.any())
+        val result = command.execute("flink", "test", StopOptions(withoutSavepoint = false))
+        verify(kubeClient, times(1)).updateClusterAnnotations(eq("flink"), eq("test"), KotlinMockito.any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.OK)
         assertThat(result.output).isNull()
-        assertThat(FlinkClusterAnnotations.getManualAction(cluster)).isEqualTo(ManualAction.STOP)
+        assertThat(FlinkClusterAnnotations.getRequestedAction(cluster)).isEqualTo(Action.STOP)
         assertThat(FlinkClusterAnnotations.isWithoutSavepoint(cluster)).isEqualTo(false)
         assertThat(FlinkClusterAnnotations.isDeleteResources(cluster)).isEqualTo(false)
         assertThat(FlinkClusterAnnotations.getActionTimestamp(cluster)).isNotEqualTo(actionTimestamp)

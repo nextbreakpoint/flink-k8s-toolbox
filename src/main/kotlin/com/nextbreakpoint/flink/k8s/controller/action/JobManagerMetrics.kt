@@ -1,24 +1,22 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.common.JobManagerStats
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.controller.core.Action
+import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import io.kubernetes.client.openapi.JSON
 import org.apache.log4j.Logger
 
-class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Action<Void?, String>(flinkOptions, flinkClient, kubeClient) {
+class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<Void?, JobManagerStats?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(JobManagerMetrics::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ResourceSelector, params: Void?): Result<String> {
+    override fun execute(namespace: String, clusterName: String, params: Void?): Result<JobManagerStats?> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, namespace, clusterName)
 
             val metrics = flinkClient.getJobManagerMetrics(address,
                 "Status.JVM.CPU.Time,Status.JVM.CPU.Load,Status.JVM.Threads.Count,Status.JVM.Memory.Heap.Max,Status.JVM.Memory.Heap.Used,Status.JVM.Memory.Heap.Committed,Status.JVM.Memory.NonHeap.Max,Status.JVM.Memory.NonHeap.Used,Status.JVM.Memory.NonHeap.Committed,Status.JVM.Memory.Direct.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Direct.TotalCapacity,Status.JVM.Memory.Mapped.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Mapped.TotalCapacity,Status.JVM.GarbageCollector.Copy.Time,Status.JVM.GarbageCollector.Copy.Count,Status.JVM.GarbageCollector.MarkSweepCompact.Time,Status.JVM.GarbageCollector.MarkSweepCompact.Count,Status.JVM.ClassLoader.ClassesLoaded,Status.JVM.ClassLoader.ClassesUnloaded,taskSlotsTotal,taskSlotsAvailable,numRegisteredTaskManagers,numRunningJobs"
@@ -58,14 +56,14 @@ class JobManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
 
             return Result(
                 ResultStatus.OK,
-                JSON().serialize(metricsResponse)
+                metricsResponse
             )
         } catch (e : Exception) {
             logger.error("Can't get jobmanager's metrics", e)
 
             return Result(
                 ResultStatus.ERROR,
-                "{}"
+                null
             )
         }
     }

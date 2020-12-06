@@ -1,17 +1,14 @@
 package com.nextbreakpoint.flink.mediator.core
 
+import com.nextbreakpoint.flink.common.ClusterSelector
 import com.nextbreakpoint.flink.common.ClusterStatus
-import com.nextbreakpoint.flink.common.DeleteOptions
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.common.ResourceSelector
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
+import com.nextbreakpoint.flink.k8s.common.Timeout
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterJobSpec
 import com.nextbreakpoint.flink.k8s.supervisor.core.ClusterController
 import com.nextbreakpoint.flink.k8s.supervisor.core.ClusterManager
-import com.nextbreakpoint.flink.k8s.supervisor.core.Timeout
 import com.nextbreakpoint.flink.testing.KotlinMockito.any
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
@@ -25,33 +22,26 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class ClusterManagerTest {
-    private val clusterSelector = ResourceSelector(name = "test", namespace = "flink", uid = "123")
+    private val clusterSelector = ClusterSelector(clusterName = "test", namespace = "flink")
     private val logger = mock(Logger::class.java)
     private val controller = mock(ClusterController::class.java)
     private val manager = ClusterManager(logger, controller)
 
     @BeforeEach
     fun configure() {
-        given(controller.clusterSelector).thenReturn(clusterSelector)
+        given(controller.namespace).thenReturn("test")
+        given(controller.clusterName).thenReturn("test")
         given(controller.hasFinalizer()).thenReturn(true)
         given(controller.getJobManagerReplicas()).thenReturn(1)
         given(controller.getTaskManagerReplicas()).thenReturn(2)
-        given(controller.haveJobsBeenCreated()).thenReturn(true)
         given(controller.doesJobManagerServiceExists()).thenReturn(true)
         given(controller.doesJobManagerPodExists()).thenReturn(true)
         given(controller.doesTaskManagerPodsExist()).thenReturn(true)
         given(controller.timeSinceLastUpdateInSeconds()).thenReturn(2L)
         given(controller.timeSinceLastRescaleInSeconds()).thenReturn(30L)
         given(controller.removeUnusedTaskManagers()).thenReturn(mapOf())
-        given(controller.createJob(any<V1FlinkJob>())).thenReturn(Result(ResultStatus.OK, null))
-        given(controller.deletePods(any())).thenReturn(Result(ResultStatus.OK, null))
+        given(controller.deletePod(any())).thenReturn(Result(ResultStatus.OK, null))
         given(controller.deleteService()).thenReturn(Result(ResultStatus.OK, null))
-    }
-
-    @Test
-    fun `should remove finalizer`() {
-        manager.removeFinalizer()
-        verify(controller, times(1)).removeFinalizer()
     }
 
     @Test
@@ -100,7 +90,6 @@ class ClusterManagerTest {
         verify(controller, times(1)).initializeAnnotations()
         verify(controller, times(1)).initializeStatus()
         verify(controller, times(1)).updateDigests()
-        verify(controller, times(1)).addFinalizer()
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(ClusterStatus.Starting))
         verify(controller, times(1)).setResourceStatus(eq(ResourceStatus.Updating))
@@ -153,8 +142,7 @@ class ClusterManagerTest {
         val result = manager.stopCluster()
         verify(controller, times(1)).doesJobManagerPodExists()
         verify(controller, times(1)).doesTaskManagerPodsExist()
-        verify(controller, times(1)).getJobManagerReplicas()
-        verify(controller, times(1)).deletePods(eq(DeleteOptions(label = "role", value = "jobmanager", limit = 1)))
+        verify(controller, times(1)).deleteJobManagers()
         assertThat(result).isFalse()
     }
 
@@ -165,8 +153,7 @@ class ClusterManagerTest {
         val result = manager.stopCluster()
         verify(controller, times(1)).doesJobManagerPodExists()
         verify(controller, times(1)).doesTaskManagerPodsExist()
-        verify(controller, times(1)).getTaskManagerReplicas()
-        verify(controller, times(1)).deletePods(eq(DeleteOptions(label = "role", value = "taskmanager", limit = 2)))
+        verify(controller, times(1)).deleteTaskManagers()
         assertThat(result).isFalse()
     }
 
@@ -267,27 +254,27 @@ class ClusterManagerTest {
 
     @Test
     fun `hasScaleChanged should return false when scale hasn't changed`() {
-        given(controller.getRequiredTaskManagers()).thenReturn(2)
+        given(controller.getClampedRequiredTaskManagers()).thenReturn(2)
         given(controller.getCurrentTaskManagers()).thenReturn(2)
         val result = manager.hasScaleChanged()
-        verify(controller, times(1)).getRequiredTaskManagers()
+        verify(controller, times(1)).getClampedRequiredTaskManagers()
         verify(controller, times(1)).getCurrentTaskManagers()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `hasScaleChanged should return true when scale has changed`() {
-        given(controller.getRequiredTaskManagers()).thenReturn(2)
+        given(controller.getClampedRequiredTaskManagers()).thenReturn(2)
         given(controller.getCurrentTaskManagers()).thenReturn(1)
         val result = manager.hasScaleChanged()
-        verify(controller, times(1)).getRequiredTaskManagers()
+        verify(controller, times(1)).getClampedRequiredTaskManagers()
         verify(controller, times(1)).getCurrentTaskManagers()
         assertThat(result).isTrue()
     }
 
     @Test
     fun `isManualActionPresent should return true when manual action is not none`() {
-        given(controller.getAction()).thenReturn(ManualAction.START)
+        given(controller.getAction()).thenReturn(Action.START)
         val result = manager.isActionPresent()
         verify(controller, times(1)).getAction()
         assertThat(result).isTrue()
@@ -295,7 +282,7 @@ class ClusterManagerTest {
 
     @Test
     fun `isManualActionPresent should return false when manual action is none`() {
-        given(controller.getAction()).thenReturn(ManualAction.NONE)
+        given(controller.getAction()).thenReturn(Action.NONE)
         val result = manager.isActionPresent()
         verify(controller, times(1)).getAction()
         assertThat(result).isFalse()
@@ -519,83 +506,83 @@ class ClusterManagerTest {
 
     @Test
     fun `rescaleTaskManagers should do nothing when required taskmanagers are equals to current taskmanagers`() {
-        given(controller.getTaskManagers()).thenReturn(2)
-        given(controller.getRequiredTaskManagers()).thenReturn(2)
+        given(controller.getClampedTaskManagers()).thenReturn(2)
+        given(controller.getClampedRequiredTaskManagers()).thenReturn(2)
         val result = manager.rescaleTaskManagers()
-        verify(controller, times(1)).getTaskManagers()
-        verify(controller, times(1)).getRequiredTaskManagers()
+        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getClampedRequiredTaskManagers()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `rescaleTaskManagers should rescale cluster when required taskmanagers are not equals to current taskmanagers`() {
-        given(controller.getTaskManagers()).thenReturn(3)
-        given(controller.getRequiredTaskManagers()).thenReturn(2)
+        given(controller.getClampedTaskManagers()).thenReturn(3)
+        given(controller.getClampedRequiredTaskManagers()).thenReturn(2)
         val result = manager.rescaleTaskManagers()
-        verify(controller, times(1)).getTaskManagers()
-        verify(controller, times(1)).getRequiredTaskManagers()
+        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getClampedRequiredTaskManagers()
         verify(controller, times(1)).rescaleCluster(eq(2))
         assertThat(result).isTrue()
     }
 
     @Test
     fun `rescaleTaskManagerPods should do nothing when taskmanager replicas are equals to current taskmanagers`() {
-        given(controller.getTaskManagers()).thenReturn(2)
+        given(controller.getClampedTaskManagers()).thenReturn(2)
         given(controller.getTaskManagerReplicas()).thenReturn(2)
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getTaskManagers()
+        verify(controller, times(1)).getClampedTaskManagers()
         verify(controller, times(1)).getTaskManagerReplicas()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `rescaleTaskManagerPods should do nothing when taskmanager replicas are more than current taskmanagers but timeout didn't occur`() {
-        given(controller.getTaskManagers()).thenReturn(2)
+        given(controller.getClampedTaskManagers()).thenReturn(2)
         given(controller.getTaskManagerReplicas()).thenReturn(3)
         given(controller.getRescaleDelay()).thenReturn(60)
         given(controller.timeSinceLastRescaleInSeconds()).thenReturn(50)
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getTaskManagers()
-        verify(controller, times(2)).getTaskManagerReplicas()
+        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getTaskManagerReplicas()
         assertThat(result).isTrue()
     }
 
     @Test
     fun `rescaleTaskManagerPods should create pods when taskmanager replicas are less than current taskmanagers`() {
-        given(controller.getTaskManagers()).thenReturn(3)
+        given(controller.getClampedTaskManagers()).thenReturn(3)
         given(controller.getTaskManagerReplicas()).thenReturn(2)
         given(controller.createTaskManagerPods(eq(3))).thenReturn(Result(ResultStatus.OK, setOf("test")))
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getTaskManagers()
-        verify(controller, times(2)).getTaskManagerReplicas()
+        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getTaskManagerReplicas()
         verify(controller, times(1)).createTaskManagerPods(eq(3))
         assertThat(result).isTrue()
     }
 
     @Test
     fun `rescaleTaskManagerPods should delete pods when taskmanager replicas are more than current taskmanagers and timeout occurred`() {
-        given(controller.getTaskManagers()).thenReturn(2)
+        given(controller.getClampedTaskManagers()).thenReturn(2)
         given(controller.getTaskManagerReplicas()).thenReturn(3)
         given(controller.getRescaleDelay()).thenReturn(60)
         given(controller.timeSinceLastRescaleInSeconds()).thenReturn(70)
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getTaskManagers()
-        verify(controller, times(2)).getTaskManagerReplicas()
+        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getTaskManagerReplicas()
         verify(controller, times(1)).removeUnusedTaskManagers()
         assertThat(result).isTrue()
     }
 
     @Test
     fun `executeManualAction should do nothing when manual action is none`() {
-        given(controller.getAction()).thenReturn(ManualAction.NONE)
-        manager.executeAction(setOf(ManualAction.NONE))
+        given(controller.getAction()).thenReturn(Action.NONE)
+        manager.executeAction(setOf(Action.NONE))
         verify(controller, times(1)).getAction()
         verifyNoMoreInteractions(controller)
     }
 
     @Test
     fun `executeManualAction should do nothing when manual action is start but action is not allowed`() {
-        given(controller.getAction()).thenReturn(ManualAction.START)
+        given(controller.getAction()).thenReturn(Action.START)
         manager.executeAction(setOf())
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).resetAction()
@@ -603,7 +590,7 @@ class ClusterManagerTest {
 
     @Test
     fun `executeManualAction should do nothing when manual action is stop but action is not allowed`() {
-        given(controller.getAction()).thenReturn(ManualAction.STOP)
+        given(controller.getAction()).thenReturn(Action.STOP)
         manager.executeAction(setOf())
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).resetAction()
@@ -611,8 +598,8 @@ class ClusterManagerTest {
 
     @Test
     fun `executeManualAction should change status when manual action is start`() {
-        given(controller.getAction()).thenReturn(ManualAction.START)
-        manager.executeAction(setOf(ManualAction.START))
+        given(controller.getAction()).thenReturn(Action.START)
+        manager.executeAction(setOf(Action.START))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).updateStatus()
         verify(controller, times(1)).updateDigests()
@@ -624,8 +611,8 @@ class ClusterManagerTest {
 
     @Test
     fun `executeManualAction should change status when manual action is stop`() {
-        given(controller.getAction()).thenReturn(ManualAction.STOP)
-        manager.executeAction(setOf(ManualAction.STOP))
+        given(controller.getAction()).thenReturn(Action.STOP)
+        manager.executeAction(setOf(Action.STOP))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(ClusterStatus.Stopping))
@@ -649,58 +636,96 @@ class ClusterManagerTest {
         assertThat(result).isFalse()
     }
 
-    @Test
-    fun `stopUnmanagedJobs should return true when there jobs are not defined`() {
-        given(controller.getJobSpecs()).thenReturn(listOf())
-        val result = manager.stopUnmanagedJobs()
-        verify(controller, times(1)).getJobSpecs()
-        assertThat(result).isTrue()
-    }
+//    @Test
+//    fun `stopUnmanagedJobs should return true when there jobs are not defined`() {
+//        given(controller.getJobSpecs()).thenReturn(listOf())
+//        val result = manager.stopUnmanagedJobs()
+//        verify(controller, times(1)).getJobSpecs()
+//        assertThat(result).isTrue()
+//    }
+//
+//    @Test
+//    fun `stopUnmanagedJobs should return true when jobs have been stopped`() {
+//        given(controller.getJobSpecs()).thenReturn(listOf(V1FlinkClusterJobSpec()))
+//        given(controller.getJobIds()).thenReturn(setOf("123"))
+//        given(controller.stopJobs(eq(setOf("123")))).thenReturn(Result(ResultStatus.OK, true))
+//        val result = manager.stopUnmanagedJobs()
+//        verify(controller, times(1)).getJobSpecs()
+//        verify(controller, times(1)).getJobIds()
+//        assertThat(result).isTrue()
+//    }
+//
+//    @Test
+//    fun `stopUnmanagedJobs should return false when jobs haven't been stopped`() {
+//        given(controller.getJobSpecs()).thenReturn(listOf(V1FlinkClusterJobSpec()))
+//        given(controller.getJobIds()).thenReturn(setOf("123"))
+//        given(controller.stopJobs(eq(setOf("123")))).thenReturn(Result(ResultStatus.ERROR, true))
+//        val result = manager.stopUnmanagedJobs()
+//        verify(controller, times(1)).getJobSpecs()
+//        verify(controller, times(1)).getJobIds()
+//        assertThat(result).isFalse()
+//    }
 
-    @Test
-    fun `stopUnmanagedJobs should return true when jobs have been stopped`() {
-        given(controller.getJobSpecs()).thenReturn(listOf(V2FlinkClusterJobSpec()))
-        given(controller.getJobIds()).thenReturn(setOf("123"))
-        given(controller.stopJobs(eq(setOf("123")))).thenReturn(Result(ResultStatus.OK, true))
-        val result = manager.stopUnmanagedJobs()
-        verify(controller, times(1)).getJobSpecs()
-        verify(controller, times(1)).getJobIds()
-        assertThat(result).isTrue()
-    }
+//    @Test
+//    fun `createJobs should return true when jobs have been created`() {
+//        given(controller.haveJobsBeenCreated()).thenReturn(true)
+//        val result = manager.createJobs()
+//        verify(controller, times(1)).haveJobsBeenCreated()
+//        assertThat(result).isTrue()
+//    }
+//
+//    @Test
+//    fun `createJobs should return false when jobs haven't been created`() {
+//        val jobSpec = V1FlinkClusterJobSpec()
+//        jobSpec.name = "test"
+//        given(controller.getJobSpecs()).thenReturn(listOf(jobSpec))
+//        given(controller.haveJobsBeenCreated()).thenReturn(false)
+//        given(controller.listExistingJobNames()).thenReturn(listOf())
+//        given(controller.createJob(any<V1FlinkClusterJobSpec>())).thenReturn((Result(ResultStatus.OK, null)))
+//        val result = manager.createJobs()
+//        verify(controller, times(1)).haveJobsBeenCreated()
+//        verify(controller, times(1)).getJobSpecs()
+//        verify(controller, times(1)).createJob(any<V1FlinkClusterJobSpec>())
+//        assertThat(result).isFalse()
+//    }
+//
+//    @Test
+//    fun `deleteJobs should return true when jobs have been deleted`() {
+//        given(controller.haveJobsBeenRemoved()).thenReturn(true)
+//        val result = manager.deleteJobs()
+//        verify(controller, times(1)).haveJobsBeenRemoved()
+//        assertThat(result).isTrue()
+//    }
 
-    @Test
-    fun `stopUnmanagedJobs should return false when jobs haven't been stopped`() {
-        given(controller.getJobSpecs()).thenReturn(listOf(V2FlinkClusterJobSpec()))
-        given(controller.getJobIds()).thenReturn(setOf("123"))
-        given(controller.stopJobs(eq(setOf("123")))).thenReturn(Result(ResultStatus.ERROR, true))
-        val result = manager.stopUnmanagedJobs()
-        verify(controller, times(1)).getJobSpecs()
-        verify(controller, times(1)).getJobIds()
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `createJobs should return true when jobs have been created`() {
-        given(controller.haveJobsBeenCreated()).thenReturn(true)
-        val result = manager.createJobs()
-        verify(controller, times(1)).haveJobsBeenCreated()
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun `createJobs should return false when jobs haven't been created`() {
-        val jobSpec = V2FlinkClusterJobSpec()
-        jobSpec.name = "test"
-        given(controller.getJobSpecs()).thenReturn(listOf(jobSpec))
-        given(controller.haveJobsBeenCreated()).thenReturn(false)
-        given(controller.listExistingJobNames()).thenReturn(listOf())
-        given(controller.createJob(any<V2FlinkClusterJobSpec>())).thenReturn((Result(ResultStatus.OK, null)))
-        val result = manager.createJobs()
-        verify(controller, times(1)).haveJobsBeenCreated()
-        verify(controller, times(1)).getJobSpecs()
-        verify(controller, times(1)).createJob(any<V2FlinkClusterJobSpec>())
-        assertThat(result).isFalse()
-    }
+//    @Test
+//    fun `deleteJobs should return false when jobs haven't been deleted`() {
+//        val jobSpec = V1FlinkClusterJobSpec()
+//        jobSpec.name = "test"
+//        given(controller.getJobSpecs()).thenReturn(listOf(jobSpec))
+//        given(controller.haveJobsBeenRemoved()).thenReturn(false)
+//        given(controller.listExistingJobNames()).thenReturn(listOf("test"))
+//        given(controller.deleteJob("test")).thenReturn(Result(ResultStatus.OK, null))
+//        val result = manager.deleteJobs()
+//        verify(controller, times(1)).haveJobsBeenRemoved()
+//        verify(controller, times(1)).listExistingJobNames()
+//        verify(controller, times(1)).getJobSpecs()
+//        verify(controller, times(1)).deleteJob("test")
+//        assertThat(result).isFalse()
+//    }
+//
+//    @Test
+//    fun `deleteJobs should not delete job when jobs haven't been deleted and job is not defined`() {
+//        val jobSpec = V1FlinkClusterJobSpec()
+//        jobSpec.name = "other"
+//        given(controller.getJobSpecs()).thenReturn(listOf(jobSpec))
+//        given(controller.haveJobsBeenRemoved()).thenReturn(false)
+//        given(controller.listExistingJobNames()).thenReturn(listOf("test"))
+//        val result = manager.deleteJobs()
+//        verify(controller, times(1)).haveJobsBeenRemoved()
+//        verify(controller, times(1)).listExistingJobNames()
+//        verify(controller, times(1)).getJobSpecs()
+//        assertThat(result).isFalse()
+//    }
 
     @Test
     fun `waitForJobs should return false when jobs haven't been stopped`() {
@@ -716,43 +741,5 @@ class ClusterManagerTest {
         val result = manager.waitForJobs()
         verify(controller, times(1)).getJobNamesWithStatus()
         assertThat(result).isTrue()
-    }
-
-    @Test
-    fun `deleteJobs should return true when jobs have been deleted`() {
-        given(controller.haveJobsBeenRemoved()).thenReturn(true)
-        val result = manager.deleteJobs()
-        verify(controller, times(1)).haveJobsBeenRemoved()
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun `deleteJobs should return false when jobs haven't been deleted`() {
-        val jobSpec = V2FlinkClusterJobSpec()
-        jobSpec.name = "test"
-        given(controller.getJobSpecs()).thenReturn(listOf(jobSpec))
-        given(controller.haveJobsBeenRemoved()).thenReturn(false)
-        given(controller.listExistingJobNames()).thenReturn(listOf("test"))
-        given(controller.deleteJob("test")).thenReturn(Result(ResultStatus.OK, null))
-        val result = manager.deleteJobs()
-        verify(controller, times(1)).haveJobsBeenRemoved()
-        verify(controller, times(1)).listExistingJobNames()
-        verify(controller, times(1)).getJobSpecs()
-        verify(controller, times(1)).deleteJob("test")
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `deleteJobs should not delete job when jobs haven't been deleted and job is not defined`() {
-        val jobSpec = V2FlinkClusterJobSpec()
-        jobSpec.name = "other"
-        given(controller.getJobSpecs()).thenReturn(listOf(jobSpec))
-        given(controller.haveJobsBeenRemoved()).thenReturn(false)
-        given(controller.listExistingJobNames()).thenReturn(listOf("test"))
-        val result = manager.deleteJobs()
-        verify(controller, times(1)).haveJobsBeenRemoved()
-        verify(controller, times(1)).listExistingJobNames()
-        verify(controller, times(1)).getJobSpecs()
-        assertThat(result).isFalse()
     }
 }

@@ -1,9 +1,7 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkAddress
 import com.nextbreakpoint.flink.common.FlinkOptions
-import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.SavepointOptions
 import com.nextbreakpoint.flink.common.SavepointRequest
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
@@ -23,14 +21,12 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class SavepointTriggerTest {
-    private val clusterSelector = ResourceSelector(namespace = "flink", name = "test", uid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
     private val flinkAddress = FlinkAddress(host = "localhost", port = 8080)
     private val savepointOptions = SavepointOptions(targetPath = "file://tmp")
-    private val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
-    private val job = TestFactory.aFlinkJob(cluster)
+    private val job = TestFactory.aFlinkJob(name = "test-test", namespace = "flink")
     private val context = JobContext(job)
     private val command = SavepointTrigger(flinkOptions, flinkClient, kubeClient, context)
 
@@ -44,7 +40,7 @@ class SavepointTriggerTest {
     @Test
     fun `should fail when kubeClient throws exception`() {
         given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, savepointOptions)
+        val result = command.execute("flink", "test", "test", savepointOptions)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
@@ -56,7 +52,7 @@ class SavepointTriggerTest {
     @Test
     fun `should return expected result when savepoint can't be triggered`() {
         given(flinkClient.triggerSavepoints(eq(flinkAddress), eq(listOf("1")), eq("file://tmp"))).thenThrow(RuntimeException())
-        val result = command.execute(clusterSelector, savepointOptions)
+        val result = command.execute("flink", "test", "test", savepointOptions)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).triggerSavepoints(eq(flinkAddress), eq(listOf("1")), eq("file://tmp"))
         verifyNoMoreInteractions(kubeClient)
@@ -68,7 +64,7 @@ class SavepointTriggerTest {
 
     @Test
     fun `should return expected result when savepoint can be triggered`() {
-        val result = command.execute(clusterSelector, savepointOptions)
+        val result = command.execute("flink", "test", "test", savepointOptions)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).triggerSavepoints(eq(flinkAddress), eq(listOf("1")), eq("file://tmp"))
         verifyNoMoreInteractions(kubeClient)

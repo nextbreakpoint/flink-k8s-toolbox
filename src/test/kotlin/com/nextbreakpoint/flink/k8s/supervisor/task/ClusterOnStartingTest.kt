@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.supervisor.task
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.supervisor.core.ClusterManager
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
@@ -23,7 +23,6 @@ class ClusterOnStartingTest {
         given(context.ensureJobManagerServiceExists()).thenReturn(true)
         given(context.isClusterHealthy()).thenReturn(true)
         given(context.stopAllJobs()).thenReturn(true)
-        given(context.createJobs()).thenReturn(true)
     }
 
     @Test
@@ -43,7 +42,7 @@ class ClusterOnStartingTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).isActionPresent()
-        inOrder.verify(context, times(1)).executeAction(eq(setOf(ManualAction.STOP)))
+        inOrder.verify(context, times(1)).executeAction(eq(setOf(Action.STOP)))
         verifyNoMoreInteractions(context)
     }
 
@@ -101,24 +100,24 @@ class ClusterOnStartingTest {
         verifyNoMoreInteractions(context)
     }
 
-    @Test
-    fun `should behave as expected when jobs haven't been created`() {
-        given(context.createJobs()).thenReturn(false)
-        task.execute(context)
-        val inOrder = inOrder(context)
-        inOrder.verify(context, times(1)).isResourceDeleted()
-        inOrder.verify(context, times(1)).isActionPresent()
-        inOrder.verify(context, times(1)).setClusterHealth(eq(""))
-        inOrder.verify(context, times(1)).ensureJobManagerPodExists()
-        inOrder.verify(context, times(1)).ensureJobManagerServiceExists()
-        inOrder.verify(context, times(1)).isClusterHealthy()
-        inOrder.verify(context, times(1)).stopAllJobs()
-        inOrder.verify(context, times(1)).createJobs()
-        verifyNoMoreInteractions(context)
-    }
+//    @Test
+//    fun `should behave as expected when jobs haven't been created`() {
+//        given(context.createJobs()).thenReturn(false)
+//        task.execute(context)
+//        val inOrder = inOrder(context)
+//        inOrder.verify(context, times(1)).isResourceDeleted()
+//        inOrder.verify(context, times(1)).isActionPresent()
+//        inOrder.verify(context, times(1)).setClusterHealth(eq(""))
+//        inOrder.verify(context, times(1)).ensureJobManagerPodExists()
+//        inOrder.verify(context, times(1)).ensureJobManagerServiceExists()
+//        inOrder.verify(context, times(1)).isClusterHealthy()
+//        inOrder.verify(context, times(1)).stopAllJobs()
+////        inOrder.verify(context, times(1)).createJobs()
+//        verifyNoMoreInteractions(context)
+//    }
 
     @Test
-    fun `should behave as expected when cluster has started and jobs haven been created`() {
+    fun `should behave as expected when cluster has started`() {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
@@ -128,7 +127,7 @@ class ClusterOnStartingTest {
         inOrder.verify(context, times(1)).ensureJobManagerServiceExists()
         inOrder.verify(context, times(1)).isClusterHealthy()
         inOrder.verify(context, times(1)).stopAllJobs()
-        inOrder.verify(context, times(1)).createJobs()
+//        inOrder.verify(context, times(1)).createJobs()
         inOrder.verify(context, times(1)).onClusterStarted()
         verifyNoMoreInteractions(context)
     }

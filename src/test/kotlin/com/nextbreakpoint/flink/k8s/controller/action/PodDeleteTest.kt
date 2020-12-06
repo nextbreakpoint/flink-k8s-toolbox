@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
@@ -16,7 +15,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class PodDeleteTest {
-    private val clusterSelector = ResourceSelector(namespace = "flink", name = "test", uid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
@@ -28,9 +26,9 @@ class PodDeleteTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.deletePod(eq(clusterSelector), eq("test"))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, "test")
-        verify(kubeClient, times(1)).deletePod(eq(clusterSelector), eq("test"))
+        given(kubeClient.deletePod(eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
+        val result = command.execute("flink", "test", "test")
+        verify(kubeClient, times(1)).deletePod(eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -40,8 +38,8 @@ class PodDeleteTest {
 
     @Test
     fun `should delete pod`() {
-        val result = command.execute(clusterSelector, "test")
-        verify(kubeClient, times(1)).deletePod(eq(clusterSelector), eq("test"))
+        val result = command.execute("flink", "test", "test")
+        verify(kubeClient, times(1)).deletePod(eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()

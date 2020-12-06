@@ -2,7 +2,6 @@ package com.nextbreakpoint.flink.k8s.controller.action
 
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.ScaleJobOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.FlinkJobAnnotations
@@ -22,9 +21,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class RequestJobScaleTest {
-    private val jobSelector = ResourceSelector(namespace = "flink", name = "test-test", uid = "123")
-    private val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
-    private val job = TestFactory.aFlinkJob(cluster)
+    private val job = TestFactory.aFlinkJob(name = "test-test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
@@ -38,9 +35,9 @@ class RequestJobScaleTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.rescaleJob(eq(jobSelector), eq(4))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(jobSelector, ScaleJobOptions(parallelism = 4))
-        verify(kubeClient, times(1)).rescaleJob(eq(jobSelector), eq(4))
+        given(kubeClient.rescaleJob(eq("flink"), eq("test-test"), eq(4))).thenThrow(RuntimeException::class.java)
+        val result = command.execute("flink", "test", "test", ScaleJobOptions(parallelism = 4))
+        verify(kubeClient, times(1)).rescaleJob(eq("flink"), eq("test-test"), eq(4))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(supervisorCache)
@@ -52,8 +49,8 @@ class RequestJobScaleTest {
     @Test
     fun `should return expected result when scaling`() {
         val actionTimestamp = FlinkJobAnnotations.getActionTimestamp(job)
-        val result = command.execute(jobSelector, ScaleJobOptions(parallelism = 4))
-        verify(kubeClient, times(1)).rescaleJob(eq(jobSelector), eq(4))
+        val result = command.execute("flink", "test", "test", ScaleJobOptions(parallelism = 4))
+        verify(kubeClient, times(1)).rescaleJob(eq("flink"), eq("test-test"), eq(4))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(supervisorCache)
@@ -66,8 +63,8 @@ class RequestJobScaleTest {
     @Test
     fun `should return expected result when scaling down to zero`() {
         val actionTimestamp = FlinkJobAnnotations.getActionTimestamp(job)
-        val result = command.execute(jobSelector, ScaleJobOptions(parallelism = 0))
-        verify(kubeClient, times(1)).rescaleJob(eq(jobSelector), eq(0))
+        val result = command.execute("flink", "test", "test", ScaleJobOptions(parallelism = 0))
+        verify(kubeClient, times(1)).rescaleJob(eq("flink"), eq("test-test"), eq(0))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         verifyNoMoreInteractions(supervisorCache)

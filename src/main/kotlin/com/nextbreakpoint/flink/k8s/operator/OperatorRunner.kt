@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flink.k8s.operator
 
 import com.nextbreakpoint.flink.common.ClusterStatus
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.RunnerOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
 import com.nextbreakpoint.flink.k8s.controller.Controller
@@ -33,7 +32,7 @@ class OperatorRunner(
             try {
                 cache.updateSnapshot()
                 updateMetrics(cache, gauges)
-                reconcileResources(cache, operator)
+                operator.reconcile()
             } catch (e: Exception) {
                 logger.error("Something went wrong", e)
             }
@@ -51,7 +50,7 @@ class OperatorRunner(
     }
 
     private fun updateMetrics(cache: Cache, gauges: Map<ClusterStatus, AtomicInteger>) {
-        val clusters = cache.getFlinkClustersV2()
+        val clusters = cache.getFlinkClusters()
 
         val counters = clusters.foldRight(mutableMapOf<ClusterStatus, Int>()) { flinkCluster, counters ->
             val status = FlinkClusterStatus.getSupervisorStatus(flinkCluster)
@@ -64,15 +63,5 @@ class OperatorRunner(
         ClusterStatus.values().forEach {
             gauges[it]?.set(counters[it] ?: 0)
         }
-    }
-
-    private fun reconcileResources(cache: Cache, operator: Operator) {
-        cache.getClusterSelectorsV2().forEach { clusterSelector ->
-            reconcileResources(operator, clusterSelector)
-        }
-    }
-
-    private fun reconcileResources(operator: Operator, clusterSelector: ResourceSelector) {
-        operator.reconcile(clusterSelector)
     }
 }

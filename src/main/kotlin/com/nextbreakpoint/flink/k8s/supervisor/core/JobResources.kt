@@ -7,13 +7,7 @@ data class JobResources(
     val flinkJob: V1FlinkJob? = null,
     val bootstrapJob: V1Job? = null
 ) {
-    fun withFlinkJob(resource: V1FlinkJob?) =
-        JobResources(
-            flinkJob = resource,
-            bootstrapJob = this.bootstrapJob
-        )
-
-    fun withBootstrapJob(resource: V1Job?) =
+    fun withBootstrap(resource: V1Job?) =
         JobResources(
             flinkJob = this.flinkJob,
             bootstrapJob = resource

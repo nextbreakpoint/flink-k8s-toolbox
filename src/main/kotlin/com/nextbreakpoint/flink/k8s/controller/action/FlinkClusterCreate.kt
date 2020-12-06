@@ -1,36 +1,29 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.controller.core.Action
+import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
 import org.apache.log4j.Logger
 
-class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Action<V2FlinkCluster, Void?>(flinkOptions, flinkClient, kubeClient) {
+class FlinkClusterCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<V1FlinkCluster, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(FlinkClusterCreate::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ResourceSelector, params: V2FlinkCluster): Result<Void?> {
+    override fun execute(namespace: String, clusterName: String, params: V1FlinkCluster): Result<Void?> {
         return try {
-            val flinkCluster = V2FlinkCluster()
-                .apiVersion("nextbreakpoint.com/v2")
-                .kind("FlinkCluster")
-                .metadata(params.metadata)
-                .spec(params.spec)
-
-            kubeClient.createFlinkClusterV2(flinkCluster)
+            kubeClient.createFlinkCluster(namespace, params)
 
             Result(
                 ResultStatus.OK,
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't create cluster resource", e)
+            logger.error("Can't create cluster", e)
 
             Result(
                 ResultStatus.ERROR,
