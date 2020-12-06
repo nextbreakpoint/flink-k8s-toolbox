@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.supervisor.task
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.supervisor.core.JobManager
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
@@ -20,6 +20,7 @@ class JobOnStoppedTest {
         given(context.isResourceDeleted()).thenReturn(false)
         given(context.terminateBootstrapJob()).thenReturn(true)
         given(context.isClusterStarted()).thenReturn(true)
+        given(context.isClusterStarting()).thenReturn(false)
         given(context.isClusterUnhealthy()).thenReturn(false)
         given(context.shouldRestartJob()).thenReturn(true)
         given(context.hasSpecificationChanged()).thenReturn(false)
@@ -54,6 +55,7 @@ class JobOnStoppedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
         inOrder.verify(context, times(1)).setClusterHealth("")
         verifyNoMoreInteractions(context)
@@ -66,6 +68,7 @@ class JobOnStoppedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).setClusterHealth(eq("UNHEALTHY"))
@@ -79,6 +82,7 @@ class JobOnStoppedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).setClusterHealth("HEALTHY")
@@ -94,6 +98,7 @@ class JobOnStoppedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).setClusterHealth("HEALTHY")
@@ -111,11 +116,12 @@ class JobOnStoppedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).setClusterHealth("HEALTHY")
         inOrder.verify(context, times(1)).isActionPresent()
-        inOrder.verify(context, times(1)).executeAction(setOf(ManualAction.START))
+        inOrder.verify(context, times(1)).executeAction(setOf(Action.START))
         verifyNoMoreInteractions(context)
     }
 
@@ -126,6 +132,7 @@ class JobOnStoppedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).setClusterHealth("HEALTHY")
@@ -143,6 +150,7 @@ class JobOnStoppedTest {
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).setClusterHealth("HEALTHY")

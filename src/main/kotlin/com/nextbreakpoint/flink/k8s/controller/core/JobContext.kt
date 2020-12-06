@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.controller.core
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.common.FlinkJobAnnotations
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 
@@ -9,8 +9,8 @@ class JobContext(private val job: V1FlinkJob) {
         FlinkJobAnnotations.setWithoutSavepoint(job, withoutSavepoint)
     }
 
-    fun setJobManualAction(action: ManualAction) {
-        FlinkJobAnnotations.setManualAction(job, action)
+    fun setJobManualAction(action: Action) {
+        FlinkJobAnnotations.setRequestedAction(job, action)
     }
 
     // the returned map must be immutable to avoid side effects

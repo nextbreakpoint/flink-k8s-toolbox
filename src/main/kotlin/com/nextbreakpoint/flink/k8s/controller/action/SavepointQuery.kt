@@ -1,24 +1,23 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.common.SavepointRequest
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.controller.core.Action
+import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.JobContext
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import org.apache.log4j.Logger
 
-class SavepointQuery(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val context: JobContext) : Action<SavepointRequest, String?>(flinkOptions, flinkClient, kubeClient) {
+class SavepointQuery(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val context: JobContext) : JobAction<SavepointRequest, String?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(SavepointQuery::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ResourceSelector, params: SavepointRequest): Result<String?> {
+    override fun execute(namespace: String, clusterName: String, jobName: String, params: SavepointRequest): Result<String?> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, namespace, clusterName)
 
             val requests = mapOf(params.jobId to params.triggerId)
 

@@ -1,20 +1,18 @@
 package com.nextbreakpoint.flink.testing
 
-import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterSpec
 import com.nextbreakpoint.flink.k8s.common.Resource
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterSpec
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobSpec
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterJobSpec
 import io.kubernetes.client.openapi.models.V1JobBuilder
-import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1ServiceBuilder
 
 object TestFactory {
-    fun aFlinkCluster(name: String, namespace: String, taskManagers: Int = 1, taskSlots: Int = 1): V2FlinkCluster {
-        val flinkClusterSpec = Resource.parseV2FlinkClusterSpec(
+    fun aFlinkCluster(name: String, namespace: String, taskManagers: Int = 1, taskSlots: Int = 1): V1FlinkCluster {
+        val flinkClusterSpec = Resource.parseV1FlinkClusterSpec(
             """
             {
               "taskManagers": $taskManagers,
@@ -175,57 +173,48 @@ object TestFactory {
                 }
               },
               "supervisor": {
-              },
-              "jobs": [{
-                  "name": "test",
-                  "spec": {
-                      "jobParallelism": 2,
-                      "bootstrap": {
-                        "serviceAccount": "bootstrap-test",
-                        "pullSecrets": "bootstrap-regcred",
-                        "pullPolicy": "IfNotPresent",
-                        "image": "registry:30000/flink-jobs:1",
-                        "jarPath": "/flink-jobs.jar",
-                        "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
-                        "arguments": [
-                          "--BUCKET_BASE_PATH",
-                          "file:///var/tmp"
-                        ]
-                      },
-                      "savepoint": {
-                        "restartPolicy": "Never",
-                        "savepointMode": "Automatic",
-                        "savepointInterval": "60",
-                        "savepointTargetPath": "file:///var/tmp/test"
-                      }
-                  }
-              }]
+              }
             }
             """.trimIndent()
         )
-        return makeV2FlinkCluster(
+        return makeFlinkCluster(
             name,
             namespace,
             flinkClusterSpec
         )
     }
 
-    private fun makeV2FlinkCluster(name: String, namespace: String, flinkClusterSpec: V2FlinkClusterSpec): V2FlinkCluster {
-        val flinkCluster = V2FlinkCluster()
-            .apiVersion("nextbreakpoint.com/v2")
-            .kind("FlinkCluster")
-        val objectMeta = V1ObjectMeta().namespace(namespace).name(name)
-        flinkCluster.metadata = objectMeta
-        flinkCluster.spec = flinkClusterSpec
-        return flinkCluster
+    private fun makeFlinkCluster(name: String, namespace: String, flinkClusterSpec: V1FlinkClusterSpec): V1FlinkCluster {
+        val objectMeta = V1ObjectMetaBuilder()
+            .withNamespace(namespace)
+            .withName(name)
+            .build()
+        return V1FlinkCluster.builder()
+            .withApiVersion("nextbreakpoint.com/v1")
+            .withKind("FlinkCluster")
+            .withMetadata(objectMeta)
+            .withSpec(flinkClusterSpec)
+            .build()
     }
 
-    fun aBootstrapJob(cluster: V2FlinkCluster) = V1JobBuilder()
+    fun aBootstrapJob(cluster: V1FlinkCluster, job: V1FlinkJob) = V1JobBuilder()
+        .withNewMetadata()
+        .withNamespace(job.metadata.namespace)
+        .withName("bootstrap-${job.metadata.name}")
+        .withLabels(mapOf(
+            "jobName" to job.metadata.name,
+            "clusterName" to cluster.metadata.name,
+            "clusterUid" to cluster.metadata.uid
+        ))
+        .withUid(job.metadata.uid)
+        .endMetadata()
+        .build()
+
+    fun aJobManagerService(cluster: V1FlinkCluster) = V1ServiceBuilder()
         .withNewMetadata()
         .withNamespace(cluster.metadata.namespace)
-        .withName("${cluster.metadata.name}-job")
+        .withName("jobmanager-${cluster.metadata.name}")
         .withLabels(mapOf(
-            "jobName" to cluster.spec.jobs[0].name,
             "clusterName" to cluster.metadata.name,
             "clusterUid" to cluster.metadata.uid
         ))
@@ -233,22 +222,10 @@ object TestFactory {
         .endMetadata()
         .build()
 
-    fun aJobManagerService(cluster: V2FlinkCluster) = V1ServiceBuilder()
+    fun aJobManagerPod(cluster: V1FlinkCluster, suffix: String) = V1PodBuilder()
         .withNewMetadata()
         .withNamespace(cluster.metadata.namespace)
-        .withName("${cluster.metadata.name}-service")
-        .withLabels(mapOf(
-            "clusterName" to cluster.metadata.name,
-            "clusterUid" to cluster.metadata.uid
-        ))
-        .withUid(cluster.metadata.uid)
-        .endMetadata()
-        .build()
-
-    fun aJobManagerPod(cluster: V2FlinkCluster, suffix: String) = V1PodBuilder()
-        .withNewMetadata()
-        .withNamespace(cluster.metadata.namespace)
-        .withName("${cluster.metadata.name}-pod-$suffix")
+        .withName("jobmanager-${cluster.metadata.name}-$suffix")
         .withLabels(mapOf(
             "clusterName" to cluster.metadata.name,
             "clusterUid" to cluster.metadata.uid,
@@ -258,10 +235,10 @@ object TestFactory {
         .endMetadata()
         .build()
 
-    fun aTaskManagerPod(cluster: V2FlinkCluster, suffix: String) = V1PodBuilder()
+    fun aTaskManagerPod(cluster: V1FlinkCluster, suffix: String) = V1PodBuilder()
         .withNewMetadata()
         .withNamespace(cluster.metadata.namespace)
-        .withName("${cluster.metadata.name}-pod-$suffix")
+        .withName("taskmanager-${cluster.metadata.name}-$suffix")
         .withLabels(mapOf(
             "clusterName" to cluster.metadata.name,
             "clusterUid" to cluster.metadata.uid,
@@ -271,25 +248,49 @@ object TestFactory {
         .endMetadata()
         .build()
 
-    fun aFlinkJob(cluster: V2FlinkCluster): V1FlinkJob {
-        val jobSpec = cluster.spec.jobs.get(0)
-        val metadata = V1ObjectMetaBuilder()
-            .withLabels(mapOf(
-                "owner" to "test",
-                "jobName" to cluster.spec.jobs[0].name,
-                "clusterName" to cluster.metadata.name,
-                "clusterUid" to cluster.metadata.uid,
-                "component" to "flink"
-            ))
-            .withNamespace(cluster.metadata.namespace)
-            .withName("${cluster.metadata?.name}-${jobSpec.name}")
-            .build()
+    fun aFlinkJob(name: String, namespace: String): V1FlinkJob {
+        val flinkJobSpec = Resource.parseV1FlinkJobSpec(
+            """
+            {
+              "jobParallelism": 2,
+              "bootstrap": {
+                "serviceAccount": "bootstrap-test",
+                "pullSecrets": "bootstrap-regcred",
+                "pullPolicy": "IfNotPresent",
+                "image": "registry:30000/flink-jobs:1",
+                "jarPath": "/flink-jobs.jar",
+                "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
+                "arguments": [
+                  "--BUCKET_BASE_PATH",
+                  "file:///var/tmp"
+                ]
+              },
+              "savepoint": {
+                "restartPolicy": "Never",
+                "savepointMode": "Automatic",
+                "savepointInterval": "60",
+                "savepointTargetPath": "file:///var/tmp/test"
+              }
+            }
+            """.trimIndent()
+        )
+        return makeFlinkJob(
+            name,
+            namespace,
+            flinkJobSpec
+        )
+    }
 
-        val resource = V1FlinkJob()
-        resource.kind = "V1FlinkJob"
-        resource.apiVersion = "v1"
-        resource.metadata = metadata
-        resource.spec = jobSpec.spec
-        return resource
+    private fun makeFlinkJob(name: String, namespace: String, flinkJobSpec: V1FlinkJobSpec): V1FlinkJob {
+        val objectMeta = V1ObjectMetaBuilder()
+            .withNamespace(namespace)
+            .withName(name)
+            .build()
+        return V1FlinkJob.builder()
+            .withApiVersion("nextbreakpoint.com/v1")
+            .withKind("FlinkJob")
+            .withMetadata(objectMeta)
+            .withSpec(flinkJobSpec)
+            .build()
     }
 }

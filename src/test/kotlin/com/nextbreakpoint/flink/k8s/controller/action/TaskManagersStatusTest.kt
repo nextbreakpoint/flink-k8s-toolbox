@@ -1,9 +1,5 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.google.gson.reflect.TypeToken
-import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
-import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkAddress
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
@@ -11,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
-import io.kubernetes.client.openapi.JSON
+import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
+import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,7 +18,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class TaskManagersStatusTest {
-    private val clusterSelector = ResourceSelector(namespace = "flink", name = "test", uid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
@@ -42,7 +38,7 @@ class TaskManagersStatusTest {
     @Test
     fun `should fail when kubeClient throws exception`() {
         given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, null)
+        val result = command.execute("flink", "test", null)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
@@ -54,7 +50,7 @@ class TaskManagersStatusTest {
     @Test
     fun `should return expected result when it can't fetch taskmanagers list`() {
         given(flinkClient.getTaskManagersOverview(eq(flinkAddress))).thenThrow(RuntimeException())
-        val result = command.execute(clusterSelector, null)
+        val result = command.execute("flink", "test", null)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getTaskManagersOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)
@@ -66,7 +62,7 @@ class TaskManagersStatusTest {
 
     @Test
     fun `should return expected result when it can fetch taskmanagers list`() {
-        val result = command.execute(clusterSelector, null)
+        val result = command.execute("flink", "test", null)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getTaskManagersOverview(eq(flinkAddress))
         verifyNoMoreInteractions(kubeClient)

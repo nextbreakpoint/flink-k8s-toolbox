@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flink.k8s.supervisor
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.RunnerOptions
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.supervisor.core.Cache
@@ -24,24 +23,11 @@ class SupervisorRunner(
 
             try {
                 cache.updateSnapshot()
-                reconcileResources(cache, supervisor)
+                supervisor.reconcile()
                 supervisor.cleanup()
             } catch (e: Exception) {
                 logger.error("Something went wrong", e)
             }
         }
-    }
-
-    private fun reconcileResources(cache: Cache, supervisor: Supervisor) {
-        cache.findClusterSelector(
-            namespace = cache.namespace,
-            name = cache.clusterName
-        )?.let {
-            reconcileResources(supervisor, it)
-        }
-    }
-
-    private fun reconcileResources(supervisor: Supervisor, clusterSelector: ResourceSelector) {
-        supervisor.reconcile(clusterSelector)
     }
 }

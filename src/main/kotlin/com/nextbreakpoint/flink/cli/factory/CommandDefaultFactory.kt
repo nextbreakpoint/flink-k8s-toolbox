@@ -1,13 +1,15 @@
 package com.nextbreakpoint.flink.cli.factory
 
-import com.nextbreakpoint.flink.cli.command.LaunchBootstrap
 import com.nextbreakpoint.flink.cli.command.ClusterCreate
 import com.nextbreakpoint.flink.cli.command.ClusterDelete
 import com.nextbreakpoint.flink.cli.command.ClusterScale
 import com.nextbreakpoint.flink.cli.command.ClusterStart
 import com.nextbreakpoint.flink.cli.command.ClusterStatus
 import com.nextbreakpoint.flink.cli.command.ClusterStop
+import com.nextbreakpoint.flink.cli.command.ClusterUpdate
 import com.nextbreakpoint.flink.cli.command.ClustersList
+import com.nextbreakpoint.flink.cli.command.JobCreate
+import com.nextbreakpoint.flink.cli.command.JobDelete
 import com.nextbreakpoint.flink.cli.command.JobDetails
 import com.nextbreakpoint.flink.cli.command.JobManagerMetrics
 import com.nextbreakpoint.flink.cli.command.JobMetrics
@@ -15,20 +17,16 @@ import com.nextbreakpoint.flink.cli.command.JobScale
 import com.nextbreakpoint.flink.cli.command.JobStart
 import com.nextbreakpoint.flink.cli.command.JobStatus
 import com.nextbreakpoint.flink.cli.command.JobStop
+import com.nextbreakpoint.flink.cli.command.JobUpdate
 import com.nextbreakpoint.flink.cli.command.JobsList
+import com.nextbreakpoint.flink.cli.command.LaunchBootstrap
 import com.nextbreakpoint.flink.cli.command.LaunchOperator
+import com.nextbreakpoint.flink.cli.command.LaunchSupervisor
 import com.nextbreakpoint.flink.cli.command.SavepointForget
 import com.nextbreakpoint.flink.cli.command.SavepointTrigger
-import com.nextbreakpoint.flink.cli.command.LaunchSupervisor
 import com.nextbreakpoint.flink.cli.command.TaskManagerDetails
 import com.nextbreakpoint.flink.cli.command.TaskManagerMetrics
 import com.nextbreakpoint.flink.cli.command.TaskManagersList
-import com.nextbreakpoint.flink.cli.core.ClusterCommand
-import com.nextbreakpoint.flink.cli.core.JobCommand
-import com.nextbreakpoint.flink.common.ScaleJobOptions
-import com.nextbreakpoint.flink.common.StartOptions
-import com.nextbreakpoint.flink.common.StopOptions
-import com.nextbreakpoint.flink.k8s.controller.action.JobGetStatus
 
 object CommandDefaultFactory : CommandFactory {
     override fun createLaunchOperatorCommand() = LaunchOperator()
@@ -42,6 +40,8 @@ object CommandDefaultFactory : CommandFactory {
     override fun createCreateClusterCommand() = ClusterCreate()
 
     override fun createDeleteClusterCommand() = ClusterDelete()
+
+    override fun createUpdateClusterCommand() = ClusterUpdate()
 
     override fun createStartClusterCommand() = ClusterStart()
 
@@ -60,6 +60,12 @@ object CommandDefaultFactory : CommandFactory {
     override fun createGetClusterStatusCommand() = ClusterStatus()
 
     override fun createListJobsCommand() = JobsList()
+
+    override fun createCreateJobCommand() = JobCreate()
+
+    override fun createDeleteJobCommand() = JobDelete()
+
+    override fun createUpdateJobCommand() = JobUpdate()
 
     override fun createStartJobCommand() = JobStart()
 

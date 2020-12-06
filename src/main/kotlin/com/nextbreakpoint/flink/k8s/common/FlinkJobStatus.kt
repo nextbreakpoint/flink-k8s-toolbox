@@ -2,16 +2,20 @@ package com.nextbreakpoint.flink.k8s.common
 
 import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
+import com.nextbreakpoint.flink.common.RestartPolicy
+import com.nextbreakpoint.flink.common.SavepointMode
 import com.nextbreakpoint.flink.common.SavepointRequest
-import com.nextbreakpoint.flink.k8s.crd.V1BootstrapSpec
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobDigest
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobStatus
 import org.joda.time.DateTime
 
 object FlinkJobStatus {
+    @JvmStatic
+    private val initialisedTimestamp = currentTimeMillis()
+
     fun getStatusTimestamp(flinkJob: V1FlinkJob) : DateTime =
-        flinkJob.status?.timestamp ?: DateTime(0)
+        flinkJob.status?.timestamp ?: DateTime(initialisedTimestamp)
 
     fun getSavepointTimestamp(flinkJob: V1FlinkJob) : DateTime =
         flinkJob.status?.savepointTimestamp ?: DateTime(0)
@@ -47,139 +51,130 @@ object FlinkJobStatus {
     }
 
     fun setSavepointRequest(flinkJob: V1FlinkJob, request: SavepointRequest) {
-        ensureState(flinkJob)
+        if (flinkJob.status?.savepointJobId != request.jobId || flinkJob.status?.savepointTriggerId != request.triggerId) {
+            ensureState(flinkJob)
 
-        val currentTimeMillis = currentTimeMillis()
+            val currentTimeMillis = currentTimeMillis()
 
-        flinkJob.status?.savepointRequestTimestamp = DateTime(currentTimeMillis)
+            flinkJob.status?.savepointRequestTimestamp = DateTime(currentTimeMillis)
 
-        flinkJob.status?.savepointJobId = request.jobId
-        flinkJob.status?.savepointTriggerId = request.triggerId
+            flinkJob.status?.savepointJobId = request.jobId
+            flinkJob.status?.savepointTriggerId = request.triggerId
 
-        updateStatusTimestamp(flinkJob, currentTimeMillis)
+            updateStatusTimestamp(flinkJob, currentTimeMillis)
+        }
     }
 
     fun resetSavepointRequest(flinkJob: V1FlinkJob) {
-        ensureState(flinkJob)
-
-        val currentTimeMillis = currentTimeMillis()
-
-        flinkJob.status?.savepointRequestTimestamp = DateTime(currentTimeMillis)
-
-        flinkJob.status?.savepointJobId = ""
-        flinkJob.status?.savepointTriggerId = ""
-
-        updateStatusTimestamp(flinkJob, currentTimeMillis)
+        setSavepointRequest(flinkJob, SavepointRequest("", ""))
     }
 
     fun getSavepointPath(flinkJob: V1FlinkJob) : String? =
-        if (flinkJob.status?.savepointPath.orEmpty().isBlank()) null else flinkJob.status?.savepointPath
+        if (flinkJob.status?.savepointPath.isNullOrBlank()) null else flinkJob.status?.savepointPath
 
     fun setSavepointPath(flinkJob: V1FlinkJob, path: String) {
-        ensureState(flinkJob)
+        if (flinkJob.status?.savepointPath != path) {
+            ensureState(flinkJob)
 
-        val currentTimeMillis = currentTimeMillis()
+            val currentTimeMillis = currentTimeMillis()
 
-        flinkJob.status?.savepointRequestTimestamp = DateTime(currentTimeMillis)
+            flinkJob.status?.savepointRequestTimestamp = DateTime(currentTimeMillis)
 
-        if ((path.isNotBlank() && flinkJob.status?.savepointPath != path) || (path.isBlank() && flinkJob.status?.savepointPath.orEmpty().isNotBlank())) {
-            flinkJob.status?.savepointTimestamp = DateTime(currentTimeMillis)
+            if ((path.isNotBlank() && flinkJob.status?.savepointPath != path) || (path.isBlank() && flinkJob.status?.savepointPath.orEmpty().isNotBlank())) {
+                flinkJob.status?.savepointTimestamp = DateTime(currentTimeMillis)
+            }
+
+            flinkJob.status?.savepointPath = path
+
+            updateStatusTimestamp(flinkJob, currentTimeMillis)
         }
-
-        flinkJob.status?.savepointPath = path
-
-        updateStatusTimestamp(flinkJob, currentTimeMillis)
-    }
-
-    fun setBootstrapDigest(flinkJob: V1FlinkJob, digest: String) {
-        ensureState(flinkJob)
-
-        flinkJob.status?.digest?.bootstrap = digest
-
-        updateStatusTimestamp(flinkJob, currentTimeMillis())
     }
 
     fun getBootstrapDigest(flinkJob: V1FlinkJob): String? =
         flinkJob.status?.digest?.bootstrap
 
-    fun setJobParallelism(flinkJob: V1FlinkJob, jobParallelism: Int) {
-        ensureState(flinkJob)
+    fun setBootstrapDigest(flinkJob: V1FlinkJob, digest: String) {
+        if (flinkJob.status?.digest?.bootstrap != digest) {
+            ensureState(flinkJob)
 
-        flinkJob.status?.jobParallelism = jobParallelism
+            flinkJob.status?.digest?.bootstrap = digest
 
-        updateStatusTimestamp(flinkJob, currentTimeMillis())
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
+        }
+    }
+
+    fun getSavepointDigest(flinkJob: V1FlinkJob): String? =
+        flinkJob.status?.digest?.savepoint
+
+    fun setSavepointDigest(flinkJob: V1FlinkJob, digest: String) {
+        if (flinkJob.status?.digest?.savepoint != digest) {
+            ensureState(flinkJob)
+
+            flinkJob.status?.digest?.savepoint = digest
+
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
+        }
     }
 
     fun getJobParallelism(flinkJob: V1FlinkJob): Int =
         flinkJob.status?.jobParallelism ?: 1
 
-    fun setLabelSelector(flinkJob: V1FlinkJob, labelSelector: String) {
-        ensureState(flinkJob)
+    fun setJobParallelism(flinkJob: V1FlinkJob, jobParallelism: Int) {
+        if (flinkJob.status?.jobParallelism != jobParallelism) {
+            ensureState(flinkJob)
 
-        flinkJob.status?.labelSelector = labelSelector
+            flinkJob.status?.jobParallelism = jobParallelism
 
-        updateStatusTimestamp(flinkJob, currentTimeMillis())
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
+        }
     }
 
     fun getLabelSelector(flinkJob: V1FlinkJob): String? =
         flinkJob.status?.labelSelector
 
-    fun setSavepointMode(flinkJob: V1FlinkJob, savepointMode: String?) {
-        ensureState(flinkJob)
+    fun setLabelSelector(flinkJob: V1FlinkJob, labelSelector: String) {
+        if (flinkJob.status?.labelSelector != labelSelector) {
+            ensureState(flinkJob)
 
-        flinkJob.status?.savepointMode = savepointMode
+            flinkJob.status?.labelSelector = labelSelector
 
-        updateStatusTimestamp(flinkJob, currentTimeMillis())
-    }
-
-    fun getSavepointMode(flinkJob: V1FlinkJob): String? =
-        flinkJob.status?.savepointMode
-
-    fun setRestartPolicy(flinkJob: V1FlinkJob, restartPolicy: String?) {
-        ensureState(flinkJob)
-
-        flinkJob.status?.restartPolicy = restartPolicy
-
-        updateStatusTimestamp(flinkJob, currentTimeMillis())
-    }
-
-    fun getRestartPolicy(flinkJob: V1FlinkJob): String? =
-        flinkJob.status?.restartPolicy
-
-    fun setBootstrap(flinkJob: V1FlinkJob, bootstrap: V1BootstrapSpec?) {
-        ensureState(flinkJob)
-
-        flinkJob.status?.bootstrap = bootstrap
-
-        updateStatusTimestamp(flinkJob, currentTimeMillis())
-    }
-
-    fun getBootstrap(flinkJob: V1FlinkJob): V1BootstrapSpec? =
-        flinkJob.status?.bootstrap
-
-    private fun updateStatusTimestamp(flinkJob: V1FlinkJob, currentTimeMillis: Long) {
-        flinkJob.status?.timestamp = DateTime(currentTimeMillis)
-    }
-
-    private fun currentTimeMillis(): Long {
-        // this is a hack required for testing
-        ensureMillisecondPassed()
-
-        return System.currentTimeMillis()
-    }
-
-    private fun ensureMillisecondPassed() {
-        try {
-            Thread.sleep(1)
-        } catch (e: Exception) {
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
         }
     }
 
-    private fun ensureState(flinkJob: V1FlinkJob) {
-        if (flinkJob.status == null) {
-            flinkJob.status = V1FlinkJobStatus()
-            flinkJob.status.digest = V1FlinkJobDigest()
+    fun getSavepointMode(flinkJob: V1FlinkJob): SavepointMode {
+        val savepointMode = flinkJob.status?.savepointMode
+        return if (savepointMode.isNullOrBlank()) SavepointMode.Automatic else SavepointMode.valueOf(savepointMode)
+    }
+
+    fun setSavepointMode(flinkJob: V1FlinkJob, savepointMode: SavepointMode) {
+        if (flinkJob.status?.savepointMode != savepointMode.toString()) {
+            ensureState(flinkJob)
+
+            flinkJob.status?.savepointMode = savepointMode.toString()
+
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
         }
+    }
+
+    fun getRestartPolicy(flinkJob: V1FlinkJob): RestartPolicy {
+        val restartPolicy = flinkJob.status?.restartPolicy
+        return if (restartPolicy.isNullOrBlank()) RestartPolicy.Always else RestartPolicy.valueOf(restartPolicy)
+    }
+
+    fun setRestartPolicy(flinkJob: V1FlinkJob, restartPolicy: RestartPolicy) {
+        if (flinkJob.status?.restartPolicy != restartPolicy.toString()) {
+            ensureState(flinkJob)
+
+            flinkJob.status?.restartPolicy = restartPolicy.toString()
+
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
+        }
+    }
+
+    fun getResourceStatus(flinkJob: V1FlinkJob): ResourceStatus {
+        val status = flinkJob.status?.resourceStatus
+        return if (status.isNullOrBlank()) ResourceStatus.Unknown else ResourceStatus.valueOf(status)
     }
 
     fun setResourceStatus(flinkJob: V1FlinkJob, status: ResourceStatus) {
@@ -192,10 +187,7 @@ object FlinkJobStatus {
         }
     }
 
-    fun getResourceStatus(flinkJob: V1FlinkJob): ResourceStatus {
-        val status = flinkJob.status?.resourceStatus
-        return if (status.isNullOrBlank()) ResourceStatus.Unknown else ResourceStatus.valueOf(status)
-    }
+    fun getJobStatus(flinkJob: V1FlinkJob) = flinkJob.status?.jobStatus
 
     fun setJobStatus(flinkJob: V1FlinkJob, status: String) {
         if (flinkJob.status?.jobStatus != status) {
@@ -207,27 +199,31 @@ object FlinkJobStatus {
         }
     }
 
-    fun getJobStatus(flinkJob: V1FlinkJob) = flinkJob.status?.jobStatus
-
-    fun setJobId(flinkJob: V1FlinkJob, jobId: String?) {
-        ensureState(flinkJob)
-
-        flinkJob.status?.jobId = jobId
-
-        updateStatusTimestamp(flinkJob, currentTimeMillis())
-    }
-
     fun getJobId(flinkJob: V1FlinkJob) = flinkJob.status?.jobId
 
-    fun setClusterName(flinkJob: V1FlinkJob, clusterName: String?) {
-        ensureState(flinkJob)
+    fun setJobId(flinkJob: V1FlinkJob, jobId: String?) {
+        if (flinkJob.status?.jobId != jobId) {
+            ensureState(flinkJob)
 
-        flinkJob.status?.clusterName = clusterName
+            flinkJob.status?.jobId = jobId
 
-        updateStatusTimestamp(flinkJob, currentTimeMillis())
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
+        }
     }
 
     fun getClusterName(flinkJob: V1FlinkJob) = flinkJob.status?.clusterName
+
+    fun setClusterName(flinkJob: V1FlinkJob, clusterName: String?) {
+        if (flinkJob.status?.clusterName != clusterName) {
+            ensureState(flinkJob)
+
+            flinkJob.status?.clusterName = clusterName
+
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
+        }
+    }
+
+    fun getClusterHealth(flinkJob: V1FlinkJob) = flinkJob.status?.clusterHealth
 
     fun setClusterHealth(flinkJob: V1FlinkJob, clusterHealth: String) {
         if (flinkJob.status?.clusterHealth != clusterHealth) {
@@ -239,11 +235,30 @@ object FlinkJobStatus {
         }
     }
 
-    fun getClusterHealth(flinkJob: V1FlinkJob) = flinkJob.status?.clusterHealth
+    private fun updateStatusTimestamp(flinkJob: V1FlinkJob, currentTimeMillis: Long) {
+        flinkJob.status?.timestamp = DateTime(currentTimeMillis)
+    }
 
-//    private fun makeJobDigest(digest: String): V1FlinkJobDigest {
-//        val jobDigest = V1FlinkJobDigest()
-//        jobDigest.bootstrap = digest
-//        return jobDigest
-//    }
+    @JvmStatic
+    private fun currentTimeMillis(): Long {
+        // this is a hack required for testing
+        ensureMillisecondPassed()
+
+        return System.currentTimeMillis()
+    }
+
+    @JvmStatic
+    private fun ensureMillisecondPassed() {
+        try {
+            Thread.sleep(1)
+        } catch (e: Exception) {
+        }
+    }
+
+    private fun ensureState(flinkJob: V1FlinkJob) {
+        if (flinkJob.status == null) {
+            flinkJob.status = V1FlinkJobStatus.builder().build()
+            flinkJob.status.digest = V1FlinkJobDigest.builder().build()
+        }
+    }
 }

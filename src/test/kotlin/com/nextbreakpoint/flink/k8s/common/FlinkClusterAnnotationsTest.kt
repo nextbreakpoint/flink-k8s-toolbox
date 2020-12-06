@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.common
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.testing.TestFactory
 import org.assertj.core.api.Assertions
 import org.joda.time.DateTime
@@ -12,12 +12,12 @@ class FlinkClusterAnnotationsTest {
     @Test
     fun `cluster should store manual action`() {
         val timestamp1 = DateTime(System.currentTimeMillis())
-        FlinkClusterAnnotations.setManualAction(flinkCluster, ManualAction.START)
-        Assertions.assertThat(FlinkClusterAnnotations.getManualAction(flinkCluster)).isEqualTo(ManualAction.START)
+        FlinkClusterAnnotations.setRequestedAction(flinkCluster, Action.START)
+        Assertions.assertThat(FlinkClusterAnnotations.getRequestedAction(flinkCluster)).isEqualTo(Action.START)
         Assertions.assertThat(FlinkClusterAnnotations.getActionTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp1)
         val timestamp2 = DateTime(System.currentTimeMillis())
-        FlinkClusterAnnotations.setManualAction(flinkCluster, ManualAction.STOP)
-        Assertions.assertThat(FlinkClusterAnnotations.getManualAction(flinkCluster)).isEqualTo(ManualAction.STOP)
+        FlinkClusterAnnotations.setRequestedAction(flinkCluster, Action.STOP)
+        Assertions.assertThat(FlinkClusterAnnotations.getRequestedAction(flinkCluster)).isEqualTo(Action.STOP)
         Assertions.assertThat(FlinkClusterAnnotations.getActionTimestamp(flinkCluster)).isGreaterThanOrEqualTo(timestamp2)
     }
 

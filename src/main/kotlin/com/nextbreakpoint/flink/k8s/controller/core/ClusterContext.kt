@@ -1,16 +1,16 @@
 package com.nextbreakpoint.flink.k8s.controller.core
 
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
 
-class ClusterContext(private val cluster: V2FlinkCluster) {
+class ClusterContext(private val cluster: V1FlinkCluster) {
     fun setClusterWithoutSavepoint(withoutSavepoint: Boolean) {
         FlinkClusterAnnotations.setWithoutSavepoint(cluster, withoutSavepoint)
     }
 
-    fun setClusterManualAction(action: ManualAction) {
-        FlinkClusterAnnotations.setManualAction(cluster, action)
+    fun setClusterManualAction(action: Action) {
+        FlinkClusterAnnotations.setRequestedAction(cluster, action)
     }
 
     // the returned map must be immutable to avoid side effects

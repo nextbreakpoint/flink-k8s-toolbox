@@ -1,23 +1,22 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.common.ScaleJobOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.controller.core.Action
+import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import org.apache.log4j.Logger
 
-class RequestJobScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Action<ScaleJobOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
+class RequestJobScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : JobAction<ScaleJobOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(RequestJobScale::class.simpleName)
     }
 
-    override fun execute(jobSelector: ResourceSelector, params: ScaleJobOptions): Result<Void?> {
+    override fun execute(namespace: String, clusterName: String, jobName: String, params: ScaleJobOptions): Result<Void?> {
         return try {
-            kubeClient.rescaleJob(jobSelector, params.parallelism)
+            kubeClient.rescaleJob(namespace, "$clusterName-$jobName", params.parallelism)
 
             Result(
                 ResultStatus.OK,

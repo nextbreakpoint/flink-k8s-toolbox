@@ -9,17 +9,16 @@ class ClusterResourcesDefaultFactoryTest {
 
     @Test
     fun `should create jobmanager service`() {
-        val service = ClusterResourcesDefaultFactory.createService("test", "xxx", "myself", cluster)
+        val service = ClusterResourcesDefaultFactory.createService("test", "myself", "test", cluster.spec)
 
         assertThat(service).isNotNull()
 
         assertThat(service.metadata?.name).isEqualTo("jobmanager-${cluster.metadata.name}")
 
         val labels = service.metadata?.labels
-        assertThat(labels).hasSize(5)
+        assertThat(labels).hasSize(4)
         assertThat(labels?.get("owner")).isEqualTo("myself")
         assertThat(labels?.get("clusterName")).isEqualTo(cluster.metadata.name)
-        assertThat(labels?.get("clusterUid")).isEqualTo("xxx")
         assertThat(labels?.get("component")).isEqualTo("flink")
         assertThat(labels?.get("role")).isEqualTo("jobmanager")
 
@@ -33,27 +32,25 @@ class ClusterResourcesDefaultFactoryTest {
         assertThat(ports?.get(3)?.name).isEqualTo("query")
 
         val selector = service.spec?.selector
-        assertThat(selector).hasSize(5)
+        assertThat(selector).hasSize(4)
         assertThat(selector?.get("owner")).isNotNull()
         assertThat(selector?.get("clusterName")).isNotNull()
-        assertThat(selector?.get("clusterUid")).isEqualTo("xxx")
         assertThat(selector?.get("component")).isNotNull()
         assertThat(selector?.get("role")).isNotNull()
     }
 
     @Test
     fun `should create jobmanager pod`() {
-        val pod = ClusterResourcesDefaultFactory.createJobManagerPod("test", "xxx", "myself", cluster)
+        val pod = ClusterResourcesDefaultFactory.createJobManagerPod("test", "myself", "test", cluster.spec)
 
         assertThat(pod).isNotNull()
 
         assertThat(pod.metadata?.generateName).isEqualTo("jobmanager-${cluster.metadata.name}-")
 
         val labels = pod.metadata?.labels
-        assertThat(labels).hasSize(5)
+        assertThat(labels).hasSize(4)
         assertThat(labels?.get("owner")).isEqualTo("myself")
         assertThat(labels?.get("clusterName")).isEqualTo(cluster.metadata.name)
-        assertThat(labels?.get("clusterUid")).isEqualTo("xxx")
         assertThat(labels?.get("component")).isEqualTo("flink")
         assertThat(labels?.get("role")).isEqualTo("jobmanager")
 
@@ -92,17 +89,16 @@ class ClusterResourcesDefaultFactoryTest {
 
     @Test
     fun `should create taskmanager pod`() {
-        val pod = ClusterResourcesDefaultFactory.createTaskManagerPod("test", "xxx", "myself", cluster)
+        val pod = ClusterResourcesDefaultFactory.createTaskManagerPod("test", "myself", "test", cluster.spec)
 
         assertThat(pod).isNotNull()
 
         assertThat(pod.metadata?.generateName).isEqualTo("taskmanager-${cluster.metadata.name}-")
 
         val labels = pod.metadata?.labels
-        assertThat(labels).hasSize(5)
+        assertThat(labels).hasSize(4)
         assertThat(labels?.get("owner")).isEqualTo("myself")
         assertThat(labels?.get("clusterName")).isEqualTo(cluster.metadata.name)
-        assertThat(labels?.get("clusterUid")).isEqualTo("xxx")
         assertThat(labels?.get("component")).isEqualTo("flink")
         assertThat(labels?.get("role")).isEqualTo("taskmanager")
 

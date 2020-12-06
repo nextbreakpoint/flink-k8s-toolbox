@@ -1,22 +1,23 @@
 package com.nextbreakpoint.flink.k8s.common
 
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterStatus
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterDigest
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
-import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterJobDigest
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterDigest
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterStatus
 import org.joda.time.DateTime
 
 object FlinkClusterStatus {
-    fun getStatusTimestamp(flinkCluster: V2FlinkCluster) : DateTime =
-        flinkCluster.status?.timestamp ?: DateTime(0)
+    @JvmStatic
+    private val initialisedTimestamp = currentTimeMillis()
 
-    fun getRescaleTimestamp(flinkCluster: V2FlinkCluster) : DateTime =
+    fun getStatusTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
+        flinkCluster.status?.timestamp ?: DateTime(initialisedTimestamp)
+
+    fun getRescaleTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
         flinkCluster.status?.rescaleTimestamp ?: DateTime(0)
 
-    fun setSupervisorStatus(flinkCluster: V2FlinkCluster, status: ClusterStatus) {
+    fun setSupervisorStatus(flinkCluster: V1FlinkCluster, status: ClusterStatus) {
         if (flinkCluster.status?.supervisorStatus != status.toString()) {
             ensureState(flinkCluster)
 
@@ -26,12 +27,12 @@ object FlinkClusterStatus {
         }
     }
 
-    fun getSupervisorStatus(flinkCluster: V2FlinkCluster) : ClusterStatus {
+    fun getSupervisorStatus(flinkCluster: V1FlinkCluster) : ClusterStatus {
         val status = flinkCluster.status?.supervisorStatus
         return if (status.isNullOrBlank()) ClusterStatus.Unknown else ClusterStatus.valueOf(status)
     }
 
-    fun setResourceStatus(flinkCluster: V2FlinkCluster, status: ResourceStatus) {
+    fun setResourceStatus(flinkCluster: V1FlinkCluster, status: ResourceStatus) {
         if (flinkCluster.status?.resourceStatus != status.toString()) {
             ensureState(flinkCluster)
 
@@ -41,111 +42,131 @@ object FlinkClusterStatus {
         }
     }
 
-    fun getResourceStatus(flinkCluster: V2FlinkCluster): ResourceStatus {
+    fun getResourceStatus(flinkCluster: V1FlinkCluster): ResourceStatus {
         val status = flinkCluster.status?.resourceStatus
         return if (status.isNullOrBlank()) ResourceStatus.Unknown else ResourceStatus.valueOf(status)
     }
 
-    fun setJobManagerDigest(flinkCluster: V2FlinkCluster, digest: String) {
-        ensureState(flinkCluster)
+    fun setJobManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
+        if (flinkCluster.status?.digest?.jobManager != digest) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.digest?.jobManager = digest
+            flinkCluster.status?.digest?.jobManager = digest
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getJobManagerDigest(flinkCluster: V2FlinkCluster): String? =
+    fun getJobManagerDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.digest?.jobManager
 
-    fun setTaskManagerDigest(flinkCluster: V2FlinkCluster, digest: String) {
-        ensureState(flinkCluster)
+    fun setTaskManagerDigest(flinkCluster: V1FlinkCluster, digest: String) {
+        if (flinkCluster.status?.digest?.taskManager != digest) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.digest?.taskManager = digest
+            flinkCluster.status?.digest?.taskManager = digest
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getTaskManagerDigest(flinkCluster: V2FlinkCluster): String? =
+    fun getTaskManagerDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.digest?.taskManager
 
-    fun setRuntimeDigest(flinkCluster: V2FlinkCluster, digest: String) {
-        ensureState(flinkCluster)
+    fun setRuntimeDigest(flinkCluster: V1FlinkCluster, digest: String) {
+        if (flinkCluster.status?.digest?.runtime != digest) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.digest?.runtime = digest
+            flinkCluster.status?.digest?.runtime = digest
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getRuntimeDigest(flinkCluster: V2FlinkCluster): String? =
+    fun getRuntimeDigest(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.digest?.runtime
 
-    fun setJobDigests(flinkCluster: V2FlinkCluster, jobs: List<Pair<String, String>>) {
-        ensureState(flinkCluster)
+    fun setSupervisorDigest(flinkCluster: V1FlinkCluster, digest: String) {
+        if (flinkCluster.status?.digest?.supervisor != digest) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.jobs = jobs.map { makeJobDigest(it.first, it.second) }
+            flinkCluster.status?.digest?.supervisor = digest
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getJobDigests(flinkCluster: V2FlinkCluster): List<Pair<String, String>> =
-        flinkCluster.status?.jobs?.map { it.name to it.digest }.orEmpty()
+    fun getSupervisorDigest(flinkCluster: V1FlinkCluster): String? =
+        flinkCluster.status?.digest?.supervisor
 
-    fun setTaskManagers(flinkCluster: V2FlinkCluster, taskManagers: Int) {
-        ensureState(flinkCluster)
+    fun setTaskManagers(flinkCluster: V1FlinkCluster, taskManagers: Int) {
+        if (flinkCluster.status?.taskManagers != taskManagers) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.taskManagers = taskManagers
+            flinkCluster.status?.taskManagers = taskManagers
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+
+            updateRescaleTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getTaskManagers(flinkCluster: V2FlinkCluster): Int =
+    fun getTaskManagers(flinkCluster: V1FlinkCluster): Int =
         flinkCluster.status?.taskManagers ?: 0
 
-    fun setActiveTaskManagers(flinkCluster: V2FlinkCluster, taskManagers: Int) {
-        ensureState(flinkCluster)
+    fun setTaskManagerReplicas(flinkCluster: V1FlinkCluster, replicas: Int) {
+        if (flinkCluster.status?.taskManagerReplicas != replicas) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.taskManagerReplicas = taskManagers
+            flinkCluster.status?.taskManagerReplicas = replicas
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getActiveTaskManagers(flinkCluster: V2FlinkCluster): Int =
-        flinkCluster.status?.taskManagerReplicas ?: 0
+    fun getTaskManagerReplicas(flinkCluster: V1FlinkCluster): Int? =
+        flinkCluster.status?.taskManagerReplicas
 
-    fun setTaskSlots(flinkCluster: V2FlinkCluster, taskSlots: Int) {
-        ensureState(flinkCluster)
+    fun setTaskSlots(flinkCluster: V1FlinkCluster, taskSlots: Int) {
+        if (flinkCluster.status?.taskSlots != taskSlots) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.taskSlots = taskSlots
+            flinkCluster.status?.taskSlots = taskSlots
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getTaskSlots(flinkCluster: V2FlinkCluster): Int =
-        flinkCluster.status?.taskSlots ?: 0
+    fun getTaskSlots(flinkCluster: V1FlinkCluster): Int? =
+        flinkCluster.status?.taskSlots
 
-    fun setTotalTaskSlots(flinkCluster: V2FlinkCluster, totalTaskSlots: Int) {
-        ensureState(flinkCluster)
+    fun setTotalTaskSlots(flinkCluster: V1FlinkCluster, totalTaskSlots: Int) {
+        if (flinkCluster.status?.totalTaskSlots != totalTaskSlots) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.totalTaskSlots = totalTaskSlots
+            flinkCluster.status?.totalTaskSlots = totalTaskSlots
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getTotalTaskSlots(flinkCluster: V2FlinkCluster): Int =
-        flinkCluster.status?.totalTaskSlots ?: 0
+    fun getTotalTaskSlots(flinkCluster: V1FlinkCluster): Int? =
+        flinkCluster.status?.totalTaskSlots
 
-    fun setLabelSelector(flinkCluster: V2FlinkCluster, labelSelector: String) {
-        ensureState(flinkCluster)
+    fun setLabelSelector(flinkCluster: V1FlinkCluster, labelSelector: String) {
+        if (flinkCluster.status?.labelSelector != labelSelector) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.labelSelector = labelSelector
+            flinkCluster.status?.labelSelector = labelSelector
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getLabelSelector(flinkCluster: V2FlinkCluster): String? =
+    fun getLabelSelector(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.labelSelector
 
-    fun setClusterHealth(flinkCluster: V2FlinkCluster, clusterHealth: String?) {
+    fun setClusterHealth(flinkCluster: V1FlinkCluster, clusterHealth: String?) {
         if (flinkCluster.status?.clusterHealth != clusterHealth) {
             ensureState(flinkCluster)
 
@@ -155,27 +176,30 @@ object FlinkClusterStatus {
         }
     }
 
-    fun getClusterHealth(flinkCluster: V2FlinkCluster) = flinkCluster.status?.clusterHealth
+    fun getClusterHealth(flinkCluster: V1FlinkCluster) = flinkCluster.status?.clusterHealth
 
-    fun setServiceMode(flinkCluster: V2FlinkCluster, serviceMode: String?) {
-        ensureState(flinkCluster)
+    fun setServiceMode(flinkCluster: V1FlinkCluster, serviceMode: String?) {
+        if (flinkCluster.status?.serviceMode != serviceMode) {
+            ensureState(flinkCluster)
 
-        flinkCluster.status?.serviceMode = serviceMode
+            flinkCluster.status?.serviceMode = serviceMode
 
-        updateStatusTimestamp(flinkCluster, currentTimeMillis())
+            updateStatusTimestamp(flinkCluster, currentTimeMillis())
+        }
     }
 
-    fun getServiceMode(flinkCluster: V2FlinkCluster): String? =
+    fun getServiceMode(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.serviceMode
 
-    private fun updateStatusTimestamp(flinkCluster: V2FlinkCluster, currentTimeMillis: Long) {
+    private fun updateStatusTimestamp(flinkCluster: V1FlinkCluster, currentTimeMillis: Long) {
         flinkCluster.status?.timestamp = DateTime(currentTimeMillis)
     }
 
-    fun updateRescaleTimestamp(flinkCluster: V2FlinkCluster, currentTimeMillis: Long) {
+    fun updateRescaleTimestamp(flinkCluster: V1FlinkCluster, currentTimeMillis: Long) {
         flinkCluster.status?.rescaleTimestamp = DateTime(currentTimeMillis)
     }
 
+    @JvmStatic
     private fun currentTimeMillis(): Long {
         // this is a hack required for testing
         ensureMillisecondPassed()
@@ -183,6 +207,7 @@ object FlinkClusterStatus {
         return System.currentTimeMillis()
     }
 
+    @JvmStatic
     private fun ensureMillisecondPassed() {
         try {
             Thread.sleep(1)
@@ -190,17 +215,10 @@ object FlinkClusterStatus {
         }
     }
 
-    private fun ensureState(flinkCluster: V2FlinkCluster) {
+    private fun ensureState(flinkCluster: V1FlinkCluster) {
         if (flinkCluster.status == null) {
-            flinkCluster.status = V2FlinkClusterStatus()
-            flinkCluster.status.digest = V2FlinkClusterDigest()
+            flinkCluster.status = V1FlinkClusterStatus.builder().build()
+            flinkCluster.status.digest = V1FlinkClusterDigest.builder().build()
         }
-    }
-
-    private fun makeJobDigest(name: String, digest: String): V2FlinkClusterJobDigest {
-        val jobDigest = V2FlinkClusterJobDigest()
-        jobDigest.name = name
-        jobDigest.digest = digest
-        return jobDigest
     }
 }

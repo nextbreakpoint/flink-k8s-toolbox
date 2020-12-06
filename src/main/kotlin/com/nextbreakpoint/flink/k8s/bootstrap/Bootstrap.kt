@@ -1,11 +1,10 @@
 package com.nextbreakpoint.flink.k8s.bootstrap
 
-import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
 import com.nextbreakpoint.flink.common.BootstrapOptions
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.RunJarOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.controller.Controller
+import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
 import org.apache.log4j.Logger
 import java.io.File
 
@@ -20,15 +19,13 @@ class Bootstrap(
 
     fun run() {
         try {
-            val clusterSelector = ResourceSelector(namespace = namespace, name = options.clusterName, uid = "")
-
             val file = File(options.jarPath)
 
             logger.info("Uploading JAR file: ${file.name} [${file.absolutePath}]...")
 
-            uploadJarFile(clusterSelector, 3, file)
+            uploadJarFile(3, file)
 
-            val listJarsResult = controller.listJars(clusterSelector)
+            val listJarsResult = controller.listJars(namespace, options.clusterName)
 
             if (!listJarsResult.isSuccessful()) {
                 throw Exception("Failed to list JAR files")
@@ -51,19 +48,19 @@ class Bootstrap(
             // eventually restart the bootstrap job
             val runJarOptions = RunJarOptions(jarFile.id, options.className, options.parallelism, options.savepointPath, options.arguments)
 
-            val runJarResult = controller.runJar(clusterSelector, runJarOptions)
+            val runJarResult = controller.runJar(namespace, options.clusterName, runJarOptions)
 
             if (!runJarResult.isSuccessful()) {
                 throw Exception("Failed to run JAR file")
             }
 
-            val jobSelector = ResourceSelector(namespace = namespace, name = options.jobName, uid = "")
+            val name = "${options.clusterName}-${options.jobName}"
 
-            val flinkJob = controller.getFlinkJob(jobSelector)
+            val flinkJob = controller.getFlinkJob(namespace, name)
 
             FlinkJobStatus.setJobId(flinkJob, runJarResult.output)
 
-            controller.updateStatus(jobSelector, flinkJob)
+            controller.updateStatus(namespace, name, flinkJob)
 
             logger.info("Job started (jobID = ${runJarResult.output})")
         } catch (e: Exception) {
@@ -71,10 +68,10 @@ class Bootstrap(
         }
     }
 
-    private fun uploadJarFile(clusterSelector: ResourceSelector, maxAttempts: Int, file: File) {
+    private fun uploadJarFile(maxAttempts: Int, file: File) {
         var count = 0;
 
-        while (count < maxAttempts && !uploadJarFile(clusterSelector, file)) {
+        while (count < maxAttempts && !uploadJarFile(file)) {
             Thread.sleep(10000)
             count += 1
         }
@@ -84,9 +81,9 @@ class Bootstrap(
         }
     }
 
-    private fun uploadJarFile(clusterSelector: ResourceSelector, file: File): Boolean {
+    private fun uploadJarFile(file: File): Boolean {
         try {
-            val uploadResult = controller.uploadJar(clusterSelector, file)
+            val uploadResult = controller.uploadJar(namespace, options.clusterName, file)
 
             if (!uploadResult.isSuccessful()) {
                 throw Exception("Failed to upload JAR file")

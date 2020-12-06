@@ -38,12 +38,21 @@ spec:
               nullable: false
               properties:
                 jobParallelism:
+                  description: Parallelism of the job.
+                  type: integer
+                  nullable: true
+                minJobParallelism:
+                  description: The min parallelism of the job. Default value is 0.
+                  type: integer
+                  nullable: true
+                maxJobParallelism:
+                  description: The max parallelism of the job. Default value is 32.
                   type: integer
                   nullable: true
                 bootstrap:
                   description: A Flink bootstrap specification.
                   type: object
-                  nullable: true
+                  nullable: false
                   properties:
                     pullSecrets:
                       description: Pull scretes to use for pulling from private registry.
@@ -174,16 +183,14 @@ spec:
                   nullable: false
                   properties:
                     savepointMode:
-                      description: Control periodic savepoints. Default value is NANUAL.
+                      description: Control savepoints. Default value is Automatic.
                       type: string
-                      nullable: false
                       enum:
                         - Manual
                         - Automatic
                     savepointPath:
                       description: Path of latest savepoint.
                       type: string
-                      nullable: true
                     savepointInterval:
                       description: Interval between savepoints.
                       type: integer
@@ -193,16 +200,15 @@ spec:
                       type: string
                       nullable: false
                     restartPolicy:
-                      description: Control restart in case of cluster or job failure. Default value is NEVER.
+                      description: Control restart policy. Default value is Never.
                       type: string
-                      nullable: false
                       enum:
                         - Never
                         - Always
+                        - OnlyIfFailed
                   required:
-                    - savepointMode
+                    - savepointInterval
                     - savepointTargetPath
-                    - restartPolicy
               required:
                 - bootstrap
                 - savepoint
@@ -211,14 +217,12 @@ spec:
               properties:
                 resourceStatus:
                   type: string
-                  nullable: false
                   enum:
                     - Unknown
                     - Updating
                     - Updated
                 supervisorStatus:
                   type: string
-                  nullable: false
                   enum:
                     - Unknown
                     - Starting
@@ -237,9 +241,6 @@ spec:
                   type: string
                 jobParallelism:
                   type: integer
-                timestamp:
-                  type: string
-                  nullable: false
                 jobId:
                   type: string
                 jobStatus:
@@ -256,54 +257,17 @@ spec:
                   type: string
                 savepointMode:
                   type: string
-                  nullable: false
                 restartPolicy:
                   type: string
-                  nullable: false
                 digest:
                   type: object
                   properties:
                     bootstrap:
                       type: string
-                bootstrap:
-                  type: object
-                  nullable: true
-                  properties:
-                    pullSecrets:
+                    savepoint:
                       type: string
-                      nullable: false
-                    pullPolicy:
-                      type: string
-                      nullable: false
-                      enum:
-                        - Never
-                        - Always
-                        - IfNotPresent
-                    image:
-                      type: string
-                      nullable: false
-                    className:
-                      type: string
-                      nullable: false
-                    jarPath:
-                      type: string
-                      nullable: false
-                    arguments:
-                      type: array
-                      nullable: true
-                      items:
-                        type: string
-                    serviceAccount:
-                      type: string
-                      nullable: true
-                  required:
-                    - image
-                    - className
-                    - jarPath
-              required:
-                - timestamp
-                - resourceStatus
-                - supervisorStatus
+                timestamp:
+                  type: string
           required:
             - spec
       subresources:

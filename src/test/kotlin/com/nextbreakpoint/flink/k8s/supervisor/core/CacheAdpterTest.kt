@@ -20,6 +20,8 @@ class CacheAdpterTest {
     private val adapter = CacheAdapter(kubeClient, cache, backoffTime = 1000)
     private val cluster1 = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
     private val cluster2 = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
+    private val job1 = TestFactory.aFlinkJob(name = "test-test-1", namespace = "flink")
+    private val job2 = TestFactory.aFlinkJob(name = "test-test-2", namespace = "flink")
 
     @BeforeEach
     fun setup() {
@@ -38,13 +40,13 @@ class CacheAdpterTest {
             ).toMutableList().iterator()
         )
 
-        given(kubeClient.watchFlickClustersV2("flink")).thenThrow(RuntimeException("temporary error")).thenReturn(watch)
+        given(kubeClient.watchFlickClusters("flink")).thenThrow(RuntimeException("temporary error")).thenReturn(watch)
 
         val thread = adapter.watchFlinkClusters("flink")
 
         Thread.sleep(100)
 
-        verify(kubeClient, times(1)).watchFlickClustersV2(eq("flink"))
+        verify(kubeClient, times(1)).watchFlickClusters(eq("flink"))
         verifyNoMoreInteractions(kubeClient)
 
         verify(cache, times(1)).onFlinkClusterDeletedAll()
@@ -54,7 +56,7 @@ class CacheAdpterTest {
         thread.interrupt()
         thread.join()
 
-        verify(kubeClient, times(2)).watchFlickClustersV2(eq("flink"))
+        verify(kubeClient, times(2)).watchFlickClusters(eq("flink"))
         verifyNoMoreInteractions(kubeClient)
 
         val inOrder = inOrder(cache)
@@ -68,8 +70,8 @@ class CacheAdpterTest {
 
     @Test
     fun `should watch job resources`() {
-        val resource1 = TestFactory.aBootstrapJob(cluster1)
-        val resource2 = TestFactory.aBootstrapJob(cluster2)
+        val resource1 = TestFactory.aBootstrapJob(cluster1, job1)
+        val resource2 = TestFactory.aBootstrapJob(cluster2, job2)
 
         val watch = TestWatchable(
             listOf(
@@ -194,15 +196,12 @@ class CacheAdpterTest {
 
     @Test
     fun `should watch link job resources`() {
-        val resource1 = TestFactory.aFlinkJob(cluster1)
-        val resource2 = TestFactory.aFlinkJob(cluster2)
-
         val watch = TestWatchable(
             listOf(
-                Watch.Response("ADDED", resource1),
-                Watch.Response("ADDED", resource2),
-                Watch.Response("DELETED", resource1),
-                Watch.Response("MODIFIED", resource2)
+                Watch.Response("ADDED", job1),
+                Watch.Response("ADDED", job2),
+                Watch.Response("DELETED", job1),
+                Watch.Response("MODIFIED", job2)
             ).toMutableList().iterator()
         )
 
@@ -215,7 +214,7 @@ class CacheAdpterTest {
         verify(kubeClient, times(1)).watchFlinkJobs(eq("flink"))
         verifyNoMoreInteractions(kubeClient)
 
-        verify(cache, times(1)).onFlinkJobsDeletedAll()
+        verify(cache, times(1)).onFlinkJobDeletedAll()
         verifyNoMoreInteractions(cache)
 
         Thread.sleep(1000)
@@ -226,11 +225,11 @@ class CacheAdpterTest {
         verifyNoMoreInteractions(kubeClient)
 
         val inOrder = inOrder(cache)
-        inOrder.verify(cache, times(2)).onFlinkJobsDeletedAll()
-        inOrder.verify(cache, times(1)).onFlinkJobChanged(eq(resource1))
-        inOrder.verify(cache, times(1)).onFlinkJobChanged(eq(resource2))
-        inOrder.verify(cache, times(1)).onFlinkJobDeleted(eq(resource1))
-        inOrder.verify(cache, times(1)).onFlinkJobChanged(eq(resource2))
+        inOrder.verify(cache, times(2)).onFlinkJobDeletedAll()
+        inOrder.verify(cache, times(1)).onFlinkJobChanged(eq(job1))
+        inOrder.verify(cache, times(1)).onFlinkJobChanged(eq(job2))
+        inOrder.verify(cache, times(1)).onFlinkJobDeleted(eq(job1))
+        inOrder.verify(cache, times(1)).onFlinkJobChanged(eq(job2))
         inOrder.verifyNoMoreInteractions()
     }
 

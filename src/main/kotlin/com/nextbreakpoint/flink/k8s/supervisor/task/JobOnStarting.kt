@@ -1,12 +1,12 @@
 package com.nextbreakpoint.flink.k8s.supervisor.task
 
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.k8s.supervisor.core.Task
+import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.k8s.common.Task
 import com.nextbreakpoint.flink.k8s.supervisor.core.JobManager
 
 class JobOnStarting : Task<JobManager>() {
     private val actions = setOf(
-        ManualAction.STOP
+        Action.STOP
     )
 
     override fun execute(manager: JobManager) {
@@ -26,7 +26,6 @@ class JobOnStarting : Task<JobManager>() {
         }
 
         if (manager.isClusterStarting()) {
-            manager.onJobAborted()
             return
         }
 

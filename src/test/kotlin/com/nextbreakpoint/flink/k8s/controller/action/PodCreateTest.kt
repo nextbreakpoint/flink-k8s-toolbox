@@ -1,6 +1,5 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
@@ -8,8 +7,6 @@ import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.testing.KotlinMockito.any
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
-import io.kubernetes.client.openapi.models.V1Job
-import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import org.assertj.core.api.Assertions.assertThat
@@ -21,7 +18,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class PodCreateTest {
-    private val clusterSelector = ResourceSelector(namespace = "flink", name = "test", uid = "123")
     private val bootstrapJob = mock(V1Pod::class.java)
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
@@ -31,14 +27,14 @@ class PodCreateTest {
     @BeforeEach
     fun configure() {
         val job = V1PodBuilder().withNewMetadata().withName("xxx").endMetadata().build()
-        given(kubeClient.createPod(eq(clusterSelector), any())).thenReturn(job)
+        given(kubeClient.createPod(eq("flink"), any())).thenReturn(job)
     }
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        given(kubeClient.createPod(eq(clusterSelector), any())).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, bootstrapJob)
-        verify(kubeClient, times(1)).createPod(eq(clusterSelector), any())
+        given(kubeClient.createPod(eq("flink"), any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute("flink", "test", bootstrapJob)
+        verify(kubeClient, times(1)).createPod(eq("flink"), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -48,8 +44,8 @@ class PodCreateTest {
 
     @Test
     fun `should create pod`() {
-        val result = command.execute(clusterSelector, bootstrapJob)
-        verify(kubeClient, times(1)).createPod(eq(clusterSelector), any())
+        val result = command.execute("flink", "test", bootstrapJob)
+        verify(kubeClient, times(1)).createPod(eq("flink"), any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
