@@ -18,7 +18,7 @@ class CacheAdapter(
     fun watchFlinkClusters(namespace: String) =
         thread {
             watchResources("FlinkClusters", namespace, { namespace ->
-                kubeClient.watchFlickClustersV2(namespace)
+                kubeClient.watchFlickClusters(namespace)
             }, { resource ->
                 cache.onFlinkClusterChanged(resource)
             }, { resource ->
@@ -37,7 +37,7 @@ class CacheAdapter(
             }, { resource ->
                 cache.onFlinkJobDeleted(resource)
             }, {
-                cache.onFlinkJobsDeletedAll()
+                cache.onFlinkJobDeletedAll()
             })
         }
 

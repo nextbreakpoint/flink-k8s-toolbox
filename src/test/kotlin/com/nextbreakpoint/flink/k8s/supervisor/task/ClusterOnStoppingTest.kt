@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.supervisor.task
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.supervisor.core.ClusterManager
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
@@ -46,30 +46,14 @@ class ClusterOnStoppingTest {
     }
 
     @Test
-    fun `should behave as expected when resources must be terminate but jobs haven't been deleted yet`() {
+    fun `should behave as expected when resources must be terminate`() {
         given(context.mustTerminateResources()).thenReturn(true)
-        given(context.deleteJobs()).thenReturn(false)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).waitForJobs()
         inOrder.verify(context, times(1)).setClusterHealth(eq(""))
         inOrder.verify(context, times(1)).stopCluster()
         inOrder.verify(context, times(1)).mustTerminateResources()
-        inOrder.verify(context, times(1)).deleteJobs()
-        verifyNoMoreInteractions(context)
-    }
-
-    @Test
-    fun `should behave as expected when resources must be terminate and jobs have been deleted`() {
-        given(context.mustTerminateResources()).thenReturn(true)
-        given(context.deleteJobs()).thenReturn(true)
-        task.execute(context)
-        val inOrder = inOrder(context)
-        inOrder.verify(context, times(1)).waitForJobs()
-        inOrder.verify(context, times(1)).setClusterHealth(eq(""))
-        inOrder.verify(context, times(1)).stopCluster()
-        inOrder.verify(context, times(1)).mustTerminateResources()
-        inOrder.verify(context, times(1)).deleteJobs()
         inOrder.verify(context, times(1)).onClusterTerminated()
         verifyNoMoreInteractions(context)
     }
@@ -101,7 +85,7 @@ class ClusterOnStoppingTest {
         inOrder.verify(context, times(1)).mustTerminateResources()
         inOrder.verify(context, times(1)).shouldRestart()
         inOrder.verify(context, times(1)).isActionPresent()
-        inOrder.verify(context, times(1)).executeAction(eq(setOf(ManualAction.START)))
+        inOrder.verify(context, times(1)).executeAction(eq(setOf(Action.START)))
         verifyNoMoreInteractions(context)
     }
 

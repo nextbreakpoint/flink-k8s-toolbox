@@ -4,7 +4,7 @@ import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.common.ScaleClusterOptions
 import com.nextbreakpoint.flink.integration.IntegrationSetup
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterStatus
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterStatus
 import io.kubernetes.client.openapi.JSON
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -39,15 +39,15 @@ class ScaleUpAndDownTest : IntegrationSetup() {
     @Test
     fun `should scale clusters up and down`() {
         println("Should create clusters...")
-        createCluster(namespace = namespace, path = "integration/cluster-0.yaml")
-        awaitUntilAsserted(timeout = 30) {
-            assertThat(clusterExists(namespace = namespace, clusterName = "cluster-0")).isTrue()
+        createResource(namespace = namespace, path = "integration/deployment-0.yaml")
+        awaitUntilAsserted(timeout = 60) {
+            assertThat(clusterExists(namespace = namespace, name = "cluster-0")).isTrue()
         }
         println("Should start clusters...")
         awaitUntilAsserted(timeout = 360) {
-            assertThat(hasClusterStatus(namespace = namespace, clusterName = "cluster-0", status = ClusterStatus.Started)).isTrue()
+            assertThat(hasClusterStatus(namespace = namespace, name = "cluster-0", status = ClusterStatus.Started)).isTrue()
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-0", status = ResourceStatus.Updated)).isTrue()
-            assertThat(hasTaskManagers(namespace = namespace, clusterName = "cluster-0", taskManagers = 1)).isTrue()
+            assertThat(hasTaskManagers(namespace = namespace, name = "cluster-0", taskManagers = 1)).isTrue()
         }
 
         println("Should scale up...")
@@ -58,14 +58,13 @@ class ScaleUpAndDownTest : IntegrationSetup() {
         }
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-0", status = ResourceStatus.Updated)).isTrue()
-            assertThat(hasTaskManagers(namespace = namespace, clusterName = "cluster-0", taskManagers = 2)).isTrue()
+            assertThat(hasTaskManagers(namespace = namespace, name = "cluster-0", taskManagers = 2)).isTrue()
         }
 
         awaitUntilAsserted(timeout = 60) {
             val response = getClusterStatus(clusterName = "cluster-0", port = port)
-            println(response)
             assertThat(response["status"] as String?).isEqualTo("OK")
-            val status = JSON().deserialize<V2FlinkClusterStatus>(response["output"] as String, clusterStatusTypeToken.type)
+            val status = JSON().deserialize<V1FlinkClusterStatus>(response["output"] as String, clusterStatusTypeToken.type)
             assertThat(status.taskManagers).isEqualTo(2)
             assertThat(status.taskManagerReplicas).isEqualTo(2)
             assertThat(status.taskSlots).isEqualTo(2)
@@ -80,14 +79,13 @@ class ScaleUpAndDownTest : IntegrationSetup() {
         }
         awaitUntilAsserted(timeout = 360) {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-0", status = ResourceStatus.Updated)).isTrue()
-            assertThat(hasTaskManagers(namespace = namespace, clusterName = "cluster-0", taskManagers = 0)).isTrue()
+            assertThat(hasTaskManagers(namespace = namespace, name = "cluster-0", taskManagers = 0)).isTrue()
         }
 
         awaitUntilAsserted(timeout = 60) {
             val response = getClusterStatus(clusterName = "cluster-0", port = port)
-            println(response)
             assertThat(response["status"] as String?).isEqualTo("OK")
-            val status = JSON().deserialize<V2FlinkClusterStatus>(response["output"] as String, clusterStatusTypeToken.type)
+            val status = JSON().deserialize<V1FlinkClusterStatus>(response["output"] as String, clusterStatusTypeToken.type)
             assertThat(status.taskManagers).isEqualTo(0)
             assertThat(status.taskManagerReplicas).isEqualTo(0)
             assertThat(status.taskSlots).isEqualTo(2)

@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.supervisor.task
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.supervisor.core.ClusterManager
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
@@ -71,7 +71,7 @@ class ClusterOnStartedTest {
         inOrder.verify(context, times(1)).hasResourceDiverged()
         inOrder.verify(context, times(1)).hasSpecificationChanged()
         inOrder.verify(context, times(1)).isActionPresent()
-        inOrder.verify(context, times(1)).executeAction(setOf(ManualAction.STOP))
+        inOrder.verify(context, times(1)).executeAction(setOf(Action.STOP))
         verifyNoMoreInteractions(context)
     }
 

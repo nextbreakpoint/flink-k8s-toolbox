@@ -1,32 +1,30 @@
 package com.nextbreakpoint.flink.vertex
 
+import com.nextbreakpoint.flink.common.ClusterSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
-import com.nextbreakpoint.flink.common.ResourceSelector
+import com.nextbreakpoint.flink.common.JobSelector
 import com.nextbreakpoint.flink.common.RunnerOptions
 import com.nextbreakpoint.flink.common.ScaleClusterOptions
 import com.nextbreakpoint.flink.common.ScaleJobOptions
 import com.nextbreakpoint.flink.common.StartOptions
 import com.nextbreakpoint.flink.common.StopOptions
 import com.nextbreakpoint.flink.common.TaskManagerId
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
-import com.nextbreakpoint.flink.k8s.common.Resource
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.controller.core.ClusterContext
+import com.nextbreakpoint.flink.k8s.common.Resource
 import com.nextbreakpoint.flink.k8s.controller.Controller
+import com.nextbreakpoint.flink.k8s.controller.core.ClusterContext
+import com.nextbreakpoint.flink.k8s.controller.core.JobContext
+import com.nextbreakpoint.flink.k8s.controller.core.Result
+import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
+import com.nextbreakpoint.flink.k8s.operator.OperatorRunner
 import com.nextbreakpoint.flink.k8s.operator.core.Cache
 import com.nextbreakpoint.flink.k8s.operator.core.CacheAdapter
-import com.nextbreakpoint.flink.k8s.controller.core.JobContext
-import com.nextbreakpoint.flink.k8s.controller.action.JobDetails
-import com.nextbreakpoint.flink.k8s.controller.action.JobManagerMetrics
-import com.nextbreakpoint.flink.k8s.controller.action.JobMetrics
-import com.nextbreakpoint.flink.k8s.controller.action.TaskManagerDetails
-import com.nextbreakpoint.flink.k8s.controller.action.TaskManagerMetrics
-import com.nextbreakpoint.flink.k8s.controller.action.TaskManagersList
-import com.nextbreakpoint.flink.k8s.operator.OperatorRunner
-import com.nextbreakpoint.flink.vertex.core.Command
+import com.nextbreakpoint.flink.vertex.core.ClusterCommand
+import com.nextbreakpoint.flink.vertex.core.JobCommand
 import io.kubernetes.client.openapi.JSON
-import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.vertx.core.eventbus.DeliveryOptions
 import io.vertx.core.http.ClientAuth
 import io.vertx.core.http.HttpServerOptions
@@ -59,28 +57,18 @@ class OperatorVerticle : AbstractVerticle() {
     }
 
     private fun createServer(config: JsonObject): Single<HttpServer> {
-        val port: Int = config.getInteger("port") ?: 4444
-
-        val flinkHostname: String? = config.getString("flink_hostname") ?: null
-
-        val portForward: Int? = config.getInteger("port_forward") ?: null
-
-        val useNodePort: Boolean = config.getBoolean("use_node_port", false)
-
         val namespace: String = config.getString("namespace") ?: throw RuntimeException("Namespace required")
 
+        val port: Int = config.getInteger("port") ?: 4444
+        val flinkHostname: String? = config.getString("flink_hostname") ?: null
+        val portForward: Int? = config.getInteger("port_forward") ?: null
+        val useNodePort: Boolean = config.getBoolean("use_node_port", false)
         val jksKeyStorePath = config.getString("server_keystore_path")
-
         val jksKeyStoreSecret = config.getString("server_keystore_secret")
-
         val jksTrustStorePath = config.getString("server_truststore_path")
-
         val jksTrustStoreSecret = config.getString("server_truststore_secret")
-
         val pollingInterval: Long = config.getLong("polling_interval", 30)
-
         val taskTimeout: Long = config.getLong("task_timeout", 300)
-
         val dryRun: Boolean = config.getBoolean("dry_run", false)
 
         val serverOptions = createServerOptions(
@@ -121,381 +109,158 @@ class OperatorVerticle : AbstractVerticle() {
 
 
         mainRouter.put("/clusters/:clusterName/start").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/start", BiFunction { context, namespace ->
-                json.serialize(
-                    Command(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")), context.bodyAsString
-                    )
-                )
-            })
+            handleClusterCommand(routingContext, namespace, json, "/cluster/start") { context -> context.bodyAsString }
         }
 
         mainRouter.put("/clusters/:clusterName/stop").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/stop", BiFunction { context, namespace ->
-                json.serialize(
-                    Command(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")), context.bodyAsString
-                    )
-                )
-            })
+            handleClusterCommand(routingContext, namespace, json, "/cluster/stop") { context -> context.bodyAsString }
         }
 
         mainRouter.put("/clusters/:clusterName/scale").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/scale", BiFunction { context, namespace ->
-                json.serialize(
-                    Command(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")), context.bodyAsString
-                    )
-                )
-            })
+            handleClusterCommand(routingContext, namespace, json, "/cluster/scale") { context -> context.bodyAsString }
         }
 
         mainRouter.delete("/clusters/:clusterName").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/delete", BiFunction { context, namespace ->
-                json.serialize(
-                    cache.findClusterSelectorV2(namespace, context.pathParam("clusterName"))
-                )
-            })
+            handleClusterCommand(routingContext, namespace, json, "/cluster/delete") { context -> "{}" }
         }
 
         mainRouter.post("/clusters/:clusterName").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/cluster/create", BiFunction { context, namespace ->
-                json.serialize(
-                    makeV2FlinkCluster(namespace, context.pathParam("clusterName"), context.bodyAsString)
-                )
-            })
+            handleClusterCommand(routingContext, namespace, json, "/cluster/create") { context -> context.bodyAsString }
+        }
+
+        mainRouter.put("/clusters/:clusterName").handler { routingContext ->
+            handleClusterCommand(routingContext, namespace, json, "/cluster/update") { context -> context.bodyAsString }
         }
 
 
         mainRouter.put("/clusters/:clusterName/jobs/:jobName/start").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/job/start", BiFunction { context, namespace ->
-                json.serialize(
-                    Command(
-                        cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")), context.bodyAsString
-                    )
-                )
-            })
+            handleJobCommand(routingContext, namespace, json, "/job/start") { context -> context.bodyAsString }
         }
 
         mainRouter.put("/clusters/:clusterName/jobs/:jobName/stop").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/job/stop", BiFunction { context, namespace ->
-                json.serialize(
-                    Command(
-                        cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")), context.bodyAsString
-                    )
-                )
-            })
+            handleJobCommand(routingContext, namespace, json, "/job/stop") { context -> context.bodyAsString }
         }
 
         mainRouter.put("/clusters/:clusterName/jobs/:jobName/scale").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/job/scale", BiFunction { context, namespace ->
-                json.serialize(
-                    Command(
-                        cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")), context.bodyAsString
-                    )
-                )
-            })
+            handleJobCommand(routingContext, namespace, json, "/job/scale") { context -> context.bodyAsString }
+        }
+
+        mainRouter.delete("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
+            handleJobCommand(routingContext, namespace, json, "/job/delete") { context -> "{}" }
+        }
+
+        mainRouter.post("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
+            handleJobCommand(routingContext, namespace, json, "/job/create") { context -> context.bodyAsString }
+        }
+
+        mainRouter.put("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
+            handleJobCommand(routingContext, namespace, json, "/job/update") { context -> context.bodyAsString }
         }
 
         mainRouter.put("/clusters/:clusterName/jobs/:jobName/savepoint").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/job/savepoint/trigger", BiFunction { context, namespace ->
-                json.serialize(
-                    Command(
-                        cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")), context.bodyAsString
-                    )
-                )
-            })
+            handleJobCommand(routingContext, namespace, json, "/job/savepoint/trigger") { context -> context.bodyAsString }
         }
 
         mainRouter.delete("/clusters/:clusterName/jobs/:jobName/savepoint").handler { routingContext ->
-            sendMessageAndWaitForReply(routingContext, namespace, "/job/savepoint/forget", BiFunction { context, namespace ->
-                json.serialize(
-                    Command(
-                        cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")), "{}"
-                    )
-                )
-            })
+            handleJobCommand(routingContext, namespace, json, "/job/savepoint/forget") { context -> "{}" }
         }
 
 
         mainRouter.get("/clusters").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    cache.getClusterSelectorsV2().map { it.name }.toList()
-                )
-            })
+            handleListClusters(routingContext, json, cache)
         }
 
         mainRouter.get("/clusters/:clusterName/status").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    controller.getClusterStatus(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")),
-                        ClusterContext(
-                            cache.getFlinkClusterV2(cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")))
-                        )
-                    )
-                )
-            })
+            handleGetClusterStatus(routingContext, json, controller, namespace, cache)
         }
-
 
         mainRouter.get("/clusters/:clusterName/jobs").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    cache.getFlinkClusterV2(cache.findClusterSelectorV2(
-                        namespace, context.pathParam("clusterName"))
-                    ).status.jobs.map { it.name }.toList()
-                )
-            })
+            handleListJobs(routingContext, json, cache)
         }
 
-
         mainRouter.get("/clusters/:clusterName/jobs/:jobName/status").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    controller.getJobStatus(
-                        cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")),
-                        JobContext(
-                            cache.getFlinkJob(cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")))
-                        )
-                    )
-                )
-            })
+            handleGetJobStatus(routingContext, json, controller, namespace, cache)
         }
 
         mainRouter.get("/clusters/:clusterName/jobs/:jobName/details").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    JobDetails(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")),
-                        cache.findJobId(cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")))
-                    )
-                )
-            })
+            handleGetJobDetails(routingContext, json, controller, namespace, cache)
         }
 
         mainRouter.get("/clusters/:clusterName/jobs/:jobName/metrics").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    JobMetrics(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")),
-                        cache.findJobId(cache.findJobSelector(namespace, context.pathParam("clusterName") + "-" + context.pathParam("jobName")))
-                    )
-                )
-            })
+            handleGetJobMetrics(routingContext, json, controller, namespace, cache)
         }
 
-
         mainRouter.get("/clusters/:clusterName/jobmanager/metrics").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    JobManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")), null
-                    )
-                )
-            })
+            handleGetJobManagerMetrics(routingContext, json, controller, namespace)
         }
 
         mainRouter.get("/clusters/:clusterName/taskmanagers").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    TaskManagersList(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")), null
-                    )
-                )
-            })
+            handleListTaskManagers(routingContext, json, controller, namespace)
         }
 
         mainRouter.get("/clusters/:clusterName/taskmanagers/:taskmanager/details").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    TaskManagerDetails(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")), TaskManagerId(context.pathParam("taskmanager"))
-                    )
-                )
-            })
+            handleGetTaskManagerDetails(routingContext, json, controller, namespace)
         }
 
         mainRouter.get("/clusters/:clusterName/taskmanagers/:taskmanager/metrics").handler { routingContext ->
-            processRequest(routingContext, Function { context ->
-                json.serialize(
-                    TaskManagerMetrics(flinkOptions, flinkClient, kubeClient).execute(
-                        cache.findClusterSelectorV2(namespace, context.pathParam("clusterName")), TaskManagerId(context.pathParam("taskmanager"))
-                    )
-                )
-            })
+            handleGetTaskManagerMetrics(routingContext, json, controller, namespace)
         }
 
 
         vertx.eventBus().consumer<String>("/cluster/start") { message ->
-            processCommandAndReplyToSender<Command>(
-                message,
-                {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                {
-                    json.serialize(
-                        controller.requestStartCluster(
-                            it.resourceSelector, json.deserialize(it.json, StartOptions::class.java), ClusterContext(cache.getFlinkClusterV2(it.resourceSelector))
-                        )
-                    )
-                }
-            )
+            handleCommandClusterStart(message, json, controller, cache)
         }
 
         vertx.eventBus().consumer<String>("/cluster/stop") { message ->
-            processCommandAndReplyToSender<Command>(
-                message,
-                {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                {
-                    json.serialize(
-                        controller.requestStopCluster(
-                            it.resourceSelector, json.deserialize(it.json, StopOptions::class.java), ClusterContext(cache.getFlinkClusterV2(it.resourceSelector))
-                        )
-                    )
-                }
-            )
+            handlerCommandClusterStop(message, json, controller, cache)
         }
 
         vertx.eventBus().consumer<String>("/cluster/scale") { message ->
-            processCommandAndReplyToSender<Command>(
-                message,
-                {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                {
-                    json.serialize(
-                        controller.requestScaleCluster(
-                            it.resourceSelector, json.deserialize(it.json, ScaleClusterOptions::class.java)
-                        )
-                    )
-                }
-            )
+            handleCommandClusterScale(message, json, controller)
         }
 
         vertx.eventBus().consumer<String>("/cluster/delete") { message ->
-            processCommandAndReplyToSender<ResourceSelector>(
-                message,
-                {
-                    json.deserialize(it.body(), ResourceSelector::class.java)
-                },
-                {
-                    json.serialize(controller.deleteFlinkCluster(it))
-                }
-            )
+            handleCommandClusterDelete(message, json, controller)
         }
 
         vertx.eventBus().consumer<String>("/cluster/create") { message ->
-            processCommandAndReplyToSender<V2FlinkCluster>(
-                message,
-                {
-                    json.deserialize(it.body(), V2FlinkCluster::class.java)
-                },
-                {
-                    json.serialize(
-                        controller.createFlinkCluster(createClusterSelector(it), it)
-                    )
-                }
-            )
+            handleCommandClusterCreate(message, json, controller)
+        }
+
+        vertx.eventBus().consumer<String>("/cluster/update") { message ->
+            handleCommandClusterUpdate(message, json, controller)
         }
 
         vertx.eventBus().consumer<String>("/job/start") { message ->
-            processCommandAndReplyToSender<Command>(
-                message,
-                {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                {
-                    json.serialize(
-                        controller.requestStartJob(
-                            it.resourceSelector, json.deserialize(it.json, StartOptions::class.java), JobContext(cache.getFlinkJob(it.resourceSelector))
-                        )
-                    )
-                }
-            )
+            handleCommandJobStart(message, json, controller, cache)
         }
 
         vertx.eventBus().consumer<String>("/job/stop") { message ->
-            processCommandAndReplyToSender<Command>(
-                message,
-                {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                {
-                    json.serialize(
-                        controller.requestStopJob(
-                            it.resourceSelector, json.deserialize(it.json, StopOptions::class.java), JobContext(cache.getFlinkJob(it.resourceSelector))
-                        )
-                    )
-                }
-            )
+            handleCommandJobStop(message, json, controller, cache)
         }
 
         vertx.eventBus().consumer<String>("/job/scale") { message ->
-            processCommandAndReplyToSender<Command>(
-                message,
-                {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                {
-                    json.serialize(
-                        controller.requestScaleJob(
-                            it.resourceSelector, json.deserialize(it.json, ScaleJobOptions::class.java)
-                        )
-                    )
-                }
-            )
+            handleCommandJobScale(message, json, controller)
+        }
+
+        vertx.eventBus().consumer<String>("/job/delete") { message ->
+            handleCommandJobDelete(message, json, controller)
+        }
+
+        vertx.eventBus().consumer<String>("/job/create") { message ->
+            handleCommandJobCreate(message, json, controller)
+        }
+
+        vertx.eventBus().consumer<String>("/job/update") { message ->
+            handleCommandJobUpdate(message, json, controller)
         }
 
         vertx.eventBus().consumer<String>("/job/savepoint/trigger") { message ->
-            processCommandAndReplyToSender<Command>(
-                message,
-                {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                {
-                    json.serialize(
-                        controller.requestTriggerSavepoint(
-                            it.resourceSelector, JobContext(cache.getFlinkJob(it.resourceSelector))
-                        )
-                    )
-                }
-            )
+            handleCommandSavepointTrigger(message, json, controller, cache)
         }
 
         vertx.eventBus().consumer<String>("/job/savepoint/forget") { message ->
-            processCommandAndReplyToSender<Command>(
-                message,
-                {
-                    json.deserialize(
-                        it.body(), Command::class.java
-                    )
-                },
-                {
-                    json.serialize(
-                        controller.requestForgetSavepoint(
-                            it.resourceSelector, JobContext(cache.getFlinkJob(it.resourceSelector))
-                        )
-                    )
-                }
-            )
+            handleCommandSavepointForget(message, json, controller, cache)
         }
 
 
@@ -504,13 +269,11 @@ class OperatorVerticle : AbstractVerticle() {
         }
 
         context.runOnContext {
-            cacheAdapter.watchFlinkClustersV1(namespace)
-            cacheAdapter.watchFlinkClustersV2(namespace)
+            cacheAdapter.watchFlinkDeployments(namespace)
+            cacheAdapter.watchFlinkClusters(namespace)
             cacheAdapter.watchFlinkJobs(namespace)
             cacheAdapter.watchDeployments(namespace)
-            cacheAdapter.watchServices(namespace)
             cacheAdapter.watchPods(namespace)
-            cacheAdapter.watchJobs(namespace)
 
             thread {
                 runner.run()
@@ -522,11 +285,394 @@ class OperatorVerticle : AbstractVerticle() {
             .rxListen(port)
     }
 
-    private fun createClusterSelector(it: V2FlinkCluster): ResourceSelector {
-        val namespace = it.metadata.namespace ?: throw RuntimeException("Missing namespace")
-        val name = it.metadata.name ?: throw RuntimeException("Missing name")
-        return ResourceSelector(namespace, name,"")
+    private fun handleCommandSavepointForget(message: Message<String>, json: JSON, controller: Controller, cache: Cache) {
+        processCommandAndReplyToSender<JobCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), JobCommand::class.java
+                )
+            },
+            {
+                controller.requestForgetSavepoint(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    it.selector.jobName,
+                    JobContext(cache.getFlinkJob(it.selector.resourceName) ?: throw RuntimeException("Job not found"))
+                )
+            }
+        )
     }
+
+    private fun handleCommandSavepointTrigger(message: Message<String>, json: JSON, controller: Controller, cache: Cache) {
+        processCommandAndReplyToSender<JobCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), JobCommand::class.java
+                )
+            },
+            {
+                controller.requestTriggerSavepoint(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    it.selector.jobName,
+                    JobContext(cache.getFlinkJob(it.selector.resourceName) ?: throw RuntimeException("Job not found"))
+                )
+            }
+        )
+    }
+
+    private fun handleCommandJobUpdate(message: Message<String>, json: JSON, controller: Controller) {
+        processCommandAndReplyToSender<JobCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), JobCommand::class.java
+                )
+            },
+            {
+                controller.updateFlinkJob(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    it.selector.jobName,
+                    makeFlinkJob(controller, it.selector.namespace, it.selector.clusterName, it.selector.jobName, it.json)
+                )
+            }
+        )
+    }
+
+    private fun handleCommandJobCreate(message: Message<String>, json: JSON, controller: Controller) {
+        processCommandAndReplyToSender<JobCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), JobCommand::class.java
+                )
+            },
+            {
+                controller.createFlinkJob(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    it.selector.jobName,
+                    makeFlinkJob(controller, it.selector.namespace, it.selector.clusterName, it.selector.jobName, it.json)
+                )
+            }
+        )
+    }
+
+    private fun handleCommandJobDelete(message: Message<String>, json: JSON, controller: Controller) {
+        processCommandAndReplyToSender<JobCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), JobCommand::class.java
+                )
+            },
+            {
+                controller.deleteFlinkJob(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    it.selector.jobName
+                )
+            }
+        )
+    }
+
+    private fun handleCommandJobScale(message: Message<String>, json: JSON, controller: Controller) {
+        processCommandAndReplyToSender<JobCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), JobCommand::class.java
+                )
+            },
+            {
+                controller.requestScaleJob(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    it.selector.jobName,
+                    json.deserialize(it.json, ScaleJobOptions::class.java)
+                )
+            }
+        )
+    }
+
+    private fun handleCommandJobStop(message: Message<String>, json: JSON, controller: Controller, cache: Cache) {
+        processCommandAndReplyToSender<JobCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), JobCommand::class.java
+                )
+            },
+            {
+                controller.requestStopJob(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    it.selector.jobName,
+                    json.deserialize(it.json, StopOptions::class.java),
+                    JobContext(cache.getFlinkJob(it.selector.resourceName) ?: throw RuntimeException("Job not found"))
+                )
+            }
+        )
+    }
+
+    private fun handleCommandJobStart(message: Message<String>, json: JSON, controller: Controller, cache: Cache) {
+        processCommandAndReplyToSender<JobCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), JobCommand::class.java
+                )
+            },
+            {
+                controller.requestStartJob(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    it.selector.jobName,
+                    json.deserialize(it.json, StartOptions::class.java),
+                    JobContext(cache.getFlinkJob(it.selector.resourceName) ?: throw RuntimeException("Job not found"))
+                )
+            }
+        )
+    }
+
+    private fun handleCommandClusterUpdate(message: Message<String>, json: JSON, controller: Controller) {
+        processCommandAndReplyToSender<ClusterCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), ClusterCommand::class.java
+                )
+            },
+            {
+                controller.updateFlinkCluster(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    makeFlinkCluster(controller, it.selector.namespace, it.selector.clusterName, it.json)
+                )
+            }
+        )
+    }
+
+    private fun handleCommandClusterCreate(message: Message<String>, json: JSON, controller: Controller) {
+        processCommandAndReplyToSender<ClusterCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), ClusterCommand::class.java
+                )
+            },
+            {
+                controller.createFlinkCluster(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    makeFlinkCluster(controller, it.selector.namespace, it.selector.clusterName, it.json)
+                )
+            }
+        )
+    }
+
+    private fun handleCommandClusterDelete(message: Message<String>, json: JSON, controller: Controller) {
+        processCommandAndReplyToSender<ClusterCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), ClusterCommand::class.java
+                )
+            },
+            {
+                controller.deleteFlinkCluster(
+                    it.selector.namespace,
+                    it.selector.clusterName
+                )
+            }
+        )
+    }
+
+    private fun handleCommandClusterScale(message: Message<String>, json: JSON, controller: Controller) {
+        processCommandAndReplyToSender<ClusterCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), ClusterCommand::class.java
+                )
+            },
+            {
+                controller.requestScaleCluster(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    json.deserialize(it.json, ScaleClusterOptions::class.java)
+                )
+            }
+        )
+    }
+
+    private fun handlerCommandClusterStop(message: Message<String>, json: JSON, controller: Controller, cache: Cache) {
+        processCommandAndReplyToSender<ClusterCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), ClusterCommand::class.java
+                )
+            },
+            {
+                controller.requestStopCluster(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    json.deserialize(it.json, StopOptions::class.java),
+                    ClusterContext(cache.getFlinkCluster(it.selector.resourceName) ?: throw RuntimeException("Cluster not found"))
+                )
+            }
+        )
+    }
+
+    private fun handleCommandClusterStart(message: Message<String>, json: JSON, controller: Controller, cache: Cache) {
+        processCommandAndReplyToSender<ClusterCommand, Void?>(
+            json,
+            message,
+            {
+                json.deserialize(
+                    it.body(), ClusterCommand::class.java
+                )
+            },
+            {
+                controller.requestStartCluster(
+                    it.selector.namespace,
+                    it.selector.clusterName,
+                    json.deserialize(it.json, StartOptions::class.java),
+                    ClusterContext(cache.getFlinkCluster(it.selector.resourceName) ?: throw RuntimeException("Cluster not found"))
+                )
+            }
+        )
+    }
+
+    private fun handleGetTaskManagerMetrics(routingContext: RoutingContext, json: JSON, controller: Controller, namespace: String) {
+        processRequest(routingContext, json, Function { context ->
+            controller.getTaskManagerMetrics(
+                namespace, context.pathParam("clusterName"),
+                TaskManagerId(context.pathParam("taskmanager"))
+            )
+        })
+    }
+
+    private fun handleGetTaskManagerDetails(routingContext: RoutingContext, json: JSON, controller: Controller, namespace: String) {
+        processRequest(routingContext, json, Function { context ->
+            controller.getTaskManagerDetails(
+                namespace, context.pathParam("clusterName"),
+                TaskManagerId(context.pathParam("taskmanager"))
+            )
+        })
+    }
+
+    private fun handleListTaskManagers(routingContext: RoutingContext, json: JSON, controller: Controller, namespace: String) {
+        processRequest(routingContext, json, Function { context ->
+            controller.getTaskManagersList(
+                namespace, context.pathParam("clusterName")
+            )
+        })
+    }
+
+    private fun handleGetJobManagerMetrics(routingContext: RoutingContext, json: JSON, controller: Controller, namespace: String) {
+        processRequest(routingContext, json, Function { context ->
+            controller.getJobManagerMetrics(
+                namespace, context.pathParam("clusterName")
+            )
+        })
+    }
+
+    private fun handleGetJobMetrics(routingContext: RoutingContext, json: JSON, controller: Controller, namespace: String, cache: Cache) {
+        processRequest(routingContext, json, Function { context ->
+            controller.getJobMetrics(
+                namespace,
+                context.pathParam("clusterName"),
+                context.pathParam("jobName"),
+                makeJobContext(cache, context.pathParam("clusterName") + "-" + context.pathParam("jobName"))
+            )
+        })
+    }
+
+    private fun handleGetJobDetails(routingContext: RoutingContext, json: JSON, controller: Controller, namespace: String, cache: Cache) {
+        processRequest(routingContext, json, Function { context ->
+            controller.getJobDetails(
+                namespace,
+                context.pathParam("clusterName"),
+                context.pathParam("jobName"),
+                makeJobContext(cache, context.pathParam("clusterName") + "-" + context.pathParam("jobName"))
+            )
+        })
+    }
+
+    private fun handleGetJobStatus(routingContext: RoutingContext, json: JSON, controller: Controller, namespace: String, cache: Cache) {
+        processRequest(routingContext, json, Function { context ->
+            controller.getFlinkJobStatus(
+                namespace,
+                context.pathParam("clusterName"),
+                context.pathParam("jobName"),
+                makeJobContext(cache, context.pathParam("clusterName") + "-" + context.pathParam("jobName"))
+            )
+        })
+    }
+
+    private fun handleListJobs(routingContext: RoutingContext, json: JSON, cache: Cache) {
+        processRequest(routingContext, json, Function { context ->
+            Result(ResultStatus.OK, cache.listJobNames().filter {
+                it.startsWith(context.pathParam("clusterName") + "-")
+            })
+        })
+    }
+
+    private fun handleGetClusterStatus(routingContext: RoutingContext, json: JSON, controller: Controller, namespace: String, cache: Cache) {
+        processRequest(routingContext, json, Function { context ->
+            controller.getFlinkClusterStatus(
+                namespace,
+                context.pathParam("clusterName"),
+                makeClusterContext(cache, context.pathParam("clusterName"))
+            )
+        })
+    }
+
+    private fun handleListClusters(routingContext: RoutingContext, json: JSON, cache: Cache) {
+        processRequest(routingContext, json, Function {
+            Result(ResultStatus.OK, cache.listClusterNames())
+        })
+    }
+
+    private fun handleClusterCommand(routingContext: RoutingContext, namespace: String, json: JSON, path: String, payloadSupplier: Function<RoutingContext, String>) {
+        sendMessageAndWaitForReply(routingContext, namespace, path, BiFunction { context, namespace ->
+            json.serialize(ClusterCommand(
+                ClusterSelector(namespace = namespace, clusterName = context.pathParam("clusterName")), payloadSupplier.apply(context)
+            ))
+        })
+    }
+
+    private fun handleJobCommand(routingContext: RoutingContext, namespace: String, json: JSON, path: String, payloadSupplier: Function<RoutingContext, String>) {
+        sendMessageAndWaitForReply(routingContext, namespace, path, BiFunction { context, namespace ->
+            json.serialize(JobCommand(
+                JobSelector(namespace = namespace, clusterName = context.pathParam("clusterName"), jobName = context.pathParam("jobName")), payloadSupplier.apply(context)
+            ))
+        })
+    }
+
+    private fun makeClusterContext(cache: Cache, resourceName: String) =
+        ClusterContext(cache.getFlinkCluster(resourceName) ?: throw RuntimeException("Cluster not found"))
+
+    private fun makeJobContext(cache: Cache, resourceName: String) =
+        JobContext(cache.getFlinkJob(resourceName) ?: throw RuntimeException("Job not found"))
 
     private fun createServerOptions(
         jksKeyStorePath: String?,
@@ -554,25 +700,30 @@ class OperatorVerticle : AbstractVerticle() {
 
     private fun makeError(error: Throwable) = "{\"status\":\"FAILURE\",\"error\":\"${error.message}\"}"
 
-    private fun makeV2FlinkCluster(namespace: String, clusterName: String, json: String): V2FlinkCluster {
-        val objectMeta = V1ObjectMeta().namespace(namespace).name(clusterName)
-        val flinkClusterSpec = Resource.parseV2FlinkClusterSpec(json)
-        val flinkCluster = V2FlinkCluster()
-        flinkCluster.metadata = objectMeta
-        flinkCluster.spec = flinkClusterSpec
-        return flinkCluster
+    private fun makeFlinkCluster(controller: Controller, namespace: String, clusterName: String, json: String): V1FlinkCluster {
+        return controller.makeFlinkCluster(namespace, clusterName, Resource.parseV1FlinkClusterSpec(json))
     }
 
-    private fun processRequest(context: RoutingContext, handler: Function<RoutingContext, String>) {
+    private fun makeFlinkJob(controller: Controller, namespace: String, clusterName: String, jobName: String, json: String): V1FlinkJob {
+        return controller.makeFlinkJob(namespace, clusterName, jobName, Resource.parseV1FlinkJobSpec(json))
+    }
+
+    private fun <R> processRequest(context: RoutingContext, json: JSON, handler: Function<RoutingContext, Result<R>>) {
         Single.just(context)
             .map {
-                handler.apply(context)
+                val result = handler.apply(context)
+
+                if (result.isSuccessful()) {
+                    json.serialize(Result(ResultStatus.OK, json.serialize(result.output)))
+                } else {
+                    json.serialize(Result(ResultStatus.ERROR, null))
+                }
             }
             .doOnSuccess {
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it)
             }
             .doOnError {
-                context.response().setStatusCode(500).end(makeError(it))
+                context.response().setStatusCode(500).putHeader("content-type", "application/json").end(makeError(it))
             }
             .doOnError {
                 logger.warn("Can't process request", it)
@@ -597,7 +748,7 @@ class OperatorVerticle : AbstractVerticle() {
                 context.response().setStatusCode(200).putHeader("content-type", "application/json").end(it.body())
             }
             .doOnError {
-                context.response().setStatusCode(500).end(makeError(it))
+                context.response().setStatusCode(500).putHeader("content-type", "application/json").end(makeError(it))
             }
             .doOnError {
                 logger.warn("Can't process request", it)
@@ -605,17 +756,24 @@ class OperatorVerticle : AbstractVerticle() {
             .subscribe()
     }
 
-    private fun <T> processCommandAndReplyToSender(
+    private fun <T, R> processCommandAndReplyToSender(
+        json: JSON,
         message: Message<String>,
         converter: Function<Message<String>, T>,
-        handler: Function<T, String>
+        handler: Function<T, Result<R>>
     ) {
         Single.just(message)
             .map {
                 converter.apply(it)
             }
             .map {
-                handler.apply(it)
+                val result = handler.apply(it)
+
+                if (result.isSuccessful()) {
+                    json.serialize(Result(ResultStatus.OK, json.serialize(result.output)))
+                } else {
+                    json.serialize(Result(ResultStatus.ERROR, null))
+                }
             }
             .doOnError {
                 logger.error("Can't process command [address=${message.address()}]", it)

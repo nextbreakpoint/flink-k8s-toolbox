@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.supervisor.task
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.supervisor.core.JobManager
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
@@ -209,7 +209,7 @@ class JobOnStartedTest {
         inOrder.verify(context, times(1)).isJobFailed()
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).executeAction(setOf(
-            ManualAction.START, ManualAction.STOP, ManualAction.FORGET_SAVEPOINT, ManualAction.TRIGGER_SAVEPOINT
+            Action.START, Action.STOP, Action.FORGET_SAVEPOINT, Action.TRIGGER_SAVEPOINT
         ))
         verifyNoMoreInteractions(context)
     }

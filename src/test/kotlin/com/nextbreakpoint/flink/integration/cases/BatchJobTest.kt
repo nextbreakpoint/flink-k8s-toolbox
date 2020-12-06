@@ -37,26 +37,26 @@ class BatchJobTest : IntegrationSetup() {
     @Test
     fun `should stop job when job finished`() {
         println("Should create cluster...")
-        createCluster(namespace = namespace, path = "integration/cluster-3.yaml")
-        awaitUntilAsserted(timeout = 30) {
-            assertThat(clusterExists(namespace = namespace, clusterName = "cluster-3")).isTrue()
+        createResource(namespace = namespace, path = "integration/deployment-3.yaml")
+        awaitUntilAsserted(timeout = 60) {
+            assertThat(clusterExists(namespace = namespace, name = "cluster-3")).isTrue()
         }
         println("Should start cluster...")
         awaitUntilAsserted(timeout = 420) {
-            assertThat(hasClusterStatus(namespace = namespace, clusterName = "cluster-3", status = ClusterStatus.Started)).isTrue()
+            assertThat(hasClusterStatus(namespace = namespace, name = "cluster-3", status = ClusterStatus.Started)).isTrue()
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-3", status = ResourceStatus.Updated)).isTrue()
         }
         println("Should start batch job...")
         awaitUntilAsserted(timeout = 120) {
-            assertThat(hasJobStatus(namespace = namespace, jobName = "cluster-3-job-0", status = JobStatus.Started)).isTrue()
+            assertThat(hasJobStatus(namespace = namespace, name = "cluster-3-job-0", status = JobStatus.Started)).isTrue()
         }
         println("Should stop job when batch job has finished...")
         awaitUntilAsserted(timeout = 120) {
-            assertThat(hasJobStatus(namespace = namespace, jobName = "cluster-3-job-0", status = JobStatus.Stopped)).isTrue()
-            assertThat(hasClusterJobStatus(namespace = namespace, jobName = "cluster-3-job-0", status = "FINISHED")).isTrue()
+            assertThat(hasJobStatus(namespace = namespace, name = "cluster-3-job-0", status = JobStatus.Stopped)).isTrue()
+            assertThat(hasClusterJobStatus(namespace = namespace, name = "cluster-3-job-0", status = "FINISHED")).isTrue()
         }
         awaitUntilAsserted(timeout = 420) {
-            assertThat(hasClusterStatus(namespace = namespace, clusterName = "cluster-3", status = ClusterStatus.Started)).isTrue()
+            assertThat(hasClusterStatus(namespace = namespace, name = "cluster-3", status = ClusterStatus.Started)).isTrue()
         }
     }
 }

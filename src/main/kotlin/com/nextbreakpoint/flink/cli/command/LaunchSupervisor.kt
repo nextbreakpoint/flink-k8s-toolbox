@@ -6,10 +6,10 @@ import com.nextbreakpoint.flink.common.RunnerOptions
 import com.nextbreakpoint.flink.common.SupervisorOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.supervisor.core.Cache
-import com.nextbreakpoint.flink.k8s.supervisor.core.CacheAdapter
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.supervisor.SupervisorRunner
+import com.nextbreakpoint.flink.k8s.supervisor.core.Cache
+import com.nextbreakpoint.flink.k8s.supervisor.core.CacheAdapter
 
 class LaunchSupervisor : LaunchCommand<SupervisorOptions> {
     companion object {

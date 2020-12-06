@@ -1,10 +1,10 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
 import com.nextbreakpoint.flink.common.ClusterStatus
-import com.nextbreakpoint.flink.common.DeleteOptions
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
+import com.nextbreakpoint.flink.k8s.common.Timeout
 import org.apache.log4j.Logger
 
 class ClusterManager(
@@ -12,6 +12,13 @@ class ClusterManager(
     private val controller: ClusterController,
     private val taskTimeout: Long = Timeout.TASK_TIMEOUT
 ) {
+    fun hasFinalizer() = controller.hasFinalizer()
+
+    fun addFinalizer() {
+        logger.info("Add finalizer")
+        controller.addFinalizer()
+    }
+
     fun removeFinalizer() {
         logger.info("Remove finalizer")
         controller.removeFinalizer()
@@ -57,7 +64,6 @@ class ClusterManager(
         controller.initializeAnnotations()
         controller.initializeStatus()
         controller.updateDigests()
-        controller.addFinalizer()
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(ClusterStatus.Starting)
         controller.setResourceStatus(ResourceStatus.Updating)
@@ -102,13 +108,13 @@ class ClusterManager(
         val taskmanagerExist = controller.doesTaskManagerPodsExist()
 
         if (taskmanagerExist) {
-            controller.deletePods(DeleteOptions(label = "role", value = "taskmanager", limit = controller.getTaskManagerReplicas()))
+            controller.deleteTaskManagers()
         }
 
         val jobmanagerExists = controller.doesJobManagerPodExists()
 
         if (jobmanagerExists) {
-            controller.deletePods(DeleteOptions(label = "role", value = "jobmanager", limit = controller.getJobManagerReplicas()))
+            controller.deleteJobManagers()
         }
 
         if (taskmanagerExist || jobmanagerExists) {
@@ -168,12 +174,12 @@ class ClusterManager(
     }
 
     fun hasScaleChanged(): Boolean {
-        val desiredTaskManagers = controller.getRequiredTaskManagers()
+        val desiredTaskManagers = controller.getClampedRequiredTaskManagers()
         val currentTaskManagers = controller.getCurrentTaskManagers()
         return currentTaskManagers != desiredTaskManagers
     }
 
-    fun isActionPresent() = controller.getAction() != ManualAction.NONE
+    fun isActionPresent() = controller.getAction() != Action.NONE
 
     fun isResourceDeleted() = controller.hasBeenDeleted()
 
@@ -253,9 +259,9 @@ class ClusterManager(
     }
 
     fun rescaleTaskManagers(): Boolean {
-        val currentTaskManagers = controller.getTaskManagers()
+        val currentTaskManagers = controller.getClampedTaskManagers()
 
-        val requiredTaskManagers = controller.getRequiredTaskManagers()
+        val requiredTaskManagers = controller.getClampedRequiredTaskManagers()
 
         if (requiredTaskManagers == currentTaskManagers) {
             return false
@@ -267,13 +273,15 @@ class ClusterManager(
     }
 
     fun rescaleTaskManagerPods(): Boolean {
-        val currentTaskManagers = controller.getTaskManagers()
+        val currentTaskManagers = controller.getClampedTaskManagers()
 
-        if (currentTaskManagers == controller.getTaskManagerReplicas()) {
+        val taskManagerReplicas = controller.getTaskManagerReplicas()
+
+        if (currentTaskManagers == taskManagerReplicas) {
             return false
         }
 
-        if (currentTaskManagers > controller.getTaskManagerReplicas()) {
+        if (currentTaskManagers > taskManagerReplicas) {
             val result = controller.createTaskManagerPods(currentTaskManagers)
 
             if (result.isSuccessful()) {
@@ -290,14 +298,14 @@ class ClusterManager(
         return true
     }
 
-    fun executeAction(acceptedActions: Set<ManualAction>) {
+    fun executeAction(acceptedActions: Set<Action>) {
         val manualAction = controller.getAction()
 
         logger.info("Detected action: $manualAction")
 
         when (manualAction) {
-            ManualAction.START -> {
-                if (acceptedActions.contains(ManualAction.START)) {
+            Action.START -> {
+                if (acceptedActions.contains(Action.START)) {
                     logger.info("Start cluster")
                     controller.updateStatus()
                     controller.updateDigests()
@@ -308,8 +316,8 @@ class ClusterManager(
                     logger.warn("Action not allowed")
                 }
             }
-            ManualAction.STOP -> {
-                if (acceptedActions.contains(ManualAction.STOP)) {
+            Action.STOP -> {
+                if (acceptedActions.contains(Action.STOP)) {
                     logger.info("Stop cluster")
                     controller.setShouldRestart(false)
                     controller.setSupervisorStatus(ClusterStatus.Stopping)
@@ -318,11 +326,11 @@ class ClusterManager(
                     logger.warn("Action not allowed")
                 }
             }
-            ManualAction.NONE -> {
+            Action.NONE -> {
             }
         }
 
-        if (manualAction != ManualAction.NONE) {
+        if (manualAction != Action.NONE) {
             controller.resetAction()
         }
     }
@@ -346,43 +354,15 @@ class ClusterManager(
     }
 
     fun stopUnmanagedJobs(): Boolean {
-        if (controller.getJobSpecs().isEmpty()) {
-            return true
-        }
+        val jobIds = controller.getJobNamesWithIds().values.filterNotNull().toSet()
 
-        val stopJobsResult = controller.stopJobs(controller.getJobIds())
+        val stopJobsResult = controller.stopJobs(jobIds)
 
         if (!stopJobsResult.isSuccessful() || !stopJobsResult.output) {
             return false
         }
 
         return true
-    }
-
-    fun createJobs(): Boolean {
-        if (controller.haveJobsBeenCreated()) {
-            return true
-        }
-
-        val jobNames = controller.listExistingJobNames()
-
-        val results = controller.getJobSpecs().filter { job ->
-            !jobNames.contains(job.name)
-        }.map { job ->
-            val result = controller.createJob(job)
-
-            if (result.isSuccessful()) {
-                logger.info("Job ${job.name} created")
-            }
-
-            result
-        }
-
-        if (results.any { !it.isSuccessful() }) {
-            logger.error("Failed to create some jobs")
-        }
-
-        return false
     }
 
     fun waitForJobs(): Boolean {
@@ -395,32 +375,6 @@ class ClusterManager(
         }
 
         return true
-    }
-
-    fun deleteJobs(): Boolean {
-        if (controller.haveJobsBeenRemoved()) {
-            return true
-        }
-
-        val jobNames = controller.listExistingJobNames()
-
-        val results = controller.getJobSpecs().filter { job ->
-            jobNames.contains(job.name)
-        }.map { job ->
-            val result = controller.deleteJob(job.name)
-
-            if (result.isSuccessful()) {
-                logger.info("Job ${job.name} deleted")
-            }
-
-            result
-        }
-
-        if (results.any { !it.isSuccessful() }) {
-            logger.error("Failed to delete some jobs")
-        }
-
-        return false
     }
 }
 

@@ -1,25 +1,23 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
-import com.nextbreakpoint.flink.common.JobManagerStats
 import com.nextbreakpoint.flink.common.TaskManagerId
+import com.nextbreakpoint.flink.common.TaskManagerStats
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import com.nextbreakpoint.flink.k8s.controller.core.Action
+import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import io.kubernetes.client.openapi.JSON
 import org.apache.log4j.Logger
 
-class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : Action<TaskManagerId, String>(flinkOptions, flinkClient, kubeClient) {
+class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<TaskManagerId, TaskManagerStats?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(TaskManagerMetrics::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ResourceSelector, params: TaskManagerId): Result<String> {
+    override fun execute(namespace: String, clusterName: String, params: TaskManagerId): Result<TaskManagerStats?> {
         try {
-            val address = kubeClient.findFlinkAddress(flinkOptions, clusterSelector.namespace, clusterSelector.name)
+            val address = kubeClient.findFlinkAddress(flinkOptions, namespace, clusterName)
 
             val metrics = flinkClient.getTaskManagerMetrics(address, params,
                 "Status.JVM.CPU.Time,Status.JVM.CPU.Load,Status.JVM.Threads.Count,Status.JVM.Memory.Heap.Max,Status.JVM.Memory.Heap.Used,Status.JVM.Memory.Heap.Committed,Status.JVM.Memory.NonHeap.Max,Status.JVM.Memory.NonHeap.Used,Status.JVM.Memory.NonHeap.Committed,Status.JVM.Memory.Direct.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Direct.TotalCapacity,Status.JVM.Memory.Mapped.Count,Status.JVM.Memory.Mapped.MemoryUsed,Status.JVM.Memory.Mapped.TotalCapacity,Status.JVM.GarbageCollector.Copy.Time,Status.JVM.GarbageCollector.Copy.Count,Status.JVM.GarbageCollector.MarkSweepCompact.Time,Status.JVM.GarbageCollector.MarkSweepCompact.Count,Status.JVM.ClassLoader.ClassesLoaded,Status.JVM.ClassLoader.ClassesUnloaded,taskSlotsTotal,taskSlotsAvailable,numRegisteredTaskManagers,numRunningJobs"
@@ -27,7 +25,7 @@ class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
 
             val metricsMap = metrics.map { metric -> metric.id to metric.value }.toMap()
 
-            val metricsResponse = JobManagerStats(
+            val metricsResponse = TaskManagerStats(
                 jvmCPUTime = metricsMap.get("Status.JVM.CPU.Time")?.toLong() ?: 0,
                 jvmCPULoad = metricsMap.get("Status.JVM.CPU.Load")?.toDouble() ?: 0.0,
                 jvmThreadsCount = metricsMap.get("Status.JVM.Threads.Count")?.toInt() ?: 0,
@@ -59,14 +57,14 @@ class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
 
             return Result(
                 ResultStatus.OK,
-                JSON().serialize(metricsResponse)
+                metricsResponse
             )
         } catch (e : Exception) {
             logger.error("Can't get taskmanager's metrics ($params)", e)
 
             return Result(
                 ResultStatus.ERROR,
-                "{}"
+                null
             )
         }
     }

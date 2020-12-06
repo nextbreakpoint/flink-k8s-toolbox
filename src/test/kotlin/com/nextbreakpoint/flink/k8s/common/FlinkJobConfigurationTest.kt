@@ -7,12 +7,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class FlinkJobConfigurationTest {
-    private val flinkCluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
-    private val flinkJob = TestFactory.aFlinkJob(flinkCluster)
+    private val flinkJob = TestFactory.aFlinkJob(name = "test-test", namespace = "flink")
 
     @BeforeEach
     fun configure() {
-        flinkJob.spec.savepoint = V1SavepointSpec()
+        flinkJob.spec.savepoint = V1SavepointSpec.builder().build()
     }
 
     @Test

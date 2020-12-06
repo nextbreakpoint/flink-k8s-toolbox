@@ -1,14 +1,16 @@
 package com.nextbreakpoint.flink.k8s.operator
 
-import com.nextbreakpoint.flink.common.ResourceSelector
-import com.nextbreakpoint.flink.common.ClusterStatus
-import com.nextbreakpoint.flink.common.DeleteOptions
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
-import com.nextbreakpoint.flink.k8s.common.Resource
+import com.nextbreakpoint.flink.k8s.common.FlinkDeploymentStatus
+import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.controller.Controller
-import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
-import com.nextbreakpoint.flink.k8s.factory.SupervisorResourcesDefaultFactory
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeployment
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.operator.core.Cache
+import com.nextbreakpoint.flink.k8s.operator.core.DeploymentManager
+import com.nextbreakpoint.flink.k8s.operator.core.JobManager
+import com.nextbreakpoint.flink.k8s.operator.core.OperatorController
+import com.nextbreakpoint.flink.k8s.operator.core.SupervisorManager
 import org.apache.log4j.Logger
 
 class Operator(
@@ -16,97 +18,101 @@ class Operator(
     private val cache: Cache
 ) {
     companion object {
+        private val logger = Logger.getLogger(Operator::class.simpleName)
+
         fun create(controller: Controller, cache: Cache): Operator {
             return Operator(controller, cache)
         }
     }
 
-    fun reconcile(clusterSelector: ResourceSelector) {
-        val logger = Logger.getLogger(Operator::class.java.name + " | Cluster: " + clusterSelector.name)
+    fun reconcile() {
+        cache.getFlinkJobs().forEach { reconcile(it) }
 
+        cache.getFlinkClusters().forEach { reconcile(it) }
+
+        cache.getFlinkDeployments().forEach { reconcile(it) }
+    }
+
+    private fun reconcile(cluster: V1FlinkCluster) {
         try {
-            val clusterResources = cache.getCachedResources(clusterSelector)
+            val clusterName = getName(cluster)
 
-            val cluster = clusterResources.flinkCluster ?: throw RuntimeException("Cluster not found")
+            val logger = Logger.getLogger(getLoggerName(clusterName))
 
-            if (FlinkClusterStatus.getSupervisorStatus(cluster) == ClusterStatus.Terminated) {
-                val lastUpdateTimestamp = FlinkClusterStatus.getStatusTimestamp(cluster).toInstant().millis
+            val operatorController = OperatorController(cache.namespace, controller)
 
-                if (System.currentTimeMillis() - lastUpdateTimestamp > 30000) {
-                    if (clusterResources.supervisorDeployment != null) {
-                        logger.info("Cluster is terminated. Delete supervisor")
+            val supervisorManager = SupervisorManager(logger, cache, operatorController, cluster)
 
-                        controller.deleteSupervisorDeployment(clusterSelector)
-                    } else {
-                        if (clusterResources.supervisorPod == null) {
-                            if (cluster.metadata.deletionTimestamp != null) {
-                                logger.info("Cluster is terminated. Remove finalizer")
+            supervisorManager.reconcile()
+        } catch (e: Exception) {
+            logger.error("Error occurred while reconciling resources", e)
+        }
+    }
 
-                                removeFinalizer(cluster)
+    private fun reconcile(job: V1FlinkJob) {
+        try {
+            val resourceName = getName(job)
 
-                                controller.updateFinalizers(clusterSelector, cluster)
-                            } else {
-                                logger.info("Cluster is terminated. Delete cluster")
+            val operatorController = OperatorController(cache.namespace, controller)
 
-                                controller.deleteFlinkCluster(clusterSelector)
-                            }
-                        } else {
-                            if (clusterResources.supervisorPod.metadata?.deletionTimestamp != null) {
-                                logger.warn("Supervisor pod deleted. Await termination")
-                            } else {
-                                logger.warn("Found supervisor pod. Terminate pod")
+            val jobManager = JobManager(logger, cache, operatorController, job)
 
-                                controller.deletePods(clusterSelector, DeleteOptions("role", "supervisor", 1))
-                            }
-                        }
-                    }
-                } else {
-                    logger.info("Cluster is terminated")
-                }
-            } else {
-                if (clusterResources.supervisorDeployment == null) {
-                    if (clusterResources.supervisorPod == null) {
-                        logger.info("Create supervisor")
+            val statusTimestamp = FlinkJobStatus.getStatusTimestamp(job)
 
-                        val deployment = SupervisorResourcesDefaultFactory.createSupervisorDeployment(
-                            clusterSelector, "flink-operator", cluster.spec.supervisor, 1, controller.isDryRun()
-                        )
+            jobManager.reconcile()
 
-                        controller.createSupervisorDeployment(clusterSelector, deployment)
-                    } else {
-                        if (clusterResources.supervisorPod.metadata?.deletionTimestamp != null) {
-                            logger.warn("Supervisor pod deleted. Await termination")
-                        } else {
-                            logger.warn("Found supervisor pod. Terminate pod")
+            val newStatusTimestamp = FlinkJobStatus.getStatusTimestamp(job)
 
-                            controller.deletePods(clusterSelector, DeleteOptions("role", "supervisor", 1))
-                        }
-                    }
-                } else {
-                    val deployedDigest = clusterResources.supervisorDeployment.metadata?.annotations?.get("flink-operator/deployment-digest")
-
-                    val declaredDigest = Resource.computeDigest(cluster.spec.supervisor)
-
-                    if (deployedDigest == null || deployedDigest != declaredDigest) {
-                        logger.info("Detected change. Recreate supervisor")
-
-                        controller.deleteSupervisorDeployment(clusterSelector)
-                    }
-                }
-
-                if (clusterResources.supervisorDeployment != null && clusterResources.supervisorPod == null) {
-                    logger.warn("Supervisor pod not running")
-                }
+            if (statusTimestamp != newStatusTimestamp) {
+                logger.debug("Updating status: job $resourceName")
+                operatorController.updateStatus(cache.namespace, resourceName, job)
             }
         } catch (e: Exception) {
-            logger.error("Error occurred while reconciling cluster $clusterSelector", e)
+            logger.error("Error occurred while reconciling resources", e)
         }
     }
 
-    private fun removeFinalizer(cluster: V2FlinkCluster) {
-        val finalizers = cluster.metadata.finalizers
-        if (finalizers != null && finalizers.contains("finalizer.nextbreakpoint.com")) {
-            cluster.metadata.finalizers = finalizers.minus("finalizer.nextbreakpoint.com")
+    private fun reconcile(deployment: V1FlinkDeployment) {
+        try {
+            val resourceName = getName(deployment)
+
+            val statusTimestamp = FlinkDeploymentStatus.getStatusTimestamp(deployment)
+
+            val operatorController = OperatorController(cache.namespace, controller)
+
+            val hasFinalizer = operatorController.hasFinalizer(deployment)
+
+            val deploymentManager = DeploymentManager(logger, cache, operatorController, deployment)
+
+            deploymentManager.reconcile()
+
+            val newStatusTimestamp = FlinkDeploymentStatus.getStatusTimestamp(deployment)
+
+            if (statusTimestamp != newStatusTimestamp) {
+                logger.debug("Updating status: deployment $resourceName")
+                operatorController.updateStatus(cache.namespace, resourceName, deployment)
+            }
+
+            val newHasFinalizer = operatorController.hasFinalizer(deployment)
+
+            if (hasFinalizer != newHasFinalizer) {
+                logger.debug("Updating finalizers: deployment $resourceName")
+                operatorController.updateFinalizers(cache.namespace, resourceName, deployment)
+            }
+        } catch (e: Exception) {
+            logger.error("Error occurred while reconciling resources", e)
         }
     }
+
+    private fun getName(job: V1FlinkJob) =
+        job.metadata?.name ?: throw RuntimeException("Metadata name is null")
+
+    private fun getName(cluster: V1FlinkCluster) =
+        cluster.metadata?.name ?: throw RuntimeException("Metadata name is null")
+
+    private fun getName(deployment: V1FlinkDeployment) =
+        deployment.metadata?.name ?: throw RuntimeException("Metadata name is null")
+
+    private fun getLoggerName(clusterName: String) =
+        Operator::class.simpleName + " | $clusterName"
 }

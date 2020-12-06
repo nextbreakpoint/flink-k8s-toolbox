@@ -1,28 +1,27 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkOptions
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.StopOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
+import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.ClusterContext
-import com.nextbreakpoint.flink.k8s.controller.core.Action
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import org.apache.log4j.Logger
 
-class RequestClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val context: ClusterContext) : Action<StopOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
+class RequestClusterStop(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val context: ClusterContext) : ClusterAction<StopOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
         private val logger = Logger.getLogger(RequestClusterStop::class.simpleName)
     }
 
-    override fun execute(clusterSelector: ResourceSelector, params: StopOptions): Result<Void?> {
+    override fun execute(namespace: String, clusterName: String, params: StopOptions): Result<Void?> {
         return try {
             context.setClusterWithoutSavepoint(params.withoutSavepoint)
-            context.setClusterManualAction(ManualAction.STOP)
+            context.setClusterManualAction(Action.STOP)
 
-            kubeClient.updateClusterAnnotations(clusterSelector, context.getClusterAnnotations())
+            kubeClient.updateClusterAnnotations(namespace, clusterName, context.getClusterAnnotations())
 
             Result(
                 ResultStatus.OK,

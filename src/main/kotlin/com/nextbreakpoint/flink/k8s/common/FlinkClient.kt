@@ -1,6 +1,11 @@
 package com.nextbreakpoint.flink.k8s.common
 
 import com.google.gson.reflect.TypeToken
+import com.nextbreakpoint.flink.common.FlinkAddress
+import com.nextbreakpoint.flink.common.Metric
+import com.nextbreakpoint.flink.common.RescaleInfo
+import com.nextbreakpoint.flink.common.SavepointInfo
+import com.nextbreakpoint.flink.common.TaskManagerId
 import com.nextbreakpoint.flinkclient.api.FlinkApi
 import com.nextbreakpoint.flinkclient.api.JSON
 import com.nextbreakpoint.flinkclient.model.AsynchronousOperationResult
@@ -18,11 +23,6 @@ import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
 import com.nextbreakpoint.flinkclient.model.TaskManagerDetailsInfo
 import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
 import com.nextbreakpoint.flinkclient.model.TriggerResponse
-import com.nextbreakpoint.flink.common.SavepointInfo
-import com.nextbreakpoint.flink.common.FlinkAddress
-import com.nextbreakpoint.flink.common.Metric
-import com.nextbreakpoint.flink.common.RescaleInfo
-import com.nextbreakpoint.flink.common.TaskManagerId
 import org.apache.log4j.Logger
 import java.io.File
 import java.util.concurrent.TimeUnit

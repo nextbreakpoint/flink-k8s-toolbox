@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flink.integration
 
 import com.google.gson.reflect.TypeToken
-import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
@@ -9,9 +8,11 @@ import com.nextbreakpoint.flink.common.ScaleClusterOptions
 import com.nextbreakpoint.flink.common.StartOptions
 import com.nextbreakpoint.flink.common.StopOptions
 import com.nextbreakpoint.flink.common.TaskManagerId
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterSpec
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterStatus
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobSpec
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobStatus
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterSpec
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterStatus
+import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
 import com.squareup.okhttp.MediaType
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
@@ -38,9 +39,9 @@ open class IntegrationSetup {
         val port = getVariable("OPERATOR_PORT", "30000").toInt()
         val host = getVariable("OPERATOR_HOST", "localhost")
         val mapTypeToken = object : TypeToken<Map<String, Any>>() {}
-        val listTypeToken = object : TypeToken<List<String>>() {}
-        val specTypeToken = object : TypeToken<V2FlinkClusterSpec>() {}
-        val clusterStatusTypeToken = object : TypeToken<V2FlinkClusterStatus>() {}
+        val clusterSpecTypeToken = object : TypeToken<V1FlinkClusterSpec>() {}
+        val clusterStatusTypeToken = object : TypeToken<V1FlinkClusterStatus>() {}
+        val jobSpecTypeToken = object : TypeToken<V1FlinkJobSpec>() {}
         val jobStatusTypeToken = object : TypeToken<V1FlinkJobStatus>() {}
         val taskmanagersTypeToken = object : TypeToken<List<TaskManagerInfo>>() {}
 
@@ -58,6 +59,8 @@ open class IntegrationSetup {
             installMinio()
             waitForMinio()
             createBucket()
+            uninstallCRDs()
+            installCRDs()
             installOperator()
             installResources()
             exposeOperator()
@@ -67,9 +70,9 @@ open class IntegrationSetup {
         @JvmStatic
         fun teardown() {
             TimeUnit.SECONDS.sleep(5)
-            removeFinalizers()
             uninstallOperator()
             uninstallMinio()
+            removeFinalizers()
             TimeUnit.SECONDS.sleep(5)
             deleteNamespace()
         }
@@ -82,6 +85,7 @@ open class IntegrationSetup {
         }
 
         fun describeResources() {
+            describeDeployments(namespace = namespace)
             describeClusters(namespace = namespace)
             describeJobs(namespace = namespace)
             describePods(namespace = namespace)
@@ -157,13 +161,24 @@ open class IntegrationSetup {
             println("Bucker created")
         }
 
-        fun installOperator() {
-            println("Installing operator...")
+        fun installCRDs() {
+            println("Installing CRDs...")
             if (installHelmChart(namespace = namespace, name = "flink-k8s-toolbox-crd", path = "helm/flink-k8s-toolbox-crd") != 0) {
                 if (upgradeHelmChart(namespace = namespace, name = "flink-k8s-toolbox-crd", path = "helm/flink-k8s-toolbox-crd") != 0) {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
+        }
+        fun uninstallCRDs() {
+            println("Uninstalling CRDs...")
+            if (uninstallHelmChart(namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            println("Operator uninstalled")
+        }
+
+        fun installOperator() {
+            println("Installing operator...")
             if (installHelmChart(namespace = namespace, name = "flink-k8s-toolbox-roles", path = "helm/flink-k8s-toolbox-roles") != 0) {
                 if (upgradeHelmChart(namespace = namespace, name = "flink-k8s-toolbox-roles", path = "helm/flink-k8s-toolbox-roles") != 0) {
                     fail("Can't install or upgrade Helm chart")
@@ -211,9 +226,6 @@ open class IntegrationSetup {
             if (uninstallHelmChart(namespace = namespace, name = "flink-k8s-toolbox-roles") != 0) {
                 println("Can't uninstall Helm chart")
             }
-            if (uninstallHelmChart(namespace = namespace, name = "flink-k8s-toolbox-crd") != 0) {
-                println("Can't uninstall Helm chart")
-            }
             println("Operator uninstalled")
         }
 
@@ -223,7 +235,7 @@ open class IntegrationSetup {
                 fail("Can't expose the operator")
             }
             awaitUntilAsserted(timeout = 60) {
-                assertThat(listClusters(port = port)).isEmpty()
+                assertThat(listClusters(port = port)).isNotEmpty()
             }
             println("Operator exposed")
         }
@@ -267,6 +279,11 @@ open class IntegrationSetup {
         }
 
         fun removeFinalizers() {
+            listResources("fd").forEach {
+                if (removeFinalizer(namespace = namespace, resource = "fd", name = it) != 0) {
+                    println("Can't delete deployment finalizers")
+                }
+            }
             listResources("fc").forEach {
                 if (removeFinalizer(namespace = namespace, resource = "fc", name = it) != 0) {
                     println("Can't delete cluster finalizers")
@@ -301,6 +318,9 @@ open class IntegrationSetup {
         }
 
         fun deleteCRD() {
+            if (deleteCRD(name = "flinkdeployments.nextbreakpoint.com") != 0) {
+                println("Can't delete CRD: flinkdeployments.nextbreakpoint.com")
+            }
             if (deleteCRD(name = "flinkclusters.nextbreakpoint.com") != 0) {
                 println("Can't delete CRD: flinkclusters.nextbreakpoint.com")
             }
@@ -325,20 +345,20 @@ open class IntegrationSetup {
                 .until(condition)
         }
 
-        private fun listClusters(port: Int): List<String> {
-            val response = sendGetRequest(url = "http://$host:$port/clusters", typeToken = listTypeToken)
+        private fun listClusters(port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://$host:$port/clusters", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't list clusters")
             }
-            return response.second ?: listOf()
+            return response.second ?: mapOf()
         }
 
-        private fun listJobs(clusterName: String, port: Int): List<String> {
-            val response = sendGetRequest(url = "http://$host:$port/clusters/$clusterName/jobs", typeToken = listTypeToken)
+        private fun listJobs(clusterName: String, port: Int): Map<String, Any> {
+            val response = sendGetRequest(url = "http://$host:$port/clusters/$clusterName/jobs", typeToken = mapTypeToken)
             if (response.first != 200) {
                 fail("Can't list jobs")
             }
-            return response.second ?: listOf()
+            return response.second ?: mapOf()
         }
 
         fun stopCluster(clusterName: String, options: StopOptions, port: Int) {
@@ -362,7 +382,7 @@ open class IntegrationSetup {
             }
         }
 
-        fun createCluster(clusterName: String, spec: V2FlinkClusterSpec, port: Int) {
+        fun createCluster(clusterName: String, spec: V1FlinkClusterSpec, port: Int) {
             val response = sendPostRequest(url = "http://$host:$port/clusters/$clusterName", body = spec, typeToken = mapTypeToken)
             if (response.first != 200 || response.second?.get("status") != "OK") {
                 fail("Can't create cluster $clusterName")
@@ -373,6 +393,20 @@ open class IntegrationSetup {
             val response = sendDeleteRequest(url = "http://$host:$port/clusters/$clusterName", typeToken = mapTypeToken)
             if (response.first != 200 || response.second?.get("status") != "OK") {
                 fail("Can't delete cluster $clusterName")
+            }
+        }
+
+        fun createJob(clusterName: String, jobName: String, spec: V1FlinkJobSpec, port: Int) {
+            val response = sendPostRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName", body = spec, typeToken = mapTypeToken)
+            if (response.first != 200 || response.second?.get("status") != "OK") {
+                fail("Can't create job $clusterName-$jobName")
+            }
+        }
+
+        fun deleteJob(clusterName: String, jobName: String, port: Int) {
+            val response = sendDeleteRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName", typeToken = mapTypeToken)
+            if (response.first != 200 || response.second?.get("status") != "OK") {
+                fail("Can't delete job $clusterName-$jobName")
             }
         }
 
@@ -387,29 +421,29 @@ open class IntegrationSetup {
         fun getJobStatus(clusterName: String, jobName: String, port: Int): Map<String, Any> {
             val response = sendGetRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName/status", typeToken = mapTypeToken)
             if (response.first != 200) {
-                fail("Can't get status of job $jobName")
+                fail("Can't get status of job $clusterName-$jobName")
             }
             return response.second ?: mapOf()
         }
 
         fun stopJob(clusterName: String, jobName: String, options: StopOptions, port: Int) {
-            val response = sendPutRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName//stop", body = options, typeToken = mapTypeToken)
+            val response = sendPutRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName/stop", body = options, typeToken = mapTypeToken)
             if (response.first != 200 || response.second?.get("status") != "OK") {
-                fail("Can't stop job $clusterName")
+                fail("Can't stop job $clusterName-$jobName")
             }
         }
 
         fun startJob(clusterName: String, jobName: String, options: StartOptions, port: Int) {
             val response = sendPutRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName/start", body = options, typeToken = mapTypeToken)
             if (response.first != 200 || response.second?.get("status") != "OK") {
-                fail("Can't start job $clusterName")
+                fail("Can't start job $clusterName-$jobName")
             }
         }
 
         fun getJobDetails(clusterName: String, jobName: String, port: Int): Map<String, Any> {
             val response = sendGetRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName/details", typeToken = mapTypeToken)
             if (response.first != 200) {
-                fail("Can't get job details of cluster $clusterName")
+                fail("Can't get job details of cluster $clusterName-$jobName")
             }
             return response.second ?: mapOf()
         }
@@ -417,7 +451,7 @@ open class IntegrationSetup {
         fun getJobMetrics(clusterName: String, jobName: String, port: Int): Map<String, Any> {
             val response = sendGetRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName/metrics", typeToken = mapTypeToken)
             if (response.first != 200) {
-                fail("Can't get job metrics of cluster $clusterName")
+                fail("Can't get job metrics of cluster $clusterName-$jobName")
             }
             return response.second ?: mapOf()
         }
@@ -457,7 +491,7 @@ open class IntegrationSetup {
         fun triggerSavepoint(clusterName: String, jobName: String, port: Int): Map<String, Any> {
             val response = sendPutRequest(url = "http://$host:$port/clusters/$clusterName/jobs/$jobName/savepoint", typeToken = mapTypeToken, body = "")
             if (response.first != 200) {
-                fail("Can't trigger savepoint in cluster $clusterName")
+                fail("Can't trigger savepoint in cluster $clusterName-$jobName")
             }
             return response.second ?: mapOf()
         }
@@ -496,20 +530,20 @@ open class IntegrationSetup {
             return executeCall(request, timeout, typeToken)
         }
 
-        fun clusterExists(namespace: String, clusterName: String): Boolean {
+        fun clusterExists(namespace: String, name: String): Boolean {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fc > /dev/null && kubectl -n $namespace get fc -o json | jq --exit-status -r '.items[] | select(.metadata.name == \"$clusterName\")' > /dev/null"
+                "kubectl -n $namespace get fc > /dev/null && kubectl -n $namespace get fc -o json | jq --exit-status -r '.items[] | select(.metadata.name == \"$name\")' > /dev/null"
             )
             return executeCommand(command) == 0
         }
 
-        fun jobExists(namespace: String, jobName: String): Boolean {
+        fun jobExists(namespace: String, name: String): Boolean {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fj > /dev/null && kubectl -n $namespace get fj -o json | jq --exit-status -r '.items[] | select(.metadata.name == \"$jobName\")' > /dev/null"
+                "kubectl -n $namespace get fj > /dev/null && kubectl -n $namespace get fj -o json | jq --exit-status -r '.items[] | select(.metadata.name == \"$name\")' > /dev/null"
             )
             return executeCommand(command) == 0
         }
@@ -523,70 +557,70 @@ open class IntegrationSetup {
             return executeCommand(command) == 0
         }
 
-        fun hasClusterStatus(namespace: String, clusterName: String, status: ClusterStatus): Boolean {
+        fun hasClusterStatus(namespace: String, name: String, status: ClusterStatus): Boolean {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fc > /dev/null && kubectl -n $namespace get fc $clusterName -o json | jq --exit-status -r '.status | select(.supervisorStatus == \"$status\")' > /dev/null"
+                "kubectl -n $namespace get fc > /dev/null && kubectl -n $namespace get fc $name -o json | jq --exit-status -r '.status | select(.supervisorStatus == \"$status\")' > /dev/null"
             )
             return executeCommand(command) == 0
         }
 
-        fun hasJobStatus(namespace: String, jobName: String, status: JobStatus): Boolean {
+        fun hasJobStatus(namespace: String, name: String, status: JobStatus): Boolean {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fj > /dev/null && kubectl -n $namespace get fj $jobName -o json | jq --exit-status -r '.status | select(.supervisorStatus == \"$status\")' > /dev/null"
+                "kubectl -n $namespace get fj > /dev/null && kubectl -n $namespace get fj $name -o json | jq --exit-status -r '.status | select(.supervisorStatus == \"$status\")' > /dev/null"
             )
             return executeCommand(command) == 0
         }
 
-        fun hasClusterJobStatus(namespace: String, jobName: String, status: String): Boolean {
+        fun hasClusterJobStatus(namespace: String, name: String, status: String): Boolean {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fj > /dev/null && kubectl -n $namespace get fj $jobName -o json | jq --exit-status -r '.status | select(.jobStatus == \"$status\")' > /dev/null"
+                "kubectl -n $namespace get fj > /dev/null && kubectl -n $namespace get fj $name -o json | jq --exit-status -r '.status | select(.jobStatus == \"$status\")' > /dev/null"
             )
             return executeCommand(command) == 0
         }
 
-        fun hasTaskManagers(namespace: String, clusterName: String, taskManagers: Int): Boolean {
+        fun hasTaskManagers(namespace: String, name: String, taskManagers: Int): Boolean {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fc > /dev/null && kubectl -n $namespace get fc $clusterName -o json | jq --exit-status -r '.status | select(.taskManagerReplicas == $taskManagers)' > /dev/null"
+                "kubectl -n $namespace get fc > /dev/null && kubectl -n $namespace get fc $name -o json | jq --exit-status -r '.status | select(.taskManagerReplicas == $taskManagers)' > /dev/null"
             )
             return executeCommand(command) == 0
         }
 
-        fun hasParallelism(namespace: String, jobName: String, taskManagers: Int): Boolean {
+        fun hasParallelism(namespace: String, name: String, jobParallelism: Int): Boolean {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fj > /dev/null && kubectl -n $namespace get fj $jobName -o json | jq --exit-status -r '.status | select(.jobParallelism == $taskManagers)' > /dev/null"
+                "kubectl -n $namespace get fj > /dev/null && kubectl -n $namespace get fj $name -o json | jq --exit-status -r '.status | select(.jobParallelism == $jobParallelism)' > /dev/null"
             )
             return executeCommand(command) == 0
         }
 
-        fun getSavepointPath(namespace: String, jobName: String): String? {
+        fun getSavepointPath(namespace: String, name: String): String? {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fj $jobName -o custom-columns=SAVEPOINT_PATH:.status.savepointPath --no-headers 2> /dev/null"
+                "kubectl -n $namespace get fj $name -o custom-columns=SAVEPOINT_PATH:.status.savepointPath --no-headers 2> /dev/null"
             )
             val outputStream = ByteArrayOutputStream()
             if (executeCommand(command, outputStream) != 0) {
                 println("Can't get savepoint path")
                 return null
             }
-            return outputStream.toString()
+            return outputStream.toString().trim()
         }
 
-        fun getTaskManagers(namespace: String, clusterName: String): Int {
+        fun getTaskManagers(namespace: String, name: String): Int {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace get fc $clusterName -o custom-columns=TASK_MANAGERS:.status.taskManagerReplicas --no-headers 2> /dev/null"
+                "kubectl -n $namespace get fc $name -o custom-columns=TASK_MANAGERS:.status.taskManagerReplicas --no-headers 2> /dev/null"
             )
             val outputStream = ByteArrayOutputStream()
             if (executeCommand(command, outputStream) != 0) {
@@ -596,7 +630,7 @@ open class IntegrationSetup {
             return outputStream.toString().trim().toInt()
         }
 
-        fun createCluster(namespace: String, path: String): Int {
+        fun createResource(namespace: String, path: String): Int {
             val command = listOf(
                 "kubectl",
                 "-n",
@@ -608,7 +642,7 @@ open class IntegrationSetup {
             return executeCommand(command)
         }
 
-        fun deleteCluster(namespace: String, path: String): Int {
+        fun deleteResource(namespace: String, path: String): Int {
             val command = listOf(
                 "kubectl",
                 "-n",
@@ -620,13 +654,13 @@ open class IntegrationSetup {
             return executeCommand(command)
         }
 
-        fun deleteClusterByName(namespace: String, clusterName: String): Int {
+        fun describeDeployments(namespace: String): Int {
             val command = listOf(
                 "kubectl",
                 "-n",
                 namespace,
-                "delete",
-                clusterName
+                "get",
+                "fd"
             )
             return executeCommand(command)
         }
@@ -664,14 +698,14 @@ open class IntegrationSetup {
             return executeCommand(command)
         }
 
-        fun updateCluster(namespace: String, clusterName: String, patch: String): Int {
+        fun updateDeployment(namespace: String, name: String, patch: String): Int {
             val command = listOf(
                 "kubectl",
                 "-n",
                 namespace,
                 "patch",
-                "fc",
-                clusterName,
+                "fd",
+                name,
                 "--type",
                 "json",
                 "--patch",
@@ -680,14 +714,30 @@ open class IntegrationSetup {
             return executeCommand(command)
         }
 
-        fun updateJob(namespace: String, jobName: String, patch: String): Int {
+        fun updateCluster(namespace: String, name: String, patch: String): Int {
+            val command = listOf(
+                "kubectl",
+                "-n",
+                namespace,
+                "patch",
+                "fc",
+                name,
+                "--type",
+                "json",
+                "--patch",
+                patch
+            )
+            return executeCommand(command)
+        }
+
+        fun updateJob(namespace: String, name: String, patch: String): Int {
             val command = listOf(
                 "kubectl",
                 "-n",
                 namespace,
                 "patch",
                 "fj",
-                jobName,
+                name,
                 "--type",
                 "json",
                 "--patch",
@@ -932,7 +982,7 @@ open class IntegrationSetup {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace patch $resource $name --type=json -p '[{\"op\":\"remove\",\"path\":\"/metadata/finalizers\"}]'"
+                "kubectl -n $namespace patch $resource $name --type=json -p '[{\"op\":\"replace\",\"path\":\"/metadata/finalizers\",\"value\":[]}]'"
             )
             return executeCommand(command)
         }
@@ -949,15 +999,17 @@ open class IntegrationSetup {
                 val response = createApiClient(timeout).newCall(request).execute()
                 response.body().use {
                     val line = it.source().readUtf8Line()
-                    println("Response { code: ${response.code()}, body: $line }")
+                    println("Response code: ${response.code()}, body: $line")
                     return response.code() to JSON().deserialize(line, typeToken.type)
                 }
             } catch (e: Exception) {
+                println("ERROR: ${e.message}")
                 return 500 to null
             }
         }
 
         private fun executeCommand(command: List<String>): Int {
+            println(command.joinToString(prefix = "# ", separator = " "))
             val processBuilder = ProcessBuilder(command)
             val environment = processBuilder.environment()
             environment["KUBECONFIG"] = System.getenv("KUBECONFIG") ?: System.getProperty("user.home") + "/.kube/config"
@@ -968,6 +1020,7 @@ open class IntegrationSetup {
         }
 
         private fun executeCommand(command: List<String>, outputStream: OutputStream): Int {
+            println(command.joinToString(prefix = "# ", separator = " "))
             val processBuilder = ProcessBuilder(command)
             val environment = processBuilder.environment()
             environment["KUBECONFIG"] = System.getenv("KUBECONFIG") ?: System.getProperty("user.home") + "/.kube/config"

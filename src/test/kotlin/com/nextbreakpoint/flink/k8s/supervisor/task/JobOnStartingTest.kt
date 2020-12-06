@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.supervisor.task
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.supervisor.core.JobManager
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
@@ -71,7 +71,6 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
-        inOrder.verify(context, times(1)).onJobAborted()
         verifyNoMoreInteractions(context)
     }
 
@@ -87,7 +86,7 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterStarted()
         inOrder.verify(context, times(1)).setClusterHealth(eq("HEALTHY"))
         inOrder.verify(context, times(1)).isActionPresent()
-        inOrder.verify(context, times(1)).executeAction(setOf(ManualAction.STOP))
+        inOrder.verify(context, times(1)).executeAction(setOf(Action.STOP))
         verifyNoMoreInteractions(context)
     }
 

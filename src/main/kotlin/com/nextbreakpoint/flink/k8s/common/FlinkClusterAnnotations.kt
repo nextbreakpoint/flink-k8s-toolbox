@@ -1,15 +1,15 @@
 package com.nextbreakpoint.flink.k8s.common
 
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
+import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
 import org.joda.time.DateTime
 
 object FlinkClusterAnnotations {
-    val MANUAL_ACTION       = "flink-operator/manual-action"
-    val ACTION_TIMESTAMP    = "flink-operator/action-timestamp"
-    val WITHOUT_SAVEPOINT   = "flink-operator/without-savepoint"
-    val DELETE_RESOURCES    = "flink-operator/delete-resources"
-    val SHOULD_RESTART      = "flink-operator/should-restart"
+    val REQUESTED_ACTION    = "operator.nextbreakpoint.com/requested-action"
+    val ACTION_TIMESTAMP    = "operator.nextbreakpoint.com/action-timestamp"
+    val WITHOUT_SAVEPOINT   = "operator.nextbreakpoint.com/without-savepoint"
+    val DELETE_RESOURCES    = "operator.nextbreakpoint.com/delete-resources"
+    val SHOULD_RESTART      = "operator.nextbreakpoint.com/should-restart"
 
     private fun currentTimeMillis(): Long {
         // this is a hack required for testing
@@ -25,50 +25,50 @@ object FlinkClusterAnnotations {
         }
     }
 
-    fun getActionTimestamp(flinkCluster: V2FlinkCluster) : DateTime =
+    fun getActionTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
         DateTime(flinkCluster.metadata?.annotations?.get(ACTION_TIMESTAMP)?.toLong() ?: 0L)
 
-    fun setManualAction(flinkCluster: V2FlinkCluster, manualAction: ManualAction) {
+    fun setRequestedAction(flinkCluster: V1FlinkCluster, action: Action) {
         val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
-        annotations[MANUAL_ACTION] = manualAction.toString()
+        annotations[REQUESTED_ACTION] = action.toString()
         annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
         flinkCluster.metadata?.annotations = annotations
     }
 
-    fun getManualAction(flinkCluster: V2FlinkCluster): ManualAction {
-        return ManualAction.valueOf(flinkCluster.metadata?.annotations?.get(MANUAL_ACTION)?.toUpperCase() ?: "NONE")
+    fun getRequestedAction(flinkCluster: V1FlinkCluster): Action {
+        return Action.valueOf(flinkCluster.metadata?.annotations?.get(REQUESTED_ACTION)?.toUpperCase() ?: "NONE")
     }
 
-    fun setWithoutSavepoint(flinkCluster: V2FlinkCluster, withoutSavepoint: Boolean) {
+    fun setWithoutSavepoint(flinkCluster: V1FlinkCluster, withoutSavepoint: Boolean) {
         val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
         annotations[WITHOUT_SAVEPOINT] = withoutSavepoint.toString()
         annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
         flinkCluster.metadata?.annotations = annotations
     }
 
-    fun isWithoutSavepoint(flinkCluster: V2FlinkCluster): Boolean {
+    fun isWithoutSavepoint(flinkCluster: V1FlinkCluster): Boolean {
         return flinkCluster.metadata?.annotations?.get(WITHOUT_SAVEPOINT)?.toUpperCase() == "TRUE"
     }
 
-    fun setDeleteResources(flinkCluster: V2FlinkCluster, deleteResources: Boolean) {
+    fun setDeleteResources(flinkCluster: V1FlinkCluster, deleteResources: Boolean) {
         val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
         annotations[DELETE_RESOURCES] = deleteResources.toString()
         annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
         flinkCluster.metadata?.annotations = annotations
     }
 
-    fun isDeleteResources(flinkCluster: V2FlinkCluster): Boolean {
+    fun isDeleteResources(flinkCluster: V1FlinkCluster): Boolean {
         return flinkCluster.metadata?.annotations?.get(DELETE_RESOURCES)?.toUpperCase() == "TRUE"
     }
 
-    fun setShouldRestart(flinkCluster: V2FlinkCluster, shouldRestart: Boolean) {
+    fun setShouldRestart(flinkCluster: V1FlinkCluster, shouldRestart: Boolean) {
         val annotations = flinkCluster.metadata?.annotations.orEmpty().toMutableMap()
         annotations[SHOULD_RESTART] = shouldRestart.toString()
         annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
         flinkCluster.metadata?.annotations = annotations
     }
 
-    fun shouldRestart(flinkCluster: V2FlinkCluster): Boolean {
+    fun shouldRestart(flinkCluster: V1FlinkCluster): Boolean {
         return flinkCluster.metadata?.annotations?.get(SHOULD_RESTART)?.toUpperCase() == "TRUE"
     }
 }

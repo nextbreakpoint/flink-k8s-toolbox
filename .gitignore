@@ -15,3 +15,4 @@ config
 .vagrant
 ubuntu-bionic-18.04-cloudimg-console.log
 flink-jobs.jar
+lombok.config

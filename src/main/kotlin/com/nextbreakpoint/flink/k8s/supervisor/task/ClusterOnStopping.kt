@@ -1,12 +1,12 @@
 package com.nextbreakpoint.flink.k8s.supervisor.task
 
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.k8s.supervisor.core.Task
+import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.k8s.common.Task
 import com.nextbreakpoint.flink.k8s.supervisor.core.ClusterManager
 
 class ClusterOnStopping : Task<ClusterManager>() {
     private val actions = setOf(
-        ManualAction.START
+        Action.START
     )
 
     override fun execute(manager: ClusterManager) {
@@ -21,9 +21,7 @@ class ClusterOnStopping : Task<ClusterManager>() {
         }
 
         if (manager.mustTerminateResources()) {
-            if (manager.deleteJobs()) {
-                manager.onClusterTerminated()
-            }
+            manager.onClusterTerminated()
             return
         }
 

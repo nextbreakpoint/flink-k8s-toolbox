@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+    id "io.freefair.lombok" version "5.3.0"
+}
+
+group 'com.nextbreakpoint'
+version '1.4.0-beta'
+
+repositories {
+    mavenLocal()
+    maven {
+        url = 'https://repo.maven.apache.org/maven2'
+    }
+}
+
+dependencies {
+    implementation "io.kubernetes:client-java:10.0.0"
+}
+
+sourceSets {
+    main.java.srcDirs += 'build/generated'
+}
+
+compileJava {
+    dependsOn delombok
+    options.release = 11
+}
+
+delombok {
+    input.from(file('src/lombok'))
+    target = file('build/generated')
+}

@@ -1,8 +1,7 @@
 package com.nextbreakpoint.flink.k8s.factory
 
-import com.nextbreakpoint.flink.common.ResourceSelector
-import com.nextbreakpoint.flink.k8s.crd.V1SupervisorSpec
 import com.nextbreakpoint.flink.k8s.common.Resource
+import com.nextbreakpoint.flink.k8s.crd.V1SupervisorSpec
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1Affinity
 import io.kubernetes.client.openapi.models.V1Container
@@ -22,20 +21,20 @@ import io.kubernetes.client.openapi.models.V1WeightedPodAffinityTerm
 
 object SupervisorResourcesDefaultFactory : SupervisorResourcesFactory {
     override fun createSupervisorDeployment(
-        clusterSelector: ResourceSelector,
-        clusterOwner: String,
-        supervisor: V1SupervisorSpec,
+        namespace: String,
+        owner: String,
+        clusterName: String,
+        supervisorSpec: V1SupervisorSpec,
         replicas: Int,
         dryRun: Boolean
     ): V1Deployment {
-        if (supervisor.image == null) {
+        if (supervisorSpec.image == null) {
             throw RuntimeException("image is required")
         }
 
         val supervisorLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("clusterName", clusterSelector.name),
-            Pair("clusterUid", clusterSelector.uid),
+            Pair("owner", owner),
+            Pair("clusterName", clusterName),
             Pair("component", "flink"),
             Pair("role", "supervisor")
         )
@@ -52,9 +51,9 @@ object SupervisorResourcesDefaultFactory : SupervisorResourcesFactory {
 
         val arguments =
             createSupervisorArguments(
-                clusterSelector.namespace,
-                clusterSelector.name,
-                supervisor,
+                namespace,
+                clusterName,
+                supervisorSpec,
                 dryRun
             )
 
@@ -67,26 +66,26 @@ object SupervisorResourcesDefaultFactory : SupervisorResourcesFactory {
 
         val pullSecrets =
             createObjectReferenceListOrNull(
-                supervisor.pullSecrets
+                supervisorSpec.pullSecrets
             )
 
         val supervisorPodSpec = V1PodTemplateSpecBuilder()
             .editOrNewMetadata()
-            .withName("supervisor-${clusterSelector.name}")
+            .withName("supervisor-$clusterName")
             .withLabels(supervisorLabels)
             .endMetadata()
             .editOrNewSpec()
             .addToContainers(V1Container())
             .editFirstContainer()
             .withName("bootstrap")
-            .withImage(supervisor.image)
-            .withImagePullPolicy(supervisor.pullPolicy ?: "IfNotPresent")
+            .withImage(supervisorSpec.image)
+            .withImagePullPolicy(supervisorSpec.pullPolicy ?: "IfNotPresent")
             .withArgs(arguments)
             .addToEnv(podNameEnvVar)
             .addToEnv(podNamespaceEnvVar)
-            .withResources(supervisor.resources ?: createResourceRequirements())
+            .withResources(supervisorSpec.resources ?: createResourceRequirements())
             .endContainer()
-            .withServiceAccountName(supervisor.serviceAccount ?: "default")
+            .withServiceAccountName(supervisorSpec.serviceAccount ?: "default")
             .withImagePullSecrets(pullSecrets)
             .withRestartPolicy("Always")
             .withAffinity(supervisorAffinity)
@@ -95,9 +94,9 @@ object SupervisorResourcesDefaultFactory : SupervisorResourcesFactory {
 
         val deployment = V1DeploymentBuilder()
             .editOrNewMetadata()
-            .withName("supervisor-${clusterSelector.name}")
+            .withName("supervisor-$clusterName")
             .withLabels(supervisorLabels)
-            .addToAnnotations("flink-operator/deployment-digest", Resource.computeDigest(supervisor))
+            .addToAnnotations("flink-operator/deployment-digest", Resource.computeDigest(supervisorSpec))
             .endMetadata()
             .editOrNewSpec()
             .withTemplate(supervisorPodSpec)

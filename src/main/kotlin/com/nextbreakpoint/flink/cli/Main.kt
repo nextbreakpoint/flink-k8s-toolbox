@@ -10,8 +10,8 @@ import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.long
-import com.nextbreakpoint.flink.cli.factory.CommandFactory
 import com.nextbreakpoint.flink.cli.factory.CommandDefaultFactory
+import com.nextbreakpoint.flink.cli.factory.CommandFactory
 import com.nextbreakpoint.flink.common.BootstrapOptions
 import com.nextbreakpoint.flink.common.ConnectionConfig
 import com.nextbreakpoint.flink.common.FlinkOptions
@@ -28,7 +28,7 @@ import java.io.File
 import java.nio.file.Files
 import kotlin.system.exitProcess
 
-class Main(private val factory: CommandFactory) {
+class Main(private val factory: CommandFactory = CommandDefaultFactory) {
     companion object {
         private val logger = Logger.getLogger(Main::class.simpleName)
 
@@ -39,7 +39,7 @@ class Main(private val factory: CommandFactory) {
 
                 System.setProperty("crypto.policy", "unlimited")
 
-                Main(CommandDefaultFactory).run(args)
+                Main().run(args)
 
                 exitProcess(0)
             } catch (e: Exception) {
@@ -67,6 +67,7 @@ class Main(private val factory: CommandFactory) {
             Cluster().subcommands(
                 CreateClusterCommand(factory),
                 DeleteClusterCommand(factory),
+                UpdateClusterCommand(factory),
                 GetClusterStatusCommand(factory),
                 StartClusterCommand(factory),
                 StopClusterCommand(factory),
@@ -80,6 +81,9 @@ class Main(private val factory: CommandFactory) {
                 ListJobsCommand(factory)
             ),
             Job().subcommands(
+                CreateJobCommand(factory),
+                DeleteJobCommand(factory),
+                UpdateJobCommand(factory),
                 GetJobDetailsCommand(factory),
                 GetJobMetricsCommand(factory),
                 GetJobStatusCommand(factory),
@@ -216,6 +220,31 @@ class Main(private val factory: CommandFactory) {
             )
             factory.createDeleteClusterCommand().run(
                 connectionConfig, clusterName, null
+            )
+        }
+    }
+
+    class UpdateClusterCommand(private val factory: CommandFactory): CliktCommand(name = "update", help="Update a cluster") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val clusterSpec: String by option(help="The specification of the Flink cluster in JSON format").required()
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createUpdateClusterCommand().run(
+                connectionConfig, clusterName, String(Files.readAllBytes(File(clusterSpec).toPath()))
             )
         }
     }
@@ -398,6 +427,83 @@ class Main(private val factory: CommandFactory) {
             )
             factory.createForgetSavepointCommand().run(
                 connectionConfig, clusterName, jobName, null
+            )
+        }
+    }
+
+    class CreateJobCommand(private val factory: CommandFactory): CliktCommand(name = "create", help="Create a job") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val jobName: String by option(help="The name of the Flink job").required()
+        private val jobSpec: String by option(help="The specification of the Flink job in JSON format").required()
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createCreateJobCommand().run(
+                connectionConfig, clusterName, jobName, String(Files.readAllBytes(File(jobSpec).toPath()))
+            )
+        }
+    }
+
+    class DeleteJobCommand(private val factory: CommandFactory): CliktCommand(name = "delete", help="Delete a job") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val jobName: String by option(help="The name of the Flink job").required()
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createDeleteJobCommand().run(
+                connectionConfig, clusterName, jobName, null
+            )
+        }
+    }
+
+    class UpdateJobCommand(private val factory: CommandFactory): CliktCommand(name = "update", help="Update a job") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val jobName: String by option(help="The name of the Flink job").required()
+        private val jobSpec: String by option(help="The specification of the Flink job in JSON format").required()
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createUpdateJobCommand().run(
+                connectionConfig, clusterName, jobName, String(Files.readAllBytes(File(jobSpec).toPath()))
             )
         }
     }

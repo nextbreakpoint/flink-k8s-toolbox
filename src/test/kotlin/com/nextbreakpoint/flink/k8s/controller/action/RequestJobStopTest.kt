@@ -2,8 +2,7 @@ package com.nextbreakpoint.flink.k8s.controller.action
 
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.common.ResourceSelector
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.StopOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.FlinkJobAnnotations
@@ -23,9 +22,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class RequestJobStopTest {
-    private val jobSelector = ResourceSelector(namespace = "flink", name = "test-test", uid = "123")
-    private val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
-    private val job = TestFactory.aFlinkJob(cluster)
+    private val job = TestFactory.aFlinkJob(name = "test-test", namespace = "flink")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
@@ -39,9 +36,9 @@ class RequestJobStopTest {
 
     @Test
     fun `should fail when kubeClient throws exception`() {
-        KotlinMockito.given(kubeClient.updateJobAnnotations(eq(jobSelector), KotlinMockito.any())).thenThrow(RuntimeException::class.java)
-        val result = command.execute(jobSelector, StopOptions(withoutSavepoint = true))
-        verify(kubeClient, times(1)).updateJobAnnotations(eq(jobSelector), KotlinMockito.any())
+        KotlinMockito.given(kubeClient.updateJobAnnotations(eq("flink"), eq("test-test"), KotlinMockito.any())).thenThrow(RuntimeException::class.java)
+        val result = command.execute("flink", "test", "test", StopOptions(withoutSavepoint = true))
+        verify(kubeClient, times(1)).updateJobAnnotations(eq("flink"), eq("test-test"), KotlinMockito.any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
@@ -53,14 +50,14 @@ class RequestJobStopTest {
     fun `should return expected result when stopping without savepoint`() {
         FlinkJobStatus.setSupervisorStatus(job, JobStatus.Stopping)
         val actionTimestamp = FlinkJobAnnotations.getActionTimestamp(job)
-        val result = command.execute(jobSelector, StopOptions(withoutSavepoint = true))
-        verify(kubeClient, times(1)).updateJobAnnotations(eq(jobSelector), KotlinMockito.any())
+        val result = command.execute("flink", "test", "test", StopOptions(withoutSavepoint = true))
+        verify(kubeClient, times(1)).updateJobAnnotations(eq("flink"), eq("test-test"), KotlinMockito.any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.OK)
         assertThat(result.output).isNull()
-        assertThat(FlinkJobAnnotations.getManualAction(job)).isEqualTo(ManualAction.STOP)
+        assertThat(FlinkJobAnnotations.getRequestedAction(job)).isEqualTo(Action.STOP)
         assertThat(FlinkJobAnnotations.isWithoutSavepoint(job)).isEqualTo(true)
         assertThat(FlinkJobAnnotations.isDeleteResources(job)).isEqualTo(false)
         assertThat(FlinkJobAnnotations.getActionTimestamp(job)).isNotEqualTo(actionTimestamp)
@@ -70,14 +67,14 @@ class RequestJobStopTest {
     fun `should return expected result when stopping with savepoint`() {
         FlinkJobStatus.setSupervisorStatus(job, JobStatus.Stopping)
         val actionTimestamp = FlinkJobAnnotations.getActionTimestamp(job)
-        val result = command.execute(jobSelector, StopOptions(withoutSavepoint = false))
-        verify(kubeClient, times(1)).updateJobAnnotations(eq(jobSelector), KotlinMockito.any())
+        val result = command.execute("flink", "test", "test", StopOptions(withoutSavepoint = false))
+        verify(kubeClient, times(1)).updateJobAnnotations(eq("flink"), eq("test-test"), KotlinMockito.any())
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.OK)
         assertThat(result.output).isNull()
-        assertThat(FlinkJobAnnotations.getManualAction(job)).isEqualTo(ManualAction.STOP)
+        assertThat(FlinkJobAnnotations.getRequestedAction(job)).isEqualTo(Action.STOP)
         assertThat(FlinkJobAnnotations.isWithoutSavepoint(job)).isEqualTo(false)
         assertThat(FlinkJobAnnotations.isDeleteResources(job)).isEqualTo(false)
         assertThat(FlinkJobAnnotations.getActionTimestamp(job)).isNotEqualTo(actionTimestamp)
