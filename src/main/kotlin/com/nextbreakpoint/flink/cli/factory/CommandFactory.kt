@@ -26,6 +26,8 @@ interface CommandFactory {
 
     fun createDeleteClusterCommand() : ClusterCommand<Void?>
 
+    fun createUpdateClusterCommand() : ClusterCommand<String>
+
     fun createStartClusterCommand() : ClusterCommand<StartOptions>
 
     fun createStopClusterCommand() : ClusterCommand<StopOptions>
@@ -43,6 +45,12 @@ interface CommandFactory {
     fun createGetTaskManagerMetricsCommand() : ClusterCommand<TaskManagerId>
 
     fun createListJobsCommand() : ClusterCommand<Void?>
+
+    fun createCreateJobCommand() : JobCommand<String>
+
+    fun createDeleteJobCommand() : JobCommand<Void?>
+
+    fun createUpdateJobCommand() : JobCommand<String>
 
     fun createStartJobCommand() : JobCommand<StartOptions>
 

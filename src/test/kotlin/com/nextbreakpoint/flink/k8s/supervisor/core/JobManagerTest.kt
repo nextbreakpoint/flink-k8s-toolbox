@@ -1,16 +1,17 @@
 package com.nextbreakpoint.flink.mediator.core
 
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.common.ResourceSelector
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
+import com.nextbreakpoint.flink.common.RestartPolicy
+import com.nextbreakpoint.flink.common.SavepointMode
 import com.nextbreakpoint.flink.common.SavepointOptions
 import com.nextbreakpoint.flink.common.SavepointRequest
+import com.nextbreakpoint.flink.k8s.common.Timeout
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.k8s.supervisor.core.JobController
 import com.nextbreakpoint.flink.k8s.supervisor.core.JobManager
-import com.nextbreakpoint.flink.k8s.supervisor.core.Timeout
 import com.nextbreakpoint.flink.testing.KotlinMockito.any
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
@@ -24,7 +25,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class JobManagerTest {
-    private val clusterSelector = ResourceSelector(name = "test", namespace = "flink", uid = "123")
     private val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")
     private val savepointOptions = SavepointOptions(targetPath = "file:///tmp")
     private val logger = mock(Logger::class.java)
@@ -33,7 +33,9 @@ class JobManagerTest {
 
     @BeforeEach
     fun configure() {
-        given(controller.clusterSelector).thenReturn(clusterSelector)
+        given(controller.namespace).thenReturn("test")
+        given(controller.clusterName).thenReturn("test")
+        given(controller.jobName).thenReturn("test")
         given(controller.hasFinalizer()).thenReturn(true)
         given(controller.hasJobId()).thenReturn(false)
         given(controller.doesBootstrapJobExists()).thenReturn(true)
@@ -41,6 +43,7 @@ class JobManagerTest {
         given(controller.isJobFinished()).thenReturn(false)
         given(controller.isJobFailed()).thenReturn(false)
         given(controller.isWithoutSavepoint()).thenReturn(false)
+        given(controller.shouldCreateSavepoint()).thenReturn(true)
         given(controller.isClusterStopped()).thenReturn(false)
         given(controller.isClusterStopping()).thenReturn(false)
         given(controller.isClusterStarted()).thenReturn(true)
@@ -53,12 +56,6 @@ class JobManagerTest {
     }
 
     @Test
-    fun `should remove finalizer`() {
-        manager.removeFinalizer()
-        verify(controller, times(1)).removeFinalizer()
-    }
-
-    @Test
     fun `should change status on job started event`() {
         manager.onJobStarted()
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Started))
@@ -68,7 +65,6 @@ class JobManagerTest {
     @Test
     fun `should change status on job canceled event`() {
         manager.onJobCanceled()
-        verify(controller, times(1)).setCurrentJobParallelism(eq(0))
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Stopped))
         verify(controller, times(1)).setResourceStatus(eq(ResourceStatus.Updated))
@@ -77,7 +73,6 @@ class JobManagerTest {
     @Test
     fun `should change status on job finished event`() {
         manager.onJobFinished()
-        verify(controller, times(1)).setCurrentJobParallelism(eq(0))
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Stopped))
         verify(controller, times(1)).setResourceStatus(eq(ResourceStatus.Updated))
@@ -86,7 +81,6 @@ class JobManagerTest {
     @Test
     fun `should change status on job failed event`() {
         manager.onJobFailed()
-        verify(controller, times(1)).setCurrentJobParallelism(eq(0))
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Stopped))
         verify(controller, times(1)).setResourceStatus(eq(ResourceStatus.Updated))
@@ -96,7 +90,6 @@ class JobManagerTest {
     fun `should change status on job stopped event`() {
         manager.onJobStopped()
         verify(controller, times(1)).resetJob()
-        verify(controller, times(1)).setCurrentJobParallelism(eq(0))
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Stopped))
         verify(controller, times(1)).setResourceStatus(eq(ResourceStatus.Updated))
@@ -105,7 +98,6 @@ class JobManagerTest {
     @Test
     fun `should change status on job terminated event`() {
         manager.onJobTerminated()
-        verify(controller, times(1)).removeFinalizer()
         verify(controller, times(1)).resetJob()
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Terminated))
@@ -141,7 +133,6 @@ class JobManagerTest {
     fun `should change status on job unhealthy event`() {
         manager.onClusterUnhealthy()
         verify(controller, times(1)).resetJob()
-        verify(controller, times(1)).setCurrentJobParallelism(eq(0))
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Stopped))
         verify(controller, times(1)).setResourceStatus(eq(ResourceStatus.Updated))
@@ -153,7 +144,6 @@ class JobManagerTest {
         verify(controller, times(1)).initializeAnnotations()
         verify(controller, times(1)).initializeStatus()
         verify(controller, times(1)).updateDigests()
-        verify(controller, times(1)).addFinalizer()
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setClusterName(eq("test"))
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Starting))
@@ -512,26 +502,26 @@ class JobManagerTest {
         given(controller.hasJobId()).thenReturn(false)
         manager.updateJobStatus()
         verify(controller, times(1)).hasJobId()
-        verify(controller, times(0)).getClusterJobStatus()
+        verify(controller, times(0)).getJobStatus()
     }
 
     @Test
     fun `updateJobStatus should update status when job has id`() {
         given(controller.hasJobId()).thenReturn(true)
-        given(controller.getClusterJobStatus()).thenReturn(Result(ResultStatus.OK, "TEST"))
+        given(controller.getJobStatus()).thenReturn(Result(ResultStatus.OK, "TEST"))
         manager.updateJobStatus()
         verify(controller, times(1)).hasJobId()
-        verify(controller, times(1)).getClusterJobStatus()
+        verify(controller, times(1)).getJobStatus()
         verify(controller, times(1)).setJobStatus(eq("TEST"))
     }
 
     @Test
     fun `updateJobStatus should not update status when job has id but there ia an error`() {
         given(controller.hasJobId()).thenReturn(true)
-        given(controller.getClusterJobStatus()).thenReturn(Result(ResultStatus.ERROR, "TEST"))
+        given(controller.getJobStatus()).thenReturn(Result(ResultStatus.ERROR, "TEST"))
         manager.updateJobStatus()
         verify(controller, times(1)).hasJobId()
-        verify(controller, times(1)).getClusterJobStatus()
+        verify(controller, times(1)).getJobStatus()
         verify(controller, times(0)).setJobStatus(any())
     }
 
@@ -601,27 +591,27 @@ class JobManagerTest {
 
     @Test
     fun `hasParallelismChanged should return true when current parallelism is not equals to job parallelism`() {
-        given(controller.getJobParallelism()).thenReturn(1)
+        given(controller.getDeclaredJobParallelism()).thenReturn(1)
         given(controller.getCurrentJobParallelism()).thenReturn(2)
         val result = manager.hasParallelismChanged()
-        verify(controller, times(1)).getJobParallelism()
+        verify(controller, times(1)).getDeclaredJobParallelism()
         verify(controller, times(1)).getCurrentJobParallelism()
         assertThat(result).isTrue()
     }
 
     @Test
     fun `hasParallelismChanged should return false when current parallelism is equals to job parallelism`() {
-        given(controller.getJobParallelism()).thenReturn(2)
+        given(controller.getDeclaredJobParallelism()).thenReturn(2)
         given(controller.getCurrentJobParallelism()).thenReturn(2)
         val result = manager.hasParallelismChanged()
-        verify(controller, times(1)).getJobParallelism()
+        verify(controller, times(1)).getDeclaredJobParallelism()
         verify(controller, times(1)).getCurrentJobParallelism()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `isManualActionPresent should return true when manual action is not none`() {
-        given(controller.getAction()).thenReturn(ManualAction.START)
+        given(controller.getAction()).thenReturn(Action.START)
         val result = manager.isActionPresent()
         verify(controller, times(1)).getAction()
         assertThat(result).isTrue()
@@ -629,7 +619,7 @@ class JobManagerTest {
 
     @Test
     fun `isManualActionPresent should return false when manual action is none`() {
-        given(controller.getAction()).thenReturn(ManualAction.NONE)
+        given(controller.getAction()).thenReturn(Action.NONE)
         val result = manager.isActionPresent()
         verify(controller, times(1)).getAction()
         assertThat(result).isFalse()
@@ -669,15 +659,15 @@ class JobManagerTest {
 
     @Test
     fun `shouldRestartJob should return false when restart policy is not always`() {
-        given(controller.getRestartPolicy()).thenReturn("NEVER")
+        given(controller.getRestartPolicy()).thenReturn(RestartPolicy.Never)
         val result = manager.shouldRestartJob()
-        verify(controller, times(1)).getRestartPolicy()
+        verify(controller, times(2)).getRestartPolicy()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `shouldRestartJob should return true when restart policy is always`() {
-        given(controller.getRestartPolicy()).thenReturn("ALWAYS")
+        given(controller.getRestartPolicy()).thenReturn(RestartPolicy.Always)
         val result = manager.shouldRestartJob()
         verify(controller, times(1)).getRestartPolicy()
         assertThat(result).isTrue()
@@ -799,15 +789,15 @@ class JobManagerTest {
 
     @Test
     fun `executeManualAction should do nothing when manual action is none`() {
-        given(controller.getAction()).thenReturn(ManualAction.NONE)
-        manager.executeAction(setOf(ManualAction.NONE))
+        given(controller.getAction()).thenReturn(Action.NONE)
+        manager.executeAction(setOf(Action.NONE))
         verify(controller, times(1)).getAction()
         verifyNoMoreInteractions(controller)
     }
 
     @Test
     fun `executeManualAction should do nothing when manual action is start but action is not allowed`() {
-        given(controller.getAction()).thenReturn(ManualAction.START)
+        given(controller.getAction()).thenReturn(Action.START)
         manager.executeAction(setOf())
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).resetAction()
@@ -815,7 +805,7 @@ class JobManagerTest {
 
     @Test
     fun `executeManualAction should do nothing when manual action is stop but action is not allowed`() {
-        given(controller.getAction()).thenReturn(ManualAction.STOP)
+        given(controller.getAction()).thenReturn(Action.STOP)
         manager.executeAction(setOf())
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).resetAction()
@@ -823,7 +813,7 @@ class JobManagerTest {
 
     @Test
     fun `executeManualAction should do nothing when manual action is forget savepoint but action is not allowed`() {
-        given(controller.getAction()).thenReturn(ManualAction.FORGET_SAVEPOINT)
+        given(controller.getAction()).thenReturn(Action.FORGET_SAVEPOINT)
         manager.executeAction(setOf())
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).resetAction()
@@ -831,7 +821,7 @@ class JobManagerTest {
 
     @Test
     fun `executeManualAction should do nothing when manual action is trigger savepoint but action is not allowed`() {
-        given(controller.getAction()).thenReturn(ManualAction.TRIGGER_SAVEPOINT)
+        given(controller.getAction()).thenReturn(Action.TRIGGER_SAVEPOINT)
         manager.executeAction(setOf())
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).resetAction()
@@ -840,8 +830,8 @@ class JobManagerTest {
     @Test
     fun `executeManualAction should do nothing when manual action is trigger savepoint and job doesn't have id`() {
         given(controller.hasJobId()).thenReturn(false)
-        given(controller.getAction()).thenReturn(ManualAction.TRIGGER_SAVEPOINT)
-        manager.executeAction(setOf(ManualAction.TRIGGER_SAVEPOINT))
+        given(controller.getAction()).thenReturn(Action.TRIGGER_SAVEPOINT)
+        manager.executeAction(setOf(Action.TRIGGER_SAVEPOINT))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).hasJobId()
         verify(controller, times(1)).resetAction()
@@ -849,8 +839,8 @@ class JobManagerTest {
 
     @Test
     fun `executeManualAction should change status when manual action is start`() {
-        given(controller.getAction()).thenReturn(ManualAction.START)
-        manager.executeAction(setOf(ManualAction.START))
+        given(controller.getAction()).thenReturn(Action.START)
+        manager.executeAction(setOf(Action.START))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).updateStatus()
         verify(controller, times(1)).updateDigests()
@@ -862,8 +852,8 @@ class JobManagerTest {
 
     @Test
     fun `executeManualAction should change status when manual action is stop`() {
-        given(controller.getAction()).thenReturn(ManualAction.STOP)
-        manager.executeAction(setOf(ManualAction.STOP))
+        given(controller.getAction()).thenReturn(Action.STOP)
+        manager.executeAction(setOf(Action.STOP))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).setShouldRestart(eq(false))
         verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Stopping))
@@ -874,8 +864,8 @@ class JobManagerTest {
     @Test
     fun `executeManualAction should change status when manual action is forget savepoint`() {
         given(controller.hasJobId()).thenReturn(true)
-        given(controller.getAction()).thenReturn(ManualAction.FORGET_SAVEPOINT)
-        manager.executeAction(setOf(ManualAction.FORGET_SAVEPOINT))
+        given(controller.getAction()).thenReturn(Action.FORGET_SAVEPOINT)
+        manager.executeAction(setOf(Action.FORGET_SAVEPOINT))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).setSavepointPath(eq(""))
         verify(controller, times(1)).resetAction()
@@ -884,10 +874,10 @@ class JobManagerTest {
     @Test
     fun `executeManualAction should change status when manual action is trigger savepoint and savepoint request is not present`() {
         given(controller.hasJobId()).thenReturn(true)
-        given(controller.getAction()).thenReturn(ManualAction.TRIGGER_SAVEPOINT)
+        given(controller.getAction()).thenReturn(Action.TRIGGER_SAVEPOINT)
         given(controller.getSavepointRequest()).thenReturn(null)
         given(controller.triggerSavepoint(any())).thenReturn(Result(ResultStatus.OK, savepointRequest))
-        manager.executeAction(setOf(ManualAction.TRIGGER_SAVEPOINT))
+        manager.executeAction(setOf(Action.TRIGGER_SAVEPOINT))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).hasJobId()
         verify(controller, times(1)).getSavepointRequest()
@@ -899,9 +889,9 @@ class JobManagerTest {
     @Test
     fun `executeManualAction should not change status when manual action is trigger savepoint and savepoint request is present`() {
         given(controller.hasJobId()).thenReturn(true)
-        given(controller.getAction()).thenReturn(ManualAction.TRIGGER_SAVEPOINT)
+        given(controller.getAction()).thenReturn(Action.TRIGGER_SAVEPOINT)
         given(controller.getSavepointRequest()).thenReturn(savepointRequest)
-        manager.executeAction(setOf(ManualAction.TRIGGER_SAVEPOINT))
+        manager.executeAction(setOf(Action.TRIGGER_SAVEPOINT))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).hasJobId()
         verify(controller, times(1)).getSavepointRequest()
@@ -911,10 +901,10 @@ class JobManagerTest {
     @Test
     fun `executeManualAction should not change status when manual action is trigger savepoint and savepoint request can't be created`() {
         given(controller.hasJobId()).thenReturn(true)
-        given(controller.getAction()).thenReturn(ManualAction.TRIGGER_SAVEPOINT)
+        given(controller.getAction()).thenReturn(Action.TRIGGER_SAVEPOINT)
         given(controller.getSavepointRequest()).thenReturn(null)
         given(controller.triggerSavepoint(any())).thenReturn(Result(ResultStatus.ERROR, savepointRequest))
-        manager.executeAction(setOf(ManualAction.TRIGGER_SAVEPOINT))
+        manager.executeAction(setOf(Action.TRIGGER_SAVEPOINT))
         verify(controller, times(1)).getAction()
         verify(controller, times(1)).hasJobId()
         verify(controller, times(1)).getSavepointRequest()
@@ -933,11 +923,11 @@ class JobManagerTest {
     fun `updateSavepoint should not change status when bootstrap is present and savepoint request is not present but savepoint mode is not automatic`() {
         given(controller.hasJobId()).thenReturn(true)
         given(controller.getSavepointRequest()).thenReturn(null)
-        given(controller.getSavepointMode()).thenReturn("NONE")
+        given(controller.getSavepointMode()).thenReturn(SavepointMode.Manual)
         manager.updateSavepoint()
         verify(controller, times(1)).hasJobId()
         verify(controller, times(1)).getSavepointRequest()
-        verify(controller, times(1)).getSavepointMode()
+        verify(controller, times(1)).getSavepointInterval()
         verifyNoMoreInteractions(controller)
     }
 
@@ -945,15 +935,14 @@ class JobManagerTest {
     fun `updateSavepoint should not change status when bootstrap is present and savepoint request is not present and savepoint mode is automatic but last savepoint is recent`() {
         given(controller.hasJobId()).thenReturn(true)
         given(controller.getSavepointRequest()).thenReturn(null)
-        given(controller.getSavepointMode()).thenReturn("AUTOMATIC")
+        given(controller.getSavepointMode()).thenReturn(SavepointMode.Automatic)
         given(controller.timeSinceLastSavepointRequestInSeconds()).thenReturn(30)
         given(controller.getSavepointInterval()).thenReturn(60)
         manager.updateSavepoint()
         verify(controller, times(1)).hasJobId()
         verify(controller, times(1)).getSavepointRequest()
-        verify(controller, times(1)).getSavepointMode()
         verify(controller, times(1)).timeSinceLastSavepointRequestInSeconds()
-        verify(controller, times(1)).getSavepointInterval()
+        verify(controller, times(2)).getSavepointInterval()
         verifyNoMoreInteractions(controller)
     }
 
@@ -961,7 +950,7 @@ class JobManagerTest {
     fun `updateSavepoint should not change status when bootstrap is present and savepoint request is not present and savepoint mode is automatic and last savepoint is not recent but savepoint request can't be created`() {
         given(controller.hasJobId()).thenReturn(true)
         given(controller.getSavepointRequest()).thenReturn(null)
-        given(controller.getSavepointMode()).thenReturn("AUTOMATIC")
+        given(controller.getSavepointMode()).thenReturn(SavepointMode.Automatic)
         given(controller.timeSinceLastSavepointRequestInSeconds()).thenReturn(90)
         given(controller.getSavepointInterval()).thenReturn(60)
         given(controller.getSavepointOptions()).thenReturn(savepointOptions)
@@ -969,9 +958,8 @@ class JobManagerTest {
         manager.updateSavepoint()
         verify(controller, times(1)).hasJobId()
         verify(controller, times(1)).getSavepointRequest()
-        verify(controller, times(1)).getSavepointMode()
         verify(controller, times(1)).timeSinceLastSavepointRequestInSeconds()
-        verify(controller, times(1)).getSavepointInterval()
+        verify(controller, times(2)).getSavepointInterval()
         verify(controller, times(1)).getSavepointOptions()
         verify(controller, times(1)).triggerSavepoint(eq(savepointOptions))
         verifyNoMoreInteractions(controller)
@@ -981,7 +969,7 @@ class JobManagerTest {
     fun `updateSavepoint should change status when bootstrap is present and savepoint request is not present and savepoint mode is automatic and last savepoint is not recent`() {
         given(controller.hasJobId()).thenReturn(true)
         given(controller.getSavepointRequest()).thenReturn(null)
-        given(controller.getSavepointMode()).thenReturn("AUTOMATIC")
+        given(controller.getSavepointMode()).thenReturn(SavepointMode.Automatic)
         given(controller.timeSinceLastSavepointRequestInSeconds()).thenReturn(90)
         given(controller.getSavepointInterval()).thenReturn(60)
         given(controller.getSavepointOptions()).thenReturn(savepointOptions)
@@ -989,9 +977,8 @@ class JobManagerTest {
         manager.updateSavepoint()
         verify(controller, times(1)).hasJobId()
         verify(controller, times(1)).getSavepointRequest()
-        verify(controller, times(1)).getSavepointMode()
         verify(controller, times(1)).timeSinceLastSavepointRequestInSeconds()
-        verify(controller, times(1)).getSavepointInterval()
+        verify(controller, times(2)).getSavepointInterval()
         verify(controller, times(1)).getSavepointOptions()
         verify(controller, times(1)).triggerSavepoint(eq(savepointOptions))
         verify(controller, times(1)).setSavepointRequest(eq(savepointRequest))

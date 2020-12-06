@@ -1,7 +1,5 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flinkclient.model.TaskManagerDetailsInfo
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.FlinkAddress
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.common.TaskManagerId
@@ -10,7 +8,7 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
-import io.kubernetes.client.openapi.JSON
+import com.nextbreakpoint.flinkclient.model.TaskManagerDetailsInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +18,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 class TaskManagerDetailsTest {
-    private val clusterSelector = ResourceSelector(namespace = "flink", name = "test", uid = "123")
     private val flinkOptions = FlinkOptions(hostname = "localhost", portForward = null, useNodePort = false)
     private val flinkClient = mock(FlinkClient::class.java)
     private val kubeClient = mock(KubeClient::class.java)
@@ -40,39 +37,40 @@ class TaskManagerDetailsTest {
     @Test
     fun `should fail when kubeClient throws exception`() {
         given(kubeClient.findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))).thenThrow(RuntimeException::class.java)
-        val result = command.execute(clusterSelector, taskManagerId)
+        val result = command.execute("flink", "test", taskManagerId)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.ERROR)
-        assertThat(result.output).isEqualTo("{}")
+        assertThat(result.output).isNull()
     }
 
     @Test
     fun `should return expected result when it can't fetch taskmanagers details`() {
         given(flinkClient.getTaskManagerDetails(eq(flinkAddress), eq(taskManagerId))).thenThrow(RuntimeException())
-        val result = command.execute(clusterSelector, taskManagerId)
+        val result = command.execute("flink", "test", taskManagerId)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getTaskManagerDetails(eq(flinkAddress), eq(taskManagerId))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.ERROR)
-        assertThat(result.output).isEqualTo("{}")
+        assertThat(result.output).isNull()
     }
 
     @Test
     fun `should return expected result when it can fetch taskmanagers details`() {
-        val result = command.execute(clusterSelector, taskManagerId)
+        val result = command.execute("flink", "test", taskManagerId)
         verify(kubeClient, times(1)).findFlinkAddress(eq(flinkOptions), eq("flink"), eq("test"))
         verify(flinkClient, times(1)).getTaskManagerDetails(eq(flinkAddress), eq(taskManagerId))
         verifyNoMoreInteractions(kubeClient)
         verifyNoMoreInteractions(flinkClient)
         assertThat(result).isNotNull()
         assertThat(result.status).isEqualTo(ResultStatus.OK)
-        val details = JSON().deserialize<TaskManagerDetailsInfo>(result.output, TaskManagerDetailsInfo::class.java)
-        assertThat(details.id).isEqualTo("1")
-        assertThat(details.slotsNumber).isEqualTo(4)
+        assertThat(result.output).isNotNull()
+        val details = result.output
+        assertThat(details?.id).isEqualTo("1")
+        assertThat(details?.slotsNumber).isEqualTo(4)
     }
 }

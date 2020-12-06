@@ -15,29 +15,29 @@ class CacheAdapter(
         private val logger: Logger = Logger.getLogger(CacheAdapter::class.simpleName)
     }
 
-    fun watchFlinkClustersV1(namespace: String) =
+    fun watchFlinkDeployments(namespace: String) =
         thread {
-            watchResources("FlinkClustersV1", namespace, { namespace ->
-                kubeClient.watchFlickClustersV1(namespace)
+            watchResources("FlinkDeployments", namespace, { namespace ->
+                kubeClient.watchFlickDeployments(namespace)
             }, { resource ->
-                cache.onFlinkClusterChanged(resource)
+                cache.onFlinkDeploymentChanged(resource)
             }, { resource ->
-                cache.onFlinkClusterDeleted(resource)
+                cache.onFlinkDeploymentDeleted(resource)
             }, {
-                cache.onFlinkClusterDeletedAllV1()
+                cache.onFlinkDeploymentDeletedAll()
             })
         }
 
-    fun watchFlinkClustersV2(namespace: String) =
+    fun watchFlinkClusters(namespace: String) =
         thread {
-            watchResources("FlinkClustersV2", namespace, { namespace ->
-                kubeClient.watchFlickClustersV2(namespace)
+            watchResources("FlinkClusters", namespace, { namespace ->
+                kubeClient.watchFlickClusters(namespace)
             }, { resource ->
                 cache.onFlinkClusterChanged(resource)
             }, { resource ->
                 cache.onFlinkClusterDeleted(resource)
             }, {
-                cache.onFlinkClusterDeletedAllV2()
+                cache.onFlinkClusterDeletedAll()
             })
         }
 
@@ -50,20 +50,7 @@ class CacheAdapter(
             }, { resource ->
                 cache.onFlinkJobDeleted(resource)
             }, {
-                cache.onFlinkJobsDeletedAll()
-            })
-        }
-
-    fun watchServices(namespace: String) =
-        thread {
-            watchResources("Services", namespace, { namespace ->
-                kubeClient.watchServices(namespace)
-            }, { resource ->
-                cache.onServiceChanged(resource)
-            }, { resource ->
-                cache.onServiceDeleted(resource)
-            }, {
-                cache.onServiceDeletedAll()
+                cache.onFlinkJobDeletedAll()
             })
         }
 
@@ -77,19 +64,6 @@ class CacheAdapter(
                 cache.onPodDeleted(resource)
             }, {
                 cache.onPodDeletedAll()
-            })
-        }
-
-    fun watchJobs(namespace: String) =
-        thread {
-            watchResources("Jobs", namespace, { namespace ->
-                kubeClient.watchJobs(namespace)
-            }, { resource ->
-                cache.onJobChanged(resource)
-            }, { resource ->
-                cache.onJobDeleted(resource)
-            }, {
-                cache.onJobDeletedAll()
             })
         }
 

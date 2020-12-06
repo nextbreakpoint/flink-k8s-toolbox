@@ -1,15 +1,15 @@
 package com.nextbreakpoint.flink.k8s.common
 
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import org.joda.time.DateTime
 
 object FlinkJobAnnotations {
-    val MANUAL_ACTION       = "flink-operator/manual-action"
-    val ACTION_TIMESTAMP    = "flink-operator/action-timestamp"
-    val WITHOUT_SAVEPOINT   = "flink-operator/without-savepoint"
-    val DELETE_RESOURCES    = "flink-operator/delete-resources"
-    val SHOULD_RESTART      = "flink-operator/should-restart"
+    val REQUESTED_ACTION    = "operator.nextbreakpoint.com/requested-action"
+    val ACTION_TIMESTAMP    = "operator.nextbreakpoint.com/action-timestamp"
+    val WITHOUT_SAVEPOINT   = "operator.nextbreakpoint.com/without-savepoint"
+    val DELETE_RESOURCES    = "operator.nextbreakpoint.com/delete-resources"
+    val SHOULD_RESTART      = "operator.nextbreakpoint.com/should-restart"
 
     private fun currentTimeMillis(): Long {
         // this is a hack required for testing
@@ -28,15 +28,15 @@ object FlinkJobAnnotations {
     fun getActionTimestamp(flinkJob: V1FlinkJob) : DateTime =
         DateTime(flinkJob.metadata?.annotations?.get(ACTION_TIMESTAMP)?.toLong() ?: 0L)
 
-    fun setManualAction(flinkJob: V1FlinkJob, manualAction: ManualAction) {
+    fun setRequestedAction(flinkJob: V1FlinkJob, action: Action) {
         val annotations = flinkJob.metadata?.annotations.orEmpty().toMutableMap()
-        annotations[MANUAL_ACTION] = manualAction.toString()
+        annotations[REQUESTED_ACTION] = action.toString()
         annotations[ACTION_TIMESTAMP] = currentTimeMillis().toString()
         flinkJob.metadata?.annotations = annotations
     }
 
-    fun getManualAction(flinkJob: V1FlinkJob): ManualAction {
-        return ManualAction.valueOf(flinkJob.metadata?.annotations?.get(MANUAL_ACTION)?.toUpperCase() ?: "NONE")
+    fun getRequestedAction(flinkJob: V1FlinkJob): Action {
+        return Action.valueOf(flinkJob.metadata?.annotations?.get(REQUESTED_ACTION)?.toUpperCase() ?: "NONE")
     }
 
     fun setWithoutSavepoint(flinkJob: V1FlinkJob, withoutSavepoint: Boolean) {

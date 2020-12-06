@@ -1,9 +1,11 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.common.SavepointRequest
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
+import com.nextbreakpoint.flink.common.RestartPolicy
+import com.nextbreakpoint.flink.common.SavepointRequest
+import com.nextbreakpoint.flink.k8s.common.Timeout
 import org.apache.log4j.Logger
 
 class JobManager(
@@ -11,9 +13,21 @@ class JobManager(
     private val controller: JobController,
     private val taskTimeout: Long = Timeout.TASK_TIMEOUT
 ) {
+    fun hasFinalizer() = controller.hasFinalizer()
+
+    fun addFinalizer() {
+        logger.info("Add finalizer")
+        controller.addFinalizer()
+    }
+
     fun removeFinalizer() {
         logger.info("Remove finalizer")
         controller.removeFinalizer()
+    }
+
+    fun onClusterMissing() {
+        controller.setSupervisorStatus(JobStatus.Unknown)
+        controller.setResourceStatus(ResourceStatus.Updated)
     }
 
     fun onJobStarted() {
@@ -26,7 +40,6 @@ class JobManager(
     fun onJobCanceled() {
         logger.warn("Job canceled")
         controller.resetSavepointRequest()
-        controller.setCurrentJobParallelism(0)
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
         controller.setResourceStatus(ResourceStatus.Updated)
@@ -35,7 +48,6 @@ class JobManager(
     fun onJobFinished() {
         logger.info("Job finished")
         controller.resetSavepointRequest()
-        controller.setCurrentJobParallelism(0)
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
         controller.setResourceStatus(ResourceStatus.Updated)
@@ -44,7 +56,6 @@ class JobManager(
     fun onJobFailed() {
         logger.warn("Job failed")
         controller.resetSavepointRequest()
-        controller.setCurrentJobParallelism(0)
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
         controller.setResourceStatus(ResourceStatus.Updated)
@@ -54,7 +65,6 @@ class JobManager(
         logger.info("Job stopped")
         controller.resetJob()
         controller.resetSavepointRequest()
-        controller.setCurrentJobParallelism(0)
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
         controller.setResourceStatus(ResourceStatus.Updated)
@@ -62,7 +72,6 @@ class JobManager(
 
     fun onJobTerminated() {
         logger.info("Job terminated")
-        controller.removeFinalizer()
         controller.resetSavepointRequest()
         controller.resetJob()
         controller.setShouldRestart(false)
@@ -99,7 +108,6 @@ class JobManager(
         logger.info("Cluster unhealthy")
         controller.resetJob()
         controller.resetSavepointRequest()
-        controller.setCurrentJobParallelism(0)
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
         controller.setResourceStatus(ResourceStatus.Updated)
@@ -109,10 +117,9 @@ class JobManager(
         controller.initializeAnnotations()
         controller.initializeStatus()
         controller.updateDigests()
-        controller.addFinalizer()
         controller.setShouldRestart(false)
         controller.resetSavepointRequest()
-        controller.setClusterName(controller.clusterSelector.name)
+        controller.setClusterName(controller.clusterName)
         controller.setSupervisorStatus(JobStatus.Starting)
         controller.setResourceStatus(ResourceStatus.Updating)
     }
@@ -214,7 +221,7 @@ class JobManager(
             return true
         }
 
-        if (!controller.isDeleteResources() && !controller.isWithoutSavepoint()) {
+        if (controller.shouldCreateSavepoint() && !controller.isDeleteResources() && !controller.isWithoutSavepoint()) {
             val savepointRequest = controller.getSavepointRequest()
 
             if (savepointRequest == null) {
@@ -337,7 +344,7 @@ class JobManager(
 
     fun updateJobStatus() {
         if (controller.hasJobId()) {
-            val result = controller.getClusterJobStatus()
+            val result = controller.getJobStatus()
 
             if (result.isSuccessful() && result.output != null) {
                 controller.setJobStatus(result.output)
@@ -362,18 +369,18 @@ class JobManager(
     }
 
     fun hasParallelismChanged(): Boolean {
-        val desiredJobParallelism = controller.getJobParallelism()
+        val desiredJobParallelism = controller.getDeclaredJobParallelism()
         val currentJobParallelism = controller.getCurrentJobParallelism()
         return currentJobParallelism != desiredJobParallelism
     }
 
-    fun isActionPresent() = controller.getAction() != ManualAction.NONE
+    fun isActionPresent() = controller.getAction() != Action.NONE
 
     fun isResourceDeleted() = controller.hasBeenDeleted()
 
     fun mustTerminateResources() = controller.isDeleteResources()
 
-    fun shouldRestartJob() = controller.getRestartPolicy()?.toUpperCase() == "ALWAYS"
+    fun shouldRestartJob() = controller.getRestartPolicy() == RestartPolicy.Always || (controller.getRestartPolicy() == RestartPolicy.OnlyIfFailed && isJobFailed())
 
     fun shouldRestart() = controller.shouldRestart()
 
@@ -403,14 +410,14 @@ class JobManager(
         return true
     }
 
-    fun executeAction(acceptedActions: Set<ManualAction>) {
+    fun executeAction(acceptedActions: Set<Action>) {
         val manualAction = controller.getAction()
 
         logger.info("Detected action: $manualAction")
 
         when (manualAction) {
-            ManualAction.START -> {
-                if (acceptedActions.contains(ManualAction.START)) {
+            Action.START -> {
+                if (acceptedActions.contains(Action.START)) {
                     logger.info("Start job")
                     controller.updateStatus()
                     controller.updateDigests()
@@ -422,8 +429,8 @@ class JobManager(
                     logger.warn("Action not allowed")
                 }
             }
-            ManualAction.STOP -> {
-                if (acceptedActions.contains(ManualAction.STOP)) {
+            Action.STOP -> {
+                if (acceptedActions.contains(Action.STOP)) {
                     logger.info("Stop job")
                     controller.resetSavepointRequest()
                     controller.setShouldRestart(false)
@@ -433,16 +440,16 @@ class JobManager(
                     logger.warn("Action not allowed")
                 }
             }
-            ManualAction.FORGET_SAVEPOINT -> {
-                if (acceptedActions.contains(ManualAction.FORGET_SAVEPOINT)) {
+            Action.FORGET_SAVEPOINT -> {
+                if (acceptedActions.contains(Action.FORGET_SAVEPOINT)) {
                     logger.info("Reset savepoint path")
                     controller.setSavepointPath("")
                 } else {
                     logger.warn("Action not allowed")
                 }
             }
-            ManualAction.TRIGGER_SAVEPOINT -> {
-                if (acceptedActions.contains(ManualAction.TRIGGER_SAVEPOINT)) {
+            Action.TRIGGER_SAVEPOINT -> {
+                if (acceptedActions.contains(Action.TRIGGER_SAVEPOINT)) {
                     if (controller.hasJobId()) {
                         if (controller.getSavepointRequest() == null) {
                             val response = controller.triggerSavepoint(controller.getSavepointOptions())
@@ -462,11 +469,11 @@ class JobManager(
                     logger.warn("Action not allowed")
                 }
             }
-            ManualAction.NONE -> {
+            Action.NONE -> {
             }
         }
 
-        if (manualAction != ManualAction.NONE) {
+        if (manualAction != Action.NONE) {
             controller.resetAction()
         }
     }
@@ -496,7 +503,7 @@ class JobManager(
             controller.setSavepointPath(querySavepointResult.output)
             controller.resetSavepointRequest()
         } else {
-            if (controller.getSavepointMode()?.toUpperCase() == "AUTOMATIC") {
+            if (controller.getSavepointInterval() > 0) {
                 if (controller.timeSinceLastSavepointRequestInSeconds() >= controller.getSavepointInterval()) {
                     val triggerSavepointResult = controller.triggerSavepoint(controller.getSavepointOptions())
 

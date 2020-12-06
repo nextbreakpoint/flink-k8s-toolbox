@@ -2,50 +2,54 @@ package com.nextbreakpoint.flink.k8s.supervisor.core
 
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.ResourceSelector
-import com.nextbreakpoint.flink.common.ManualAction
+import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.common.ResourceStatus
+import com.nextbreakpoint.flink.common.RestartPolicy
+import com.nextbreakpoint.flink.common.SavepointMode
 import com.nextbreakpoint.flink.common.SavepointOptions
 import com.nextbreakpoint.flink.common.SavepointRequest
-import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
-import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
-import com.nextbreakpoint.flink.k8s.common.Resource
-import com.nextbreakpoint.flink.k8s.common.FlinkJobConfiguration
 import com.nextbreakpoint.flink.k8s.common.FlinkJobAnnotations
-import com.nextbreakpoint.flink.k8s.controller.Controller
-import com.nextbreakpoint.flink.k8s.controller.core.Result
+import com.nextbreakpoint.flink.k8s.common.FlinkJobConfiguration
 import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
+import com.nextbreakpoint.flink.k8s.common.Resource
+import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.controller.core.JobContext
+import com.nextbreakpoint.flink.k8s.controller.core.Result
+import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.factory.BootstrapResourcesDefaultFactory
 import io.kubernetes.client.openapi.models.V1Job
 import org.apache.log4j.Logger
 import org.joda.time.DateTime
+import kotlin.math.max
+import kotlin.math.min
 
 class JobController(
-    val clusterSelector: ResourceSelector,
-    val jobSelector: ResourceSelector,
-    private val cluster: V2FlinkCluster,
-    private val job: V1FlinkJob,
+    val namespace: String,
+    val clusterName: String,
+    val jobName: String,
+    private val controller: Controller,
     private val clusterResources: ClusterResources,
     private val jobResources: JobResources,
-    private val controller: Controller
+    private val job: V1FlinkJob
 ) {
     fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - FlinkJobStatus.getStatusTimestamp(job).millis) / 1000L
 
     fun timeSinceLastSavepointRequestInSeconds() = (controller.currentTimeMillis() - FlinkJobStatus.getSavepointRequestTimestamp(job).millis) / 1000L
 
-    fun triggerSavepoint(options: SavepointOptions) = controller.triggerSavepoint(clusterSelector, options, JobContext(job))
+    fun triggerSavepoint(options: SavepointOptions) = controller.triggerSavepoint(namespace, clusterName, jobName, options, JobContext(job))
 
-    fun querySavepoint(savepointRequest: SavepointRequest) = controller.querySavepoint(clusterSelector, savepointRequest, JobContext(job))
+    fun querySavepoint(savepointRequest: SavepointRequest) = controller.querySavepoint(namespace, clusterName, jobName, savepointRequest, JobContext(job))
 
-    fun createBootstrapJob(bootstrapJob: V1Job) = controller.createBootstrapJob(clusterSelector, bootstrapJob)
+    fun createBootstrapJob(bootstrapJob: V1Job) = controller.createBootstrapJob(namespace, clusterName, jobName, bootstrapJob)
 
-    fun deleteBootstrapJob() = controller.deleteBootstrapJob(clusterSelector, getJobName())
+    fun deleteBootstrapJob() = jobResources.bootstrapJob?.metadata?.name?.let { controller.deleteBootstrapJob(namespace, clusterName, jobName, it) }
+        ?: Result(ResultStatus.OK, null)
 
-    fun stopJob() = controller.stopJob(clusterSelector, JobContext(job))
+    fun stopJob() = controller.stopJob(namespace, clusterName, jobName, JobContext(job))
 
-    fun cancelJob(options: SavepointOptions) = controller.cancelJob(clusterSelector, options, JobContext(job))
+    fun cancelJob(options: SavepointOptions) = controller.cancelJob(namespace, clusterName, jobName, options, JobContext(job))
 
     fun isJobCancelled() = FlinkJobStatus.getJobStatus(job) == "CANCELED"
 
@@ -53,110 +57,109 @@ class JobController(
 
     fun isJobFailed() = FlinkJobStatus.getJobStatus(job) == "FAILED"
 
-    fun isClusterReady(requireFreeSlots: Int) = controller.isClusterReady(clusterSelector, requireFreeSlots)
+    fun isClusterReady(requireFreeSlots: Int) = controller.isClusterReady(namespace, clusterName, requireFreeSlots)
 
-    fun isClusterHealthy() = controller.isClusterHealthy(clusterSelector)
+    fun isClusterHealthy() = controller.isClusterHealthy(namespace, clusterName)
 
-    fun isClusterStopped() = cluster.status.supervisorStatus == ClusterStatus.Stopped.toString()
+    fun isClusterStopped() = clusterResources.flinkCluster?.status?.supervisorStatus == ClusterStatus.Stopped.toString()
 
-    fun isClusterStopping() = cluster.status.supervisorStatus == ClusterStatus.Stopping.toString()
+    fun isClusterStopping() = clusterResources.flinkCluster?.status?.supervisorStatus == ClusterStatus.Stopping.toString()
 
-    fun isClusterStarted() = cluster.status.supervisorStatus == ClusterStatus.Started.toString()
+    fun isClusterStarted() = clusterResources.flinkCluster?.status?.supervisorStatus == ClusterStatus.Started.toString()
 
-    fun isClusterStarting() = cluster.status.supervisorStatus == ClusterStatus.Starting.toString()
+    fun isClusterStarting() = clusterResources.flinkCluster?.status?.supervisorStatus == ClusterStatus.Starting.toString()
 
-    fun isClusterUpdated() = cluster.status.resourceStatus == ResourceStatus.Updated.toString()
+    fun isClusterUpdated() = clusterResources.flinkCluster?.status?.resourceStatus == ResourceStatus.Updated.toString()
 
     fun refreshStatus(logger: Logger, statusTimestamp: DateTime, actionTimestamp: DateTime, hasFinalizer: Boolean) {
-        val savepointMode = job.spec?.savepoint?.savepointMode
-        if (FlinkJobStatus.getSavepointMode(job) != savepointMode) {
-            FlinkJobStatus.setSavepointMode(job, savepointMode)
-        }
+        val savepointMode = SavepointMode.valueOf(job.spec.savepoint.savepointMode)
+        FlinkJobStatus.setSavepointMode(job, savepointMode)
 
-        val restartPolicy = job.spec?.savepoint?.restartPolicy
-        if (FlinkJobStatus.getRestartPolicy(job) != restartPolicy) {
-            FlinkJobStatus.setRestartPolicy(job, restartPolicy)
+        val restartPolicy = RestartPolicy.valueOf(job.spec.savepoint.restartPolicy)
+        FlinkJobStatus.setRestartPolicy(job, restartPolicy)
+
+        if (activeStatus.contains(getSupervisorStatus().toString())) {
+            FlinkJobStatus.setJobParallelism(job, getDeclaredJobParallelism())
+        } else {
+            FlinkJobStatus.setJobParallelism(job, 0)
         }
 
         val newStatusTimestamp = FlinkJobStatus.getStatusTimestamp(job)
 
+        val resourceName = "$clusterName-$jobName"
+
         if (statusTimestamp != newStatusTimestamp) {
             logger.debug("Updating status")
-            controller.updateStatus(jobSelector, job)
+            controller.updateStatus(namespace, resourceName, job)
         }
 
         val newActionTimestamp = FlinkJobAnnotations.getActionTimestamp(job)
 
         if (actionTimestamp != newActionTimestamp) {
             logger.debug("Updating annotations")
-            controller.updateAnnotations(jobSelector, job)
+            controller.updateAnnotations(namespace, resourceName, job)
         }
 
         val newHasFinalizer = hasFinalizer()
 
         if (hasFinalizer != newHasFinalizer) {
             logger.debug("Updating finalizers")
-            controller.updateFinalizers(jobSelector, job)
+            controller.updateFinalizers(namespace, resourceName, job)
         }
     }
 
     fun hasBeenDeleted() = job.metadata.deletionTimestamp != null
 
-    fun hasFinalizer() = job.metadata.finalizers.orEmpty().contains("finalizer.nextbreakpoint.com")
+    fun hasFinalizer() = job.metadata.finalizers.orEmpty().contains(Resource.SUPERVISOR_FINALIZER_VALUE)
 
     fun addFinalizer() {
         val finalizers = job.metadata.finalizers ?: listOf()
-        if (!finalizers.contains("finalizer.nextbreakpoint.com")) {
-            job.metadata.finalizers = finalizers.plus("finalizer.nextbreakpoint.com")
+        if (!finalizers.contains(Resource.SUPERVISOR_FINALIZER_VALUE)) {
+            job.metadata.finalizers = finalizers.plus(Resource.SUPERVISOR_FINALIZER_VALUE)
         }
     }
 
     fun removeFinalizer() {
         val finalizers = job.metadata.finalizers
-        if (finalizers != null && finalizers.contains("finalizer.nextbreakpoint.com")) {
-            job.metadata.finalizers = finalizers.minus("finalizer.nextbreakpoint.com")
+        if (finalizers != null && finalizers.contains(Resource.SUPERVISOR_FINALIZER_VALUE)) {
+            job.metadata.finalizers = finalizers.minus(Resource.SUPERVISOR_FINALIZER_VALUE)
         }
     }
 
     fun initializeStatus() {
-        val jobParallelism = job.spec?.jobParallelism ?: 1
-        FlinkJobStatus.setJobParallelism(job, jobParallelism)
+        if (FlinkJobStatus.getSavepointPath(job) == null) {
+            val savepointPath = job.spec.savepoint.savepointPath
+            FlinkJobStatus.setSavepointPath(job, savepointPath ?: "")
+        }
 
-        val savepointPath = job.spec?.savepoint?.savepointPath
-        FlinkJobStatus.setSavepointPath(job, savepointPath ?: "")
-
-        val labelSelector = Resource.makeLabelSelector(jobSelector)
+        val labelSelector = Resource.makeLabelSelector("$clusterName-$jobName")
         FlinkJobStatus.setLabelSelector(job, labelSelector)
 
-        val savepointMode = job.spec?.savepoint?.savepointMode
-        FlinkJobStatus.setSavepointMode(job, savepointMode)
-
-        val restartPolicy = job.spec?.savepoint?.restartPolicy
-        FlinkJobStatus.setRestartPolicy(job, restartPolicy)
-
-        val bootstrap = job.spec?.bootstrap
-        FlinkJobStatus.setBootstrap(job, bootstrap)
-
-        FlinkJobStatus.setJobStatus(job, "")
+        updateStatus()
     }
 
     fun initializeAnnotations() {
         FlinkJobAnnotations.setDeleteResources(job, false)
         FlinkJobAnnotations.setWithoutSavepoint(job, false)
-        FlinkJobAnnotations.setManualAction(job, ManualAction.NONE)
+        FlinkJobAnnotations.setRequestedAction(job, Action.NONE)
     }
 
     fun updateDigests() {
-        val bootstrapDigest = Resource.computeDigest(job.spec?.bootstrap)
+        val bootstrapDigest = Resource.computeDigest(job.spec.bootstrap)
         FlinkJobStatus.setBootstrapDigest(job, bootstrapDigest)
+
+        val savepointDigest = Resource.computeDigest(job.spec.savepoint)
+        FlinkJobStatus.setSavepointDigest(job, savepointDigest)
     }
 
     fun updateStatus() {
-        val jobParallelism = job.spec?.jobParallelism ?: 1
-        FlinkJobStatus.setJobParallelism(job, jobParallelism)
+        FlinkJobStatus.setJobParallelism(job, getDeclaredJobParallelism())
 
-        val bootstrap = job.spec?.bootstrap
-        FlinkJobStatus.setBootstrap(job, bootstrap)
+        val savepointMode = SavepointMode.valueOf(job.spec.savepoint.savepointMode)
+        FlinkJobStatus.setSavepointMode(job, savepointMode)
+
+        val restartPolicy = RestartPolicy.valueOf(job.spec.savepoint.restartPolicy)
+        FlinkJobStatus.setRestartPolicy(job, restartPolicy)
 
         FlinkJobStatus.setJobStatus(job, "")
     }
@@ -164,7 +167,7 @@ class JobController(
     fun computeChanges(): List<String> {
         val bootstrapDigest = FlinkJobStatus.getBootstrapDigest(job)
 
-        val actualBootstrapDigest = Resource.computeDigest(job.spec?.bootstrap)
+        val actualBootstrapDigest = Resource.computeDigest(job.spec.bootstrap)
 
         val changes = mutableListOf<String>()
 
@@ -188,28 +191,30 @@ class JobController(
     fun getResourceStatus() = FlinkJobStatus.getResourceStatus(job)
 
     fun resetAction() {
-        FlinkJobAnnotations.setManualAction(job, ManualAction.NONE)
+        FlinkJobAnnotations.setRequestedAction(job, Action.NONE)
     }
 
-    fun getAction() = FlinkJobAnnotations.getManualAction(job)
+    fun getAction() = FlinkJobAnnotations.getRequestedAction(job)
 
     fun setDeleteResources(value: Boolean) {
         FlinkJobAnnotations.setDeleteResources(job, value)
     }
 
-    fun isDeleteResources() = FlinkClusterAnnotations.isDeleteResources(cluster) || FlinkJobAnnotations.isDeleteResources(job)
+    fun isDeleteResources() = FlinkJobAnnotations.isDeleteResources(job)
 
     fun setWithoutSavepoint(value: Boolean) {
         FlinkJobAnnotations.setWithoutSavepoint(job, value)
     }
 
-    fun isWithoutSavepoint() = FlinkClusterAnnotations.isWithoutSavepoint(cluster) || FlinkJobAnnotations.isWithoutSavepoint(job)
+    fun isWithoutSavepoint() = getClusterIsWithoutSavepoint() || FlinkJobAnnotations.isWithoutSavepoint(job)
 
     fun setShouldRestart(value: Boolean) {
         FlinkJobAnnotations.setShouldRestart(job, value)
     }
 
     fun shouldRestart() = FlinkJobAnnotations.shouldRestart(job)
+
+    fun shouldCreateSavepoint() = FlinkJobStatus.getSavepointMode(job) == SavepointMode.Automatic
 
     fun setSavepointRequest(request: SavepointRequest) {
         FlinkJobStatus.setSavepointRequest(job, request)
@@ -252,32 +257,43 @@ class JobController(
     fun doesBootstrapJobExists() = jobResources.bootstrapJob != null
 
     fun createBootstrapJob(): Result<String?> {
-        val savepointPath = FlinkJobStatus.getSavepointPath(job)
-        val parallelism = FlinkJobStatus.getJobParallelism(job)
-
         val resource = BootstrapResourcesDefaultFactory.createBootstrapJob(
-            clusterSelector, jobSelector, "flink-operator", getJobName(), job.status.bootstrap, savepointPath, parallelism, controller.isDryRun()
+            namespace,
+            Resource.RESOURCE_OWNER,
+            clusterName,
+            jobName,
+            job.spec.bootstrap,
+            getCurrentSavepointPath(),
+            getCurrentJobParallelism(),
+            controller.isDryRun()
         )
 
         return createBootstrapJob(resource)
     }
 
-    fun hasJobId() = job.status.jobId != null && job.status.jobId.length > 0
+    fun hasJobId() = job.status?.jobId?.isNotEmpty() ?: false
 
-     fun resetJob() {
+    fun resetJob() {
         FlinkJobStatus.setJobId(job, "")
         FlinkJobStatus.setJobStatus(job, "")
     }
 
-    fun getRequiredTaskSlots() = clusterResources.flinkJobs.values.map { job -> job.status.jobParallelism ?: 0 }.sum()
+    fun getRequiredTaskSlots() = clusterResources.flinkJobs
+        .filter { job -> activeStatus.contains(job.status.supervisorStatus) }
+        .map { job -> job.status?.jobParallelism ?: 0 }.sum()
 
-    fun getJobParallelism() = job.spec.jobParallelism ?: 1
+    fun getDeclaredJobParallelism() = min(max(job.spec.jobParallelism ?: 1, job.spec.minJobParallelism ?: 0), job.spec.maxJobParallelism ?: 32)
+
+    fun getCurrentSavepointPath() = FlinkJobStatus.getSavepointPath(job)
 
     fun getCurrentJobParallelism() = FlinkJobStatus.getJobParallelism(job)
 
     fun setCurrentJobParallelism(parallelism: Int) = FlinkJobStatus.setJobParallelism(job, parallelism)
 
-    fun getClusterJobStatus() = controller.getClusterJobStatus(clusterSelector, job.status.jobId)
+    fun getJobStatus() = if (job.status != null) controller.getJobStatus(namespace, clusterName, jobName, job.status.jobId) else Result(ResultStatus.ERROR, "")
 
-    fun getJobName() = job.metadata?.labels?.get("jobName") ?: throw RuntimeException("Missing label jobName")
+    private val activeStatus = setOf(JobStatus.Starting.toString(), JobStatus.Started.toString())
+
+    private fun getClusterIsWithoutSavepoint() =
+        clusterResources.flinkCluster?.let { FlinkClusterAnnotations.isWithoutSavepoint(clusterResources.flinkCluster) } ?: false
 }

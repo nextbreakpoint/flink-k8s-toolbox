@@ -1,6 +1,6 @@
 package com.nextbreakpoint.flink.k8s.factory
 
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterSpec
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.openapi.models.V1Affinity
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
@@ -25,20 +25,13 @@ import io.kubernetes.client.openapi.models.V1WeightedPodAffinityTerm
 object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
     override fun createService(
         namespace: String,
-        clusterUid: String,
-        clusterOwner: String,
-        flinkCluster: V2FlinkCluster
+        owner: String,
+        clusterName: String,
+        clusterSpec: V1FlinkClusterSpec
     ): V1Service {
-        if (flinkCluster.metadata == null) {
-            throw RuntimeException("metadata is required")
-        }
-
-        val name = flinkCluster.metadata.name ?: throw RuntimeException("name is required")
-
         val serviceLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("clusterName", name),
-            Pair("clusterUid", clusterUid),
+            Pair("owner", owner),
+            Pair("clusterName", clusterName),
             Pair("component", "flink"),
             Pair("role", "jobmanager")
         )
@@ -66,7 +59,7 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
 
         return V1ServiceBuilder()
             .editOrNewMetadata()
-            .withName("jobmanager-$name")
+            .withName("jobmanager-$clusterName")
             .withLabels(serviceLabels)
             .endMetadata()
             .editOrNewSpec()
@@ -75,39 +68,31 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             .addToPorts(srvPort6124)
             .addToPorts(srvPort6125)
             .withSelector(serviceLabels)
-            .withType(flinkCluster.spec.jobManager?.serviceMode ?: "ClusterIP")
+            .withType(clusterSpec.jobManager?.serviceMode ?: "ClusterIP")
             .endSpec()
             .build()
     }
 
     override fun createJobManagerPod(
         namespace: String,
-        clusterUid: String,
-        clusterOwner: String,
-        flinkCluster: V2FlinkCluster
+        owner: String,
+        clusterName: String,
+        clusterSpec: V1FlinkClusterSpec
     ): V1Pod {
-        if (flinkCluster.metadata == null) {
-            throw RuntimeException("metadata is required")
-        }
-
-        val name = flinkCluster.metadata.name ?: throw RuntimeException("name is required")
-
-        if (flinkCluster.spec.runtime?.image == null) {
+        if (clusterSpec.runtime?.image == null) {
             throw RuntimeException("flinkImage is required")
         }
 
         val jobmanagerLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("clusterName", name),
-            Pair("clusterUid", clusterUid),
+            Pair("owner", owner),
+            Pair("clusterName", clusterName),
             Pair("component", "flink"),
             Pair("role", "jobmanager")
         )
 
         val taskmanagerLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("clusterName", name),
-            Pair("clusterUid", clusterUid),
+            Pair("owner", owner),
+            Pair("clusterName", clusterName),
             Pair("component", "flink"),
             Pair("role", "taskmanager")
         )
@@ -145,7 +130,7 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
 
         val rpcAddressEnvVar =
             createEnvVar(
-                "JOB_MANAGER_RPC_ADDRESS", "jobmanager-$name"
+                "JOB_MANAGER_RPC_ADDRESS", "jobmanager-$clusterName"
             )
 
         val jobmanagerSelector = V1LabelSelector().matchLabels(jobmanagerLabels)
@@ -163,24 +148,22 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             rpcAddressEnvVar
         )
 
-        if (flinkCluster.spec.jobManager?.environment != null) {
-            jobmanagerVariables.addAll(flinkCluster.spec.jobManager.environment)
-        }
+        clusterSpec.jobManager?.environment?.let { jobmanagerVariables.addAll(it) }
 
         val jobmanagerContainer = V1ContainerBuilder()
-            .withImage(flinkCluster.spec.runtime?.image)
-            .withImagePullPolicy(flinkCluster.spec.runtime?.pullPolicy ?: "IfNotPresent")
+            .withImage(clusterSpec.runtime?.image)
+            .withImagePullPolicy(clusterSpec.runtime?.pullPolicy ?: "IfNotPresent")
             .withName("jobmanager")
             .withArgs(listOf("jobmanager"))
             .addToPorts(port8081)
             .addToPorts(port6123)
             .addToPorts(port6124)
             .addToPorts(port6125)
-            .addAllToPorts(flinkCluster.spec.jobManager?.extraPorts ?: listOf())
-            .addAllToVolumeMounts(flinkCluster.spec.jobManager?.volumeMounts ?: listOf())
+            .addAllToPorts(clusterSpec.jobManager?.extraPorts ?: listOf())
+            .addAllToVolumeMounts(clusterSpec.jobManager?.volumeMounts ?: listOf())
             .withEnv(jobmanagerVariables)
-            .withEnvFrom(flinkCluster.spec.jobManager?.environmentFrom)
-            .withResources(flinkCluster.spec.jobManager?.resources)
+            .withEnvFrom(clusterSpec.jobManager?.environmentFrom)
+            .withResources(clusterSpec.jobManager?.resources)
             .withReadinessProbe(
                 V1Probe()
                     .httpGet(V1HTTPGetAction().port(IntOrString(8081)).path("/overview"))
@@ -189,18 +172,18 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             )
             .build()
 
-        val jobmanagerPullSecrets = createObjectReferenceListOrNull(flinkCluster.spec.runtime?.pullSecrets)
+        val jobmanagerPullSecrets = createObjectReferenceListOrNull(clusterSpec.runtime?.pullSecrets)
 
-        val initContainers = flinkCluster.spec.jobManager?.initContainers ?: listOf()
+        val initContainers = clusterSpec.jobManager?.initContainers ?: listOf()
 
-        val sideContainers = flinkCluster.spec.jobManager?.sideContainers ?: listOf()
+        val sideContainers = clusterSpec.jobManager?.sideContainers ?: listOf()
 
         val jobmanagerMetadata =
             createObjectMeta(
-                "jobmanager-$name-", jobmanagerLabels
+                "jobmanager-$clusterName-", jobmanagerLabels
             )
 
-        jobmanagerMetadata.annotations = flinkCluster.spec.jobManager?.annotations
+        jobmanagerMetadata.annotations = clusterSpec.jobManager?.annotations
 
         return V1PodBuilder()
             .withMetadata(jobmanagerMetadata)
@@ -208,42 +191,34 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             .addAllToInitContainers(initContainers)
             .addToContainers(jobmanagerContainer)
             .addAllToContainers(sideContainers)
-            .withServiceAccountName(flinkCluster.spec.jobManager?.serviceAccount ?: "default")
+            .withServiceAccountName(clusterSpec.jobManager?.serviceAccount ?: "default")
             .withImagePullSecrets(jobmanagerPullSecrets)
             .withAffinity(jobmanagerAffinity)
-            .withVolumes(flinkCluster.spec.jobManager?.volumes)
+            .withVolumes(clusterSpec.jobManager?.volumes)
             .endSpec()
             .build()
     }
 
     override fun createTaskManagerPod(
         namespace: String,
-        clusterUid: String,
-        clusterOwner: String,
-        flinkCluster: V2FlinkCluster
+        owner: String,
+        clusterName: String,
+        clusterSpec: V1FlinkClusterSpec
     ): V1Pod {
-        if (flinkCluster.metadata == null) {
-            throw RuntimeException("metadata is required")
-        }
-
-        val name = flinkCluster.metadata.name ?: throw RuntimeException("name is required")
-
-        if (flinkCluster.spec.runtime?.image == null) {
+        if (clusterSpec.runtime?.image == null) {
             throw RuntimeException("flinkImage is required")
         }
 
         val jobmanagerLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("clusterName", name),
-            Pair("clusterUid", clusterUid),
+            Pair("owner", owner),
+            Pair("clusterName", clusterName),
             Pair("component", "flink"),
             Pair("role", "jobmanager")
         )
 
         val taskmanagerLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("clusterName", name),
-            Pair("clusterUid", clusterUid),
+            Pair("owner", owner),
+            Pair("clusterName", clusterName),
             Pair("component", "flink"),
             Pair("role", "taskmanager")
         )
@@ -271,12 +246,12 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
 
         val rpcAddressEnvVar =
             createEnvVar(
-                "JOB_MANAGER_RPC_ADDRESS", "jobmanager-$name"
+                "JOB_MANAGER_RPC_ADDRESS", "jobmanager-$clusterName"
             )
 
         val numberOfTaskSlotsEnvVar =
             createEnvVar(
-                "TASK_MANAGER_NUMBER_OF_TASK_SLOTS", flinkCluster.spec.taskManager?.taskSlots?.toString() ?: "1"
+                "TASK_MANAGER_NUMBER_OF_TASK_SLOTS", clusterSpec.taskManager?.taskSlots?.toString() ?: "1"
             )
 
         val jobmanagerSelector = V1LabelSelector().matchLabels(jobmanagerLabels)
@@ -290,22 +265,20 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             numberOfTaskSlotsEnvVar
         )
 
-        if (flinkCluster.spec.taskManager?.environment != null) {
-            taskmanagerVariables.addAll(flinkCluster.spec.taskManager.environment)
-        }
+        clusterSpec.taskManager?.environment?.let { taskmanagerVariables.addAll(it) }
 
         val taskmanagerContainer = V1ContainerBuilder()
-            .withImage(flinkCluster.spec.runtime?.image)
-            .withImagePullPolicy(flinkCluster.spec.runtime?.pullPolicy ?: "IfNotPresent")
+            .withImage(clusterSpec.runtime?.image)
+            .withImagePullPolicy(clusterSpec.runtime?.pullPolicy ?: "IfNotPresent")
             .withName("taskmanager")
             .withArgs(listOf("taskmanager"))
             .addToPorts(port6121)
             .addToPorts(port6122)
-            .addAllToPorts(flinkCluster.spec.taskManager?.extraPorts ?: listOf())
-            .addAllToVolumeMounts(flinkCluster.spec.taskManager?.volumeMounts ?: listOf())
+            .addAllToPorts(clusterSpec.taskManager?.extraPorts ?: listOf())
+            .addAllToVolumeMounts(clusterSpec.taskManager?.volumeMounts ?: listOf())
             .withEnv(taskmanagerVariables)
-            .withEnvFrom(flinkCluster.spec.taskManager?.environmentFrom)
-            .withResources(flinkCluster.spec.taskManager?.resources)
+            .withEnvFrom(clusterSpec.taskManager?.environmentFrom)
+            .withResources(clusterSpec.taskManager?.resources)
             .build()
 
         val taskmanagerAffinity =
@@ -313,18 +286,18 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
                 jobmanagerSelector, taskmanagerSelector
             )
 
-        val taskmanagerPullSecrets = createObjectReferenceListOrNull(flinkCluster.spec.runtime?.pullSecrets)
+        val taskmanagerPullSecrets = createObjectReferenceListOrNull(clusterSpec.runtime?.pullSecrets)
 
-        val initContainers = flinkCluster.spec.taskManager?.initContainers ?: listOf()
+        val initContainers = clusterSpec.taskManager?.initContainers ?: listOf()
 
-        val sideContainers = flinkCluster.spec.taskManager?.sideContainers ?: listOf()
+        val sideContainers = clusterSpec.taskManager?.sideContainers ?: listOf()
 
         val taskmanagerMetadata =
             createObjectMeta(
-                "taskmanager-$name-", taskmanagerLabels
+                "taskmanager-$clusterName-", taskmanagerLabels
             )
 
-        taskmanagerMetadata.annotations = flinkCluster.spec.taskManager?.annotations
+        taskmanagerMetadata.annotations = clusterSpec.taskManager?.annotations
 
         return V1PodBuilder()
             .withMetadata(taskmanagerMetadata)
@@ -332,10 +305,10 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             .addAllToInitContainers(initContainers)
             .addToContainers(taskmanagerContainer)
             .addAllToContainers(sideContainers)
-            .withServiceAccountName(flinkCluster.spec.taskManager?.serviceAccount ?: "default")
+            .withServiceAccountName(clusterSpec.taskManager?.serviceAccount ?: "default")
             .withImagePullSecrets(taskmanagerPullSecrets)
             .withAffinity(taskmanagerAffinity)
-            .withVolumes(flinkCluster.spec.taskManager?.volumes)
+            .withVolumes(clusterSpec.taskManager?.volumes)
             .endSpec()
             .build()
     }

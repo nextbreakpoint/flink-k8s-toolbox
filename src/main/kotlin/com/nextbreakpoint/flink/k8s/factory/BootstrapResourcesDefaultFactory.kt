@@ -1,7 +1,6 @@
 package com.nextbreakpoint.flink.k8s.factory
 
 import com.nextbreakpoint.flink.k8s.crd.V1BootstrapSpec
-import com.nextbreakpoint.flink.common.ResourceSelector
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1Affinity
 import io.kubernetes.client.openapi.models.V1Container
@@ -20,30 +19,29 @@ import io.kubernetes.client.openapi.models.V1WeightedPodAffinityTerm
 
 object BootstrapResourcesDefaultFactory : BootstrapResourcesFactory {
     override fun createBootstrapJob(
-        clusterSelector: ResourceSelector,
-        jobSelector: ResourceSelector,
-        clusterOwner: String,
+        namespace: String,
+        owner: String,
+        clusterName: String,
         jobName: String,
-        bootstrap: V1BootstrapSpec,
+        bootstrapSpec: V1BootstrapSpec,
         savepointPath: String?,
         parallelism: Int,
         dryRun: Boolean
     ): V1Job {
-        if (bootstrap.image == null) {
+        if (bootstrapSpec.image == null) {
             throw RuntimeException("image is required")
         }
 
-        if (bootstrap.jarPath == null) {
+        if (bootstrapSpec.jarPath == null) {
             throw RuntimeException("jarPath is required")
         }
 
         val jobLabels = mapOf(
-            Pair("owner", clusterOwner),
-            Pair("clusterName", clusterSelector.name),
-            Pair("clusterUid", clusterSelector.uid),
+            Pair("owner", owner),
+            Pair("clusterName", clusterName),
             Pair("jobName", jobName),
             Pair("component", "flink"),
-            Pair("job", "bootstrap")
+            Pair("role", "bootstrap")
         )
 
         val podNameEnvVar =
@@ -58,10 +56,10 @@ object BootstrapResourcesDefaultFactory : BootstrapResourcesFactory {
 
         val arguments =
             createBootstrapArguments(
-                clusterSelector.namespace,
-                clusterSelector.name,
-                jobSelector.name,
-                bootstrap,
+                namespace,
+                clusterName,
+                jobName,
+                bootstrapSpec,
                 savepointPath,
                 parallelism,
                 dryRun
@@ -74,21 +72,21 @@ object BootstrapResourcesDefaultFactory : BootstrapResourcesFactory {
 
         val pullSecrets =
             createObjectReferenceListOrNull(
-                bootstrap.pullSecrets
+                bootstrapSpec.pullSecrets
             )
 
         val jobPodSpec = V1PodSpecBuilder()
             .addToContainers(V1Container())
             .editFirstContainer()
             .withName("bootstrap")
-            .withImage(bootstrap.image)
-            .withImagePullPolicy(bootstrap.pullPolicy ?: "IfNotPresent")
+            .withImage(bootstrapSpec.image)
+            .withImagePullPolicy(bootstrapSpec.pullPolicy ?: "IfNotPresent")
             .withArgs(arguments)
             .addToEnv(podNameEnvVar)
             .addToEnv(podNamespaceEnvVar)
-            .withResources(bootstrap.resources ?: createResourceRequirements())
+            .withResources(bootstrapSpec.resources ?: createResourceRequirements())
             .endContainer()
-            .withServiceAccountName(bootstrap.serviceAccount ?: "default")
+            .withServiceAccountName(bootstrapSpec.serviceAccount ?: "default")
             .withImagePullSecrets(pullSecrets)
             .withRestartPolicy("OnFailure")
             .withAffinity(jobAffinity)
@@ -96,7 +94,7 @@ object BootstrapResourcesDefaultFactory : BootstrapResourcesFactory {
 
         val job = V1JobBuilder()
             .editOrNewMetadata()
-            .withGenerateName("bootstrap-${jobSelector.name}-")
+            .withName("bootstrap-$clusterName-$jobName")
             .withLabels(jobLabels)
             .endMetadata()
             .editOrNewSpec()
@@ -106,7 +104,7 @@ object BootstrapResourcesDefaultFactory : BootstrapResourcesFactory {
             .withTtlSecondsAfterFinished(30)
             .editOrNewTemplate()
             .editOrNewMetadata()
-            .withGenerateName("bootstrap-${jobSelector.name}-")
+            .withName("bootstrap-$clusterName-$jobName")
             .withLabels(jobLabels)
             .endMetadata()
             .withSpec(jobPodSpec)

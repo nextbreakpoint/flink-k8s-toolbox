@@ -1,156 +1,145 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
-import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
-import com.nextbreakpoint.flink.common.ResourceSelector
 import com.nextbreakpoint.flink.common.ClusterStatus
-import com.nextbreakpoint.flink.common.DeleteOptions
-import com.nextbreakpoint.flink.common.ManualAction
-import com.nextbreakpoint.flink.common.PodReplicas
+import com.nextbreakpoint.flink.common.JobStatus
+import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.common.RescalePolicy
 import com.nextbreakpoint.flink.common.ResourceStatus
-import com.nextbreakpoint.flink.common.ResourceStatus.*
-import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkCluster
-import com.nextbreakpoint.flink.k8s.crd.V2FlinkClusterJobSpec
-import com.nextbreakpoint.flink.k8s.common.Resource
+import com.nextbreakpoint.flink.common.ResourceStatus.Updating
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterConfiguration
+import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
+import com.nextbreakpoint.flink.k8s.common.Resource
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
-import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
 import com.nextbreakpoint.flink.k8s.factory.ClusterResourcesDefaultFactory
-import com.nextbreakpoint.flink.k8s.factory.JobResourcesDefaultFactory
+import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1Service
 import org.apache.log4j.Logger
 import org.joda.time.DateTime
+import kotlin.math.max
+import kotlin.math.min
 
 class ClusterController(
-    val clusterSelector: ResourceSelector,
-    private val cluster: V2FlinkCluster,
+    val namespace: String,
+    val clusterName: String,
+    private val controller: Controller,
     private val resources: ClusterResources,
-    private val controller: Controller
+    private val cluster: V1FlinkCluster
 ) {
     fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - FlinkClusterStatus.getStatusTimestamp(cluster).millis) / 1000L
 
     fun timeSinceLastRescaleInSeconds() = (controller.currentTimeMillis() - FlinkClusterStatus.getRescaleTimestamp(cluster).millis) / 1000L
 
-    fun removeJars() = controller.removeJars(clusterSelector)
+    fun removeJars() = controller.removeJars(namespace, clusterName)
 
-    fun createJob(job: V1FlinkJob) = controller.createFlinkJob(clusterSelector, job)
+    fun createPod(pod: V1Pod) = controller.createPod(namespace, clusterName, pod)
 
-    fun deleteJob(jobName: String) = controller.deleteFlinkJob(clusterSelector, jobName)
+    fun deletePod(name: String) = controller.deletePod(namespace, clusterName, name)
 
-    fun createPods(replicas: PodReplicas) = controller.createPods(clusterSelector, replicas)
+    fun createService(service: V1Service) = controller.createService(namespace, clusterName, service)
 
-    fun deletePods(options: DeleteOptions) = controller.deletePods(clusterSelector, options)
+    fun deleteService() = resources.jobmanagerService?.metadata?.name?.let { controller.deleteService(namespace, clusterName, it) } ?: Result(ResultStatus.OK, null)
 
-    fun createPod(pod: V1Pod) = controller.createPod(clusterSelector, pod)
+    fun stopJobs(excludeJobIds: Set<String>) = controller.stopJobs(namespace, clusterName, excludeJobIds)
 
-    fun deletePod(name: String) = controller.deletePod(clusterSelector, name)
+    fun deleteTaskManagers() {
+        resources.taskmanagerPods.forEach { pod -> pod.metadata?.name?.let { deletePod(it) } }
+    }
 
-    fun createService(service: V1Service) = controller.createService(clusterSelector, service)
+    fun deleteJobManagers() {
+        resources.jobmanagerPods.forEach { pod -> pod.metadata?.name?.let { deletePod(it) } }
+    }
 
-    fun deleteService() = controller.deleteService(clusterSelector)
+    fun isClusterReady() = controller.isClusterReady(namespace, clusterName, getRequiredTaskSlots())
 
-    fun stopJobs(excludeJobIds: Set<String>) = controller.stopJobs(clusterSelector, excludeJobIds)
-
-    fun isClusterReady() = controller.isClusterReady(clusterSelector, getRequiredTaskSlots())
-
-    fun isClusterHealthy() = controller.isClusterHealthy(clusterSelector)
+    fun isClusterHealthy() = controller.isClusterHealthy(namespace, clusterName)
 
     fun refreshStatus(logger: Logger, statusTimestamp: DateTime, actionTimestamp: DateTime, hasFinalizer: Boolean) {
-        val taskManagerReplicas = getTaskManagerReplicas()
-        if (FlinkClusterStatus.getActiveTaskManagers(cluster) != taskManagerReplicas) {
-            FlinkClusterStatus.setActiveTaskManagers(cluster, taskManagerReplicas)
-        }
+        FlinkClusterStatus.setTaskManagerReplicas(cluster, getTaskManagerReplicas())
 
-        val taskSlots = getTaskSlots()
-        if (FlinkClusterStatus.getTotalTaskSlots(cluster) != taskManagerReplicas * taskSlots) {
-            FlinkClusterStatus.setTotalTaskSlots(cluster, taskManagerReplicas * taskSlots)
-        }
+        FlinkClusterStatus.setTotalTaskSlots(cluster, getTaskManagerReplicas() * getDeclaredTaskSlots())
 
-        val taskManagers = getTaskManagers()
-        if (FlinkClusterStatus.getTaskManagers(cluster) != taskManagers) {
-            FlinkClusterStatus.setTaskManagers(cluster, taskManagers)
-        }
+        FlinkClusterStatus.setTaskManagers(cluster, getClampedTaskManagers())
 
         val newStatusTimestamp = FlinkClusterStatus.getStatusTimestamp(cluster)
 
         if (statusTimestamp != newStatusTimestamp) {
             logger.debug("Updating status")
-            controller.updateStatus(clusterSelector, cluster)
+            controller.updateStatus(namespace, clusterName, cluster)
         }
 
         val newActionTimestamp = FlinkClusterAnnotations.getActionTimestamp(cluster)
 
         if (actionTimestamp != newActionTimestamp) {
             logger.debug("Updating annotations")
-            controller.updateAnnotations(clusterSelector, cluster)
+            controller.updateAnnotations(namespace, clusterName, cluster)
         }
 
         val newHasFinalizer = hasFinalizer()
 
         if (hasFinalizer != newHasFinalizer) {
             logger.debug("Updating finalizers")
-            controller.updateFinalizers(clusterSelector, cluster)
+            controller.updateFinalizers(namespace, clusterName, cluster)
         }
     }
 
     fun hasBeenDeleted() = cluster.metadata.deletionTimestamp != null
 
-    fun hasFinalizer() = cluster.metadata.finalizers.orEmpty().contains("finalizer.nextbreakpoint.com")
+    fun hasFinalizer() = cluster.metadata.finalizers.orEmpty().contains(Resource.SUPERVISOR_FINALIZER_VALUE)
 
     fun addFinalizer() {
         val finalizers = cluster.metadata.finalizers ?: listOf()
-        if (!finalizers.contains("finalizer.nextbreakpoint.com")) {
-            cluster.metadata.finalizers = finalizers.plus("finalizer.nextbreakpoint.com")
+        if (!finalizers.contains(Resource.SUPERVISOR_FINALIZER_VALUE)) {
+            cluster.metadata.finalizers = finalizers.plus(Resource.SUPERVISOR_FINALIZER_VALUE)
         }
     }
 
     fun removeFinalizer() {
         val finalizers = cluster.metadata.finalizers
-        if (finalizers != null && finalizers.contains("finalizer.nextbreakpoint.com")) {
-            cluster.metadata.finalizers = finalizers.minus("finalizer.nextbreakpoint.com")
+        if (finalizers != null && finalizers.contains(Resource.SUPERVISOR_FINALIZER_VALUE)) {
+            cluster.metadata.finalizers = finalizers.minus(Resource.SUPERVISOR_FINALIZER_VALUE)
         }
     }
 
     fun initializeStatus() {
-        val labelSelector = Resource.makeLabelSelector(clusterSelector)
+        val labelSelector = Resource.makeLabelSelector(clusterName)
         FlinkClusterStatus.setLabelSelector(cluster, labelSelector)
+
         updateStatus()
     }
 
     fun initializeAnnotations() {
         FlinkClusterAnnotations.setDeleteResources(cluster, false)
         FlinkClusterAnnotations.setWithoutSavepoint(cluster, false)
-        FlinkClusterAnnotations.setManualAction(cluster, ManualAction.NONE)
+        FlinkClusterAnnotations.setRequestedAction(cluster, Action.NONE)
     }
 
     fun updateDigests() {
-        val jobmanagerDigest = Resource.computeDigest(cluster.spec?.jobManager)
+        val jobmanagerDigest = Resource.computeDigest(cluster.spec.jobManager)
         FlinkClusterStatus.setJobManagerDigest(cluster, jobmanagerDigest)
 
-        val taskmanagerDigest = Resource.computeDigest(cluster.spec?.taskManager)
+        val taskmanagerDigest = Resource.computeDigest(cluster.spec.taskManager)
         FlinkClusterStatus.setTaskManagerDigest(cluster, taskmanagerDigest)
 
-        val runtimeDigest = Resource.computeDigest(cluster.spec?.runtime)
+        val runtimeDigest = Resource.computeDigest(cluster.spec.runtime)
         FlinkClusterStatus.setRuntimeDigest(cluster, runtimeDigest)
 
-        val jobDigests = cluster.spec?.jobs?.map { it.name to Resource.computeDigest(it.spec) }.orEmpty()
-        FlinkClusterStatus.setJobDigests(cluster, jobDigests)
+        val supervisorDigest = Resource.computeDigest(cluster.spec.supervisor)
+        FlinkClusterStatus.setSupervisorDigest(cluster, supervisorDigest)
     }
 
     fun updateStatus() {
-        val serviceMode = cluster.spec?.jobManager?.serviceMode
-        FlinkClusterStatus.setServiceMode(cluster, serviceMode)
+        FlinkClusterStatus.setTotalTaskSlots(cluster, getTaskManagerReplicas() * getDeclaredTaskSlots())
 
-        val taskManagers = cluster.spec?.taskManagers ?: 0
-        FlinkClusterStatus.setTaskManagers(cluster, taskManagers)
+        FlinkClusterStatus.setTaskManagers(cluster, getClampedTaskManagers())
 
-        val taskSlots = cluster.spec?.taskManager?.taskSlots ?: 1
-        FlinkClusterStatus.setTaskSlots(cluster, taskSlots)
+        FlinkClusterStatus.setTaskSlots(cluster, getDeclaredTaskSlots())
+
+        FlinkClusterStatus.setServiceMode(cluster, getDeclaredServiceMode())
     }
 
     fun computeChanges(): List<String> {
@@ -158,9 +147,9 @@ class ClusterController(
         val taskManagerDigest = FlinkClusterStatus.getTaskManagerDigest(cluster)
         val runtimeDigest = FlinkClusterStatus.getRuntimeDigest(cluster)
 
-        val actualJobManagerDigest = Resource.computeDigest(cluster.spec?.jobManager)
-        val actualTaskManagerDigest = Resource.computeDigest(cluster.spec?.taskManager)
-        val actualRuntimeDigest = Resource.computeDigest(cluster.spec?.runtime)
+        val actualJobManagerDigest = Resource.computeDigest(cluster.spec.jobManager)
+        val actualTaskManagerDigest = Resource.computeDigest(cluster.spec.taskManager)
+        val actualRuntimeDigest = Resource.computeDigest(cluster.spec.runtime)
 
         val changes = mutableListOf<String>()
 
@@ -192,10 +181,10 @@ class ClusterController(
     fun getResourceStatus() = FlinkClusterStatus.getResourceStatus(cluster)
 
     fun resetAction() {
-        FlinkClusterAnnotations.setManualAction(cluster, ManualAction.NONE)
+        FlinkClusterAnnotations.setRequestedAction(cluster, Action.NONE)
     }
 
-    fun getAction() = FlinkClusterAnnotations.getManualAction(cluster)
+    fun getAction() = FlinkClusterAnnotations.getRequestedAction(cluster)
 
     fun setDeleteResources(value: Boolean) {
         FlinkClusterAnnotations.setDeleteResources(cluster, value)
@@ -219,17 +208,12 @@ class ClusterController(
         FlinkClusterStatus.setClusterHealth(cluster, health)
     }
 
-    fun createJob(jobSpec: V2FlinkClusterJobSpec): Result<Void?> {
-        val resource = JobResourcesDefaultFactory.createJob(
-            clusterSelector, "flink-operator", jobSpec
-        )
-
-        return createJob(resource)
-    }
-
     fun createService(): Result<String?> {
         val resource = ClusterResourcesDefaultFactory.createService(
-            clusterSelector.namespace, clusterSelector.uid, "flink-operator", cluster
+            namespace,
+            Resource.RESOURCE_OWNER,
+            cluster.metadata?.name ?: throw RuntimeException("Metadata name is null"),
+            cluster.spec
         )
 
         return createService(resource)
@@ -241,15 +225,20 @@ class ClusterController(
         }
 
         val resource = ClusterResourcesDefaultFactory.createJobManagerPod(
-            clusterSelector.namespace, clusterSelector.uid, "flink-operator", cluster
+            namespace,
+            Resource.RESOURCE_OWNER,
+            cluster.metadata?.name ?: throw RuntimeException("Metadata name is null"),
+            cluster.spec
         )
 
         return if (resources.jobmanagerPods.size > replicas) {
-            deletePods(DeleteOptions(label = "role", value = "jobmanager", limit = resources.jobmanagerPods.size - replicas))
             Result(ResultStatus.OK, setOf())
         } else {
-            createPods(PodReplicas(resource, replicas - resources.jobmanagerPods.size))
-            Result(ResultStatus.OK, setOf())
+            val sequence = (1 .. (replicas - resources.jobmanagerPods.size)).asSequence()
+
+            val results = sequence.map { createPod(resource) }.map { it.output }.filterNotNull().toSet()
+
+            Result(ResultStatus.OK, results)
         }
     }
 
@@ -259,15 +248,20 @@ class ClusterController(
         }
 
         val resource = ClusterResourcesDefaultFactory.createTaskManagerPod(
-            clusterSelector.namespace, clusterSelector.uid, "flink-operator", cluster
+            namespace,
+            Resource.RESOURCE_OWNER,
+            cluster.metadata?.name ?: throw RuntimeException("Metadata name is null"),
+            cluster.spec
         )
 
         return if (resources.taskmanagerPods.size > replicas) {
-            deletePods(DeleteOptions(label = "role", value = "taskmanager", limit = resources.taskmanagerPods.size - replicas))
             Result(ResultStatus.OK, setOf())
         } else {
-            createPods(PodReplicas(resource, replicas - resources.taskmanagerPods.size))
-            Result(ResultStatus.OK, setOf())
+            val sequence = (1 .. (replicas - resources.taskmanagerPods.size)).asSequence()
+
+            val results = sequence.map { createPod(resource) }.map { it.output }.filterNotNull().toSet()
+
+            Result(ResultStatus.OK, results)
         }
     }
 
@@ -275,57 +269,63 @@ class ClusterController(
 
     fun getStatusTimestamp() = FlinkClusterStatus.getStatusTimestamp(cluster)
 
-    fun doesJobManagerServiceExists() = resources.service != null
+    fun doesJobManagerServiceExists() = resources.jobmanagerService != null
 
     fun doesJobManagerPodExists() = resources.jobmanagerPods.isNotEmpty()
 
     fun doesTaskManagerPodsExist() = resources.taskmanagerPods.isNotEmpty()
 
-    fun haveJobsBeenRemoved() = resources.flinkJobs.keys.isEmpty()
+    fun getJobNamesWithStatus() = resources.flinkJobs.map {
+        (it.metadata?.name ?: throw RuntimeException("Metadata name is null")) to (it.status?.supervisorStatus ?: JobStatus.Unknown)
+    }.toMap()
 
-    fun haveJobsBeenCreated() = resources.flinkJobs.keys.toSet() == cluster.spec?.jobs?.map { it.name }.orEmpty().toSet()
+    fun getJobNamesWithIds() = resources.flinkJobs.map {
+        (it.metadata?.name ?: throw RuntimeException("Metadata name is null")) to it.status?.jobId
+    }.toMap()
 
-    fun listExistingJobNames() = resources.flinkJobs.keys.toList()
+    fun getClampedTaskManagers() = min(max(getDeclaredTaskManagers(), cluster.spec.minTaskManagers ?: 0), cluster.spec.maxTaskManagers ?: 32)
 
-    fun getJobNamesWithStatus() = resources.flinkJobs.map { it.key to it.value.status.supervisorStatus }.toMap()
+    fun getDeclaredTaskManagers() = cluster.spec.taskManagers ?: 0
 
-    fun getTaskManagers() = cluster.spec?.taskManagers ?: 0
+    fun getDeclaredTaskSlots() = cluster.spec.taskManager?.taskSlots ?: 1
 
-    fun getTaskSlots() = cluster.spec?.taskManager?.taskSlots ?: 1
+    fun getDeclaredServiceMode() = cluster.spec.jobManager?.serviceMode
 
     fun getCurrentTaskManagers() = FlinkClusterStatus.getTaskManagers(cluster)
 
-    fun getRequiredTaskManagers(): Int {
-        if (cluster.spec.jobs.isNullOrEmpty()) {
-            return cluster.spec.taskManagers
+    fun getClampedRequiredTaskManagers(): Int {
+        if (getRescalePolicy() == RescalePolicy.None || resources.flinkJobs.isNullOrEmpty()) {
+            return getClampedTaskManagers()
         } else {
-            val requiredTaskSlots = getRequiredTaskSlots()
-            val taskSlots = cluster.spec.taskManager.taskSlots ?: 1
-            return (requiredTaskSlots + taskSlots / 2) / taskSlots
+            return getRequiredTaskManagers()
         }
     }
 
-    fun getRequiredTaskSlots() = resources.flinkJobs.values.map { job -> job.status.jobParallelism ?: 0 }.sum()
+    fun getRequiredTaskManagers(): Int {
+        return min(max(computeRequiredTaskManagers(), cluster.spec.minTaskManagers ?: 0), cluster.spec.maxTaskManagers ?: 32)
+    }
+
+    fun getRequiredTaskSlots() = resources.flinkJobs
+        .filter { job -> activeStatus.contains(job.status?.supervisorStatus) }
+        .map { job -> job.status?.jobParallelism ?: 0 }.sum()
 
     fun getJobManagerReplicas() = resources.jobmanagerPods.size
 
     fun getTaskManagerReplicas() = resources.taskmanagerPods.size
 
-    fun getJobSpecs() = cluster.spec?.jobs.orEmpty()
-
-    fun getJobIds() = resources.flinkJobs.map { it.value.status.jobId }.toSet()
-
-    fun areJobsUpdating() = resources.flinkJobs.values.any{ job -> job.status.resourceStatus == Updating.toString() }
+    fun areJobsUpdating() = resources.flinkJobs.any{ job -> job.status?.resourceStatus == Updating.toString() }
 
     fun getRescaleDelay() = FlinkClusterConfiguration.getRescaleDelay(cluster)
 
+    fun getRescalePolicy() = FlinkClusterConfiguration.getRescalePolicy(cluster)
+
     fun rescaleCluster(requiredTaskManagers: Int) {
         FlinkClusterStatus.setTaskManagers(cluster, requiredTaskManagers)
-        controller.updateTaskManagerReplicas(clusterSelector, requiredTaskManagers)
+        controller.updateTaskManagerReplicas(namespace, clusterName, requiredTaskManagers)
     }
 
     fun removeUnusedTaskManagers(): Map<String, String?> {
-        val taskManagersStatusResult = controller.getTaskManagerStatus(clusterSelector)
+        val taskManagersStatusResult = controller.getTaskManagerStatus(namespace, clusterName)
 
         if (!taskManagersStatusResult.isSuccessful()) {
             return mapOf()
@@ -335,9 +335,15 @@ class ClusterController(
             it.id to if (it.slotsNumber == it.freeSlots) getPodName(it).orEmpty() else ""
         }?.filter { it.second.isNotEmpty() }?.toMap().orEmpty()
 
-        pods.forEach { controller.deletePod(clusterSelector, it.value) }
+        pods.forEach { controller.deletePod(namespace, clusterName, it.value) }
 
         return pods
+    }
+
+    private fun computeRequiredTaskManagers(): Int {
+        val requiredTaskSlots = getRequiredTaskSlots()
+        val taskSlots = getDeclaredTaskSlots()
+        return (requiredTaskSlots + taskSlots / 2) / taskSlots
     }
 
     private fun getPodName(taskManagerInfo: TaskManagerInfo): String? {
@@ -350,4 +356,6 @@ class ClusterController(
 
     private fun findTaskManagerByPodIP(podIP: String?) =
         resources.taskmanagerPods.find { pod -> pod.status?.podIP == podIP }?.metadata?.name
+
+    private val activeStatus = setOf(JobStatus.Starting.toString(), JobStatus.Started.toString())
 }

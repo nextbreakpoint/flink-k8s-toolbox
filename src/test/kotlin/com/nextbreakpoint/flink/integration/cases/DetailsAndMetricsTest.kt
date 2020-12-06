@@ -22,16 +22,16 @@ class DetailsAndMetricsTest : IntegrationSetup() {
         fun setup() {
             IntegrationSetup.setup()
             println("Should create clusters...")
-            createCluster(namespace = namespace, path = "integration/cluster-1.yaml")
-            createCluster(namespace = namespace, path = "integration/cluster-2.yaml")
-            awaitUntilAsserted(timeout = 30) {
-                assertThat(clusterExists(namespace = namespace, clusterName = "cluster-1")).isTrue()
-                assertThat(clusterExists(namespace = namespace, clusterName = "cluster-2")).isTrue()
+            createResource(namespace = namespace, path = "integration/deployment-1.yaml")
+            createResource(namespace = namespace, path = "integration/deployment-2.yaml")
+            awaitUntilAsserted(timeout = 60) {
+                assertThat(clusterExists(namespace = namespace, name = "cluster-1")).isTrue()
+                assertThat(clusterExists(namespace = namespace, name = "cluster-2")).isTrue()
             }
             println("Should start clusters...")
             awaitUntilAsserted(timeout = 360) {
-                assertThat(hasClusterStatus(namespace = namespace, clusterName = "cluster-1", status = ClusterStatus.Started)).isTrue()
-                assertThat(hasClusterStatus(namespace = namespace, clusterName = "cluster-2", status = ClusterStatus.Started)).isTrue()
+                assertThat(hasClusterStatus(namespace = namespace, name = "cluster-1", status = ClusterStatus.Started)).isTrue()
+                assertThat(hasClusterStatus(namespace = namespace, name = "cluster-2", status = ClusterStatus.Started)).isTrue()
             }
             awaitUntilAsserted(timeout = 360) {
                 assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-1", status = ResourceStatus.Updated)).isTrue()
@@ -39,9 +39,9 @@ class DetailsAndMetricsTest : IntegrationSetup() {
             }
             println("Should start jobs...")
             awaitUntilAsserted(timeout = 240) {
-                assertThat(hasJobStatus(namespace = namespace, jobName = "cluster-1-job-0", status = JobStatus.Started)).isTrue()
-                assertThat(hasJobStatus(namespace = namespace, jobName = "cluster-2-job-1", status = JobStatus.Started)).isTrue()
-                assertThat(hasJobStatus(namespace = namespace, jobName = "cluster-2-job-2", status = JobStatus.Started)).isTrue()
+                assertThat(hasJobStatus(namespace = namespace, name = "cluster-1-job-0", status = JobStatus.Started)).isTrue()
+                assertThat(hasJobStatus(namespace = namespace, name = "cluster-2-job-1", status = JobStatus.Started)).isTrue()
+                assertThat(hasJobStatus(namespace = namespace, name = "cluster-2-job-2", status = JobStatus.Started)).isTrue()
             }
         }
 
@@ -63,7 +63,6 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     fun `should return job's details`() {
         println("Should return job details...")
         val response = getJobDetails(clusterName = "cluster-1", jobName = "job-0", port = port)
-        println(response)
         assertThat(response["status"] as String?).isEqualTo("OK")
         val details = response["output"] as String
         assertThat(details).isNotBlank()
@@ -73,7 +72,6 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     fun `should return job's metrics`() {
         println("Should return job metrics...")
         val response = getJobMetrics(clusterName = "cluster-1", jobName = "job-0", port = port)
-        println(response)
         assertThat(response["status"] as String?).isEqualTo("OK")
         val metrics = response["output"] as String
         assertThat(metrics).isNotBlank()
@@ -83,7 +81,6 @@ class DetailsAndMetricsTest : IntegrationSetup() {
     fun `should return jobmanager's metrics`() {
         println("Should return JobManager details...")
         val response = getJobManagerMetrics(clusterName = "cluster-1", port = port)
-        println(response)
         assertThat(response["status"] as String?).isEqualTo("OK")
         val metrics = response["output"] as String
         assertThat(metrics).isNotBlank()
