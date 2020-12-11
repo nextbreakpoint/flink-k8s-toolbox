@@ -9,7 +9,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum.CANCELED
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum.FAILED
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum.FINISHED
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class ClusterStopJobs(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<Set<String>, Boolean>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -45,7 +46,7 @@ class ClusterStopJobs(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
                 )
             }
         } catch (e : Exception) {
-            logger.error("Can't stop jobs", e)
+            logger.log(Level.SEVERE, "Can't stop jobs", e)
 
             return Result(
                 ResultStatus.ERROR,

@@ -5,5 +5,5 @@ set -e
 
 export OPERATOR_HOST=$(minikube ip)
 
-./gradlew integrationTest --info --tests="com.nextbreakpoint.flink.integration.cases.${1}Test"
+./gradlew integrationTest --info --tests="com.nextbreakpoint.flink.integration.${1}Test"
 

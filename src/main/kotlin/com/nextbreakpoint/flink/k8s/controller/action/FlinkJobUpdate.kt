@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class FlinkJobUpdate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : JobAction<V1FlinkJob, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -23,7 +24,7 @@ class FlinkJobUpdate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeC
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't update job", e)
+            logger.log(Level.SEVERE, "Can't update job", e)
 
             Result(
                 ResultStatus.ERROR,

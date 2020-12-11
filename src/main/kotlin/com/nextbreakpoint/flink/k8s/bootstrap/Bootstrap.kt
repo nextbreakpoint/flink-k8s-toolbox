@@ -5,8 +5,9 @@ import com.nextbreakpoint.flink.common.RunJarOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flinkclient.model.JarUploadResponseBody
-import org.apache.log4j.Logger
 import java.io.File
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class Bootstrap(
     private val controller: Controller,
@@ -23,7 +24,7 @@ class Bootstrap(
 
             logger.info("Uploading JAR file: ${file.name} [${file.absolutePath}]...")
 
-            uploadJarFile(3, file)
+            uploadJarFile(file)
 
             val listJarsResult = controller.listJars(namespace, options.clusterName)
 
@@ -64,20 +65,8 @@ class Bootstrap(
 
             logger.info("Job started (jobID = ${runJarResult.output})")
         } catch (e: Exception) {
-            logger.error("An error occurred while booting job", e)
-        }
-    }
-
-    private fun uploadJarFile(maxAttempts: Int, file: File) {
-        var count = 0;
-
-        while (count < maxAttempts && !uploadJarFile(file)) {
-            Thread.sleep(10000)
-            count += 1
-        }
-
-        if (count >= maxAttempts) {
-            throw Exception("Failed to upload JAR file. Max attempts reached")
+            logger.log(Level.SEVERE, "An error occurred while booting job", e)
+            throw e
         }
     }
 
@@ -97,7 +86,7 @@ class Bootstrap(
 
             return true
         } catch (e: Exception) {
-            logger.warn("Failed to upload file. Retrying...", e)
+            logger.log(Level.WARNING, "Failed to upload file. Retrying...", e)
 
             return false
         }

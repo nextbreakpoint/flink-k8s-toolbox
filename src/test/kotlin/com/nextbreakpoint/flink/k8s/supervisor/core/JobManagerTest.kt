@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flink.mediator.core
 
-import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.common.RestartPolicy
 import com.nextbreakpoint.flink.common.SavepointMode
@@ -15,7 +15,6 @@ import com.nextbreakpoint.flink.k8s.supervisor.core.JobManager
 import com.nextbreakpoint.flink.testing.KotlinMockito.any
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
-import org.apache.log4j.Logger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,6 +22,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
+import java.util.logging.Logger
 
 class JobManagerTest {
     private val savepointRequest = SavepointRequest(jobId = "1", triggerId = "100")

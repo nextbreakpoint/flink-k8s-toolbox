@@ -24,9 +24,12 @@ class JobOnStartingTest {
         given(context.isClusterStarted()).thenReturn(true)
         given(context.isActionPresent()).thenReturn(false)
         given(context.isClusterUnhealthy()).thenReturn(false)
+        given(context.isClusterTerminated()).thenReturn(false)
         given(context.isClusterUpdated()).thenReturn(true)
         given(context.isClusterReady()).thenReturn(true)
+        given(context.isRestartTimeout()).thenReturn(false)
         given(context.startJob()).thenReturn(true)
+        given(context.hasFinalizer()).thenReturn(true)
     }
 
     @Test
@@ -45,6 +48,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).onClusterStopping()
         verifyNoMoreInteractions(context)
@@ -56,6 +60,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).onJobAborted()
@@ -68,6 +73,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
@@ -80,6 +86,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
@@ -96,6 +103,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
@@ -115,6 +123,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
@@ -133,6 +142,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
@@ -142,7 +152,7 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).isClusterUpdated()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(false))
-        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isRestartTimeout()
         inOrder.verify(context, times(1)).startJob()
         inOrder.verify(context, times(1)).onJobStarted()
         verifyNoMoreInteractions(context)
@@ -150,10 +160,11 @@ class JobOnStartingTest {
 
     @Test
     fun `should behave as expected when cluster has timed out`() {
-        given(context.hasTaskTimedOut()).thenReturn(true)
+        given(context.isRestartTimeout()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
@@ -163,7 +174,7 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).isClusterUpdated()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
-        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isRestartTimeout()
         inOrder.verify(context, times(1)).onJobAborted()
         verifyNoMoreInteractions(context)
     }
@@ -174,6 +185,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
@@ -183,7 +195,7 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).isClusterUpdated()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
-        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isRestartTimeout()
         inOrder.verify(context, times(1)).startJob()
         verifyNoMoreInteractions(context)
     }
@@ -193,6 +205,7 @@ class JobOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).isClusterStopping()
         inOrder.verify(context, times(1)).isClusterStopped()
         inOrder.verify(context, times(1)).isClusterStarting()
@@ -202,9 +215,20 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).isClusterUpdated()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
-        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isRestartTimeout()
         inOrder.verify(context, times(1)).startJob()
         inOrder.verify(context, times(1)).onJobStarted()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when cluster has terminated`() {
+        given(context.isClusterTerminated()).thenReturn(true)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
+        inOrder.verify(context, times(1)).onClusterStopping()
         verifyNoMoreInteractions(context)
     }
 }

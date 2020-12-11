@@ -12,7 +12,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store cluster status and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getSupervisorStatus(flinkCluster)).isEqualTo(ClusterStatus.Unknown)
         FlinkClusterStatus.setSupervisorStatus(flinkCluster, ClusterStatus.Stopping)
         assertThat(FlinkClusterStatus.getSupervisorStatus(flinkCluster)).isEqualTo(ClusterStatus.Stopping)
@@ -22,7 +22,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store job manager digest and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getJobManagerDigest(flinkCluster)).isNull()
         FlinkClusterStatus.setJobManagerDigest(flinkCluster, "XXX")
         assertThat(FlinkClusterStatus.getJobManagerDigest(flinkCluster)).isEqualTo("XXX")
@@ -32,7 +32,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store task manager digest and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getTaskManagerDigest(flinkCluster)).isNull()
         FlinkClusterStatus.setTaskManagerDigest(flinkCluster, "XXX")
         assertThat(FlinkClusterStatus.getTaskManagerDigest(flinkCluster)).isEqualTo("XXX")
@@ -42,7 +42,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store flink image digest and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getRuntimeDigest(flinkCluster)).isNull()
         FlinkClusterStatus.setRuntimeDigest(flinkCluster, "XXX")
         assertThat(FlinkClusterStatus.getRuntimeDigest(flinkCluster)).isEqualTo("XXX")
@@ -52,7 +52,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store task managers and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getTaskManagers(flinkCluster)).isEqualTo(0)
         FlinkClusterStatus.setTaskManagers(flinkCluster, 2)
         assertThat(FlinkClusterStatus.getTaskManagers(flinkCluster)).isEqualTo(2)
@@ -62,7 +62,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store active task managers and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getTaskManagerReplicas(flinkCluster)).isNull()
         FlinkClusterStatus.setTaskManagerReplicas(flinkCluster, 2)
         assertThat(FlinkClusterStatus.getTaskManagerReplicas(flinkCluster)).isEqualTo(2)
@@ -72,7 +72,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store task slots and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getTaskSlots(flinkCluster)).isNull()
         FlinkClusterStatus.setTaskSlots(flinkCluster, 2)
         assertThat(FlinkClusterStatus.getTaskSlots(flinkCluster)).isEqualTo(2)
@@ -82,7 +82,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store total task slots and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getTotalTaskSlots(flinkCluster)).isNull()
         FlinkClusterStatus.setTotalTaskSlots(flinkCluster, 4)
         assertThat(FlinkClusterStatus.getTotalTaskSlots(flinkCluster)).isEqualTo(4)
@@ -92,7 +92,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store label selector and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getLabelSelector(flinkCluster)).isNull()
         FlinkClusterStatus.setLabelSelector(flinkCluster, "xxxx")
         assertThat(FlinkClusterStatus.getLabelSelector(flinkCluster)).isEqualTo("xxxx")
@@ -102,7 +102,7 @@ class FlinkClusterStatusTest {
     @Test
     fun `should store service mode and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isLessThan(timestamp)
+        assertThat(FlinkClusterStatus.getStatusTimestamp(flinkCluster)).isEqualTo(DateTime(0))
         assertThat(FlinkClusterStatus.getServiceMode(flinkCluster)).isNull()
         FlinkClusterStatus.setServiceMode(flinkCluster, "NodePort")
         assertThat(FlinkClusterStatus.getServiceMode(flinkCluster)).isEqualTo("NodePort")

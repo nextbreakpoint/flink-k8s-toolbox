@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class RequestJobScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : JobAction<ScaleJobOptions, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -23,7 +24,7 @@ class RequestJobScale(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't scale job", e)
+            logger.log(Level.SEVERE, "Can't scale job", e)
 
             Result(
                 ResultStatus.ERROR,

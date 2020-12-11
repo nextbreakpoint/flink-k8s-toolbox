@@ -1,5 +1,6 @@
 package com.nextbreakpoint.flink.k8s.operator
 
+import com.nextbreakpoint.flink.common.ServerConfig
 import com.nextbreakpoint.flink.k8s.common.FlinkDeploymentStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.controller.Controller
@@ -11,17 +12,21 @@ import com.nextbreakpoint.flink.k8s.operator.core.DeploymentManager
 import com.nextbreakpoint.flink.k8s.operator.core.JobManager
 import com.nextbreakpoint.flink.k8s.operator.core.OperatorController
 import com.nextbreakpoint.flink.k8s.operator.core.SupervisorManager
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class Operator(
     private val controller: Controller,
-    private val cache: Cache
+    private val cache: Cache,
+    private val taskTimeout: Long,
+    private val pollingInterval: Long,
+    private val serverConfig: ServerConfig,
 ) {
     companion object {
         private val logger = Logger.getLogger(Operator::class.simpleName)
 
-        fun create(controller: Controller, cache: Cache): Operator {
-            return Operator(controller, cache)
+        fun create(controller: Controller, cache: Cache, taskTimeout: Long, pollingInterval: Long, serverConfig: ServerConfig): Operator {
+            return Operator(controller, cache, taskTimeout, pollingInterval, serverConfig)
         }
     }
 
@@ -39,13 +44,13 @@ class Operator(
 
             val logger = Logger.getLogger(getLoggerName(clusterName))
 
-            val operatorController = OperatorController(cache.namespace, controller)
+            val operatorController = OperatorController(cache.namespace, controller, serverConfig)
 
             val supervisorManager = SupervisorManager(logger, cache, operatorController, cluster)
 
             supervisorManager.reconcile()
         } catch (e: Exception) {
-            logger.error("Error occurred while reconciling resources", e)
+            logger.log(Level.SEVERE, "Error occurred while reconciling resources", e)
         }
     }
 
@@ -53,7 +58,7 @@ class Operator(
         try {
             val resourceName = getName(job)
 
-            val operatorController = OperatorController(cache.namespace, controller)
+            val operatorController = OperatorController(cache.namespace, controller, serverConfig)
 
             val jobManager = JobManager(logger, cache, operatorController, job)
 
@@ -64,11 +69,11 @@ class Operator(
             val newStatusTimestamp = FlinkJobStatus.getStatusTimestamp(job)
 
             if (statusTimestamp != newStatusTimestamp) {
-                logger.debug("Updating status: job $resourceName")
+                logger.log(Level.FINE, "Updating status: job $resourceName")
                 operatorController.updateStatus(cache.namespace, resourceName, job)
             }
         } catch (e: Exception) {
-            logger.error("Error occurred while reconciling resources", e)
+            logger.log(Level.SEVERE, "Error occurred while reconciling resources", e)
         }
     }
 
@@ -78,7 +83,7 @@ class Operator(
 
             val statusTimestamp = FlinkDeploymentStatus.getStatusTimestamp(deployment)
 
-            val operatorController = OperatorController(cache.namespace, controller)
+            val operatorController = OperatorController(cache.namespace, controller, serverConfig)
 
             val hasFinalizer = operatorController.hasFinalizer(deployment)
 
@@ -89,18 +94,18 @@ class Operator(
             val newStatusTimestamp = FlinkDeploymentStatus.getStatusTimestamp(deployment)
 
             if (statusTimestamp != newStatusTimestamp) {
-                logger.debug("Updating status: deployment $resourceName")
+                logger.log(Level.FINE, "Updating status: deployment $resourceName")
                 operatorController.updateStatus(cache.namespace, resourceName, deployment)
             }
 
             val newHasFinalizer = operatorController.hasFinalizer(deployment)
 
             if (hasFinalizer != newHasFinalizer) {
-                logger.debug("Updating finalizers: deployment $resourceName")
+                logger.log(Level.FINE, "Updating finalizers: deployment $resourceName")
                 operatorController.updateFinalizers(cache.namespace, resourceName, deployment)
             }
         } catch (e: Exception) {
-            logger.error("Error occurred while reconciling resources", e)
+            logger.log(Level.SEVERE, "Error occurred while reconciling resources", e)
         }
     }
 
@@ -114,5 +119,5 @@ class Operator(
         deployment.metadata?.name ?: throw RuntimeException("Metadata name is null")
 
     private fun getLoggerName(clusterName: String) =
-        Operator::class.simpleName + " | $clusterName"
+        Operator::class.simpleName + " $clusterName"
 }

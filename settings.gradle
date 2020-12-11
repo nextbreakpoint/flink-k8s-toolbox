@@ -1,4 +1,3 @@
 rootProject.name = 'flink-k8s-toolbox'
 include 'crd'
-include 'crd'
 

@@ -15,13 +15,24 @@ class JobOnStopped : Task<JobManager>() {
             return
         }
 
+        if (manager.isClusterTerminated()) {
+            if (manager.hasFinalizer()) {
+                manager.removeFinalizer()
+            }
+            return
+        }
+
         if (!manager.terminateBootstrapJob()) {
             return
         }
 
         if (manager.isClusterStarting()) {
             if (manager.shouldRestartJob()) {
-                manager.onJobReadyToRestart()
+                if (!manager.hasFinalizer()) {
+                    manager.addFinalizer()
+                } else {
+                    manager.onJobReadyToRestart()
+                }
             }
             return
         }
@@ -48,14 +59,21 @@ class JobOnStopped : Task<JobManager>() {
         }
 
         if (manager.hasSpecificationChanged()) {
-            manager.onResourceChanged()
+            if (!manager.hasFinalizer()) {
+                manager.addFinalizer()
+            } else {
+                manager.onResourceChanged()
+            }
             return
         }
 
-        if (!manager.hasTaskTimedOut()) {
+        if (manager.isReadyToRestart()) {
+            if (!manager.hasFinalizer()) {
+                manager.addFinalizer()
+            } else {
+                manager.onJobReadyToRestart()
+            }
             return
         }
-
-        manager.onJobReadyToRestart()
     }
 }

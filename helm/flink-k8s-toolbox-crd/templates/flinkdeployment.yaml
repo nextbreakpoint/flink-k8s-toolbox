@@ -7546,19 +7546,31 @@ spec:
                                 description: Location where to create savepoints.
                                 type: string
                                 nullable: false
+                            required:
+                              - savepointInterval
+                              - savepointTargetPath
+                          restart:
+                            description: A Flink job restart specification.
+                            type: object
+                            nullable: false
+                            properties:
                               restartPolicy:
-                                description: Control restart in case of cluster or job failure. Default value is Never.
+                                description: Control restart policy. Default value is Never.
                                 type: string
                                 enum:
                                   - Never
                                   - Always
-                                  - Failure
-                            required:
-                              - savepointInterval
-                              - savepointTargetPath
+                                  - OnlyIfFailed
+                              restartDelay:
+                                description: Delay before automatic restart. Default is 60 seconds.
+                                type: integer
+                              restartTimeout:
+                                description: Timeout for restarting a job. Default is 180 seconds.
+                                type: integer
                         required:
                           - bootstrap
                           - savepoint
+                          - restart
                     required:
                       - name
                       - spec
@@ -7600,6 +7612,8 @@ spec:
                               bootstrap:
                                 type: string
                               savepoint:
+                                type: string
+                              restart:
                                 type: string
                 timestamp:
                   type: string

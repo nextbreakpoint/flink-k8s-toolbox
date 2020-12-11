@@ -8,11 +8,8 @@ import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterStatus
 import org.joda.time.DateTime
 
 object FlinkClusterStatus {
-    @JvmStatic
-    private val initialisedTimestamp = currentTimeMillis()
-
     fun getStatusTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
-        flinkCluster.status?.timestamp ?: DateTime(initialisedTimestamp)
+        flinkCluster.status?.timestamp ?: DateTime(0)
 
     fun getRescaleTimestamp(flinkCluster: V1FlinkCluster) : DateTime =
         flinkCluster.status?.rescaleTimestamp ?: DateTime(0)
@@ -106,8 +103,6 @@ object FlinkClusterStatus {
             flinkCluster.status?.taskManagers = taskManagers
 
             updateStatusTimestamp(flinkCluster, currentTimeMillis())
-
-            updateRescaleTimestamp(flinkCluster, currentTimeMillis())
         }
     }
 

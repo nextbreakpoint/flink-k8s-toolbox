@@ -1,8 +1,8 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.common.RestartPolicy
 import com.nextbreakpoint.flink.common.SavepointMode
@@ -19,7 +19,6 @@ import com.nextbreakpoint.flink.testing.KotlinMockito.any
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
 import com.nextbreakpoint.flink.testing.TestFactory
-import org.apache.log4j.Logger
 import org.assertj.core.api.Assertions.assertThat
 import org.joda.time.DateTime
 import org.junit.jupiter.api.AfterEach
@@ -29,6 +28,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import java.util.logging.Logger
 
 class JobControllerTest {
     private val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
@@ -49,7 +49,7 @@ class JobControllerTest {
     )
     private val logger = mock(Logger::class.java)
     private val controller = mock(Controller::class.java)
-    private val jobController = JobController("flink", "test", "test", controller, clusterResources, jobResources, job)
+    private val jobController = JobController("flink", "test", "test", controller, 5, clusterResources, jobResources, job)
 
     @BeforeEach
     fun setup() {
@@ -573,9 +573,8 @@ class JobControllerTest {
 
     @Test
     fun `should return status timestamp`() {
-        val timestamp = System.currentTimeMillis()
-        assertThat(jobController.getStatusTimestamp()).isGreaterThan(DateTime(timestamp - 60000))
-        FlinkJobStatus.setSupervisorStatus(job, JobStatus.Started)
+        assertThat(jobController.getStatusTimestamp()).isEqualTo(DateTime(0))
+        FlinkJobStatus.setSupervisorStatus(job, JobStatus.Stopped)
         assertThat(jobController.getStatusTimestamp()).isEqualTo(FlinkJobStatus.getStatusTimestamp(job))
     }
 
@@ -584,7 +583,7 @@ class JobControllerTest {
         assertThat(jobController.doesBootstrapJobExists()).isTrue()
         // TODO perhaps we can fin a better way to do this
         val newResources = jobResources.withBootstrap(null)
-        val newController = JobController("flink", "test", "test", controller, clusterResources, newResources, job)
+        val newController = JobController("flink", "test", "test", controller, 5, clusterResources, newResources, job)
         assertThat(newController.doesBootstrapJobExists()).isFalse()
     }
 

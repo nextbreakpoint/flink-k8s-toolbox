@@ -23,10 +23,12 @@ import com.nextbreakpoint.flink.common.StopOptions
 import com.nextbreakpoint.flink.common.SupervisorOptions
 import com.nextbreakpoint.flink.common.TaskManagerId
 import com.nextbreakpoint.flink.k8s.common.KubeClient
-import org.apache.log4j.Logger
 import java.io.File
 import java.nio.file.Files
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.system.exitProcess
+
 
 class Main(private val factory: CommandFactory = CommandDefaultFactory) {
     companion object {
@@ -35,15 +37,13 @@ class Main(private val factory: CommandFactory = CommandDefaultFactory) {
         @JvmStatic
         fun main(args: Array<String>) {
             try {
-                System.setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.Log4j2LogDelegateFactory")
-
-                System.setProperty("crypto.policy", "unlimited")
+                System.setProperty("java.util.logging.SimpleFormatter.format", "%1\$tY-%1\$tm-%1\$td %1\$tH:%1\$tM:%1\$tS %4\$s %3\$s - %5\$s%6\$s%n")
 
                 Main().run(args)
 
                 exitProcess(0)
             } catch (e: Exception) {
-                logger.error("Failure", e)
+                logger.log(Level.SEVERE, "Failure", e)
 
                 exitProcess(1)
             }
@@ -60,6 +60,12 @@ class Main(private val factory: CommandFactory = CommandDefaultFactory) {
             ),
             Bootstrap().subcommands(
                 LaunchBootstrapCommand(factory)
+            ),
+            Deployments().subcommands(
+                ListDeploymentsCommand(factory)
+            ),
+            Deployment().subcommands(
+                GetDeploymentStatusCommand(factory)
             ),
             Clusters().subcommands(
                 ListClustersCommand(factory)
@@ -120,6 +126,14 @@ class Main(private val factory: CommandFactory = CommandDefaultFactory) {
         override fun run() = Unit
     }
 
+    class Deployments: CliktCommand(name = "deployments", help = "Access deployments subcommands") {
+        override fun run() = Unit
+    }
+
+    class Deployment: CliktCommand(name = "deployment", help = "Access deployment subcommands") {
+        override fun run() = Unit
+    }
+
     class Clusters: CliktCommand(name = "clusters", help = "Access clusters subcommands") {
         override fun run() = Unit
     }
@@ -150,6 +164,53 @@ class Main(private val factory: CommandFactory = CommandDefaultFactory) {
 
     class TaskManagers: CliktCommand(name = "taskmanagers", help = "Access TaskManagers subcommands") {
         override fun run() = Unit
+    }
+
+    class ListDeploymentsCommand(private val factory: CommandFactory): CliktCommand(name = "list", help="List deployments") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createListDeploymentsCommand().run(
+                connectionConfig
+            )
+        }
+    }
+
+    class GetDeploymentStatusCommand(private val factory: CommandFactory): CliktCommand(name="status", help="Get deployment's status") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val deploymentName: String by option(help="The name of the Flink deployment").required()
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createGetDeploymentStatusCommand().run(
+                connectionConfig, deploymentName, null
+            )
+        }
     }
 
     class ListClustersCommand(private val factory: CommandFactory): CliktCommand(name = "list", help="List clusters") {
@@ -812,17 +873,27 @@ class Main(private val factory: CommandFactory = CommandDefaultFactory) {
     }
 
     class LaunchSupervisorCommand(private val factory: CommandFactory): CliktCommand(name="run", help="Execute supervisor process") {
+        private val port: Int by option(help="Listen on port").int().default(4445)
         private val flinkHostname: String? by option(help="The hostname of the JobManager")
         private val portForward: Int? by option(help="Connect to JobManager using port forward").int()
         private val kubeConfig: String? by option(help="The path of Kubernetes config")
         private val namespace: String by option(help="The namespace of the resources").default("default")
         private val clusterName: String by option(help="The name of the Flink cluster").required()
+        private val keystorePath: String? by option(help="The supervisor's keystore path")
+        private val keystoreSecret: String? by option(help="The supervisor's keystore secret")
+        private val truststorePath: String? by option(help="The supervisor's truststore path")
+        private val truststoreSecret: String? by option(help="The supervisor's truststore secret")
         private val pollingInterval: Long by option(help="The polling interval in seconds").long().default(10)
         private val taskTimeout: Long by option(help="The task timeout in seconds").long().default(300)
         private val dryRun: Boolean by option(help="Run in dry-run mode").flag(default = false)
 
         override fun run() {
             val params = SupervisorOptions(
+                port = port,
+                keystorePath = keystorePath,
+                keystoreSecret = keystoreSecret,
+                truststorePath = truststorePath,
+                truststoreSecret = truststoreSecret,
                 clusterName = clusterName,
                 pollingInterval = pollingInterval,
                 taskTimeout = taskTimeout,

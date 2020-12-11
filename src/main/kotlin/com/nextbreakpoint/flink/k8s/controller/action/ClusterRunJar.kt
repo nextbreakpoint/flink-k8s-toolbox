@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class ClusterRunJar(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<RunJarOptions, String>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -25,7 +26,7 @@ class ClusterRunJar(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCl
                 result.jobid
             )
         } catch (e : Exception) {
-            logger.error("Can't run JAR file", e)
+            logger.log(Level.SEVERE, "Can't run JAR file", e)
 
             Result(
                 ResultStatus.ERROR,

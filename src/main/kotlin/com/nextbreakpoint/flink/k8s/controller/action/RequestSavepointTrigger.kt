@@ -1,14 +1,15 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
-import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.JobContext
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class RequestSavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val context: JobContext) : JobAction<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -26,7 +27,7 @@ class RequestSavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClie
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't trigger savepoint", e)
+            logger.log(Level.SEVERE, "Can't trigger savepoint", e)
 
             Result(
                 ResultStatus.ERROR,

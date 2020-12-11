@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flink.k8s.operator.core
 
 import com.nextbreakpoint.flink.common.ClusterStatus
+import com.nextbreakpoint.flink.common.ServerConfig
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkDeploymentStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
@@ -18,7 +19,8 @@ import io.kubernetes.client.openapi.models.V1Deployment
 
 class OperatorController(
     val namespace: String,
-    private val controller: Controller
+    private val controller: Controller,
+    private val serverConfig: ServerConfig
 ) {
     fun timeSinceLastUpdateInSeconds(deployment: V1FlinkDeployment) = (controller.currentTimeMillis() - FlinkDeploymentStatus.getStatusTimestamp(deployment).millis) / 1000L
 

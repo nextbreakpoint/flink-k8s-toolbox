@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class TaskManagersList(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<Void?, List<TaskManagerInfo>>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -25,7 +26,7 @@ class TaskManagersList(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
                 overview.taskmanagers
             )
         } catch (e : Exception) {
-            logger.error("Can't get list of taskmanagers", e)
+            logger.log(Level.SEVERE, "Can't get list of taskmanagers", e)
 
             Result(
                 ResultStatus.ERROR,

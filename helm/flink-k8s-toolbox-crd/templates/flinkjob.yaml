@@ -178,7 +178,7 @@ spec:
                     - className
                     - jarPath
                 savepoint:
-                  description: A Flink savepoint specification.
+                  description: A Flink job savepoint specification.
                   type: object
                   nullable: false
                   properties:
@@ -199,6 +199,14 @@ spec:
                       description: Location where to create savepoints.
                       type: string
                       nullable: false
+                  required:
+                    - savepointInterval
+                    - savepointTargetPath
+                restart:
+                  description: A Flink job restart specification.
+                  type: object
+                  nullable: false
+                  properties:
                     restartPolicy:
                       description: Control restart policy. Default value is Never.
                       type: string
@@ -206,12 +214,16 @@ spec:
                         - Never
                         - Always
                         - OnlyIfFailed
-                  required:
-                    - savepointInterval
-                    - savepointTargetPath
+                    restartDelay:
+                      description: Delay before automatic restart. Default is 60 seconds.
+                      type: integer
+                    restartTimeout:
+                      description: Timeout for restarting a job. Default is 180 seconds.
+                      type: integer
               required:
                 - bootstrap
                 - savepoint
+                - restart
             status:
               type: object
               properties:
@@ -229,7 +241,6 @@ spec:
                     - Started
                     - Stopping
                     - Stopped
-                    - Failed
                     - Terminated
                 clusterName:
                   type: string
@@ -265,6 +276,8 @@ spec:
                     bootstrap:
                       type: string
                     savepoint:
+                      type: string
+                    restart:
                       type: string
                 timestamp:
                   type: string

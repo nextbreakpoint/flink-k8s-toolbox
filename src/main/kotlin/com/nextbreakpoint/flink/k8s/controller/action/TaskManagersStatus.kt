@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class TaskManagersStatus(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<Void?, TaskManagersInfo?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -25,7 +26,7 @@ class TaskManagersStatus(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 overview
             )
         } catch (e : Exception) {
-            logger.error("Can't get status of taskmanagers", e)
+            logger.log(Level.SEVERE, "Can't get status of taskmanagers", e)
 
             return Result(
                 ResultStatus.ERROR,

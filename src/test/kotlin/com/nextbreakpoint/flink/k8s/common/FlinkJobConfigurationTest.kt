@@ -1,5 +1,6 @@
 package com.nextbreakpoint.flink.k8s.common
 
+import com.nextbreakpoint.flink.k8s.crd.V1RestartSpec
 import com.nextbreakpoint.flink.k8s.crd.V1SavepointSpec
 import com.nextbreakpoint.flink.testing.TestFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -12,6 +13,7 @@ class FlinkJobConfigurationTest {
     @BeforeEach
     fun configure() {
         flinkJob.spec.savepoint = V1SavepointSpec.builder().build()
+        flinkJob.spec.restart = V1RestartSpec.builder().build()
     }
 
     @Test
@@ -65,7 +67,7 @@ class FlinkJobConfigurationTest {
 
     @Test
     fun `should return restart policy`() {
-        flinkJob.spec.savepoint.restartPolicy = "ALWAYS"
+        flinkJob.spec.restart.restartPolicy = "ALWAYS"
         assertThat(FlinkJobConfiguration.getRestartPolicy(flinkJob)).isEqualTo("ALWAYS")
     }
 

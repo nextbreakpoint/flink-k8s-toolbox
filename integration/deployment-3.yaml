@@ -11,11 +11,14 @@ spec:
           savepointMode: Manual
           savepointInterval: 0
           savepointTargetPath: s3a://flink/3/savepoints
+        restart:
           restartPolicy: Never
+          restartDelay: 60
+          restartTimeout: 120
         bootstrap:
           serviceAccount: flink-bootstrap
           pullPolicy: Never
-          image: integration/flink-jobs:1
+          image: integration/jobs:latest
           jarPath: /flink-jobs.jar
           className: com.nextbreakpoint.flink.jobs.batch.ReportJob
           arguments:
@@ -35,9 +38,10 @@ spec:
   cluster:
     supervisor:
       pullPolicy: Never
-      image: integration/flink-jobs:1
+      image: integration/flinkctl:1.4.0-beta
       serviceAccount: flink-supervisor
       taskTimeout: 120
+      rescaleDelay: 30
       resources:
         limits:
           cpu: '1'
