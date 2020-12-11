@@ -23,8 +23,8 @@ jobs:
       run: pipeline/install-minikube.sh
     - name: Start Minikube
       run: pipeline/run-minikube.sh
-    - name: Build operator
-      run: pipeline/build-docker-images.sh
+    - name: Build Docker images
+      run: pipeline/docker-build-images.sh
     - name: Install Kubectl
       run: pipeline/install-kubectl.sh
     - name: Install Helm
