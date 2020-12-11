@@ -11,7 +11,8 @@ import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentJobDigest
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentJobSpec
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobDigest
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobSpec
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class DeploymentManager(
     private val logger: Logger,
@@ -22,24 +23,22 @@ class DeploymentManager(
     fun reconcile() {
         FlinkDeploymentStatus.setResourceStatus(deployment, ResourceStatus.Updated)
 
-        if (deployment.metadata?.deletionTimestamp != null) {
-            if (hasDeploymentBeenTerminated()) {
-                logger.info("Remove finalizer: deployment ${deployment.metadata.name}")
-                controller.removeFinalizer(deployment)
+        if (hasDeploymentBeenDeleted()) {
+            if (hasDeploymentBeenRemoved()) {
+                terminateDeployment()
             }
         } else {
-            if (!controller.hasFinalizer(deployment)) {
-                logger.info("Add finalizer: deployment ${deployment.metadata.name}")
-                controller.addFinalizer(deployment)
+            if (hasDeploymentBeenInitialized()) {
+                initializeDeployment()
             } else {
-                if (hasDeploymentBeenInitialised()) {
+                if (hasDeploymentDigestBeenCreated()) {
                     updateDeployment()
                 }
             }
         }
     }
 
-    private fun hasDeploymentBeenInitialised() : Boolean {
+    private fun hasDeploymentDigestBeenCreated() : Boolean {
         if (deployment.status?.digest == null) {
             FlinkDeploymentStatus.setDeploymentDigest(deployment, makeDeploymentDigest())
 
@@ -48,6 +47,20 @@ class DeploymentManager(
 
         return true
     }
+
+    private fun terminateDeployment() {
+        logger.info("Remove finalizer: deployment ${deployment.metadata.name}")
+        controller.removeFinalizer(deployment)
+    }
+
+    private fun initializeDeployment() {
+        logger.info("Add finalizer: deployment ${deployment.metadata.name}")
+        controller.addFinalizer(deployment)
+    }
+
+    private fun hasDeploymentBeenInitialized() = !controller.hasFinalizer(deployment)
+
+    private fun hasDeploymentBeenDeleted() = deployment.metadata?.deletionTimestamp != null
 
     private fun updateDeployment() {
         val clusterName = getName(deployment)
@@ -58,18 +71,18 @@ class DeploymentManager(
 
         val declaredJobs = getDeclaredJobs()
 
-        val deploymentDigest = makeDeploymentDigest()
+        val declaredDeploymentDigest = makeDeploymentDigest()
 
         if (deployedCluster == null) {
             val result = controller.createCluster(cache.namespace, clusterName, deployment.spec.cluster)
 
             if (!result.isSuccessful()) {
-                logger.error("Can't create cluster: $clusterName")
+                logger.log(Level.SEVERE, "Can't create cluster: $clusterName")
             }
 
             logger.info("Cluster $clusterName created")
 
-            FlinkDeploymentStatus.setDeploymentDigest(deployment, deploymentDigest)
+            FlinkDeploymentStatus.setDeploymentDigest(deployment, declaredDeploymentDigest)
 
             FlinkDeploymentStatus.setResourceStatus(deployment, ResourceStatus.Updating)
         }
@@ -82,24 +95,24 @@ class DeploymentManager(
                 val result = controller.deleteJob(cache.namespace, clusterName, jobName)
 
                 if (!result.isSuccessful()) {
-                    logger.error("Can't delete job: $clusterName-$jobName")
+                    logger.log(Level.SEVERE, "Can't delete job: $clusterName-$jobName")
                 }
 
                 logger.info("Job $clusterName-$jobName deleted")
 
-                FlinkDeploymentStatus.setDeploymentDigest(deployment, deploymentDigest)
+                FlinkDeploymentStatus.setDeploymentDigest(deployment, declaredDeploymentDigest)
 
                 FlinkDeploymentStatus.setResourceStatus(deployment, ResourceStatus.Updating)
             } else if (it.value == null) {
                 val result = controller.createJob(cache.namespace, clusterName, jobName, declaredJobSpec)
 
                 if (!result.isSuccessful()) {
-                    logger.error("Can't create job: $clusterName-$jobName")
+                    logger.log(Level.SEVERE, "Can't create job: $clusterName-$jobName")
                 }
 
                 logger.info("Job $clusterName-$jobName created")
 
-                FlinkDeploymentStatus.setDeploymentDigest(deployment, deploymentDigest)
+                FlinkDeploymentStatus.setDeploymentDigest(deployment, declaredDeploymentDigest)
 
                 FlinkDeploymentStatus.setResourceStatus(deployment, ResourceStatus.Updating)
             }
@@ -113,12 +126,12 @@ class DeploymentManager(
                 val result = controller.createJob(cache.namespace, clusterName, jobName, declaredJobSpec)
 
                 if (!result.isSuccessful()) {
-                    logger.error("Can't create job: $clusterName-$jobName")
+                    logger.log(Level.SEVERE, "Can't create job: $clusterName-$jobName")
                 }
 
                 logger.info("Job $clusterName-$jobName created")
 
-                FlinkDeploymentStatus.setDeploymentDigest(deployment, deploymentDigest)
+                FlinkDeploymentStatus.setDeploymentDigest(deployment, declaredDeploymentDigest)
 
                 FlinkDeploymentStatus.setResourceStatus(deployment, ResourceStatus.Updating)
             }
@@ -129,8 +142,8 @@ class DeploymentManager(
             val declaredClusterSpec = deployment.spec.cluster
 
             if (declaredClusterSpec != null) {
-                val deployedClusterDigest = deployment.status.digest.cluster
-                val declaredClusterDigest = deploymentDigest.cluster
+                val deployedClusterDigest = computeDigest(deployedClusterSpec)
+                val declaredClusterDigest = declaredDeploymentDigest.cluster
 
                 if (isClusterSpecChanged(deployedClusterDigest, declaredClusterDigest) || areScaleLimitsChanged(deployedClusterSpec, declaredClusterSpec)) {
                     deployedCluster.spec.runtime = declaredClusterSpec.runtime
@@ -143,20 +156,28 @@ class DeploymentManager(
                     val result = controller.updateCluster(cache.namespace, clusterName, deployedCluster)
 
                     if (!result.isSuccessful()) {
-                        logger.error("Can't update cluster: $clusterName")
+                        logger.log(Level.SEVERE, "Can't update cluster: $clusterName")
                     }
 
                     logger.info("Cluster $clusterName updated")
 
-                    FlinkDeploymentStatus.setDeploymentDigest(deployment, deploymentDigest)
+                    FlinkDeploymentStatus.setDeploymentDigest(deployment, declaredDeploymentDigest)
 
                     FlinkDeploymentStatus.setResourceStatus(deployment, ResourceStatus.Updating)
+                } else {
+                    val statusClusterDigest = deployment.status.digest.cluster
+
+                    if (isClusterSpecChanged(statusClusterDigest, declaredClusterDigest)) {
+                        FlinkDeploymentStatus.setDeploymentDigest(deployment, declaredDeploymentDigest)
+
+                        FlinkDeploymentStatus.setResourceStatus(deployment, ResourceStatus.Updating)
+                    }
                 }
             }
         }
 
-        val deployedJobDigests = deployment.status.digest.jobs.map { it.name to it.job }.toMap()
-        val declaredJobDigests = deploymentDigest.jobs.map { it.name to it.job }.toMap()
+        val deployedJobDigests = deployment.status.digest.jobs?.map { it.name to it.job }?.toMap().orEmpty()
+        val declaredJobDigests = declaredDeploymentDigest.jobs?.map { it.name to it.job }?.toMap().orEmpty()
 
         deployedJobs.entries.map {
             val jobName = it.key
@@ -173,18 +194,19 @@ class DeploymentManager(
                     if (deployedJobDigest != null && declaredJobDigest != null && isFlinkJobSpecChanged(deployedJobDigest, declaredJobDigest) || areScaleLimitsChanged(deployedJobSpec, declaredJobSpec)) {
                         deployedJob.spec.bootstrap = declaredJobSpec.bootstrap
                         deployedJob.spec.savepoint = declaredJobSpec.savepoint
+                        deployedJob.spec.restart = declaredJobSpec.restart
                         deployedJob.spec.minJobParallelism = declaredJobSpec.minJobParallelism
                         deployedJob.spec.maxJobParallelism = declaredJobSpec.maxJobParallelism
 
                         val result = controller.updateJob(cache.namespace, clusterName, jobName, deployedJob)
 
                         if (!result.isSuccessful()) {
-                            logger.error("Can't update job: $clusterName-$jobName")
+                            logger.log(Level.SEVERE, "Can't update job: $clusterName-$jobName")
                         }
 
                         logger.info("Job $clusterName-$jobName updated")
 
-                        FlinkDeploymentStatus.setDeploymentDigest(deployment, deploymentDigest)
+                        FlinkDeploymentStatus.setDeploymentDigest(deployment, declaredDeploymentDigest)
 
                         FlinkDeploymentStatus.setResourceStatus(deployment, ResourceStatus.Updating)
                     }
@@ -193,7 +215,7 @@ class DeploymentManager(
         }
     }
 
-    private fun hasDeploymentBeenTerminated(): Boolean {
+    private fun hasDeploymentBeenRemoved(): Boolean {
         val clusterName = getName(deployment)
 
         val deployedCluster = cache.getFlinkCluster(clusterName)
@@ -204,7 +226,7 @@ class DeploymentManager(
             val result = controller.deleteCluster(cache.namespace, clusterName)
 
             if (!result.isSuccessful()) {
-                logger.error("Can't delete cluster: $clusterName")
+                logger.log(Level.SEVERE, "Can't delete cluster: $clusterName")
             }
 
             logger.info("Cluster $clusterName deleted")
@@ -224,7 +246,7 @@ class DeploymentManager(
                 val result = controller.deleteJob(cache.namespace, clusterName, jobName)
 
                 if (!result.isSuccessful()) {
-                    logger.error("Can't delete job: $clusterName-$jobName")
+                    logger.log(Level.SEVERE, "Can't delete job: $clusterName-$jobName")
                 }
 
                 logger.info("Job $clusterName-$jobName deleted")
@@ -254,7 +276,7 @@ class DeploymentManager(
     }
 
     private fun makeFlinkDeploymentJobDigests() =
-        deployment.spec.jobs?.map { makeDeploymentJobDigest(it) }
+        deployment.spec.jobs?.map { makeDeploymentJobDigest(it) }.orEmpty()
 
     private fun makeDeploymentJobDigest(jobSpec: V1FlinkDeploymentJobSpec) =
         V1FlinkDeploymentJobDigest.builder()
@@ -264,7 +286,8 @@ class DeploymentManager(
 
     private fun isFlinkJobSpecChanged(deployedJobDigest: V1FlinkJobDigest, declaredJobDigest: V1FlinkJobDigest): Boolean {
         return deployedJobDigest.bootstrap != declaredJobDigest.bootstrap ||
-               deployedJobDigest.savepoint != declaredJobDigest.savepoint
+               deployedJobDigest.savepoint != declaredJobDigest.savepoint ||
+               deployedJobDigest.restart != declaredJobDigest.restart
     }
 
     private fun isClusterSpecChanged(deployedClusterDigest: V1FlinkClusterDigest, declaredClusterDigest: V1FlinkClusterDigest): Boolean {
@@ -295,6 +318,7 @@ class DeploymentManager(
         return V1FlinkJobDigest.builder()
             .withBootstrap(Resource.computeDigest(clusterSpec.bootstrap))
             .withSavepoint(Resource.computeDigest(clusterSpec.savepoint))
+            .withRestart(Resource.computeDigest(clusterSpec.restart))
             .build()
     }
 
@@ -304,7 +328,7 @@ class DeploymentManager(
         }?.toMap().orEmpty()
 
     private fun getDeclaredJobs() =
-        deployment.spec.jobs.orEmpty().map { it.name to it.spec }.toMap()
+        deployment.spec.jobs?.map { it.name to it.spec }?.toMap().orEmpty()
 
     private fun getName(deployment: V1FlinkDeployment) =
         deployment.metadata?.name ?: throw RuntimeException("Metadata name is null")

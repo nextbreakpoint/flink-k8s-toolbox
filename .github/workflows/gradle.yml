@@ -21,27 +21,13 @@ jobs:
       run: pipeline/install-docker.sh
     - name: Install Minikube
       run: pipeline/install-minikube.sh
+    - name: Start Minikube
+      run: pipeline/run-minikube.sh
+    - name: Build operator
+      run: pipeline/build-docker-images.sh
     - name: Install Kubectl
       run: pipeline/install-kubectl.sh
     - name: Install Helm
       run: pipeline/install-helm.sh
-    - name: Build operator
-      run: pipeline/build-operator.sh
-    - name: Build test images
-      run: pipeline/build-test-images.sh
-    - name: Run integration test - CreateAndDelete
-      run: pipeline/run-integration-test.sh CreateAndDelete
-    - name: Run integration test - StartAndStop
-      run: pipeline/run-integration-test.sh StartAndStop
-    - name: Run integration test - ScaleUpAndDown
-      run: pipeline/run-integration-test.sh ScaleUpAndDown
-    - name: Run integration test - ResourceUpdated
-      run: pipeline/run-integration-test.sh ResourceUpdated
-    - name: Run integration test - BatchJob
-      run: pipeline/run-integration-test.sh BatchJob
-    - name: Run integration test - Savepoint
-      run: pipeline/run-integration-test.sh Savepoint
-    - name: Run integration test - ResourceStatus
-      run: pipeline/run-integration-test.sh ResourceStatus
-    - name: Run integration test - DetailsAndMetrics
-      run: pipeline/run-integration-test.sh DetailsAndMetrics
+    - name: Run integration test - EnsureBehaviour
+      run: pipeline/run-integration-test.sh EnsureBehaviour

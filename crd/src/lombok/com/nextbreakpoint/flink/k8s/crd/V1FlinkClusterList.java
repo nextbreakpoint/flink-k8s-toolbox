@@ -4,11 +4,15 @@ import com.google.gson.annotations.SerializedName;
 import io.kubernetes.client.openapi.models.V1ListMeta;
 import lombok.Builder;
 import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder(toBuilder = true, setterPrefix = "with")
 public class V1FlinkClusterList {
     @SerializedName("apiVersion")

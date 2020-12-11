@@ -14,7 +14,7 @@ class FlinkJobStatusTest {
     @Test
     fun `should store savepoint path and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isLessThan(timestamp)
+        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getSavepointRequestTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getSavepointTimestamp(flinkJob)).isEqualTo(DateTime(0))
         FlinkJobStatus.setSavepointPath(flinkJob, "/tmp/xxx")
@@ -27,7 +27,7 @@ class FlinkJobStatusTest {
     @Test
     fun `should not store savepoint path and update timestamp if path is blank`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isLessThan(timestamp)
+        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getSavepointRequestTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getSavepointTimestamp(flinkJob)).isEqualTo(DateTime(0))
         FlinkJobStatus.setSavepointPath(flinkJob, "")
@@ -40,7 +40,7 @@ class FlinkJobStatusTest {
     @Test
     fun `should store savepoint request and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isLessThan(timestamp)
+        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getSavepointRequestTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getSavepointRequest(flinkJob)).isNull()
         FlinkJobStatus.setSavepointRequest(flinkJob, SavepointRequest("000", "XXX"))
@@ -52,7 +52,7 @@ class FlinkJobStatusTest {
     @Test
     fun `should reset savepoint request and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isLessThan(timestamp)
+        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getSavepointRequestTimestamp(flinkJob)).isEqualTo(DateTime(0))
         FlinkJobStatus.resetSavepointRequest(flinkJob)
         assertThat(FlinkJobStatus.getSavepointRequest(flinkJob)).isNull()
@@ -63,7 +63,7 @@ class FlinkJobStatusTest {
     @Test
     fun `should store flink job digest and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isLessThan(timestamp)
+        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getBootstrapDigest(flinkJob)).isNull()
         FlinkJobStatus.setBootstrapDigest(flinkJob, "XXX")
         assertThat(FlinkJobStatus.getBootstrapDigest(flinkJob)).isEqualTo("XXX")
@@ -73,7 +73,7 @@ class FlinkJobStatusTest {
     @Test
     fun `should store job parallelism and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isLessThan(timestamp)
+        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getJobParallelism(flinkJob)).isEqualTo(1)
         FlinkJobStatus.setJobParallelism(flinkJob, 4)
         assertThat(FlinkJobStatus.getJobParallelism(flinkJob)).isEqualTo(4)
@@ -83,7 +83,7 @@ class FlinkJobStatusTest {
     @Test
     fun `should store savepoint mode and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isLessThan(timestamp)
+        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getSavepointMode(flinkJob)).isEqualTo(SavepointMode.Automatic)
         FlinkJobStatus.setSavepointMode(flinkJob, SavepointMode.Manual)
         assertThat(FlinkJobStatus.getSavepointMode(flinkJob)).isEqualTo(SavepointMode.Manual)
@@ -93,7 +93,7 @@ class FlinkJobStatusTest {
     @Test
     fun `should store job restart policy and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
-        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isLessThan(timestamp)
+        assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
         assertThat(FlinkJobStatus.getRestartPolicy(flinkJob)).isEqualTo(RestartPolicy.Always)
         FlinkJobStatus.setRestartPolicy(flinkJob, RestartPolicy.Never)
         assertThat(FlinkJobStatus.getRestartPolicy(flinkJob)).isEqualTo(RestartPolicy.Never)

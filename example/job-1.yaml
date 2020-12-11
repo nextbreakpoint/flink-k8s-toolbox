@@ -8,11 +8,14 @@ spec:
     savepointMode: Automatic
     savepointInterval: 300
     savepointTargetPath: file:///var/savepoints
+  restart:
     restartPolicy: Always
+    restartDelay: 60
+    restartTimeout: 120
   bootstrap:
     serviceAccount: flink-bootstrap
     pullPolicy: Never
-    image: example/flink-jobs:1
+    image: example/jobs:latest
     jarPath: /flink-jobs.jar
     className: com.nextbreakpoint.flink.jobs.stream.TestJob
     arguments:

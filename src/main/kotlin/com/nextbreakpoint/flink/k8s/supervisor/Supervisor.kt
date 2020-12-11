@@ -2,6 +2,7 @@ package com.nextbreakpoint.flink.k8s.supervisor
 
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
+import com.nextbreakpoint.flink.common.ServerConfig
 import com.nextbreakpoint.flink.k8s.common.Task
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.supervisor.core.Cache
@@ -23,19 +24,22 @@ import com.nextbreakpoint.flink.k8s.supervisor.task.JobOnStarting
 import com.nextbreakpoint.flink.k8s.supervisor.task.JobOnStopped
 import com.nextbreakpoint.flink.k8s.supervisor.task.JobOnStopping
 import com.nextbreakpoint.flink.k8s.supervisor.task.JobOnTerminated
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class Supervisor(
     private val controller: Controller,
     private val cache: Cache,
     private val taskTimeout: Long,
+    private val pollingInterval: Long,
+    private val serverConfig: ServerConfig,
     private val clusterTasks: Map<ClusterStatus, Task<ClusterManager>>,
     private val jobTasks: Map<JobStatus, Task<JobManager>>
 ) {
     companion object {
         private val logger = Logger.getLogger(Supervisor::class.simpleName)
 
-        fun create(controller: Controller, cache: Cache, taskTimeout: Long): Supervisor {
+        fun create(controller: Controller, cache: Cache, taskTimeout: Long, pollingInterval: Long, serverConfig: ServerConfig): Supervisor {
             val clusterTasks = mapOf(
                 ClusterStatus.Unknown to ClusterOnInitialize(),
                 ClusterStatus.Starting to ClusterOnStarting(),
@@ -54,12 +58,12 @@ class Supervisor(
                 JobStatus.Terminated to JobOnTerminated()
             )
 
-            return create(controller, cache, taskTimeout, clusterTasks, jobTasks)
+            return create(controller, cache, taskTimeout, pollingInterval, serverConfig, clusterTasks, jobTasks)
         }
 
         // required for testing
-        fun create(controller: Controller, cache: Cache, taskTimeout: Long, clusterTasks: Map<ClusterStatus, Task<ClusterManager>>, jobTasks: Map<JobStatus, Task<JobManager>>): Supervisor {
-            return Supervisor(controller, cache, taskTimeout, clusterTasks, jobTasks)
+        fun create(controller: Controller, cache: Cache, taskTimeout: Long, pollingInterval: Long, serverConfig: ServerConfig, clusterTasks: Map<ClusterStatus, Task<ClusterManager>>, jobTasks: Map<JobStatus, Task<JobManager>>): Supervisor {
+            return Supervisor(controller, cache, taskTimeout, pollingInterval, serverConfig, clusterTasks, jobTasks)
         }
     }
 
@@ -88,14 +92,14 @@ class Supervisor(
                 reconcile(logger, clusterName, jobName, clusterResources, jobResources)
             }
         } catch (e: Exception) {
-            logger.error("Error occurred while reconciling resources", e)
+            logger.log(Level.SEVERE, "Error occurred while reconciling resources", e)
         }
     }
 
     private fun reconcile(logger: Logger, clusterName: String, clusterResources: ClusterResources) {
         val cluster = clusterResources.flinkCluster ?: throw RuntimeException("Cluster not found")
 
-        val clusterController = ClusterController(cache.namespace, clusterName, controller, clusterResources, cluster)
+        val clusterController = ClusterController(cache.namespace, clusterName, controller, pollingInterval, clusterResources, cluster)
 
         val actionTimestamp = clusterController.getActionTimestamp()
 
@@ -131,7 +135,7 @@ class Supervisor(
     private fun reconcile(logger: Logger, clusterName: String, jobName: String, clusterResources: ClusterResources, jobResources: JobResources) {
         val job = jobResources.flinkJob ?: throw RuntimeException("Job not found")
 
-        val jobController = JobController(cache.namespace, clusterName, jobName, controller, clusterResources, jobResources, job)
+        val jobController = JobController(cache.namespace, clusterName, jobName, controller, pollingInterval, clusterResources, jobResources, job)
 
         val actionTimestamp = jobController.getActionTimestamp()
 
@@ -175,7 +179,7 @@ class Supervisor(
     }
 
     private fun getLoggerName(clusterName: String, jobName: String?) =
-        Supervisor::class.simpleName + " | ${jobName?.let { "$clusterName $jobName" } ?: clusterName}"
+        Supervisor::class.simpleName + " ${jobName?.let { "$clusterName-$jobName" } ?: clusterName}"
 
     private data class State(val status: String, val revision: String, val timestamp: Long)
 }

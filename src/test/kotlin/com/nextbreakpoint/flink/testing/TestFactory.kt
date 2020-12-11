@@ -257,7 +257,7 @@ object TestFactory {
                 "serviceAccount": "bootstrap-test",
                 "pullSecrets": "bootstrap-regcred",
                 "pullPolicy": "IfNotPresent",
-                "image": "registry:30000/flink-jobs:1",
+                "image": "registry:30000/jobs:latest",
                 "jarPath": "/flink-jobs.jar",
                 "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
                 "arguments": [
@@ -266,10 +266,14 @@ object TestFactory {
                 ]
               },
               "savepoint": {
-                "restartPolicy": "Never",
                 "savepointMode": "Automatic",
                 "savepointInterval": "60",
                 "savepointTargetPath": "file:///var/tmp/test"
+              },
+              "restart": {
+                "restartPolicy": "Never",
+                "restartDelay": 60,
+                "restartTimeout": 120
               }
             }
             """.trimIndent()

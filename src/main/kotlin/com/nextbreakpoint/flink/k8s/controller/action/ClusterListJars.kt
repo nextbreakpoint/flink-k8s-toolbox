@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flinkclient.model.JarFileInfo
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class ClusterListJars(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<Void?, List<JarFileInfo>>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -25,7 +26,7 @@ class ClusterListJars(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kube
                 files
             )
         } catch (e : Exception) {
-            logger.error("Can't list JAR files", e)
+            logger.log(Level.SEVERE, "Can't list JAR files", e)
 
             Result(
                 ResultStatus.ERROR,

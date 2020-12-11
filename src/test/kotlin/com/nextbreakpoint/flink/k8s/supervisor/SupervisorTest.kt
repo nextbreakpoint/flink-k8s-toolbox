@@ -2,6 +2,7 @@ package com.nextbreakpoint.flink.k8s.supervisor
 
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
+import com.nextbreakpoint.flink.common.ServerConfig
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.common.Task
@@ -59,7 +60,8 @@ class SupervisorTest {
     )
     private val cache = mock(Cache::class.java)
     private val controller = mock(Controller::class.java)
-    private val supervisor = Supervisor.create(controller = controller, cache = cache, taskTimeout = 60, clusterTasks = clusterTasks, jobTasks = jobTasks)
+    private val serverConfig = ServerConfig(port = 4445, keystorePath = null, keystoreSecret = null, truststorePath = null, truststoreSecret = null)
+    private val supervisor = Supervisor.create(controller = controller, cache = cache, taskTimeout = 60, pollingInterval = 5, serverConfig = serverConfig, clusterTasks = clusterTasks, jobTasks = jobTasks)
 
     @Test
     fun `should update status when reconciling resources`() {

@@ -45,7 +45,8 @@ keyUsage             = digitalSignature,keyAgreement
 DNS.1                = localhost
 DNS.2                = 127.0.0.1
 DNS.3                = host.docker.internal
-DNS.4                = ${OPERATOR_HOST}
+DNS.4                = minikube
+DNS.5                = ${OPERATOR_HOST}
 EOF
 
 ## Create certificate authority (CA)

@@ -1,8 +1,8 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.common.RestartPolicy
 import com.nextbreakpoint.flink.common.SavepointMode
@@ -20,8 +20,9 @@ import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.factory.BootstrapResourcesDefaultFactory
 import io.kubernetes.client.openapi.models.V1Job
-import org.apache.log4j.Logger
 import org.joda.time.DateTime
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.math.max
 import kotlin.math.min
 
@@ -30,6 +31,7 @@ class JobController(
     val clusterName: String,
     val jobName: String,
     private val controller: Controller,
+    private val pollingInterval: Long,
     private val clusterResources: ClusterResources,
     private val jobResources: JobResources,
     private val job: V1FlinkJob
@@ -69,13 +71,15 @@ class JobController(
 
     fun isClusterStarting() = clusterResources.flinkCluster?.status?.supervisorStatus == ClusterStatus.Starting.toString()
 
+    fun isClusterTerminated() = clusterResources.flinkCluster?.status?.supervisorStatus == ClusterStatus.Terminated.toString()
+
     fun isClusterUpdated() = clusterResources.flinkCluster?.status?.resourceStatus == ResourceStatus.Updated.toString()
 
     fun refreshStatus(logger: Logger, statusTimestamp: DateTime, actionTimestamp: DateTime, hasFinalizer: Boolean) {
         val savepointMode = SavepointMode.valueOf(job.spec.savepoint.savepointMode)
         FlinkJobStatus.setSavepointMode(job, savepointMode)
 
-        val restartPolicy = RestartPolicy.valueOf(job.spec.savepoint.restartPolicy)
+        val restartPolicy = RestartPolicy.valueOf(job.spec.restart.restartPolicy)
         FlinkJobStatus.setRestartPolicy(job, restartPolicy)
 
         if (activeStatus.contains(getSupervisorStatus().toString())) {
@@ -89,21 +93,21 @@ class JobController(
         val resourceName = "$clusterName-$jobName"
 
         if (statusTimestamp != newStatusTimestamp) {
-            logger.debug("Updating status")
+            logger.log(Level.FINE, "Updating status")
             controller.updateStatus(namespace, resourceName, job)
         }
 
         val newActionTimestamp = FlinkJobAnnotations.getActionTimestamp(job)
 
         if (actionTimestamp != newActionTimestamp) {
-            logger.debug("Updating annotations")
+            logger.log(Level.FINE, "Updating annotations")
             controller.updateAnnotations(namespace, resourceName, job)
         }
 
         val newHasFinalizer = hasFinalizer()
 
         if (hasFinalizer != newHasFinalizer) {
-            logger.debug("Updating finalizers")
+            logger.log(Level.FINE, "Updating finalizers")
             controller.updateFinalizers(namespace, resourceName, job)
         }
     }
@@ -150,6 +154,9 @@ class JobController(
 
         val savepointDigest = Resource.computeDigest(job.spec.savepoint)
         FlinkJobStatus.setSavepointDigest(job, savepointDigest)
+
+        val restartDigest = Resource.computeDigest(job.spec.restart)
+        FlinkJobStatus.setRestartDigest(job, restartDigest)
     }
 
     fun updateStatus() {
@@ -158,7 +165,7 @@ class JobController(
         val savepointMode = SavepointMode.valueOf(job.spec.savepoint.savepointMode)
         FlinkJobStatus.setSavepointMode(job, savepointMode)
 
-        val restartPolicy = RestartPolicy.valueOf(job.spec.savepoint.restartPolicy)
+        val restartPolicy = RestartPolicy.valueOf(job.spec.restart.restartPolicy)
         FlinkJobStatus.setRestartPolicy(job, restartPolicy)
 
         FlinkJobStatus.setJobStatus(job, "")
@@ -243,6 +250,10 @@ class JobController(
     }
 
     fun getRestartPolicy() = FlinkJobStatus.getRestartPolicy(job)
+
+    fun getRestartDelay() = FlinkJobConfiguration.getRestartDelay(job)
+
+    fun getRestartTimeout() = FlinkJobConfiguration.getRestartTimeout(job)
 
     fun getSavepointMode() = FlinkJobStatus.getSavepointMode(job)
 

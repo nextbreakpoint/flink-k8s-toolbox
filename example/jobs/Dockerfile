@@ -1,8 +1,7 @@
 ARG repository
 ARG version
 
-FROM ${repository}:${version} AS build
-RUN apt-get update -y && apt-get install -y wget
+FROM busybox AS build
 RUN wget -O flink-jobs.jar https://github.com/nextbreakpoint/flink-workshop/releases/download/v1.2.3/com.nextbreakpoint.flinkworkshop-1.2.3.jar
 
 FROM ${repository}:${version}

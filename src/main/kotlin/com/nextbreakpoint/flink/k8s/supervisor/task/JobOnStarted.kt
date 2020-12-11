@@ -18,6 +18,11 @@ class JobOnStarted : Task<JobManager>() {
             return
         }
 
+        if (manager.isClusterTerminated()) {
+            manager.onClusterStopping()
+            return
+        }
+
         if (manager.isClusterStopping()) {
             manager.onClusterStopping()
             return

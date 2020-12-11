@@ -112,3 +112,9 @@ spec:
           resources:
             {{ $root.Values.resources | toYaml | indent 12 | trim }}
           {{- end}}
+          livenessProbe:
+            httpGet:
+              path: /version
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30

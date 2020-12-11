@@ -15,6 +15,11 @@ class JobOnStarting : Task<JobManager>() {
             return
         }
 
+        if (manager.isClusterTerminated()) {
+            manager.onClusterStopping()
+            return
+        }
+
         if (manager.isClusterStopping()) {
             manager.onClusterStopping()
             return
@@ -52,7 +57,7 @@ class JobOnStarting : Task<JobManager>() {
             manager.setResourceUpdated(false)
         }
 
-        if (manager.hasTaskTimedOut()) {
+        if (manager.isRestartTimeout()) {
             manager.onJobAborted()
             return
         }

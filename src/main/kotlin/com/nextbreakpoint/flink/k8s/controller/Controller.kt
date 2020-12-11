@@ -29,6 +29,10 @@ import com.nextbreakpoint.flink.k8s.controller.action.FlinkClusterCreate
 import com.nextbreakpoint.flink.k8s.controller.action.FlinkClusterDelete
 import com.nextbreakpoint.flink.k8s.controller.action.FlinkClusterGetStatus
 import com.nextbreakpoint.flink.k8s.controller.action.FlinkClusterUpdate
+import com.nextbreakpoint.flink.k8s.controller.action.FlinkDeploymentCreate
+import com.nextbreakpoint.flink.k8s.controller.action.FlinkDeploymentDelete
+import com.nextbreakpoint.flink.k8s.controller.action.FlinkDeploymentGetStatus
+import com.nextbreakpoint.flink.k8s.controller.action.FlinkDeploymentUpdate
 import com.nextbreakpoint.flink.k8s.controller.action.FlinkJobCreate
 import com.nextbreakpoint.flink.k8s.controller.action.FlinkJobDelete
 import com.nextbreakpoint.flink.k8s.controller.action.FlinkJobGetStatus
@@ -58,12 +62,15 @@ import com.nextbreakpoint.flink.k8s.controller.action.TaskManagerMetrics
 import com.nextbreakpoint.flink.k8s.controller.action.TaskManagersList
 import com.nextbreakpoint.flink.k8s.controller.action.TaskManagersStatus
 import com.nextbreakpoint.flink.k8s.controller.core.ClusterContext
+import com.nextbreakpoint.flink.k8s.controller.core.DeploymentContext
 import com.nextbreakpoint.flink.k8s.controller.core.JobContext
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterSpec
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeployment
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentSpec
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobSpec
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobStatus
@@ -123,6 +130,18 @@ class Controller(
 
     fun updateFlinkCluster(namespace: String, clusterName: String, flinkCluster: V1FlinkCluster) : Result<Void?> =
         FlinkClusterUpdate(flinkOptions, flinkClient, kubeClient).execute(namespace, clusterName, flinkCluster)
+
+    fun getFlinkDeploymentStatus(namespace: String, clusterName: String, context: DeploymentContext) : Result<V1FlinkDeploymentStatus?> =
+        FlinkDeploymentGetStatus(flinkOptions, flinkClient, kubeClient, context).execute(namespace, clusterName, null)
+
+    fun createFlinkDeployment(namespace: String, clusterName: String, flinkDeployment: V1FlinkDeployment) : Result<Void?> =
+        FlinkDeploymentCreate(flinkOptions, flinkClient, kubeClient).execute(namespace, clusterName, flinkDeployment)
+
+    fun deleteFlinkDeployment(namespace: String, clusterName: String) : Result<Void?> =
+        FlinkDeploymentDelete(flinkOptions, flinkClient, kubeClient).execute(namespace, clusterName,null)
+
+    fun updateFlinkDeployment(namespace: String, clusterName: String, flinkDeployment: V1FlinkDeployment) : Result<Void?> =
+        FlinkDeploymentUpdate(flinkOptions, flinkClient, kubeClient).execute(namespace, clusterName, flinkDeployment)
 
     fun createService(namespace: String, clusterName: String, service: V1Service): Result<String?> =
         ServiceCreate(flinkOptions, flinkClient, kubeClient).execute(namespace, clusterName, service)
@@ -272,6 +291,10 @@ class Controller(
 
     fun getFlinkJob(namespace: String, name: String): V1FlinkJob {
         return kubeClient.getFlinkJob(namespace, name)
+    }
+
+    fun makeFlinkDeployment(namespace: String, clusterName: String, deploymentSpec: V1FlinkDeploymentSpec): V1FlinkDeployment {
+        return DeploymentResourcesDefaultFactory.createFlinkDeployment(namespace, Resource.RESOURCE_OWNER, clusterName, deploymentSpec)
     }
 
     fun makeFlinkCluster(namespace: String, clusterName: String, clusterSpec: V1FlinkClusterSpec): V1FlinkCluster {

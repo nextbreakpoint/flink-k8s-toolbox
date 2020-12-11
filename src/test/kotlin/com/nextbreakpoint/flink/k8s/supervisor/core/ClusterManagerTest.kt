@@ -1,8 +1,8 @@
 package com.nextbreakpoint.flink.mediator.core
 
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ClusterSelector
 import com.nextbreakpoint.flink.common.ClusterStatus
-import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.k8s.common.Timeout
 import com.nextbreakpoint.flink.k8s.controller.core.Result
@@ -12,7 +12,6 @@ import com.nextbreakpoint.flink.k8s.supervisor.core.ClusterManager
 import com.nextbreakpoint.flink.testing.KotlinMockito.any
 import com.nextbreakpoint.flink.testing.KotlinMockito.eq
 import com.nextbreakpoint.flink.testing.KotlinMockito.given
-import org.apache.log4j.Logger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,6 +19,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
+import java.util.logging.Logger
 
 class ClusterManagerTest {
     private val clusterSelector = ClusterSelector(clusterName = "test", namespace = "flink")
@@ -234,22 +234,6 @@ class ClusterManagerTest {
         val result = manager.hasSpecificationChanged()
         verify(controller, times(1)).computeChanges()
         assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `hasTaskTimedOut should return false when task hasn't timed out`() {
-        given(controller.timeSinceLastUpdateInSeconds()).thenReturn(10L)
-        val result = manager.hasTaskTimedOut()
-        verify(controller, times(1)).timeSinceLastUpdateInSeconds()
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `hasTaskTimedOut should return true when task has timed out`() {
-        given(controller.timeSinceLastUpdateInSeconds()).thenReturn(301L)
-        val result = manager.hasTaskTimedOut()
-        verify(controller, times(1)).timeSinceLastUpdateInSeconds()
-        assertThat(result).isTrue()
     }
 
     @Test

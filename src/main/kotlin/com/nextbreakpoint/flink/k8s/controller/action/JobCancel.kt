@@ -9,7 +9,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.JobContext
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val context: JobContext) : JobAction<SavepointOptions, SavepointRequest?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -36,7 +37,7 @@ class JobCancel(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient
                 )
             }
         } catch (e : Exception) {
-            logger.error("Can't cancel job (${context.getJobId()})", e)
+            logger.log(Level.SEVERE, "Can't cancel job (${context.getJobId()})", e)
 
             return Result(
                 ResultStatus.ERROR,
