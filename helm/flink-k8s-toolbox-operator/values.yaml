@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: nextbreakpoint/flink-k8s-toolbox
+  repository: nextbreakpoint/flinkctl
   tag: 1.4.0-beta
   pullPolicy: Always
   pullSecrets:

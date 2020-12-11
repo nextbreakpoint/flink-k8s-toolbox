@@ -4,7 +4,7 @@ import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import org.apache.log4j.Logger
+import java.util.logging.Logger
 
 class JobManager(
     private val logger: Logger,

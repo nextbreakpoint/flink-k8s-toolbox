@@ -1,12 +1,13 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
-import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.common.RestartPolicy
 import com.nextbreakpoint.flink.common.SavepointRequest
 import com.nextbreakpoint.flink.k8s.common.Timeout
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class JobManager(
     private val logger: Logger,
@@ -38,7 +39,7 @@ class JobManager(
     }
 
     fun onJobCanceled() {
-        logger.warn("Job canceled")
+        logger.log(Level.WARNING, "Job canceled")
         controller.resetSavepointRequest()
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
@@ -54,7 +55,7 @@ class JobManager(
     }
 
     fun onJobFailed() {
-        logger.warn("Job failed")
+        logger.log(Level.WARNING, "Job failed")
         controller.resetSavepointRequest()
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
@@ -202,14 +203,14 @@ class JobManager(
             val result = controller.createBootstrapJob()
 
             if (!result.isSuccessful()) {
-                logger.error("Couldn't create bootstrap job")
+                logger.log(Level.SEVERE, "Couldn't create bootstrap job")
             }
 
             return false
         }
 
         if (!controller.hasJobId()) {
-            logger.warn("Job not ready yet")
+            logger.log(Level.WARNING, "Job not ready yet")
             return false
         }
 
@@ -228,7 +229,7 @@ class JobManager(
                 val cancelResult = controller.cancelJob(controller.getSavepointOptions())
 
                 if (!cancelResult.isSuccessful()) {
-                    logger.warn("Can't cancel the job")
+                    logger.log(Level.WARNING, "Can't cancel the job")
                     return false
                 }
 
@@ -248,10 +249,10 @@ class JobManager(
                 val querySavepointResult = controller.querySavepoint(savepointRequest)
 
                 if (!querySavepointResult.isSuccessful()) {
-                    logger.warn("Can't cancel job with savepoint")
+                    logger.log(Level.WARNING, "Can't cancel job with savepoint")
 
                     if (hasTaskTimedOut()) {
-                        logger.warn("Can't stop the job. Timeout occurred")
+                        logger.log(Level.WARNING, "Can't stop the job. Timeout occurred")
                         controller.resetJob()
                         return false
                     }
@@ -259,7 +260,7 @@ class JobManager(
                     val stopResult = controller.stopJob()
 
                     if (!stopResult.isSuccessful()) {
-                        logger.warn("Can't stop the job")
+                        logger.log(Level.WARNING, "Can't stop the job")
                         return false
                     }
 
@@ -286,7 +287,7 @@ class JobManager(
             logger.info("Savepoint not required")
 
             if (hasTaskTimedOut()) {
-                logger.warn("Can't stop the job. Timeout occurred")
+                logger.log(Level.WARNING, "Can't stop the job. Timeout occurred")
                 controller.resetJob()
                 return false
             }
@@ -294,7 +295,7 @@ class JobManager(
             val stopResult = controller.stopJob()
 
             if (!stopResult.isSuccessful()) {
-                logger.warn("Can't stop the job")
+                logger.log(Level.WARNING, "Can't stop the job")
                 return false
             }
 
@@ -312,7 +313,7 @@ class JobManager(
         }
 
         if (hasTaskTimedOut()) {
-            logger.warn("Can't stop the job. Timeout occurred")
+            logger.log(Level.WARNING, "Can't stop the job. Timeout occurred")
             controller.resetJob()
             return false
         }
@@ -320,7 +321,7 @@ class JobManager(
         val stopResult = controller.stopJob()
 
         if (!stopResult.isSuccessful()) {
-            logger.warn("Can't stop the job")
+            logger.log(Level.WARNING, "Can't stop the job")
             return false
         }
 
@@ -384,6 +385,10 @@ class JobManager(
 
     fun shouldRestart() = controller.shouldRestart()
 
+    fun isReadyToRestart() = controller.timeSinceLastUpdateInSeconds() > controller.getRestartDelay()
+
+    fun isRestartTimeout() = controller.timeSinceLastUpdateInSeconds() > controller.getRestartTimeout()
+
     fun isClusterStopped() = controller.isClusterStopped()
 
     fun isClusterStopping() = controller.isClusterStopping()
@@ -391,6 +396,8 @@ class JobManager(
     fun isClusterStarted() = controller.isClusterStarted()
 
     fun isClusterStarting() = controller.isClusterStarting()
+
+    fun isClusterTerminated() = controller.isClusterTerminated()
 
     fun isClusterUpdated() = controller.isClusterUpdated()
 
@@ -426,7 +433,7 @@ class JobManager(
                     controller.setSupervisorStatus(JobStatus.Starting)
                     controller.setResourceStatus(ResourceStatus.Updating)
                 } else {
-                    logger.warn("Action not allowed")
+                    logger.log(Level.WARNING, "Action not allowed")
                 }
             }
             Action.STOP -> {
@@ -437,7 +444,7 @@ class JobManager(
                     controller.setSupervisorStatus(JobStatus.Stopping)
                     controller.setResourceStatus(ResourceStatus.Updating)
                 } else {
-                    logger.warn("Action not allowed")
+                    logger.log(Level.WARNING, "Action not allowed")
                 }
             }
             Action.FORGET_SAVEPOINT -> {
@@ -445,7 +452,7 @@ class JobManager(
                     logger.info("Reset savepoint path")
                     controller.setSavepointPath("")
                 } else {
-                    logger.warn("Action not allowed")
+                    logger.log(Level.WARNING, "Action not allowed")
                 }
             }
             Action.TRIGGER_SAVEPOINT -> {
@@ -457,16 +464,16 @@ class JobManager(
                                 logger.info("Savepoint requested created. Waiting for savepoint...")
                                 controller.setSavepointRequest(response.output)
                             } else {
-                                logger.error("Savepoint request has failed. Skipping savepoint")
+                                logger.log(Level.SEVERE, "Savepoint request has failed. Skipping savepoint")
                             }
                         } else {
-                            logger.error("Savepoint request already exists. Skipping savepoint")
+                            logger.log(Level.SEVERE, "Savepoint request already exists. Skipping savepoint")
                         }
                     } else {
                         logger.info("Job not started")
                     }
                 } else {
-                    logger.warn("Action not allowed")
+                    logger.log(Level.WARNING, "Action not allowed")
                 }
             }
             Action.NONE -> {
@@ -489,7 +496,7 @@ class JobManager(
             val querySavepointResult = controller.querySavepoint(savepointRequest)
 
             if (!querySavepointResult.isSuccessful()) {
-                logger.warn("Can't query savepoint. Savepoint aborted")
+                logger.log(Level.WARNING, "Can't query savepoint. Savepoint aborted")
                 controller.resetSavepointRequest()
                 return true
             }
@@ -508,7 +515,7 @@ class JobManager(
                     val triggerSavepointResult = controller.triggerSavepoint(controller.getSavepointOptions())
 
                     if (!triggerSavepointResult.isSuccessful()) {
-                        logger.warn("Can't trigger savepoint. Savepoint aborted")
+                        logger.log(Level.WARNING, "Can't trigger savepoint. Savepoint aborted")
                         return true
                     }
 

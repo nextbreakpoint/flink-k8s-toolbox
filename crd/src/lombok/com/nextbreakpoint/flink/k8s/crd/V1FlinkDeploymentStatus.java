@@ -4,8 +4,12 @@ import com.google.gson.annotations.SerializedName;
 import lombok.Builder;
 import lombok.Data;
 import org.joda.time.DateTime;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder(toBuilder = true, setterPrefix = "with")
 public class V1FlinkDeploymentStatus {
     @SerializedName("resourceStatus")

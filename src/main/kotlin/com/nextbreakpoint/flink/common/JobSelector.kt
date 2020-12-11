@@ -9,5 +9,5 @@ data class JobSelector(
         return "$namespace:$clusterName:$jobName"
     }
 
-    val resourceName = "$clusterName-$jobName"
+    fun resourceName() = "$clusterName-$jobName"
 }

@@ -6,7 +6,8 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class ClusterRemoveJars(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<Void?, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -28,7 +29,7 @@ class ClusterRemoveJars(flinkOptions: FlinkOptions, flinkClient: FlinkClient, ku
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't remove JAR files", e)
+            logger.log(Level.SEVERE, "Can't remove JAR files", e)
 
             Result(
                 ResultStatus.ERROR,

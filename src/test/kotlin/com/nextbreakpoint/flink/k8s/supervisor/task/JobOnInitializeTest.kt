@@ -14,10 +14,12 @@ class JobOnInitializeTest {
 
     @Test
     fun `should add finalizer`() {
+        given(context.isClusterTerminated()).thenReturn(false)
         given(context.hasFinalizer()).thenReturn(false)
         given(context.isResourceDeleted()).thenReturn(false)
         task.execute(context)
         val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).hasFinalizer()
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).addFinalizer()
@@ -26,10 +28,12 @@ class JobOnInitializeTest {
 
     @Test
     fun `should terminated`() {
+        given(context.isClusterTerminated()).thenReturn(false)
         given(context.hasFinalizer()).thenReturn(false)
         given(context.isResourceDeleted()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).hasFinalizer()
         inOrder.verify(context, times(1)).isResourceDeleted()
         inOrder.verify(context, times(1)).onJobTerminated()
@@ -38,11 +42,22 @@ class JobOnInitializeTest {
 
     @Test
     fun `should initialize`() {
+        given(context.isClusterTerminated()).thenReturn(false)
         given(context.hasFinalizer()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).hasFinalizer()
         inOrder.verify(context, times(1)).onResourceInitialise()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should do nothing`() {
+        given(context.isClusterTerminated()).thenReturn(true)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isClusterTerminated()
         verifyNoMoreInteractions(context)
     }
 }

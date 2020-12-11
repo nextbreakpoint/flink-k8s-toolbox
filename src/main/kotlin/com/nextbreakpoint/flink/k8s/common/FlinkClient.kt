@@ -23,9 +23,10 @@ import com.nextbreakpoint.flinkclient.model.SavepointTriggerRequestBody
 import com.nextbreakpoint.flinkclient.model.TaskManagerDetailsInfo
 import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
 import com.nextbreakpoint.flinkclient.model.TriggerResponse
-import org.apache.log4j.Logger
 import java.io.File
 import java.util.concurrent.TimeUnit
+import java.util.logging.Level
+import java.util.logging.Logger
 
 object FlinkClient {
     private val logger = Logger.getLogger(FlinkClient::class.simpleName)
@@ -388,7 +389,7 @@ object FlinkClient {
                         it.first to SavepointInfo("IN_PROGRESS", null)
                     } else {
                         val operation = asynchronousOperationResult.operation as? Map<String, Object>
-                        logger.debug("operation: $operation")
+                        logger.log(Level.FINE, "operation: $operation")
                         val location = operation?.get("location") as? String
                         val failureCause = operation?.get("failure-cause") as? Map<String, Object>
 
@@ -495,7 +496,7 @@ object FlinkClient {
                     } else {
                         val operation = asynchronousOperationResult.operation as? Map<String, Object>
 
-                        logger.debug("operation: $operation")
+                        logger.log(Level.FINE, "operation: $operation")
 
                         val failureCause = operation?.get("failure-cause") as? Map<String, Object>
 

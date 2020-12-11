@@ -8,5 +8,5 @@ data class ClusterSelector(
         return "$namespace:$clusterName"
     }
 
-    val resourceName = clusterName
+    fun resourceName() = clusterName
 }

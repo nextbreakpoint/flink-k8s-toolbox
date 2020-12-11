@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import io.kubernetes.client.openapi.models.V1Deployment
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class DeploymentCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<V1Deployment, String?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -23,7 +24,7 @@ class DeploymentCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
                 jobOut.metadata?.name ?: throw RuntimeException("Unexpected metadata")
             )
         } catch (e : Exception) {
-            logger.error("Can't create supervisor deployment", e)
+            logger.log(Level.SEVERE, "Can't create supervisor deployment", e)
 
             Result(
                 ResultStatus.ERROR,

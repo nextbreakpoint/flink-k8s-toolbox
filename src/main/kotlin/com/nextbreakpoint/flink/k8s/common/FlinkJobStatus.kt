@@ -11,11 +11,8 @@ import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobStatus
 import org.joda.time.DateTime
 
 object FlinkJobStatus {
-    @JvmStatic
-    private val initialisedTimestamp = currentTimeMillis()
-
     fun getStatusTimestamp(flinkJob: V1FlinkJob) : DateTime =
-        flinkJob.status?.timestamp ?: DateTime(initialisedTimestamp)
+        flinkJob.status?.timestamp ?: DateTime(0)
 
     fun getSavepointTimestamp(flinkJob: V1FlinkJob) : DateTime =
         flinkJob.status?.savepointTimestamp ?: DateTime(0)
@@ -111,6 +108,19 @@ object FlinkJobStatus {
             ensureState(flinkJob)
 
             flinkJob.status?.digest?.savepoint = digest
+
+            updateStatusTimestamp(flinkJob, currentTimeMillis())
+        }
+    }
+
+    fun getRestartDigest(flinkJob: V1FlinkJob): String? =
+        flinkJob.status?.digest?.restart
+
+    fun setRestartDigest(flinkJob: V1FlinkJob, digest: String) {
+        if (flinkJob.status?.digest?.restart != digest) {
+            ensureState(flinkJob)
+
+            flinkJob.status?.digest?.restart = digest
 
             updateStatusTimestamp(flinkJob, currentTimeMillis())
         }

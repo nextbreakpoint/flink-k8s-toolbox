@@ -8,6 +8,7 @@ import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentSpec
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobSpec
 import com.nextbreakpoint.flink.k8s.crd.V1JobManagerSpec
+import com.nextbreakpoint.flink.k8s.crd.V1RestartSpec
 import com.nextbreakpoint.flink.k8s.crd.V1RuntimeSpec
 import com.nextbreakpoint.flink.k8s.crd.V1SavepointSpec
 import com.nextbreakpoint.flink.k8s.crd.V1SupervisorSpec
@@ -74,6 +75,14 @@ object Resource {
     }
 
     fun computeDigest(spec: V1SupervisorSpec?): String {
+        return if (spec == null) "" else String(
+            Base64.getEncoder().encode(
+                MessageDigest.getInstance("MD5").digest(JSON().serialize(spec).toByteArray())
+            )
+        )
+    }
+
+    fun computeDigest(spec: V1RestartSpec?): String {
         return if (spec == null) "" else String(
             Base64.getEncoder().encode(
                 MessageDigest.getInstance("MD5").digest(JSON().serialize(spec).toByteArray())

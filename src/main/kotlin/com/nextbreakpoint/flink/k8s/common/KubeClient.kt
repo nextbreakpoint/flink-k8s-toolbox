@@ -26,9 +26,10 @@ import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.PatchUtils
 import io.kubernetes.client.util.Watch
 import io.kubernetes.client.util.Watchable
-import org.apache.log4j.Logger
 import java.io.File
 import java.io.FileInputStream
+import java.util.logging.Level
+import java.util.logging.Logger
 
 object KubeClient {
     private val logger = Logger.getLogger(KubeClient::class.simpleName)
@@ -115,14 +116,14 @@ object KubeClient {
                 }
             }
 
-            logger.debug("Flink client created for host $jobmanagerHost and port $jobmanagerPort")
+            logger.log(Level.FINE, "Flink client created for host $jobmanagerHost and port $jobmanagerPort")
 
             return FlinkAddress(
                 host = jobmanagerHost,
                 port = jobmanagerPort
             )
         } catch (e : ApiException) {
-            logger.error("Can't connect to jobmanager: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't connect to jobmanager: ${e.responseBody}")
             throw e
         }
     }
@@ -143,7 +144,7 @@ object KubeClient {
                     val line = source.readUtf8Line() ?: ""
 
                     if (!response.isSuccessful) {
-                        logger.error(line)
+                        logger.log(Level.SEVERE, line)
                         throw NotFoundException("Can't fetch custom object $name")
                     }
 
@@ -153,7 +154,7 @@ object KubeClient {
 
             throw NotFoundException("Flink deployment not found: $name")
         } catch (e : ApiException) {
-            logger.error("Can't fetch custom object: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't fetch custom object: ${e.responseBody}")
             throw e
         }
     }
@@ -174,7 +175,7 @@ object KubeClient {
                     val line = source.readUtf8Line() ?: ""
 
                     if (!response.isSuccessful) {
-                        logger.error(line)
+                        logger.log(Level.SEVERE, line)
                         throw NotFoundException("Can't fetch custom object ${name}")
                     }
 
@@ -184,7 +185,7 @@ object KubeClient {
 
             throw NotFoundException("Flink cluster not found: ${name}")
         } catch (e : ApiException) {
-            logger.error("Can't fetch custom object: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't fetch custom object: ${e.responseBody}")
             throw e
         }
     }
@@ -205,7 +206,7 @@ object KubeClient {
                     val line = source.readUtf8Line() ?: ""
 
                     if (!response.isSuccessful) {
-                        logger.error(line)
+                        logger.log(Level.SEVERE, line)
                         throw NotFoundException("Can't fetch custom object ${name}")
                     }
 
@@ -215,7 +216,7 @@ object KubeClient {
 
             throw NotFoundException("Flink job not found: ${name}")
         } catch (e : ApiException) {
-            logger.error("Can't fetch custom object: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't fetch custom object: ${e.responseBody}")
             throw e
         }
     }
@@ -247,7 +248,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update annotations of deployment ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update annotations of deployment ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -279,7 +280,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update annotations of cluster ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update annotations of cluster ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -311,7 +312,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update annotations of job ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update annotations of job ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -343,7 +344,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update finalizers of deployment ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update finalizers of deployment ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -375,7 +376,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update finalizers of cluster ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update finalizers of cluster ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -407,7 +408,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update finalizers of job ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update finalizers of job ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -435,7 +436,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update status of deployment ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update status of deployment ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -463,7 +464,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update status of cluster ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update status of cluster ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -491,7 +492,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update status of job ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update status of job ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -523,7 +524,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't modify task managers of cluster ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't modify task managers of cluster ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -555,7 +556,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't modify parallelism of job ${name}: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't modify parallelism of job ${name}: ${e.responseBody}")
             throw e
         }
     }
@@ -709,7 +710,7 @@ object KubeClient {
                 null
             )
         } catch (e : ApiException) {
-            logger.error("Can't create service: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't create service: ${e.responseBody}")
             throw e
         }
     }
@@ -729,7 +730,7 @@ object KubeClient {
                 deleteOptions
             )
         } catch (e : ApiException) {
-            logger.error("Can't delete service: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't delete service: ${e.responseBody}")
             throw e
         }
     }
@@ -744,7 +745,7 @@ object KubeClient {
                 null
             )
         } catch (e : ApiException) {
-            logger.error("Can't create pod: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't create pod: ${e.responseBody}")
             throw e
         }
     }
@@ -764,7 +765,73 @@ object KubeClient {
                 deleteOptions
             )
         } catch (e: ApiException) {
-            logger.error("Can't delete pod: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't delete pod: ${e.responseBody}")
+            throw e
+        }
+    }
+
+    fun createFlinkDeployment(namespace: String, resource: V1FlinkDeployment) {
+        try {
+            objectApi.createNamespacedCustomObjectWithHttpInfo(
+                "nextbreakpoint.com",
+                "v1",
+                namespace,
+                "flinkdeployments",
+                resource,
+                null,
+                null,
+                null
+            )
+        } catch (e : ApiException) {
+            logger.log(Level.SEVERE, "Can't create flinkdeployment: ${e.responseBody}")
+            throw e
+        }
+    }
+
+    fun deleteFlinkDeployment(namespace: String, name: String) {
+        try {
+            val deleteOptions = V1DeleteOptions().propagationPolicy("Background")
+
+            objectApi.deleteNamespacedCustomObjectWithHttpInfo(
+                "nextbreakpoint.com",
+                "v1",
+                namespace,
+                "flinkdeployments",
+                name,
+                5,
+                null,
+                null,
+                null,
+                deleteOptions
+            )
+        } catch (e : ApiException) {
+            logger.log(Level.SEVERE, "Can't delete flinkdeployment: ${e.responseBody}")
+            throw e
+        }
+    }
+
+    fun updateFlinkDeployment(namespace: String, resource: V1FlinkDeployment) {
+        try {
+            PatchUtils.patch(
+                V1FlinkDeployment::class.java, {
+                    objectApi.patchNamespacedCustomObjectCall(
+                        "nextbreakpoint.com",
+                        "v1",
+                        namespace,
+                        "flinkdeployments",
+                        resource.metadata.name,
+                        resource,
+                        null,
+                        null,
+                        null,
+                        null
+                    )
+                },
+                V1Patch.PATCH_FORMAT_JSON_MERGE_PATCH,
+                objectApi.apiClient
+            )
+        } catch (e : ApiException) {
+            logger.log(Level.SEVERE, "Can't update flinkdeployment: ${e.responseBody}")
             throw e
         }
     }
@@ -782,7 +849,7 @@ object KubeClient {
                 null
             )
         } catch (e : ApiException) {
-            logger.error("Can't create flinkcluster: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't create flinkcluster: ${e.responseBody}")
             throw e
         }
     }
@@ -804,7 +871,7 @@ object KubeClient {
                 deleteOptions
             )
         } catch (e : ApiException) {
-            logger.error("Can't delete flinkcluster: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't delete flinkcluster: ${e.responseBody}")
             throw e
         }
     }
@@ -830,7 +897,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update flinkcluster: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update flinkcluster: ${e.responseBody}")
             throw e
         }
     }
@@ -848,7 +915,7 @@ object KubeClient {
                 null
             )
         } catch (e : ApiException) {
-            logger.error("Can't create flinkjob: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't create flinkjob: ${e.responseBody}")
             throw e
         }
     }
@@ -870,7 +937,7 @@ object KubeClient {
                 deleteOptions
             )
         } catch (e : ApiException) {
-            logger.error("Can't delete flinkjob: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't delete flinkjob: ${e.responseBody}")
             throw e
         }
     }
@@ -896,7 +963,7 @@ object KubeClient {
                 objectApi.apiClient
             )
         } catch (e : ApiException) {
-            logger.error("Can't update flinkjob: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't update flinkjob: ${e.responseBody}")
             throw e
         }
     }
@@ -911,7 +978,7 @@ object KubeClient {
                 null
             )
         } catch (e : ApiException) {
-            logger.error("Can't create job: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't create job: ${e.responseBody}")
             throw e
         }
     }
@@ -931,7 +998,7 @@ object KubeClient {
                 deleteOptions
             )
         } catch (e : ApiException) {
-            logger.error("Can't delete job: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't delete job: ${e.responseBody}")
             throw e
         }
     }
@@ -946,7 +1013,7 @@ object KubeClient {
                 null
             )
         } catch (e : ApiException) {
-            logger.error("Can't create deployment: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't create deployment: ${e.responseBody}")
             throw e
         }
     }
@@ -966,7 +1033,7 @@ object KubeClient {
                 deleteOptions
             )
         } catch (e : ApiException) {
-            logger.error("Can't delete deployment: ${e.responseBody}")
+            logger.log(Level.SEVERE, "Can't delete deployment: ${e.responseBody}")
             throw e
         }
     }

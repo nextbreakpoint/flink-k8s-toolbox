@@ -6,7 +6,8 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class JobGetStatus(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : JobAction<String, String?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -24,7 +25,7 @@ class JobGetStatus(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeCli
                 jobDetails.state.value.toString().toUpperCase()
             )
         } catch (e: Exception) {
-            logger.warn("Can't get job's status ($params)")
+            logger.log(Level.WARNING, "Can't get job's status ($params)")
 
             Result(
                 ResultStatus.ERROR,

@@ -2,8 +2,9 @@ package com.nextbreakpoint.flink.k8s.supervisor.core
 
 import com.nextbreakpoint.flink.k8s.common.KubeClient
 import io.kubernetes.client.util.Watchable
-import org.apache.log4j.Logger
 import java.net.SocketTimeoutException
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.concurrent.thread
 
 class CacheAdapter(
@@ -109,7 +110,7 @@ class CacheAdapter(
                     }
                 } catch (e: Exception) {
                     if (e.cause !is SocketTimeoutException) {
-                        logger.error("An error occurred while watching a resource", e)
+                        logger.log(Level.SEVERE, "An error occurred while watching a resource", e)
                     }
                 }
 

@@ -6,7 +6,8 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class BatchJobDelete(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : JobAction<String, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -24,7 +25,7 @@ class BatchJobDelete(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeC
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't delete batch job", e)
+            logger.log(Level.SEVERE, "Can't delete batch job", e)
 
             Result(
                 ResultStatus.ERROR,

@@ -1,7 +1,6 @@
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.4.20'
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
 }
 
 group = 'com.nextbreakpoint'
@@ -22,22 +21,22 @@ dependencies {
         implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.4.20'
         implementation 'org.jetbrains.kotlin:kotlin-reflect:1.4.20'
         implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9'
-        implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.13.3'
-        implementation 'org.apache.logging.log4j:log4j-1.2-api:2.13.3'
-        implementation 'org.apache.logging.log4j:log4j-jcl:2.13.3'
-        implementation 'org.apache.logging.log4j:log4j-jul:2.13.3'
         implementation 'io.kubernetes:client-java:10.0.0'
         implementation 'com.google.code.gson:gson:2.8.6'
-        implementation 'io.vertx:vertx-core:3.9.2'
-        implementation 'io.vertx:vertx-rx-java:3.9.2'
-        implementation 'io.vertx:vertx-web:3.9.2'
-        implementation 'io.vertx:vertx-web-common:3.9.2'
-        implementation 'io.vertx:vertx-web-client:3.9.2'
-        implementation 'io.vertx:vertx-micrometer-metrics:3.9.2'
+        implementation 'org.slf4j:slf4j-simple:1.7.30'
+        implementation 'io.vertx:vertx-core:4.0.0'
+        implementation 'io.vertx:vertx-rx-java:4.0.0'
+        implementation 'io.vertx:vertx-web:4.0.0'
+        implementation 'io.vertx:vertx-web-common:4.0.0'
+        implementation 'io.vertx:vertx-web-client:4.0.0'
+        implementation 'io.vertx:vertx-micrometer-metrics:4.0.0'
         implementation 'com.github.ajalt:clikt:2.8.0'
         implementation 'javax.xml.bind:jaxb-api:2.3.1'
         implementation 'javax.activation:activation:1.1.1'
         implementation 'io.micrometer:micrometer-registry-prometheus:1.5.4'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.11.3'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.11.3'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.11.3'
         implementation 'com.nextbreakpoint:com.nextbreakpoint.flinkclient:1.0.3'
 
         testImplementation 'org.jetbrains.kotlin:kotlin-test-junit:1.4.20'
@@ -47,10 +46,7 @@ dependencies {
         testImplementation 'org.mockito:mockito-core:3.5.10'
         testImplementation 'com.github.tomakehurst:wiremock-jre8:2.27.2'
         testImplementation 'org.awaitility:awaitility:4.0.3'
-        testImplementation 'com.fasterxml.jackson.core:jackson-core:2.11.2'
-        testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.11.2'
-        testImplementation 'com.fasterxml.jackson.core:jackson-annotations:2.11.2'
-        testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.2'
+        testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.3'
     }
 }
 
@@ -60,12 +56,9 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core'
-    implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-    implementation 'org.apache.logging.log4j:log4j-1.2-api'
-    implementation 'org.apache.logging.log4j:log4j-jcl'
-    implementation 'org.apache.logging.log4j:log4j-jul'
     implementation 'io.kubernetes:client-java'
     implementation 'com.google.code.gson:gson'
+    implementation 'org.slf4j:slf4j-simple'
     implementation 'io.vertx:vertx-core'
     implementation 'io.vertx:vertx-rx-java'
     implementation 'io.vertx:vertx-web'
@@ -76,6 +69,9 @@ dependencies {
     implementation 'javax.xml.bind:jaxb-api'
     implementation 'javax.activation:activation'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'com.fasterxml.jackson.core:jackson-core'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
     implementation 'com.nextbreakpoint:com.nextbreakpoint.flinkclient'
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
@@ -85,9 +81,6 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'com.github.tomakehurst:wiremock-jre8'
     testImplementation 'org.awaitility:awaitility'
-    testImplementation 'com.fasterxml.jackson.core:jackson-core'
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
-    testImplementation 'com.fasterxml.jackson.core:jackson-annotations'
     testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 }
 
@@ -122,13 +115,15 @@ task integrationTest(type: Test) {
     shouldRunAfter test
 }
 
-shadowJar {
-    archiveBaseName.set('flink-k8s-toolbox')
-    archiveClassifier.set('with-dependencies')
-    transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer)
+task copyRuntimeDeps(type: Copy) {
+    into "$buildDir/libs"
+    from configurations.runtimeClasspath
+}
+
+jar {
     manifest {
         attributes 'Main-Class': 'com.nextbreakpoint.flink.cli.Main', \
-                   'Implementation-Title': project.name, \
+                   'Implementation-Title': 'flinkctl', \
                    'Implementation-Version': project.version, \
                    'Built-By': System.getProperty('user.name'), \
                    'Built-JDK': System.getProperty('java.version'), \
