@@ -8,7 +8,8 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<TaskManagerId, TaskManagerStats?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -60,7 +61,7 @@ class TaskManagerMetrics(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 metricsResponse
             )
         } catch (e : Exception) {
-            logger.error("Can't get taskmanager's metrics ($params)", e)
+            logger.log(Level.SEVERE, "Can't get taskmanager's metrics ($params)", e)
 
             return Result(
                 ResultStatus.ERROR,

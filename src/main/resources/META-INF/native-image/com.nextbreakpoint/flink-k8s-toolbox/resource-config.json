@@ -1,0 +1,28 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "\\QMETA-INF/MANIFEST.MF\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.vertx.core.spi.VertxMetricsFactory\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/io.vertx.core.spi.launcher.CommandFactory\\E"
+      },
+      {
+        "pattern": "\\Qorg/joda/time/tz/data/Europe/London\\E"
+      },
+      {
+        "pattern": "\\Qorg/joda/time/tz/data/ZoneInfoMap\\E"
+      },
+      {
+        "pattern": "\\Qorg/joda/time/tz/data/Etc/GMT\\E"
+      },
+      {
+        "pattern": "\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"
+      }
+    ]
+  },
+  "bundles": []
+}

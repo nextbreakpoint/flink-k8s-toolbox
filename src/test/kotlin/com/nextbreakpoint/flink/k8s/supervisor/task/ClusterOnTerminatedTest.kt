@@ -16,6 +16,7 @@ class ClusterOnTerminatedTest {
     fun `should remove finalizer if not removed`() {
         given(context.hasFinalizer()).thenReturn(true)
         task.execute(context)
+        verify(context, times(1)).hasJobFinalizers()
         verify(context, times(1)).hasFinalizer()
         verify(context, times(1)).removeFinalizer()
         verifyNoMoreInteractions(context)
@@ -25,7 +26,16 @@ class ClusterOnTerminatedTest {
     fun `should not remove finalizer if already removed`() {
         given(context.hasFinalizer()).thenReturn(false)
         task.execute(context)
+        verify(context, times(1)).hasJobFinalizers()
         verify(context, times(1)).hasFinalizer()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should not remove finalizer if there are job finalizers`() {
+        given(context.hasJobFinalizers()).thenReturn(true)
+        task.execute(context)
+        verify(context, times(1)).hasJobFinalizers()
         verifyNoMoreInteractions(context)
     }
 }

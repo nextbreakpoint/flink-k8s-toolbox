@@ -3,7 +3,8 @@ package com.nextbreakpoint.flink.k8s.operator.core
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
 import io.kubernetes.client.openapi.models.V1Deployment
 import io.kubernetes.client.openapi.models.V1Pod
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class SupervisorManager(
     private val logger: Logger,
@@ -53,7 +54,7 @@ class SupervisorManager(
             val newHasFinalizer = controller.hasFinalizer(cluster)
 
             if (hasFinalizer != newHasFinalizer) {
-                logger.debug("Updating finalizers: cluster ${cluster.metadata.name}")
+                logger.log(Level.FINE, "Updating finalizers: cluster ${cluster.metadata.name}")
                 controller.updateFinalizers(cache.namespace, clusterName, cluster)
             }
         }
@@ -68,7 +69,7 @@ class SupervisorManager(
         }
 
         if (supervisorResources.supervisorDep != null && supervisorResources.supervisorPod == null) {
-            logger.warn("Supervisor pod not running")
+            logger.log(Level.WARNING, "Supervisor pod not running")
         }
     }
 

@@ -21,11 +21,13 @@ class JobOnStoppedTest {
         given(context.terminateBootstrapJob()).thenReturn(true)
         given(context.isClusterStarted()).thenReturn(true)
         given(context.isClusterStarting()).thenReturn(false)
+        given(context.isClusterTerminated()).thenReturn(false)
         given(context.isClusterUnhealthy()).thenReturn(false)
         given(context.shouldRestartJob()).thenReturn(true)
         given(context.hasSpecificationChanged()).thenReturn(false)
         given(context.isActionPresent()).thenReturn(false)
-        given(context.hasTaskTimedOut()).thenReturn(true)
+        given(context.isReadyToRestart()).thenReturn(true)
+        given(context.hasFinalizer()).thenReturn(true)
     }
 
     @Test
@@ -44,6 +46,7 @@ class JobOnStoppedTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
         verifyNoMoreInteractions(context)
     }
@@ -54,6 +57,7 @@ class JobOnStoppedTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
         inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
@@ -67,6 +71,7 @@ class JobOnStoppedTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
         inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
@@ -81,6 +86,7 @@ class JobOnStoppedTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
         inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
@@ -92,11 +98,13 @@ class JobOnStoppedTest {
     }
 
     @Test
-    fun `should behave as expected when resource has changed`() {
+    fun `should behave as expected when resource has changed and job has finalizer`() {
         given(context.hasSpecificationChanged()).thenReturn(true)
+        given(context.hasFinalizer()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
         inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
@@ -105,7 +113,29 @@ class JobOnStoppedTest {
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).shouldRestartJob()
         inOrder.verify(context, times(1)).hasSpecificationChanged()
+        inOrder.verify(context, times(1)).hasFinalizer()
         inOrder.verify(context, times(1)).onResourceChanged()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when resource has changed and job doesn't have finalizer`() {
+        given(context.hasSpecificationChanged()).thenReturn(true)
+        given(context.hasFinalizer()).thenReturn(false)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
+        inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
+        inOrder.verify(context, times(1)).isClusterStarted()
+        inOrder.verify(context, times(1)).isClusterUnhealthy()
+        inOrder.verify(context, times(1)).setClusterHealth("HEALTHY")
+        inOrder.verify(context, times(1)).isActionPresent()
+        inOrder.verify(context, times(1)).shouldRestartJob()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
+        inOrder.verify(context, times(1)).hasFinalizer()
+        inOrder.verify(context, times(1)).addFinalizer()
         verifyNoMoreInteractions(context)
     }
 
@@ -115,6 +145,7 @@ class JobOnStoppedTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
         inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
@@ -127,10 +158,11 @@ class JobOnStoppedTest {
 
     @Test
     fun `should behave as expected when job should restart but timeout didn't occur yet`() {
-        given(context.hasTaskTimedOut()).thenReturn(false)
+        given(context.isReadyToRestart()).thenReturn(false)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
         inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
@@ -139,16 +171,18 @@ class JobOnStoppedTest {
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).shouldRestartJob()
         inOrder.verify(context, times(1)).hasSpecificationChanged()
-        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isReadyToRestart()
         verifyNoMoreInteractions(context)
     }
 
     @Test
-    fun `should behave as expected when job should restart and timeout occurred`() {
-        given(context.hasTaskTimedOut()).thenReturn(true)
+    fun `should behave as expected when job should restart and timeout occurred and job has finalizer`() {
+        given(context.isReadyToRestart()).thenReturn(true)
+        given(context.hasFinalizer()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
         inOrder.verify(context, times(1)).terminateBootstrapJob()
         inOrder.verify(context, times(1)).isClusterStarting()
         inOrder.verify(context, times(1)).isClusterStarted()
@@ -157,8 +191,56 @@ class JobOnStoppedTest {
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).shouldRestartJob()
         inOrder.verify(context, times(1)).hasSpecificationChanged()
-        inOrder.verify(context, times(1)).hasTaskTimedOut()
+        inOrder.verify(context, times(1)).isReadyToRestart()
+        inOrder.verify(context, times(1)).hasFinalizer()
         inOrder.verify(context, times(1)).onJobReadyToRestart()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when job should restart and timeout occurred and job hasn't finalizer`() {
+        given(context.isReadyToRestart()).thenReturn(true)
+        given(context.hasFinalizer()).thenReturn(false)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
+        inOrder.verify(context, times(1)).terminateBootstrapJob()
+        inOrder.verify(context, times(1)).isClusterStarting()
+        inOrder.verify(context, times(1)).isClusterStarted()
+        inOrder.verify(context, times(1)).isClusterUnhealthy()
+        inOrder.verify(context, times(1)).setClusterHealth("HEALTHY")
+        inOrder.verify(context, times(1)).isActionPresent()
+        inOrder.verify(context, times(1)).shouldRestartJob()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
+        inOrder.verify(context, times(1)).isReadyToRestart()
+        inOrder.verify(context, times(1)).hasFinalizer()
+        inOrder.verify(context, times(1)).addFinalizer()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when job luster is terminate and job doesn't have finalizer`() {
+        given(context.isClusterTerminated()).thenReturn(true)
+        given(context.hasFinalizer()).thenReturn(false)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
+        inOrder.verify(context, times(1)).hasFinalizer()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when job luster is terminate and job has finalizer`() {
+        given(context.isClusterTerminated()).thenReturn(true)
+        given(context.hasFinalizer()).thenReturn(true)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
+        inOrder.verify(context, times(1)).hasFinalizer()
+        inOrder.verify(context, times(1)).removeFinalizer()
         verifyNoMoreInteractions(context)
     }
 }

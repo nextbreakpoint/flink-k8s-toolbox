@@ -1,12 +1,9 @@
 package com.nextbreakpoint.flink.k8s.common
 
 import com.nextbreakpoint.flink.common.ResourceStatus
-import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterDigest
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeployment
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentDigest
-import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentJobDigest
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentStatus
-import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobDigest
 import org.joda.time.DateTime
 
 object FlinkDeploymentStatus {

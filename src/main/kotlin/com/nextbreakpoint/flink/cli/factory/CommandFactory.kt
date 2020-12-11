@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flink.cli.factory
 
 import com.nextbreakpoint.flink.cli.core.ClusterCommand
+import com.nextbreakpoint.flink.cli.core.DeploymentCommand
 import com.nextbreakpoint.flink.cli.core.JobCommand
 import com.nextbreakpoint.flink.cli.core.LaunchCommand
 import com.nextbreakpoint.flink.cli.core.OperatorCommand
@@ -19,6 +20,10 @@ interface CommandFactory {
     fun createLaunchBootstrapCommand() : LaunchCommand<BootstrapOptions>
 
     fun createLaunchSupervisorCommand() : LaunchCommand<SupervisorOptions>
+
+    fun createListDeploymentsCommand() : OperatorCommand
+
+    fun createGetDeploymentStatusCommand(): DeploymentCommand<Void?>
 
     fun createListClustersCommand() : OperatorCommand
 

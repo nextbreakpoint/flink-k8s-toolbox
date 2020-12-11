@@ -26,8 +26,8 @@ class BootstrapResourcesDefaultFactoryTest {
 
         assertThat(job.spec?.parallelism).isEqualTo(1)
         assertThat(job.spec?.completions).isEqualTo(1)
-        assertThat(job.spec?.backoffLimit).isEqualTo(1)
-        assertThat(job.spec?.ttlSecondsAfterFinished).isEqualTo(30)
+        assertThat(job.spec?.backoffLimit).isEqualTo(3)
+        assertThat(job.spec?.ttlSecondsAfterFinished).isEqualTo(0)
 
         assertThat(job.spec?.template?.metadata?.name).isEqualTo("bootstrap-${flinkJob.metadata.name}")
 

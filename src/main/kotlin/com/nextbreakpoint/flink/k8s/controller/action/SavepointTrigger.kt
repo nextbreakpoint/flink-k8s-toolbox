@@ -9,7 +9,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.JobContext
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient, private val context: JobContext) : JobAction<SavepointOptions, SavepointRequest?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -27,7 +28,7 @@ class SavepointTrigger(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kub
                 savepointRequests.map { SavepointRequest(jobId = it.key, triggerId = it.value) }.firstOrNull()
             )
         } catch (e : Exception) {
-            logger.error("Can't trigger savepoint (${context.getJobId()})", e)
+            logger.log(Level.SEVERE, "Can't trigger savepoint (${context.getJobId()})", e)
 
             return Result(
                 ResultStatus.ERROR,

@@ -1,11 +1,12 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.k8s.common.Timeout
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class ClusterManager(
     private val logger: Logger,
@@ -23,6 +24,8 @@ class ClusterManager(
         logger.info("Remove finalizer")
         controller.removeFinalizer()
     }
+
+    fun hasJobFinalizers() = controller.hasJobFinalizers()
 
     fun onClusterTerminated() {
         logger.info("Cluster terminated")
@@ -163,16 +166,6 @@ class ClusterManager(
         return false
     }
 
-    fun hasTaskTimedOut(): Boolean {
-        val seconds = controller.timeSinceLastUpdateInSeconds()
-
-        if (seconds > taskTimeout) {
-            return true
-        }
-
-        return false
-    }
-
     fun hasScaleChanged(): Boolean {
         val desiredTaskManagers = controller.getClampedRequiredTaskManagers()
         val currentTaskManagers = controller.getCurrentTaskManagers()
@@ -205,9 +198,7 @@ class ClusterManager(
             return false
         }
 
-        val seconds = controller.timeSinceLastUpdateInSeconds()
-
-        if (seconds > taskTimeout) {
+        if (controller.timeSinceLastUpdateInSeconds() > taskTimeout) {
             return true
         }
 
@@ -269,6 +260,8 @@ class ClusterManager(
 
         controller.rescaleCluster(requiredTaskManagers)
 
+        controller.updateRescaleTimestamp()
+
         return true
     }
 
@@ -286,12 +279,17 @@ class ClusterManager(
 
             if (result.isSuccessful()) {
                 logger.info("TaskManagers pods created")
+                controller.updateRescaleTimestamp()
             }
         } else if (controller.timeSinceLastRescaleInSeconds() > controller.getRescaleDelay()) {
             val taskmanagerIdWithPodNameMap = controller.removeUnusedTaskManagers()
 
             taskmanagerIdWithPodNameMap.forEach { taskmanagerIdWithPodName ->
                 logger.info("TaskManager pod deleted (${taskmanagerIdWithPodName.value})")
+            }
+
+            if (taskmanagerIdWithPodNameMap.isNotEmpty()) {
+                controller.updateRescaleTimestamp()
             }
         }
 
@@ -313,7 +311,7 @@ class ClusterManager(
                     controller.setSupervisorStatus(ClusterStatus.Starting)
                     controller.setResourceStatus(ResourceStatus.Updating)
                 } else {
-                    logger.warn("Action not allowed")
+                    logger.log(Level.WARNING, "Action not allowed")
                 }
             }
             Action.STOP -> {
@@ -323,7 +321,7 @@ class ClusterManager(
                     controller.setSupervisorStatus(ClusterStatus.Stopping)
                     controller.setResourceStatus(ResourceStatus.Updating)
                 } else {
-                    logger.warn("Action not allowed")
+                    logger.log(Level.WARNING, "Action not allowed")
                 }
             }
             Action.NONE -> {
@@ -369,7 +367,7 @@ class ClusterManager(
         val jobs = controller.getJobNamesWithStatus()
 
         if (jobs.any { it.value != JobStatus.Stopped.toString() && it.value != JobStatus.Terminated.toString() }) {
-            logger.warn("Wait until jobs have stopped...")
+            logger.log(Level.WARNING, "Wait until jobs have stopped...")
 
             return false
         }

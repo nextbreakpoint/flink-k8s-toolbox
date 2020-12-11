@@ -1,25 +1,28 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
-import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.RescalePolicy
 import com.nextbreakpoint.flink.common.ResourceStatus
-import com.nextbreakpoint.flink.common.ResourceStatus.Updating
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterConfiguration
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
+import com.nextbreakpoint.flink.k8s.common.FlinkJobAnnotations
+import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.common.Resource
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.factory.ClusterResourcesDefaultFactory
 import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1Service
-import org.apache.log4j.Logger
 import org.joda.time.DateTime
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.math.max
 import kotlin.math.min
 
@@ -27,6 +30,7 @@ class ClusterController(
     val namespace: String,
     val clusterName: String,
     private val controller: Controller,
+    private val pollingInterval: Long,
     private val resources: ClusterResources,
     private val cluster: V1FlinkCluster
 ) {
@@ -68,21 +72,21 @@ class ClusterController(
         val newStatusTimestamp = FlinkClusterStatus.getStatusTimestamp(cluster)
 
         if (statusTimestamp != newStatusTimestamp) {
-            logger.debug("Updating status")
+            logger.log(Level.FINE, "Updating status")
             controller.updateStatus(namespace, clusterName, cluster)
         }
 
         val newActionTimestamp = FlinkClusterAnnotations.getActionTimestamp(cluster)
 
         if (actionTimestamp != newActionTimestamp) {
-            logger.debug("Updating annotations")
+            logger.log(Level.FINE, "Updating annotations")
             controller.updateAnnotations(namespace, clusterName, cluster)
         }
 
         val newHasFinalizer = hasFinalizer()
 
         if (hasFinalizer != newHasFinalizer) {
-            logger.debug("Updating finalizers")
+            logger.log(Level.FINE, "Updating finalizers")
             controller.updateFinalizers(namespace, clusterName, cluster)
         }
     }
@@ -313,7 +317,7 @@ class ClusterController(
 
     fun getTaskManagerReplicas() = resources.taskmanagerPods.size
 
-    fun areJobsUpdating() = resources.flinkJobs.any{ job -> job.status?.resourceStatus == Updating.toString() }
+    fun areJobsUpdating() = resources.flinkJobs.any { job -> !isJobReady(job) }
 
     fun getRescaleDelay() = FlinkClusterConfiguration.getRescaleDelay(cluster)
 
@@ -321,6 +325,7 @@ class ClusterController(
 
     fun rescaleCluster(requiredTaskManagers: Int) {
         FlinkClusterStatus.setTaskManagers(cluster, requiredTaskManagers)
+
         controller.updateTaskManagerReplicas(namespace, clusterName, requiredTaskManagers)
     }
 
@@ -340,6 +345,14 @@ class ClusterController(
         return pods
     }
 
+    fun updateRescaleTimestamp() {
+        FlinkClusterStatus.updateRescaleTimestamp(cluster, controller.currentTimeMillis())
+    }
+
+    fun hasJobFinalizers() = resources.flinkJobs.any {
+        it.metadata?.finalizers?.contains(Resource.SUPERVISOR_FINALIZER_VALUE) ?: false
+    }
+
     private fun computeRequiredTaskManagers(): Int {
         val requiredTaskSlots = getRequiredTaskSlots()
         val taskSlots = getDeclaredTaskSlots()
@@ -357,5 +370,12 @@ class ClusterController(
     private fun findTaskManagerByPodIP(podIP: String?) =
         resources.taskmanagerPods.find { pod -> pod.status?.podIP == podIP }?.metadata?.name
 
+    private fun hasJobStatusChangedRecently(job: V1FlinkJob) =
+        (controller.currentTimeMillis() - FlinkJobStatus.getStatusTimestamp(job).millis) / 1000L < pollingInterval * 2
+
+    private fun isJobReady(job: V1FlinkJob) = job.status?.resourceStatus == ResourceStatus.Updated.toString() && !transitoryStatus.contains(job.status?.supervisorStatus.toString())
+
     private val activeStatus = setOf(JobStatus.Starting.toString(), JobStatus.Started.toString())
+
+    private val transitoryStatus = setOf(JobStatus.Starting.toString(), JobStatus.Stopping.toString())
 }

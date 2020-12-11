@@ -1,14 +1,15 @@
 FROM gradle:6.6.1-jdk11 AS build
 ADD . /src
 WORKDIR /src
-RUN gradle --no-daemon clean test shadowJar
+RUN gradle --no-daemon build test copyRuntimeDeps
 
-FROM adoptopenjdk/openjdk11
-COPY --from=build /src/build/libs/flink-k8s-toolbox-*-with-dependencies.jar /usr/local/bin/flink-k8s-toolbox.jar
-RUN apt-get update -y && apt-get install -y curl
+FROM oracle/graalvm-ce:20.3.0-java11 as native-image
+COPY --from=build /src/build/libs/* /build/libs/
+RUN gu install native-image
 WORKDIR /
-COPY entrypoint.sh .
-RUN chmod u+x entrypoint.sh
-HEALTHCHECK --retries=12 --interval=10s CMD curl -s localhost:8080/version || exit 1
+RUN native-image --verbose -J-Xmx4G -cp $(find build/libs -name "*.jar" -print | sed "s/.jar/.jar:/g" | tr -d '\n' | sed "s/:$//g") -H:+StaticExecutableWithDynamicLibC -H:Name=flinkctl
+
+FROM gcr.io/distroless/base
+COPY --from=native-image flinkctl /flinkctl
 EXPOSE 4444 8080
-ENTRYPOINT ["sh", "/entrypoint.sh"]
+ENTRYPOINT ["/flinkctl"]

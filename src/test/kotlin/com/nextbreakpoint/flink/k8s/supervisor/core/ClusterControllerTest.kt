@@ -1,7 +1,7 @@
 package com.nextbreakpoint.flink.k8s.supervisor.core
 
-import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.Action
+import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
@@ -18,7 +18,6 @@ import com.nextbreakpoint.flink.testing.TestFactory
 import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
 import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
 import io.kubernetes.client.openapi.models.V1PodStatus
-import org.apache.log4j.Logger
 import org.assertj.core.api.Assertions.assertThat
 import org.joda.time.DateTime
 import org.junit.jupiter.api.AfterEach
@@ -27,6 +26,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
+import java.util.logging.Logger
 
 class ClusterControllerTest {
     private val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink", taskSlots = 2)
@@ -44,7 +44,7 @@ class ClusterControllerTest {
     )
     private val logger = mock(Logger::class.java)
     private val controller = mock(Controller::class.java)
-    private val clusterController = ClusterController("flink", "test", controller, resources, cluster)
+    private val clusterController = ClusterController("flink", "test", controller, 5, resources, cluster)
 
     @AfterEach
     fun verifyInteractions() {
@@ -467,9 +467,8 @@ class ClusterControllerTest {
 
     @Test
     fun `should return status timestamp`() {
-        val timestamp = System.currentTimeMillis()
-        assertThat(clusterController.getStatusTimestamp()).isGreaterThan(DateTime(timestamp - 60000))
-        FlinkClusterStatus.setSupervisorStatus(cluster, ClusterStatus.Started)
+        assertThat(clusterController.getStatusTimestamp()).isEqualTo(DateTime(0))
+        FlinkClusterStatus.setSupervisorStatus(cluster, ClusterStatus.Stopped)
         assertThat(clusterController.getStatusTimestamp()).isEqualTo(FlinkClusterStatus.getStatusTimestamp(cluster))
     }
 
@@ -478,7 +477,7 @@ class ClusterControllerTest {
         assertThat(clusterController.doesJobManagerServiceExists()).isTrue()
         // TODO perhaps we can fin a better way to do this
         val newResources = resources.withService(null)
-        val newController = ClusterController("flink", "test", controller, newResources, cluster)
+        val newController = ClusterController("flink", "test", controller, 5, newResources, cluster)
         assertThat(newController.doesJobManagerServiceExists()).isFalse()
     }
 

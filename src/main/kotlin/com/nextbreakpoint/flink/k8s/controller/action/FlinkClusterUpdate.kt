@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class FlinkClusterUpdate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<V1FlinkCluster, Void?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -23,7 +24,7 @@ class FlinkClusterUpdate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 null
             )
         } catch (e : Exception) {
-            logger.error("Can't update cluster", e)
+            logger.log(Level.SEVERE, "Can't update cluster", e)
 
             Result(
                 ResultStatus.ERROR,

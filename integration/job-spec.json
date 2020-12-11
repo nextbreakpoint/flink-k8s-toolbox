@@ -3,7 +3,7 @@
   "bootstrap": {
     "serviceAccount": "flink-bootstrap",
     "pullPolicy": "Never",
-    "image": "integration/flink-jobs:1",
+    "image": "integration/jobs:latest",
     "jarPath": "/flink-jobs.jar",
     "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
     "arguments": [
@@ -24,7 +24,11 @@
   "savepoint": {
     "savepointMode": "Automatic",
     "savepointInterval": 0,
-    "savepointTargetPath": "s3a://flink/0/savepoints",
-    "restartPolicy": "Always"
+    "savepointTargetPath": "s3a://flink/0/savepoints"
+  },
+  "restart": {
+    "restartPolicy": "Always",
+    "restartDelay": 60,
+    "restartTimeout": 120
   }
 }

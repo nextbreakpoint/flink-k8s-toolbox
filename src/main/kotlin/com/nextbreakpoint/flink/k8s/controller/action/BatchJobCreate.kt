@@ -7,7 +7,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.JobAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import io.kubernetes.client.openapi.models.V1Job
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class BatchJobCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : JobAction<V1Job, String?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -23,7 +24,7 @@ class BatchJobCreate(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeC
                 jobOut.metadata?.name ?: throw RuntimeException("Unexpected metadata")
             )
         } catch (e : Exception) {
-            logger.error("Can't create batch job", e)
+            logger.log(Level.SEVERE, "Can't create batch job", e)
 
             Result(
                 ResultStatus.ERROR,

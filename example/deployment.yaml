@@ -6,7 +6,7 @@ spec:
   cluster:
     supervisor:
       pullPolicy: Never
-      image: example/flink-jobs:1
+      image: nextbreakpoint/flinkctl:1.4.0-beta
       serviceAccount: flink-supervisor
       taskTimeout: 180
       rescaleDelay: 10
@@ -181,11 +181,14 @@ spec:
           savepointMode: Automatic
           savepointInterval: 0
           savepointTargetPath: file:///var/savepoints
-          restartPolicy: Never
+        restart:
+          restartPolicy: Always
+          restartDelay: 60
+          restartTimeout: 120
         bootstrap:
           serviceAccount: flink-bootstrap
           pullPolicy: Never
-          image: example/flink-jobs:1
+          image: example/jobs:latest
           jarPath: /flink-jobs.jar
           className: com.nextbreakpoint.flink.jobs.stream.TestJob
           arguments:
@@ -205,11 +208,14 @@ spec:
           savepointMode: Automatic
           savepointInterval: 0
           savepointTargetPath: file:///var/savepoints
+        restart:
           restartPolicy: Always
+          restartDelay: 60
+          restartTimeout: 120
         bootstrap:
           serviceAccount: flink-bootstrap
           pullPolicy: Never
-          image: example/flink-jobs:1
+          image: example/jobs:latest
           jarPath: /flink-jobs.jar
           className: com.nextbreakpoint.flink.jobs.stream.TestJob
           arguments:

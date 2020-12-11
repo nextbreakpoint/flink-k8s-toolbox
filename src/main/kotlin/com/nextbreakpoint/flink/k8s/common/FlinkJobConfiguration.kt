@@ -16,5 +16,11 @@ object FlinkJobConfiguration {
         flinkJob.spec?.savepoint?.savepointTargetPath?.trim()
 
     fun getRestartPolicy(flinkJob: V1FlinkJob) : String =
-        flinkJob.spec?.savepoint?.restartPolicy ?: "NEVER"
+        flinkJob.spec?.restart?.restartPolicy ?: "NEVER"
+
+    fun getRestartDelay(flinkJob: V1FlinkJob) : Long =
+        flinkJob.spec?.restart?.restartDelay?.toLong() ?: 60
+
+    fun getRestartTimeout(flinkJob: V1FlinkJob) : Long =
+        flinkJob.spec?.restart?.restartTimeout?.toLong() ?: 180
 }

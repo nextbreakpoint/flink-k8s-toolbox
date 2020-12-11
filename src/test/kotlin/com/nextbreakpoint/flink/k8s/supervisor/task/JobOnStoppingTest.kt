@@ -21,6 +21,7 @@ class JobOnStoppingTest {
         given(context.cancelJob()).thenReturn(true)
         given(context.mustTerminateResources()).thenReturn(false)
         given(context.shouldRestart()).thenReturn(false)
+        given(context.hasFinalizer()).thenReturn(true)
     }
 
     @Test

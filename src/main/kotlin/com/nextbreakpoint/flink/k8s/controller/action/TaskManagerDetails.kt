@@ -8,7 +8,8 @@ import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flinkclient.model.TaskManagerDetailsInfo
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class TaskManagerDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient): ClusterAction<TaskManagerId, TaskManagerDetailsInfo?>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -26,7 +27,7 @@ class TaskManagerDetails(flinkOptions: FlinkOptions, flinkClient: FlinkClient, k
                 details
             )
         } catch (e : Exception) {
-            logger.error("Can't get taskmanager's details ($params)", e)
+            logger.log(Level.SEVERE, "Can't get taskmanager's details ($params)", e)
 
             Result(
                 ResultStatus.ERROR,

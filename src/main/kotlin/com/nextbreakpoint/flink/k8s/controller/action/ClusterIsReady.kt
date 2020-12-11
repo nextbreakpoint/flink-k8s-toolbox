@@ -6,7 +6,8 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.core.ClusterAction
 import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
-import org.apache.log4j.Logger
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class ClusterIsReady(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeClient: KubeClient) : ClusterAction<Int, Boolean>(flinkOptions, flinkClient, kubeClient) {
     companion object {
@@ -24,7 +25,7 @@ class ClusterIsReady(flinkOptions: FlinkOptions, flinkClient: FlinkClient, kubeC
                 overview.slotsTotal >= params
             )
         } catch (e : Exception) {
-            logger.debug("Can't get server overview")
+            logger.log(Level.FINE, "Can't get server overview")
 
             Result(
                 ResultStatus.ERROR,

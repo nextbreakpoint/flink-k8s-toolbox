@@ -1,8 +1,8 @@
 package com.nextbreakpoint.flink.k8s.controller.action
 
+import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.ClusterStatus
 import com.nextbreakpoint.flink.common.FlinkOptions
-import com.nextbreakpoint.flink.common.Action
 import com.nextbreakpoint.flink.common.StopOptions
 import com.nextbreakpoint.flink.k8s.common.FlinkClient
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations

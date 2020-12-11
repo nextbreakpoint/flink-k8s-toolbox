@@ -81,7 +81,7 @@ Configure Docker environment (only for minikube):
 
 Build Flink jobs image:
 
-    docker build -t example/flink-jobs:1 example/flink-jobs --build-arg repository=nextbreakpoint/flink-k8s-toolbox --build-arg version=1.4.0-beta
+    docker build -t example/jobs:latest example/flink-jobs --build-arg repository=nextbreakpoint/flinkctl --build-arg version=1.4.0-beta
 
 ## Create Flink resources    
 
@@ -180,22 +180,22 @@ Configure Docker environment (only for minikube):
 
 Compile Docker image of Flink Operator:
 
-    docker build -t flink-k8s-toolbox:1.4.0-beta .
+    docker build -t flinkctl:1.4.0-beta .
 
 Optionally tag and push Docker image to your local Docker registry:
 
-    docker tag flink-k8s-toolbox:1.4.0-beta registry:30000/flink-k8s-toolbox:1.4.0-beta
+    docker tag flinkctl:1.4.0-beta registry:30000/flinkctl:1.4.0-beta
     docker login registry:30000
-    docker push registry:30000/flink-k8s-toolbox:1.4.0-beta
+    docker push registry:30000/flinkctl:1.4.0-beta
 
 Run Flink Operator using Docker image:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flink-k8s-toolbox:1.4.0-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flinkctl:1.4.0-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
 
 Run Flink Operator using Helm and local registry:
 
-    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink --set image.repository=registry:30000/flink-k8s-toolbox --set image.pullPolicy=Always
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink --set image.repository=registry:30000/flinkctl --set image.pullPolicy=Always
 
 Run Flink Operator using Helm and local image:
 
-    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink --set image.repository=flink-k8s-toolbox --set image.pullPolicy=Never
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink --set image.repository=flinkctl --set image.pullPolicy=Never

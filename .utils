@@ -1,0 +1,11 @@
+function classpath {
+   find build/libs -name "*.jar" -print | sed "s/.jar/.jar:/g" | tr -d '\n' | sed "s/:$//g"
+}
+
+function minikubeIp {
+   minikube ip
+}
+
+function kubeConfig {
+   echo ~/.kube/config
+}
