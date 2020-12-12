@@ -33,6 +33,9 @@ class ResourceStatusTest : IntegrationSetup() {
     fun printInfo() {
         printSupervisorLogs()
         printOperatorLogs()
+        printJobManagerLogs()
+        printTaskManagerLogs()
+        printBootstrapJobLogs()
         describeResources()
     }
 

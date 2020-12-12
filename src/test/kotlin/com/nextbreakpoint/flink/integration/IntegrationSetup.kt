@@ -258,6 +258,36 @@ open class IntegrationSetup {
             println("Supervisor logs printed")
         }
 
+        fun printJobManagerLogs() {
+            println("Printing JobManager logs...")
+            listResources("fc").forEach {
+                if (printJobManagerLogs(namespace = namespace, clusterName = it) != 0) {
+                    println("Can't print JobManager logs")
+                }
+            }
+            println("JobManager logs printed")
+        }
+
+        fun printTaskManagerLogs() {
+            println("Printing TaskManager logs...")
+            listResources("fc").forEach {
+                if (printTaskManagerLogs(namespace = namespace, clusterName = it) != 0) {
+                    println("Can't print TaskManager logs")
+                }
+            }
+            println("TaskManager logs printed")
+        }
+
+        fun printBootstrapJobLogs() {
+            println("Printing Bootstrap logs...")
+            listResources("fc").forEach {
+                if (printBootstrapJobLogs(namespace = namespace, clusterName = it) != 0) {
+                    println("Can't print Bootstrap logs")
+                }
+            }
+            println("Bootstrap logs printed")
+        }
+
         fun installResources() {
             println("Install resources...")
             if (createResources(namespace = namespace, path = "example/config.yaml") != 0) {
@@ -778,6 +808,33 @@ open class IntegrationSetup {
                 "sh",
                 "-c",
                 "kubectl -n $namespace logs --tail=1000 -l role=supervisor,clusterName=$clusterName"
+            )
+            return executeCommand(command)
+        }
+
+        private fun printJobManagerLogs(namespace: String, clusterName: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace logs --tail=1000 -l role=jobmanager,clusterName=$clusterName"
+            )
+            return executeCommand(command)
+        }
+
+        private fun printTaskManagerLogs(namespace: String, clusterName: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace logs --tail=1000 -l role=taskmanager,clusterName=$clusterName"
+            )
+            return executeCommand(command)
+        }
+
+        private fun printBootstrapJobLogs(namespace: String, clusterName: String): Int {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace logs --tail=1000 -l role=bootstrap,clusterName=$clusterName"
             )
             return executeCommand(command)
         }
