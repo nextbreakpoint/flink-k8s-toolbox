@@ -34,6 +34,9 @@ class CreateAndDeleteTest : IntegrationSetup() {
     fun printInfo() {
         printSupervisorLogs()
         printOperatorLogs()
+        printJobManagerLogs()
+        printTaskManagerLogs()
+        printBootstrapJobLogs()
         describeResources()
     }
 
