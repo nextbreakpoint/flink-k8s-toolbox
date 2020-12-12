@@ -35,6 +35,9 @@ class ResourceUpdatedTest : IntegrationSetup() {
     fun printInfo() {
         printSupervisorLogs()
         printOperatorLogs()
+        printJobManagerLogs()
+        printTaskManagerLogs()
+        printBootstrapJobLogs()
         describeResources()
     }
 
