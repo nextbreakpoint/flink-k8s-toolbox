@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ConnectionConfig
 
 class DeploymentsList(private val factory: WebClientFactory = WebClientDefaultFactory) : OperatorCommand {
     override fun run(connectionConfig: ConnectionConfig) {
-        HttpUtils.get(factory, connectionConfig, "/deployments")
+        HttpUtils.get(factory, connectionConfig, "/api/v1/deployments")
     }
 }
 

@@ -9,7 +9,7 @@ import com.nextbreakpoint.flink.common.StopOptions
 
 class JobStop(private val factory: WebClientFactory = WebClientDefaultFactory) : JobCommand<StopOptions> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, jobName: String, args: StopOptions) {
-        HttpUtils.putJson(factory, connectionConfig, "/clusters/$clusterName/jobs/$jobName/stop", args)
+        HttpUtils.putJson(factory, connectionConfig, "/api/v1/clusters/$clusterName/jobs/$jobName/stop", args)
     }
 }
 

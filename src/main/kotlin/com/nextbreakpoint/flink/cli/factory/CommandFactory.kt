@@ -23,6 +23,12 @@ interface CommandFactory {
 
     fun createListDeploymentsCommand() : OperatorCommand
 
+    fun createCreateDeploymentCommand() : DeploymentCommand<String>
+
+    fun createDeleteDeploymentCommand() : DeploymentCommand<Void?>
+
+    fun createUpdateDeploymentCommand() : DeploymentCommand<String>
+
     fun createGetDeploymentStatusCommand(): DeploymentCommand<Void?>
 
     fun createListClustersCommand() : OperatorCommand

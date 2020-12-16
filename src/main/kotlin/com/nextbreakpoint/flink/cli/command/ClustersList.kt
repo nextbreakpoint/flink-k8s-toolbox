@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ConnectionConfig
 
 class ClustersList(private val factory: WebClientFactory = WebClientDefaultFactory) : OperatorCommand {
     override fun run(connectionConfig: ConnectionConfig) {
-        HttpUtils.get(factory, connectionConfig, "/clusters")
+        HttpUtils.get(factory, connectionConfig, "/api/v1/clusters")
     }
 }
 

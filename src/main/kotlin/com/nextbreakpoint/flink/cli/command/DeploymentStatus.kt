@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ConnectionConfig
 
 class DeploymentStatus(private val factory: WebClientFactory = WebClientDefaultFactory) : DeploymentCommand<Void?> {
     override fun run(connectionConfig: ConnectionConfig, deploymentName: String, unused: Void?) {
-        HttpUtils.get(factory, connectionConfig, "/deployments/$deploymentName/status")
+        HttpUtils.get(factory, connectionConfig, "/api/v1/deployments/$deploymentName/status")
     }
 }
 

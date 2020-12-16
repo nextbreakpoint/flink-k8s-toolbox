@@ -9,7 +9,7 @@ import com.nextbreakpoint.flink.common.StopOptions
 
 class ClusterStop(private val factory: WebClientFactory = WebClientDefaultFactory) : ClusterCommand<StopOptions> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, args: StopOptions) {
-        HttpUtils.putJson(factory, connectionConfig, "/clusters/$clusterName/stop", args)
+        HttpUtils.putJson(factory, connectionConfig, "/api/v1/clusters/$clusterName/stop", args)
     }
 }
 

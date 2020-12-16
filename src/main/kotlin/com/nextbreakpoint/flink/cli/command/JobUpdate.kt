@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ConnectionConfig
 
 class JobUpdate(private val factory: WebClientFactory = WebClientDefaultFactory) : JobCommand<String> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, jobName: String, args: String) {
-        HttpUtils.putJson(factory, connectionConfig, "/clusters/$clusterName/jobs/$jobName", args)
+        HttpUtils.putJson(factory, connectionConfig, "/api/v1/clusters/$clusterName/jobs/$jobName", args)
     }
 }
 
