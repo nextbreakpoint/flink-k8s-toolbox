@@ -9,7 +9,7 @@ import com.nextbreakpoint.flink.common.TaskManagerId
 
 class TaskManagerDetails(private val factory: WebClientFactory = WebClientDefaultFactory) : ClusterCommand<TaskManagerId> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, args: TaskManagerId) {
-        HttpUtils.get(factory, connectionConfig, "/clusters/$clusterName/taskmanagers/${args.taskmanagerId}/details")
+        HttpUtils.get(factory, connectionConfig, "/api/v1/clusters/$clusterName/taskmanagers/${args.taskmanagerId}/details")
     }
 }
 

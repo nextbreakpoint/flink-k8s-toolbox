@@ -8,7 +8,10 @@ import com.nextbreakpoint.flink.cli.command.ClusterStatus
 import com.nextbreakpoint.flink.cli.command.ClusterStop
 import com.nextbreakpoint.flink.cli.command.ClusterUpdate
 import com.nextbreakpoint.flink.cli.command.ClustersList
+import com.nextbreakpoint.flink.cli.command.DeploymentCreate
+import com.nextbreakpoint.flink.cli.command.DeploymentDelete
 import com.nextbreakpoint.flink.cli.command.DeploymentStatus
+import com.nextbreakpoint.flink.cli.command.DeploymentUpdate
 import com.nextbreakpoint.flink.cli.command.DeploymentsList
 import com.nextbreakpoint.flink.cli.command.JobCreate
 import com.nextbreakpoint.flink.cli.command.JobDelete
@@ -38,6 +41,12 @@ object CommandDefaultFactory : CommandFactory {
     override fun createLaunchSupervisorCommand() = LaunchSupervisor()
 
     override fun createListDeploymentsCommand() = DeploymentsList()
+
+    override fun createCreateDeploymentCommand() = DeploymentCreate()
+
+    override fun createDeleteDeploymentCommand() = DeploymentDelete()
+
+    override fun createUpdateDeploymentCommand() = DeploymentUpdate()
 
     override fun createGetDeploymentStatusCommand() = DeploymentStatus()
 

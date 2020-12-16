@@ -114,6 +114,9 @@ object Resource {
         )
     }
 
-    fun makeLabelSelector(name: String) =
-        "name=$name,owner=flink-operator,component=flink,role=taskmanager"
+    fun makeLabelSelector(clusterName: String) =
+        "clusterName=$clusterName,owner=flink-operator,component=flink"
+
+    fun makeLabelSelector(clusterName: String, jobName: String) =
+        "clusterName=$clusterName,jobName=$jobName,owner=flink-operator,component=flink"
 }

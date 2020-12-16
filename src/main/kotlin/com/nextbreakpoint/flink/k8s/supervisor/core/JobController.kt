@@ -136,7 +136,7 @@ class JobController(
             FlinkJobStatus.setSavepointPath(job, savepointPath ?: "")
         }
 
-        val labelSelector = Resource.makeLabelSelector("$clusterName-$jobName")
+        val labelSelector = Resource.makeLabelSelector(clusterName, jobName)
         FlinkJobStatus.setLabelSelector(job, labelSelector)
 
         updateStatus()

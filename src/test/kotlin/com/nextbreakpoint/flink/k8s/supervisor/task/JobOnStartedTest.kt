@@ -221,7 +221,7 @@ class JobOnStartedTest {
         inOrder.verify(context, times(1)).isJobFailed()
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).executeAction(setOf(
-            Action.START, Action.STOP, Action.FORGET_SAVEPOINT, Action.TRIGGER_SAVEPOINT
+            Action.STOP, Action.FORGET_SAVEPOINT, Action.TRIGGER_SAVEPOINT
         ))
         verifyNoMoreInteractions(context)
     }

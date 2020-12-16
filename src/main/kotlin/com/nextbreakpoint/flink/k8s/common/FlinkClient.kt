@@ -317,20 +317,24 @@ object FlinkClient {
         try {
             val flinkApi = createFlinkApiClient(address, TIMEOUT)
 
-            jobs.forEach {
-                val detailsResponse = flinkApi.getJobDetailsCall(it, null, null).execute()
+            jobs.forEach { jobId ->
+                val detailsResponse = flinkApi.getJobDetailsCall(jobId, null, null).execute()
 
                 detailsResponse.body().use { body ->
                     if (!detailsResponse.isSuccessful) {
-                        throw CallException("[$address] Can't cancel job $it")
+                        throw CallException("[$address] Can't cancel job $jobId")
                     }
 
                     body.source().use { source ->
-                        val response = flinkApi.terminateJobCall(it, "cancel", null, null).execute()
+                        val jobDetailsInfo: JobDetailsInfo = JSON().deserialize(source.readUtf8Line(), object : TypeToken<JobDetailsInfo>() {}.type)
 
-                        response.body().use { body ->
-                            if (!response.isSuccessful) {
-                                throw CallException("[$address] Can't cancel job $it")
+                        if (jobDetailsInfo.state != JobDetailsInfo.StateEnum.FINISHED && jobDetailsInfo.state != JobDetailsInfo.StateEnum.FAILED && jobDetailsInfo.state != JobDetailsInfo.StateEnum.CANCELED) {
+                            val response = flinkApi.terminateJobCall(jobId, "cancel", null, null).execute()
+
+                            response.body().use {
+                                if (!response.isSuccessful) {
+                                    throw CallException("[$address] Can't cancel job $jobId")
+                                }
                             }
                         }
                     }

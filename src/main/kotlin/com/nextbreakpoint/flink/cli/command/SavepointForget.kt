@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ConnectionConfig
 
 class SavepointForget(private val factory: WebClientFactory = WebClientDefaultFactory) : JobCommand<Void?> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, jobName: String, unused: Void?) {
-        HttpUtils.delete(factory, connectionConfig, "/clusters/$clusterName/jobs/$jobName/savepoint")
+        HttpUtils.delete(factory, connectionConfig, "/api/v1/clusters/$clusterName/jobs/$jobName/savepoint")
     }
 }
 

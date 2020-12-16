@@ -3,11 +3,9 @@ on:
   push:
     branches:
       - master
-      - feature/**
   pull_request:
   release:
     types:
-      - created
 jobs:
   build:
     runs-on: ubuntu-18.04

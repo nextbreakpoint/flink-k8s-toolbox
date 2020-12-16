@@ -1,11 +1,11 @@
 apiVersion: "nextbreakpoint.com/v1"
 kind: FlinkDeployment
 metadata:
-  name: test
+  name: cluster-1
 spec:
   cluster:
     supervisor:
-      pullPolicy: Never
+      pullPolicy: IfNotPresent
       image: nextbreakpoint/flinkctl:1.4.0-beta
       serviceAccount: flink-supervisor
       taskTimeout: 180
@@ -18,75 +18,36 @@ spec:
           cpu: '0.05'
           memory: 200Mi
     runtime:
-      pullPolicy: Never
+      pullPolicy: IfNotPresent
       image: example/flink:1.9.2
     jobManager:
       serviceMode: NodePort
       annotations:
-        managed: true
+        managedBy: "flinkctl"
       environment:
-      - name: FLINK_JM_HEAP
-        value: "256"
-      - name: FLINK_ENVIRONMENT
-        value: test
-      - name: FLINK_GRAPHITE_HOST
-        value: graphite.default.svc.cluster.local
-      - name: FLINK_SAVEPOINTS_LOCATION
-        value: file:///var/savepoints
-      - name: FLINK_CHECKPOINTS_LOCATION
-        value: file:///var/checkpoints
-      - name: FLINK_FS_CHECKPOINTS_LOCATION
-        value: file:///var/fs_checkpoints
+        - name: FLINK_JM_HEAP
+          value: "256"
+        - name: FLINK_SAVEPOINTS_LOCATION
+          value: file:///var/savepoints
+        - name: FLINK_CHECKPOINTS_LOCATION
+          value: file:///var/checkpoints
+        - name: FLINK_FS_CHECKPOINTS_LOCATION
+          value: file:///var/fs_checkpoints
+        - name: FLINK_S3_ENDPOINT
+          value: http://minio-headless:9000
+        - name: FLINK_S3_PATH_STYLE_ACCESS
+          value: "true"
       environmentFrom:
-      - secretRef:
-          name: flink-secrets
+        - secretRef:
+            name: flink-secrets
       volumeMounts:
         - name: config-vol
           mountPath: /hadoop/etc/core-site.xml
           subPath: core-site.xml
-        - name: config-vol
-          mountPath: /docker-entrypoint.sh
-          subPath: docker-entrypoint.sh
-        - name: config-vol
-          mountPath: /opt/flink/conf/flink-conf-template.yaml
-          subPath: flink-conf.yaml
-        - name: data-vol
-          mountPath: /data
       volumes:
         - name: config-vol
           configMap:
             name: flink-config
-            defaultMode: 0777
-        - name: data-vol
-          hostPath:
-            path: /var/data
-      initContainers:
-        - image: busybox
-          command:
-            - ls
-          imagePullPolicy: IfNotPresent
-          name: initializer
-          resources:
-            limits:
-              cpu: '0.2'
-              memory: 128Mi
-            requests:
-              cpu: '0.1'
-              memory: 64Mi
-      sideContainers:
-        - image: busybox
-          command:
-            - sleep
-            - '3600'
-          imagePullPolicy: IfNotPresent
-          name: sidecar
-          resources:
-            limits:
-              cpu: '0.2'
-              memory: 128Mi
-            requests:
-              cpu: '0.1'
-              memory: 64Mi
       extraPorts:
         - name: prometheus
           containerPort: 9999
@@ -101,67 +62,41 @@ spec:
     taskManager:
       taskSlots: 2
       annotations:
-        managed: false
+        managedBy: "flinkctl"
       environment:
-      - name: FLINK_TM_HEAP
-        value: "1024"
-      - name: FLINK_ENVIRONMENT
-        value: test
-      - name: FLINK_GRAPHITE_HOST
-        value: graphite.default.svc.cluster.local
-      - name: FLINK_SAVEPOINTS_LOCATION
-        value: file:///var/savepoints
-      - name: FLINK_CHECKPOINTS_LOCATION
-        value: file:///var/checkpoints
-      - name: FLINK_FS_CHECKPOINTS_LOCATION
-        value: file:///var/fs_checkpoints
+        - name: FLINK_TM_HEAP
+          value: "1024"
+        - name: FLINK_SAVEPOINTS_LOCATION
+          value: file:///var/savepoints
+        - name: FLINK_CHECKPOINTS_LOCATION
+          value: file:///var/checkpoints
+        - name: FLINK_FS_CHECKPOINTS_LOCATION
+          value: file:///var/fs_checkpoints
+        - name: FLINK_S3_ENDPOINT
+          value: http://minio-headless:9000
+        - name: FLINK_S3_PATH_STYLE_ACCESS
+          value: "true"
+      environmentFrom:
+        - secretRef:
+            name: flink-secrets
       volumeMounts:
         - name: config-vol
           mountPath: /hadoop/etc/core-site.xml
           subPath: core-site.xml
-        - name: config-vol
-          mountPath: /docker-entrypoint.sh
-          subPath: docker-entrypoint.sh
-        - name: config-vol
-          mountPath: /opt/flink/conf/flink-conf-template.yaml
-          subPath: flink-conf.yaml
-        - name: data-vol
-          mountPath: /data
+        - name: source-vol
+          mountPath: /tmp/workshop/sensor-events/data.csv
+          subPath: sensor-events.csv
       volumes:
         - name: config-vol
           configMap:
             name: flink-config
+        - name: source-vol
+          configMap:
+            name: flink-data
             defaultMode: 0777
         - name: data-vol
           hostPath:
-            path: /var/data
-      initContainers:
-        - image: busybox
-          command:
-            - ls
-          imagePullPolicy: IfNotPresent
-          name: initializer
-          resources:
-            limits:
-              cpu: '0.2'
-              memory: 128Mi
-            requests:
-              cpu: '0.1'
-              memory: 64Mi
-      sideContainers:
-        - image: busybox
-          command:
-            - sleep
-            - '3600'
-          imagePullPolicy: IfNotPresent
-          name: sidecar
-          resources:
-            limits:
-              cpu: '0.2'
-              memory: 128Mi
-            requests:
-              cpu: '0.1'
-              memory: 64Mi
+            path: /data
       extraPorts:
         - name: prometheus
           containerPort: 9999
@@ -179,21 +114,21 @@ spec:
         jobParallelism: 2
         savepoint:
           savepointMode: Automatic
-          savepointInterval: 0
-          savepointTargetPath: file:///var/savepoints
+          savepointInterval: 3600
+          savepointTargetPath: s3a://flink/cluster-1/job-1/savepoints
         restart:
-          restartPolicy: Always
+          restartPolicy: OnlyIfFailed
           restartDelay: 60
           restartTimeout: 120
         bootstrap:
           serviceAccount: flink-bootstrap
-          pullPolicy: Never
-          image: example/jobs:latest
+          pullPolicy: IfNotPresent
+          image: jobs:latest
           jarPath: /flink-jobs.jar
           className: com.nextbreakpoint.flink.jobs.stream.TestJob
           arguments:
-            - --DEVELOP_MODE
-            - disabled
+            - --CONSOLE_OUTPUT
+            - "true"
           resources:
             limits:
               cpu: '0.05'
@@ -203,24 +138,55 @@ spec:
               memory: 200Mi
     - name: job-2
       spec:
-        jobParallelism: 2
+        jobParallelism: 1
         savepoint:
           savepointMode: Automatic
           savepointInterval: 0
-          savepointTargetPath: file:///var/savepoints
+          savepointTargetPath: s3a://flink/cluster-1/job-2/savepoints
         restart:
           restartPolicy: Always
           restartDelay: 60
           restartTimeout: 120
         bootstrap:
           serviceAccount: flink-bootstrap
-          pullPolicy: Never
-          image: example/jobs:latest
+          pullPolicy: IfNotPresent
+          image: jobs:latest
           jarPath: /flink-jobs.jar
           className: com.nextbreakpoint.flink.jobs.stream.TestJob
           arguments:
-            - --DEVELOP_MODE
-            - disabled
+            - --CONSOLE_OUTPUT
+            - "true"
+          resources:
+            limits:
+              cpu: '0.05'
+              memory: 200Mi
+            requests:
+              cpu: '0.05'
+              memory: 200Mi
+    - name: job-3
+      spec:
+        jobParallelism: 1
+        savepoint:
+          savepointMode: Manual
+          savepointInterval: 0
+          savepointTargetPath: s3a://flink/cluster-1/job-3/savepoints
+        restart:
+          restartPolicy: Never
+          restartDelay: 60
+          restartTimeout: 120
+        bootstrap:
+          serviceAccount: flink-bootstrap
+          pullPolicy: IfNotPresent
+          image: jobs:latest
+          jarPath: /flink-jobs.jar
+          className: com.nextbreakpoint.flink.jobs.batch.ReportJob
+          arguments:
+            - --CONSOLE_OUTPUT
+            - "true"
+            - --SOURCE_FS_PATH
+            - file:///tmp/workshop/sensor-events
+            - --OUTPUT_FS_PATH
+            - file:///tmp/workshop/report-events
           resources:
             limits:
               cpu: '0.05'

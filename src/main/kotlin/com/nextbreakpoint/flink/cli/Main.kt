@@ -65,6 +65,9 @@ class Main(private val factory: CommandFactory = CommandDefaultFactory) {
                 ListDeploymentsCommand(factory)
             ),
             Deployment().subcommands(
+                CreateDeploymentCommand(factory),
+                DeleteDeploymentCommand(factory),
+                UpdateDeploymentCommand(factory),
                 GetDeploymentStatusCommand(factory)
             ),
             Clusters().subcommands(
@@ -110,7 +113,7 @@ class Main(private val factory: CommandFactory = CommandDefaultFactory) {
         ).main(args)
     }
 
-    class MainCommand: CliktCommand(name = "flink-k8s-toolbox") {
+    class MainCommand: CliktCommand(name = "flinkctl") {
         override fun run() = Unit
     }
 
@@ -185,6 +188,80 @@ class Main(private val factory: CommandFactory = CommandDefaultFactory) {
             )
             factory.createListDeploymentsCommand().run(
                 connectionConfig
+            )
+        }
+    }
+
+    class CreateDeploymentCommand(private val factory: CommandFactory): CliktCommand(name = "create", help="Create a deployment") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val deploymentName: String by option(help="The name of the Flink deployment").required()
+        private val deploymentSpec: String by option(help="The specification of the Flink deployment in JSON format").required()
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createCreateDeploymentCommand().run(
+                connectionConfig, deploymentName, String(Files.readAllBytes(File(deploymentSpec).toPath()))
+            )
+        }
+    }
+
+    class DeleteDeploymentCommand(private val factory: CommandFactory): CliktCommand(name = "delete", help="Delete a deployment") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val deploymentName: String by option(help="The name of the Flink deployment").required()
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createDeleteDeploymentCommand().run(
+                connectionConfig, deploymentName, null
+            )
+        }
+    }
+
+    class UpdateDeploymentCommand(private val factory: CommandFactory): CliktCommand(name = "update", help="Update a deployment") {
+        private val host: String by option(help="The operator host").default("localhost")
+        private val port: Int by option(help="The operator port").int().default(4444)
+        private val keystorePath: String? by option(help="The keystore path")
+        private val keystoreSecret: String? by option(help="The keystore secret")
+        private val truststorePath: String? by option(help="The truststore path")
+        private val truststoreSecret: String? by option(help="The truststore secret")
+        private val deploymentName: String by option(help="The name of the Flink deployment").required()
+        private val deploymentSpec: String by option(help="The specification of the Flink deployment in JSON format").required()
+
+        override fun run() {
+            val connectionConfig = ConnectionConfig(
+                host,
+                port,
+                keystorePath,
+                keystoreSecret,
+                truststorePath,
+                truststoreSecret
+            )
+            factory.createUpdateDeploymentCommand().run(
+                connectionConfig, deploymentName, String(Files.readAllBytes(File(deploymentSpec).toPath()))
             )
         }
     }

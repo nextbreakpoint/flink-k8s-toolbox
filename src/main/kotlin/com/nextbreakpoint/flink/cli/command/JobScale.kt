@@ -9,7 +9,7 @@ import com.nextbreakpoint.flink.common.ScaleJobOptions
 
 class JobScale(private val factory: WebClientFactory = WebClientDefaultFactory) : JobCommand<ScaleJobOptions> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, jobName: String, args: ScaleJobOptions) {
-        HttpUtils.putJson(factory, connectionConfig, "/clusters/$clusterName/jobs/$jobName/scale", args)
+        HttpUtils.putJson(factory, connectionConfig, "/api/v1/clusters/$clusterName/jobs/$jobName/scale", args)
     }
 }
 

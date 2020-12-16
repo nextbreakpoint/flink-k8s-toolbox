@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ConnectionConfig
 
 class ClusterCreate(private val factory: WebClientFactory = WebClientDefaultFactory) : ClusterCommand<String> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, args: String) {
-        HttpUtils.postJson(factory, connectionConfig, "/clusters/$clusterName", args)
+        HttpUtils.postJson(factory, connectionConfig, "/api/v1/clusters/$clusterName", args)
     }
 }
 
