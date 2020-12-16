@@ -1,0 +1,259 @@
+digraph state_machine {
+  graph [autosize=false, resolution=100];
+  center=true;
+  margin=0;
+  rankdir=LR;
+  node [shape=circle style=filled fillcolor=skyblue width=1.8 heigth=1.8 fixedsize=true];
+  FLINKDEPLOYMENT -> OPERATOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Watch</TD>
+          </TR>
+      </TABLE>
+  > ];
+  OPERATOR -> FLINKDEPLOYMENT [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Update</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FLINKCLUSTER -> OPERATOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Watch</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FLINKJOB -> OPERATOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Watch</TD>
+          </TR>
+      </TABLE>
+  > ];
+  OPERATOR -> FLINKCLUSTER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Create</TD>
+          </TR>
+      </TABLE>
+  > ];
+  OPERATOR -> FLINKJOB [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Create</TD>
+          </TR>
+      </TABLE>
+  > ];
+  OPERATOR -> SUPERVISORDEPLOYMENT [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Create</TD>
+          </TR>
+      </TABLE>
+  > ];
+  OPERATOR -> SUPERVISORDEPLOYMENT [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Delete</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISOR -> JOBMANAGER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Create</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISOR -> JOBMANAGER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Delete</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISOR -> TASKMANAGER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Create</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISOR -> TASKMANAGER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Delete</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISOR -> BOOTSTRAP [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Create</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISOR -> BOOTSTRAP [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Delete</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISOR -> FLINKCLUSTER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Update</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISOR -> FLINKJOB [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Update</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FLINKCLUSTER -> SUPERVISOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Watch</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FLINKJOB -> SUPERVISOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Watch</TD>
+          </TR>
+      </TABLE>
+  > ];
+  BOOTSTRAP -> SUPERVISOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Watch</TD>
+          </TR>
+      </TABLE>
+  > ];
+  JOBMANAGER -> SUPERVISOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Watch</TD>
+          </TR>
+      </TABLE>
+  > ];
+  TASKMANAGER -> SUPERVISOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Watch</TD>
+          </TR>
+      </TABLE>
+  > ];
+  TASKMANAGER -> JOBMANAGER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Register resources</TD>
+          </TR>
+      </TABLE>
+  > ];
+  JOBMANAGER -> TASKMANAGER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Schedule tasks</TD>
+          </TR>
+      </TABLE>
+  > ];
+  BOOTSTRAP -> JOBMANAGER [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Upload and run job</TD>
+          </TR>
+      </TABLE>
+  > ];
+  OPERATORDEPLOYMENT -> OPERATOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Deploy</TD>
+          </TR>
+      </TABLE>
+  > ];
+  SUPERVISORDEPLOYMENT -> SUPERVISOR [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Deploy</TD>
+          </TR>
+      </TABLE>
+  > ];
+  FLINKDEPLOYMENT [ fillcolor=green width=2.0 ] [ label = <
+       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+           <TR>
+               <TD>FlinkDeployment</TD>
+           </TR>
+       </TABLE>
+     > ];
+  FLINKCLUSTER [ fillcolor=green width=2.0 ] [ label = <
+       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+           <TR>
+               <TD>FlinkCluster</TD>
+           </TR>
+       </TABLE>
+     > ];
+  FLINKJOB [ fillcolor=green width=2.0 ] [ label = <
+       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+           <TR>
+               <TD>FlinkJob</TD>
+           </TR>
+       </TABLE>
+     > ];
+  OPERATOR [ fillcolor=yellow width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>Operator</TD>
+        </TR>
+    </TABLE>
+  > ];
+  SUPERVISOR [ fillcolor=yellow width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>Supervisor</TD>
+        </TR>
+    </TABLE>
+  > ];
+  BOOTSTRAP [ fillcolor=yellow width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>Bootstrap</TD>
+        </TR>
+    </TABLE>
+  > ];
+  JOBMANAGER [ fillcolor=cyan width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>JobManager</TD>
+        </TR>
+    </TABLE>
+  > ];
+  TASKMANAGER [ fillcolor=cyan width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>TaskManager</TD>
+        </TR>
+    </TABLE>
+  > ];
+  SUPERVISORDEPLOYMENT [ fillcolor=cyan width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>Supervisor<BR/>Deployment</TD>
+        </TR>
+    </TABLE>
+  > ];
+  OPERATORDEPLOYMENT [ fillcolor=cyan width=2.0 ] [ label = <
+    <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        <TR>
+            <TD>Operator<BR/>Deployment</TD>
+        </TR>
+    </TABLE>
+  > ];
+}

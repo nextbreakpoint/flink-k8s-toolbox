@@ -190,7 +190,7 @@ object BootstrapResourcesDefaultFactory : BootstrapResourcesFactory {
             arguments.add("--savepoint-path=$savepointPath")
         }
 
-        bootstrap.arguments.forEach {
+        bootstrap.arguments?.forEach {
             arguments.add("--argument=$it")
         }
 

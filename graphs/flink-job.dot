@@ -4,31 +4,59 @@ digraph state_machine {
   margin=0;
   rankdir=LR;
   node [shape=circle style=filled fillcolor=skyblue width=1.8 heigth=1.8 fixedsize=true];
+  UNKNOWN -> UNKNOWN [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster<BR/>terminated</TD>
+          </TR>
+      </TABLE>
+  > ];
   UNKNOWN -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster<BR/>initialized</TD>
+              <TD>Job<BR/>initialized</TD>
           </TR>
       </TABLE>
   > ];
   UNKNOWN -> TERMINATED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster<BR/>deleted</TD>
+              <TD>Job<BR/>deleted</TD>
           </TR>
       </TABLE>
   > ];
   STARTING -> STARTED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>JobManager started</TD>
+              <TD>Job started</TD>
           </TR>
       </TABLE>
   > ];
   STARTING -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster deleted</TD>
+              <TD>Job deleted</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job stopped</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster stopping</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster terminated</TD>
           </TR>
       </TABLE>
   > ];
@@ -39,6 +67,55 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
+  STARTING -> STARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster starting</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTING -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job start timeout</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job stopped</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job deleted</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job modified</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster terminated</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster stopping</TD>
+          </TR>
+      </TABLE>
+  > ];
   STARTED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
@@ -49,49 +126,70 @@ digraph state_machine {
   STARTED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster deleted</TD>
+              <TD>Cluster starting</TD>
           </TR>
       </TABLE>
   > ];
   STARTED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster modified</TD>
+              <TD>Job finished</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job canceled</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job failed</TD>
           </TR>
       </TABLE>
   > ];
   STOPPING -> STOPPED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Job stopped and<BR/>pods terminated</TD>
+              <TD>Job stopped</TD>
           </TR>
       </TABLE>
   > ];
   STOPPING -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster restarted</TD>
+              <TD>Job restarted</TD>
           </TR>
       </TABLE>
   > ];
   STOPPING -> TERMINATED [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster deleted</TD>
+              <TD>Job deleted</TD>
           </TR>
       </TABLE>
   > ];
   STOPPED -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster started</TD>
+              <TD>Job started</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STOPPED -> STARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Cluster starting</TD>
           </TR>
       </TABLE>
   > ];
   STOPPED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Cluster deleted</TD>
+              <TD>Job deleted</TD>
           </TR>
       </TABLE>
   > ];

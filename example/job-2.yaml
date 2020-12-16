@@ -1,15 +1,15 @@
 apiVersion: "nextbreakpoint.com/v1"
 kind: FlinkJob
 metadata:
-  name: test-job-2
+  name: cluster-1-job-2
 spec:
   jobParallelism: 1
   savepoint:
     savepointMode: Manual
-    savepointInterval: 300
+    savepointInterval: 0
     savepointTargetPath: file:///var/savepoints
   restart:
-    restartPolicy: Always
+    restartPolicy: Never
     restartDelay: 60
     restartTimeout: 120
   bootstrap:
@@ -17,7 +17,7 @@ spec:
     pullPolicy: Never
     image: example/jobs:latest
     jarPath: /flink-jobs.jar
-    className: com.nextbreakpoint.flink.jobs.stream.TestJob
+    className: com.nextbreakpoint.flink.jobs.batch.ReportJob
     arguments:
       - --DEVELOP_MODE
       - disabled

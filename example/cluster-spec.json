@@ -29,14 +29,6 @@
         "value": "256"
       },
       {
-        "name": "FLINK_ENVIRONMENT",
-        "value": "test"
-      },
-      {
-        "name": "FLINK_GRAPHITE_HOST",
-        "value": "graphite.default.svc.cluster.local"
-      },
-      {
         "name": "FLINK_SAVEPOINTS_LOCATION",
         "value": "file:///data/savepoints"
       },
@@ -63,16 +55,6 @@
         "subPath": "core-site.xml"
       },
       {
-        "name": "config-vol",
-        "mountPath": "/docker-entrypoint.sh",
-        "subPath": "docker-entrypoint.sh"
-      },
-      {
-        "name": "config-vol",
-        "mountPath": "/opt/flink/conf/flink-conf-template.yaml",
-        "subPath": "flink-conf.yaml"
-      },
-      {
         "name": "data-vol",
         "mountPath": "/data"
       }
@@ -81,8 +63,7 @@
       {
         "name": "config-vol",
         "configMap": {
-          "name": "flink-config",
-          "defaultMode": "511"
+          "name": "flink-config"
         }
       },
       {
@@ -162,14 +143,6 @@
         "value": "1024"
       },
       {
-        "name": "FLINK_ENVIRONMENT",
-        "value": "test"
-      },
-      {
-        "name": "FLINK_GRAPHITE_HOST",
-        "value": "graphite.default.svc.cluster.local"
-      },
-      {
         "name": "FLINK_SAVEPOINTS_LOCATION",
         "value": "file:///data/savepoints"
       },
@@ -189,16 +162,6 @@
         "subPath": "core-site.xml"
       },
       {
-        "name": "config-vol",
-        "mountPath": "/docker-entrypoint.sh",
-        "subPath": "docker-entrypoint.sh"
-      },
-      {
-        "name": "config-vol",
-        "mountPath": "/opt/flink/conf/flink-conf-template.yaml",
-        "subPath": "flink-conf.yaml"
-      },
-      {
         "name": "data-vol",
         "mountPath": "/data"
       }
@@ -207,8 +170,7 @@
       {
         "name": "config-vol",
         "configMap": {
-          "name": "flink-config",
-          "defaultMode": "511"
+          "name": "flink-config"
         }
       },
       {

@@ -59,8 +59,6 @@ spec:
       environment:
         - name: FLINK_JM_HEAP
           value: "256"
-        - name: FLINK_ENVIRONMENT
-          value: test
         - name: FLINK_SAVEPOINTS_LOCATION
           value: file:///var/savepoints
         - name: FLINK_CHECKPOINTS_LOCATION
@@ -74,12 +72,6 @@ spec:
         - name: config-vol
           mountPath: /hadoop/etc/core-site.xml
           subPath: core-site.xml
-        - name: config-vol
-          mountPath: /docker-entrypoint.sh
-          subPath: docker-entrypoint.sh
-        - name: config-vol
-          mountPath: /opt/flink/conf/flink-conf-template.yaml
-          subPath: flink-conf.yaml
         - name: data-vol
           mountPath: /data
       volumes:
@@ -104,8 +96,6 @@ spec:
       environment:
         - name: FLINK_TM_HEAP
           value: "400"
-        - name: FLINK_ENVIRONMENT
-          value: test
         - name: FLINK_SAVEPOINTS_LOCATION
           value: file:///var/savepoints
         - name: FLINK_CHECKPOINTS_LOCATION
@@ -116,12 +106,6 @@ spec:
         - name: config-vol
           mountPath: /hadoop/etc/core-site.xml
           subPath: core-site.xml
-        - name: config-vol
-          mountPath: /docker-entrypoint.sh
-          subPath: docker-entrypoint.sh
-        - name: config-vol
-          mountPath: /opt/flink/conf/flink-conf-template.yaml
-          subPath: flink-conf.yaml
         - name: source-vol
           mountPath: /tmp/workshop/sensor-events/data.csv
           subPath: sensor-events.csv

@@ -111,7 +111,7 @@ open class IntegrationSetup {
             val flinkBuildArgs = listOf(
                 "--build-arg", "flink_version=$flinkVersion", "--build-arg", "scala_version=$scalaVersion"
             )
-            if (buildDockerImage(path = "example/flink", name = "integration/flink:$flinkVersion", args = flinkBuildArgs) != 0) {
+            if (buildDockerImage(path = "integration/flink", name = "integration/flink:$flinkVersion", args = flinkBuildArgs) != 0) {
                 fail("Can't build flink image")
             }
             println("Building job image...")
@@ -119,7 +119,7 @@ open class IntegrationSetup {
                 "--build-arg", "repository=integration/flinkctl", "--build-arg", "version=$version"
 
             )
-            if (buildDockerImage(path = "example/jobs", name = "integration/jobs:latest", args = jobBuildArgs) != 0) {
+            if (buildDockerImage(path = "integration/jobs", name = "integration/jobs:latest", args = jobBuildArgs) != 0) {
                 fail("Can't build job image")
             }
             println("Images created")
@@ -291,18 +291,18 @@ open class IntegrationSetup {
 
         fun installResources() {
             println("Install resources...")
-            if (createResources(namespace = namespace, path = "example/config.yaml") != 0) {
-                if (replaceResources(namespace = namespace, path = "example/config.yaml") != 0) {
+            if (createResources(namespace = namespace, path = "integration/flink-config.yaml") != 0) {
+                if (replaceResources(namespace = namespace, path = "integration/flink-config.yaml") != 0) {
                     fail("Can't create configmap")
                 }
             }
-            if (createResources(namespace = namespace, path = "example/secrets.yaml") != 0) {
-                if (replaceResources(namespace = namespace, path = "example/secrets.yaml") != 0) {
+            if (createResources(namespace = namespace, path = "integration/flink-secrets.yaml") != 0) {
+                if (replaceResources(namespace = namespace, path = "integration/flink-secrets.yaml") != 0) {
                     fail("Can't create secrets")
                 }
             }
-            if (createResources(namespace = namespace, path = "example/data.yaml") != 0) {
-                if (replaceResources(namespace = namespace, path = "example/data.yaml") != 0) {
+            if (createResources(namespace = namespace, path = "integration/sample-data.yaml") != 0) {
+                if (replaceResources(namespace = namespace, path = "integration/sample-data.yaml") != 0) {
                     fail("Can't create data")
                 }
             }

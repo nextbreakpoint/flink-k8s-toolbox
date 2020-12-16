@@ -5,7 +5,7 @@
     "pullPolicy": "Never",
     "image": "example/jobs:latest",
     "jarPath": "/flink-jobs.jar",
-    "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
+    "className": "com.nextbreakpoint.flink.jobs.batch.ReportJob",
     "arguments": [
       "--DEVELOP_MODE",
       "disabled"
@@ -27,7 +27,7 @@
     "savepointTargetPath": "file:///data/savepoints"
   },
   "restart": {
-    "restartPolicy": "Always",
+    "restartPolicy": "Never",
     "restartDelay": 60,
     "restartTimeout": 120
   }

@@ -431,10 +431,7 @@ class EnsureBehaviourTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 120) {
             assertThat(hasClusterJobStatus(namespace = namespace, name = "cluster-3-job-0", status = "FINISHED")).isTrue()
         }
-        awaitUntilAsserted(timeout = 60) {
-            assertThat(getTaskManagers(namespace = namespace, name = "cluster-3")).isEqualTo(1)
-        }
-        awaitUntilAsserted(timeout = 120) {
+        awaitUntilAsserted(timeout = 240) {
             assertThat(getTaskManagers(namespace = namespace, name = "cluster-3")).isEqualTo(0)
         }
 //        deleteCluster(clusterName = "cluster-3")
@@ -477,12 +474,14 @@ class EnsureBehaviourTest : IntegrationSetup() {
         assertClusterExists(clusterName = "cluster-2")
         assertJobExists(clusterName = "cluster-2", jobName = "job-1")
 
+        assertJobStarted(clusterName = "cluster-2", jobName = "job-1")
         deleteJob(clusterName = "cluster-2", jobName = "job-1")
-        assertJobDeleted(clusterName = "cluster-2", jobName = "job-1")
+        assertJobStarting(clusterName = "cluster-2", jobName = "job-1")
         assertJobStarted(clusterName = "cluster-2", jobName = "job-1")
 
+        assertClusterStarted("cluster-2")
         deleteCluster(clusterName = "cluster-2")
-        assertClusterDeleted("cluster-2")
+        assertClusterStarting("cluster-2")
         assertClusterStarted("cluster-2")
     }
 
