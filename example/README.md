@@ -1,71 +1,61 @@
-# How to setup a local environment   
+# Example of Flink deployment on Minikube   
 
-Follow these instructions to setup a local environment for testing the Flink Operator.
+Follow these tutorial to set up a Minikube environment and learn how to use the Flink Kubernetes Toolbox.
 
+## Preparation   
 
+Install Minikube 1.11.0 or later with Kubernetes 1.17. Install kubectl and Helm 3.
 
-## Install Docker and Kubernetes   
+Start Minikube with at least 8Gb of memory:
 
-You can use Docker for Desktop or Minikube for this example.
+    minikube start --cpus=2 --memory=8gb --kubernetes-version v1.17.0
 
-### Docker for Desktop   
+## Install Minio 
 
-We assume you are using Docker for Desktop 2.2.0.0 or later with Kubernetes 1.15 or later.
+Minio will be used as persistent storage for savepoints.
 
-Make sure that Docker is using at least 8Gb of memory (see Docker for Desktop settings).
+Install Minio with Helm:
 
-### Minikube
+    helm install minio example/minio --namespace flink-jobs --set minio.accessKey=minioaccesskey,minio.secretKey=miniosecretkey
 
-We assume you are using Minikube 1.6.1 or later with Kubernetes 1.15 or later.
+Create an empty bucket:
 
-Make sure that Minikube is using at least 8Gb of memory:
+    kubectl -n flink-jobs run minio-client --image=minio/mc:latest --restart=Never --command=true -- sh -c "mc config host add minio http://minio-headless:9000 minioaccesskey miniosecretkey && mc mb --region=eu-west-1 minio/flink"
 
-    minikube start --memory=8gb ...
+Verify that the bucket has been created:
 
-Don't forget to configure the environment before executing docker commands:
+    kubectl -n flink-jobs logs minio-client
 
-    eval $(minikube docker-env)
+    Added `minio` successfully.
+    Bucket created successfully `minio/flink`.
 
+## Install Flink Kubernetes Toolbox    
 
+Create flink-operator namespace:
 
-## Install Flink Operator    
+    kubectl create namespace flink-operator
 
-Install kubectl:
+Create flink-jobs namespace:
 
-    brew install kubectl
+    kubectl create namespace flink-jobs
 
-Install Helm:
-
-    brew install helm
-
-Create namespace:
-
-    kubectl create namespace flink
-
-Install operator's global resources:
+Install toolbox resources:
 
     helm install flink-k8s-toolbox-crd helm/flink-k8s-toolbox-crd
+    helm install flink-k8s-toolbox-roles helm/flink-k8s-toolbox-roles --namespace flink-operator --set observedNamespace=flink-jobs
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink-operator --set observedNamespace=flink-jobs
 
-Install operator's namespace resources:
+Start the operator:
 
-    helm install flink-k8s-toolbox-roles helm/flink-k8s-toolbox-roles --namespace flink
-    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink
+    kubectl scale deployment -n flink-operator flink-operator --replicas=1
 
-Run Flink Operator:
+Tail the logs of the operator:
 
-    kubectl scale deployment -n flink flink-operator --replicas=1
-
-Check that operator is running:
-
-    kubectl get pod -n flink
-
-Stop Flink Operator:
-
-    kubectl scale deployment -n flink flink-operator --replicas=0
+    kubectl -n flink-operator logs -f --tail=-1 -l app=flink-operator
 
 ## Prepare Flink image    
 
-Configure Docker environment (only for minikube):
+Configure Docker environment:
 
     eval $(minikube docker-env)
 
@@ -73,129 +63,201 @@ Build custom Flink image:
 
     docker build -t example/flink:1.9.2 --build-arg flink_version=1.9.2 --build-arg scala_version=2.11 example/flink
 
-## Prepare Flink job    
+## Prepare Flink jobs    
 
-Configure Docker environment (only for minikube):
+Configure Docker environment:
 
     eval $(minikube docker-env)
 
 Build Flink jobs image:
 
-    docker build -t example/jobs:latest example/flink-jobs --build-arg repository=nextbreakpoint/flinkctl --build-arg version=1.4.0-beta
+    docker build -t example/jobs:latest example/jobs 
 
-## Create Flink resources    
+## Use deployment resource to deploy cluster and jobs    
 
-Create Flink ConfigMap resource:
+Create configuration:
 
-    kubectl create -f example/config.yaml -n flink
+    kubectl -n flink-jobs create -f example/flink-config.yaml
 
-Create Flink Secret resource:
+Create secrets:
 
-    kubectl create -f example/secrets.yaml -n flink
+    kubectl -n flink-jobs create -f example/flink-secrets.yaml
 
-Create Flink Cluster resource:
+Create sample data:
 
-    kubectl create -f example/cluster.yaml -n flink
+    kubectl -n flink-jobs create -f example/sample-data.yaml
 
-Get Flink Cluster resource:
+Create deployment resource:
 
-    kubectl get fc test -o yaml -n flink
+    kubectl -n flink-jobs create -f example/deployment.yaml
 
-List Flink Cluster resources:
+Get deployment resource:
 
-    kubectl get fc -n flink
+    kubectl -n flink-jobs get fd cluster-1 -o yaml
 
-Watch Flink Cluster resources:
+Watch cluster resources:
 
-    kubectl get fc -n flink --watch
+    kubectl -n flink-jobs get fc --watch
 
-## Check logs and remove pods     
+Watch job resources:
 
-Check pods are created:
+    kubectl -n flink-jobs get fj --watch
 
-    kubectl get pods -n flink --watch
+Watch pod resources:
 
-Check logs of JobManager:
+    kubectl -n flink-jobs get pods --watch
 
-    kubectl logs -n flink jobmanager-test-0 -c jobmanager
+Tail the logs of the supervisor:
 
-Check logs of TaskManager:
+    kubectl -n flink-jobs logs -f --tail=-1 -l role=supervisor
 
-    kubectl logs -n flink taskmanager-test-0 -c taskmanager
+Tail the logs of the JobManager:
 
-Force deletion of pods if Kubernetes get stuck:
+    kubectl -n flink-jobs logs -f --tail=-1 -l role=jobmanager -c jobmanager
 
-    kubectl delete pod jobmanager-test-0 --grace-period=0 --force -n flink
-    kubectl delete pod taskmanager-test-0 --grace-period=0 --force -n flink
+Tail the logs of the TaskManager:
 
-## Patch Flink Cluster resource     
+    kubectl -n flink-jobs logs -f --tail=-1 -l role=taskmanager -c taskmanager
+
+Expose the JobManager web console:
+
+    kubectl -n flink-jobs port-forward service/jobmanager-cluster-1 8081
+
+then open a browser at http://localhost:8081
+
+## Patch a deployment resource to update cluster and jobs
 
 Example of patch operation to change pullPolicy:
 
-    kubectl patch -n flink fc test --type=json -p '[{"op":"replace","path":"/spec/runtime/pullPolicy","value":"Always"}]'
+    kubectl -n flink-jobs patch fd cluster-1 --type=json -p '[{"op":"replace","path":"/spec/runtime/pullPolicy","value":"Always"}]'
 
 Example of patch operation to change serviceMode:
 
-    kubectl patch -n flink fc test --type=json -p '[{"op":"replace","path":"/spec/jobManager/serviceMode","value":"ClusterIP"}]'
+    kubectl -n flink-jobs patch fd cluster-1 --type=json -p '[{"op":"replace","path":"/spec/jobManager/serviceMode","value":"ClusterIP"}]'
 
 Example of patch operation to change savepointInterval:
 
-    kubectl patch -n flink fc test --type=json -p '[{"op":"replace","path":"/spec/jobs/0/spec/savepoint/savepointInterval","value":60}]'
+    kubectl -n flink-jobs patch fd cluster-1 --type=json -p '[{"op":"replace","path":"/spec/jobs/0/spec/savepoint/savepointInterval","value":60}]'
 
-## Optionally install a local Docker Registry
+## Inspect cluster and jobs
 
-Create docker-registry files:
+Inspect status of the deployment:
 
-    ./docker-registry-setup.sh
+    kubectl -n flink-jobs get fd cluster-1 -o json | jq '.status' 
 
-Create docker-registry:
+Inspect status of the cluster:
 
-    kubectl create -f docker-registry.yaml
+    kubectl -n flink-jobs get fc cluster-1 -o json | jq '.status' 
 
-Add this entry to your hosts file (etc/hosts):
+Inspect status of a job:
 
-    127.0.0.1 registry
+    kubectl -n flink-jobs get fj cluster-1-job-1 -o json | jq '.status' 
 
-Create pull secrets in flink namespace:
+## Control cluster and jobs with annotations 
 
-    kubectl create secret docker-registry regcred -n flink --docker-server=registry:30000 --docker-username=test --docker-password=password --docker-email=<your-email>
+Annotate the cluster to stop it:
 
-Associate pull secrets to flink-operator service account:
+    kubectl -n flink-jobs annotate fc cluster-1 --overwrite operator.nextbreakpoint.com/requested-action=STOP 
 
-    kubectl patch serviceaccount flink-operator -n flink -p '{"imagePullSecrets": [{"name": "regcred"}]}'
+Annotate the cluster to start it:
 
-You can tag and push images to your local registry:
+    kubectl -n flink-jobs annotate fc cluster-1 --overwrite operator.nextbreakpoint.com/requested-action=START 
 
-    docker tag flink:1.9.2 registry:30000/flink:1.9.2
-    docker login registry:30000
-    docker push registry:30000/flink:1.9.2
+Annotate a job to stop it:
 
+    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=STOP 
 
+Annotate a job to start it:
 
-## Build Flink Operator from source code
+    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=START 
 
-Configure Docker environment (only for minikube):
+##  Control cluster and jobs with curl
+
+Expose operator control interface:
+
+    kubectl -n flink-operator port-forward service/flink-operator 4444
+
+Get status of the deployment:
+
+    curl http://localhost:4444/api/v1/deployments/cluster-1/status | jq -r '.output' | jq
+
+Get status of the cluster:
+
+    curl http://localhost:4444/api/v1/clusters/cluster-1/status | jq -r '.output' | jq
+
+Get status of a job:
+
+    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/status | jq -r '.output' | jq
+
+Stop the cluster:
+
+    curl http://localhost:4444/api/v1/clusters/cluster-1/stop -XPUT -d'{"withoutSavepoint":false}'
+
+Start the cluster:
+
+    curl http://localhost:4444/api/v1/clusters/cluster-1/start -XPUT -d'{"withoutSavepoint":false}'
+
+Stop a job:
+
+    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/stop -XPUT -d'{"withoutSavepoint":false}'
+
+Start a job:
+
+    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/start -XPUT -d'{"withoutSavepoint":false}'
+
+## Control cluster and jobs with flinkctl 
+
+Expose the operator using an external address:
+
+    kubectl -n flink-operator expose service flink-operator --name=flink-operator-external --port=4444 --target-port=4444 --external-ip=$(minikube ip)
+
+Configure Docker environment:
 
     eval $(minikube docker-env)
 
-Compile Docker image of Flink Operator:
+Get status of the deployment:
 
-    docker build -t flinkctl:1.4.0-beta .
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta deployment status --host=$(minikube ip) --deployment-name=cluster-1 | jq -r '.output' | jq
 
-Optionally tag and push Docker image to your local Docker registry:
+Get status of the cluster:
 
-    docker tag flinkctl:1.4.0-beta registry:30000/flinkctl:1.4.0-beta
-    docker login registry:30000
-    docker push registry:30000/flinkctl:1.4.0-beta
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster status --host=$(minikube ip) --cluster-name=cluster-1 | jq -r '.output' | jq
 
-Run Flink Operator using Docker image:
+Get status of a job:
 
-    kubectl run flink-operator --restart=Never -n flink --image=registry:30000/flinkctl:1.4.0-beta --overrides='{ "apiVersion": "v1", "metadata": { "labels": { "app": "flink-operator" } }, "spec": { "serviceAccountName": "flink-operator", "imagePullPolicy": "Always" } }' -- operator run --namespace=flink
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job status --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1 | jq -r '.output' | jq
 
-Run Flink Operator using Helm and local registry:
+Stop the cluster:
 
-    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink --set image.repository=registry:30000/flinkctl --set image.pullPolicy=Always
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster stop --host=$(minikube ip) --cluster-name=cluster-1
 
-Run Flink Operator using Helm and local image:
+Start the cluster:
 
-    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink --set image.repository=flinkctl --set image.pullPolicy=Never
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster start --host=$(minikube ip) --cluster-name=cluster-1
+
+Stop a job:
+
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job stop --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1
+
+Start a job:
+
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job start --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1
+
+## Remove all resources 
+
+Delete the deployment to remove all resources (this might take a while):
+
+    kubectl -n flink-jobs delete fd cluster-1
+
+Wait until the operator has removed everything, then remove the toolbox.
+
+Start the operator:
+
+    kubectl scale deployment -n flink-operator flink-operator --replicas=0
+
+Uninstall toolbox resources:
+
+    helm uninstall flink-k8s-toolbox-operator --namespace flink-operator
+    helm uninstall flink-k8s-toolbox-roles --namespace flink-operator
+    helm uninstall flink-k8s-toolbox-crd 
+

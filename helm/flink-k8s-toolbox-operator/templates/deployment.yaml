@@ -58,7 +58,7 @@ spec:
             - operator
             - run
             - --namespace
-            - {{ $root.Values.namespace | default $root.Release.Namespace | quote }}
+            - {{ $root.Values.observedNamespace | default $root.Release.Namespace | quote }}
             {{- if $root.Values.secretName }}
             - --keystore-path
             - /etc/keystore.jks

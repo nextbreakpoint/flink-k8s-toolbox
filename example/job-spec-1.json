@@ -1,5 +1,15 @@
 {
   "jobParallelism": 2,
+  "savepoint": {
+    "savepointMode": "Automatic",
+    "savepointInterval": 300,
+    "savepointTargetPath": "file:///var/savepoints"
+  },
+  "restart": {
+    "restartPolicy": "Always",
+    "restartDelay": 60,
+    "restartTimeout": 120
+  },
   "bootstrap": {
     "serviceAccount": "flink-bootstrap",
     "pullPolicy": "Never",
@@ -7,28 +17,18 @@
     "jarPath": "/flink-jobs.jar",
     "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
     "arguments": [
-      "--DEVELOP_MODE",
-      "disabled"
+      "--CONSOLE_OUTPUT",
+      "true"
     ],
     "resources": {
       "limits": {
-        "cpu": "0.2",
+        "cpu": "0.05",
         "memory": "200Mi"
       },
       "requests": {
-        "cpu": "0.1",
+        "cpu": "0.05",
         "memory": "200Mi"
       }
     }
-  },
-  "savepoint": {
-    "savepointMode": "Automatic",
-    "savepointInterval": 300,
-    "savepointTargetPath": "file:///data/savepoints"
-  },
-  "restart": {
-    "restartPolicy": "Always",
-    "restartDelay": 60,
-    "restartTimeout": 120
   }
 }

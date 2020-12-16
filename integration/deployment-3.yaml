@@ -59,14 +59,16 @@ spec:
       environment:
         - name: FLINK_JM_HEAP
           value: "256"
-        - name: FLINK_ENVIRONMENT
-          value: test
         - name: FLINK_SAVEPOINTS_LOCATION
-          value: file:///var/savepoints
+          value: s3a://flink/3/savepoints
         - name: FLINK_CHECKPOINTS_LOCATION
           value: file:///var/checkpoints
         - name: FLINK_FS_CHECKPOINTS_LOCATION
           value: file:///var/fs_checkpoints
+        - name: FLINK_S3_ENDPOINT
+          value: http://minio-headless:9000
+        - name: FLINK_S3_PATH_STYLE_ACCESS
+          value: "true"
       environmentFrom:
         - secretRef:
             name: flink-secrets
@@ -74,19 +76,12 @@ spec:
         - name: config-vol
           mountPath: /hadoop/etc/core-site.xml
           subPath: core-site.xml
-        - name: config-vol
-          mountPath: /docker-entrypoint.sh
-          subPath: docker-entrypoint.sh
-        - name: config-vol
-          mountPath: /opt/flink/conf/flink-conf-template.yaml
-          subPath: flink-conf.yaml
         - name: data-vol
           mountPath: /data
       volumes:
         - name: config-vol
           configMap:
             name: flink-config
-            defaultMode: 0777
         - name: data-vol
           hostPath:
             path: /data
@@ -104,36 +99,35 @@ spec:
       environment:
         - name: FLINK_TM_HEAP
           value: "400"
-        - name: FLINK_ENVIRONMENT
-          value: test
         - name: FLINK_SAVEPOINTS_LOCATION
-          value: file:///var/savepoints
+          value: s3a://flink/3/savepoints
         - name: FLINK_CHECKPOINTS_LOCATION
           value: file:///var/checkpoints
         - name: FLINK_FS_CHECKPOINTS_LOCATION
           value: file:///var/fs_checkpoints
+        - name: FLINK_S3_ENDPOINT
+          value: http://minio-headless:9000
+        - name: FLINK_S3_PATH_STYLE_ACCESS
+          value: "true"
+      environmentFrom:
+        - secretRef:
+            name: flink-secrets
       volumeMounts:
         - name: config-vol
           mountPath: /hadoop/etc/core-site.xml
           subPath: core-site.xml
-        - name: config-vol
-          mountPath: /docker-entrypoint.sh
-          subPath: docker-entrypoint.sh
-        - name: config-vol
-          mountPath: /opt/flink/conf/flink-conf-template.yaml
-          subPath: flink-conf.yaml
         - name: source-vol
           mountPath: /tmp/workshop/sensor-events/data.csv
           subPath: sensor-events.csv
+        - name: data-vol
+          mountPath: /data
       volumes:
         - name: config-vol
           configMap:
             name: flink-config
-            defaultMode: 0777
         - name: source-vol
           configMap:
             name: flink-data
-            defaultMode: 0777
         - name: data-vol
           hostPath:
             path: /data

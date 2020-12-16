@@ -55,6 +55,8 @@ class EnsureBehaviourTest : IntegrationSetup() {
     fun `should behave as expected`() {
         // A long test like this is not ideal, however it is faster to do it like this, because the tests are very slow to setup and teardown.
 
+        `Should stop job when batch job has finished`()
+
         `Should start the cluster and its jobs when the cluster is created`()
 
         val savepointPath01 = `Should create a savepoint and stop the job`()
@@ -102,8 +104,6 @@ class EnsureBehaviourTest : IntegrationSetup() {
         `Should create resources`()
 
         `Should delete resources`()
-
-        `Should stop job when batch job has finished`()
 
         val savepointPath21 = `Should create a savepoint and stop a job`()
 
@@ -431,10 +431,7 @@ class EnsureBehaviourTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 120) {
             assertThat(hasClusterJobStatus(namespace = namespace, name = "cluster-3-job-0", status = "FINISHED")).isTrue()
         }
-        awaitUntilAsserted(timeout = 60) {
-            assertThat(getTaskManagers(namespace = namespace, name = "cluster-3")).isEqualTo(1)
-        }
-        awaitUntilAsserted(timeout = 120) {
+        awaitUntilAsserted(timeout = 240) {
             assertThat(getTaskManagers(namespace = namespace, name = "cluster-3")).isEqualTo(0)
         }
 //        deleteCluster(clusterName = "cluster-3")
@@ -477,12 +474,14 @@ class EnsureBehaviourTest : IntegrationSetup() {
         assertClusterExists(clusterName = "cluster-2")
         assertJobExists(clusterName = "cluster-2", jobName = "job-1")
 
+        assertJobStarted(clusterName = "cluster-2", jobName = "job-1")
         deleteJob(clusterName = "cluster-2", jobName = "job-1")
-        assertJobDeleted(clusterName = "cluster-2", jobName = "job-1")
+        assertJobStarting(clusterName = "cluster-2", jobName = "job-1")
         assertJobStarted(clusterName = "cluster-2", jobName = "job-1")
 
+        assertClusterStarted("cluster-2")
         deleteCluster(clusterName = "cluster-2")
-        assertClusterDeleted("cluster-2")
+        assertClusterStarting("cluster-2")
         assertClusterStarted("cluster-2")
     }
 

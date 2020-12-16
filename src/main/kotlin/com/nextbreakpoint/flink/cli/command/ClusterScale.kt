@@ -9,7 +9,7 @@ import com.nextbreakpoint.flink.common.ScaleClusterOptions
 
 class ClusterScale(private val factory: WebClientFactory = WebClientDefaultFactory) : ClusterCommand<ScaleClusterOptions> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, args: ScaleClusterOptions) {
-        HttpUtils.putJson(factory, connectionConfig, "/clusters/$clusterName/scale", args)
+        HttpUtils.putJson(factory, connectionConfig, "/api/v1/clusters/$clusterName/scale", args)
     }
 }
 

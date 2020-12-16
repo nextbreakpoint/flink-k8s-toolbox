@@ -22,7 +22,7 @@
     }
   },
   "savepoint": {
-    "savepointMode": "Automatic",
+    "savepointMode": "Manual",
     "savepointInterval": 0,
     "savepointTargetPath": "s3a://flink/0/savepoints"
   },

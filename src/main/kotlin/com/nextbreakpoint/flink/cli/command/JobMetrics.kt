@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ConnectionConfig
 
 class JobMetrics(private val factory: WebClientFactory = WebClientDefaultFactory) : JobCommand<Void?> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, jobName: String, unused: Void?) {
-        HttpUtils.get(factory, connectionConfig, "/clusters/$clusterName/jobs/$jobName/metrics")
+        HttpUtils.get(factory, connectionConfig, "/api/v1/clusters/$clusterName/jobs/$jobName/metrics")
     }
 }
 

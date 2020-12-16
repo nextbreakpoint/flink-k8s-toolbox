@@ -73,125 +73,128 @@ class OperatorVerticle(
             routingContext.response().setStatusCode(204).end()
         }
 
+        val subrouterRouter = Router.router(vertx)
 
-        mainRouter.delete("/deployments/:deploymentName").handler { routingContext ->
+        subrouterRouter.delete("/deployments/:deploymentName").handler { routingContext ->
             handleDeploymentCommand(routingContext, namespace, "/deployment/delete") { context -> "{}" }
         }
 
-        mainRouter.post("/deployments/:deploymentName").handler { routingContext ->
+        subrouterRouter.post("/deployments/:deploymentName").handler { routingContext ->
             handleDeploymentCommand(routingContext, namespace, "/deployment/create") { context -> context.bodyAsString }
         }
 
-        mainRouter.put("/deployments/:deploymentName").handler { routingContext ->
+        subrouterRouter.put("/deployments/:deploymentName").handler { routingContext ->
             handleDeploymentCommand(routingContext, namespace, "/deployment/update") { context -> context.bodyAsString }
         }
 
 
-        mainRouter.put("/clusters/:clusterName/start").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName/start").handler { routingContext ->
             handleClusterCommand(routingContext, namespace, "/cluster/start") { context -> context.bodyAsString }
         }
 
-        mainRouter.put("/clusters/:clusterName/stop").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName/stop").handler { routingContext ->
             handleClusterCommand(routingContext, namespace, "/cluster/stop") { context -> context.bodyAsString }
         }
 
-        mainRouter.put("/clusters/:clusterName/scale").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName/scale").handler { routingContext ->
             handleClusterCommand(routingContext, namespace, "/cluster/scale") { context -> context.bodyAsString }
         }
 
-        mainRouter.delete("/clusters/:clusterName").handler { routingContext ->
+        subrouterRouter.delete("/clusters/:clusterName").handler { routingContext ->
             handleClusterCommand(routingContext, namespace, "/cluster/delete") { context -> "{}" }
         }
 
-        mainRouter.post("/clusters/:clusterName").handler { routingContext ->
+        subrouterRouter.post("/clusters/:clusterName").handler { routingContext ->
             handleClusterCommand(routingContext, namespace, "/cluster/create") { context -> context.bodyAsString }
         }
 
-        mainRouter.put("/clusters/:clusterName").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName").handler { routingContext ->
             handleClusterCommand(routingContext, namespace, "/cluster/update") { context -> context.bodyAsString }
         }
 
 
-        mainRouter.put("/clusters/:clusterName/jobs/:jobName/start").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName/jobs/:jobName/start").handler { routingContext ->
             handleJobCommand(routingContext, namespace, "/job/start") { context -> context.bodyAsString }
         }
 
-        mainRouter.put("/clusters/:clusterName/jobs/:jobName/stop").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName/jobs/:jobName/stop").handler { routingContext ->
             handleJobCommand(routingContext, namespace, "/job/stop") { context -> context.bodyAsString }
         }
 
-        mainRouter.put("/clusters/:clusterName/jobs/:jobName/scale").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName/jobs/:jobName/scale").handler { routingContext ->
             handleJobCommand(routingContext, namespace, "/job/scale") { context -> context.bodyAsString }
         }
 
-        mainRouter.delete("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
+        subrouterRouter.delete("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
             handleJobCommand(routingContext, namespace, "/job/delete") { context -> "{}" }
         }
 
-        mainRouter.post("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
+        subrouterRouter.post("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
             handleJobCommand(routingContext, namespace, "/job/create") { context -> context.bodyAsString }
         }
 
-        mainRouter.put("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName/jobs/:jobName").handler { routingContext ->
             handleJobCommand(routingContext, namespace, "/job/update") { context -> context.bodyAsString }
         }
 
-        mainRouter.put("/clusters/:clusterName/jobs/:jobName/savepoint").handler { routingContext ->
+        subrouterRouter.put("/clusters/:clusterName/jobs/:jobName/savepoint").handler { routingContext ->
             handleJobCommand(routingContext, namespace, "/job/savepoint/trigger") { context -> context.bodyAsString }
         }
 
-        mainRouter.delete("/clusters/:clusterName/jobs/:jobName/savepoint").handler { routingContext ->
+        subrouterRouter.delete("/clusters/:clusterName/jobs/:jobName/savepoint").handler { routingContext ->
             handleJobCommand(routingContext, namespace, "/job/savepoint/forget") { context -> "{}" }
         }
 
 
-        mainRouter.get("/deployments").handler { routingContext ->
+        subrouterRouter.get("/deployments").handler { routingContext ->
             handleListDeployments(routingContext, cache)
         }
 
-        mainRouter.get("/deployments/:clusterName/status").handler { routingContext ->
+        subrouterRouter.get("/deployments/:clusterName/status").handler { routingContext ->
             handleGetDeploymentStatus(routingContext, controller, namespace, cache)
         }
 
-        mainRouter.get("/clusters").handler { routingContext ->
+        subrouterRouter.get("/clusters").handler { routingContext ->
             handleListClusters(routingContext, cache)
         }
 
-        mainRouter.get("/clusters/:clusterName/status").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/status").handler { routingContext ->
             handleGetClusterStatus(routingContext, controller, namespace, cache)
         }
 
-        mainRouter.get("/clusters/:clusterName/jobs").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/jobs").handler { routingContext ->
             handleListJobs(routingContext, cache)
         }
 
-        mainRouter.get("/clusters/:clusterName/jobs/:jobName/status").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/jobs/:jobName/status").handler { routingContext ->
             handleGetJobStatus(routingContext, controller, namespace, cache)
         }
 
-        mainRouter.get("/clusters/:clusterName/jobs/:jobName/details").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/jobs/:jobName/details").handler { routingContext ->
             handleGetJobDetails(routingContext, controller, namespace, cache)
         }
 
-        mainRouter.get("/clusters/:clusterName/jobs/:jobName/metrics").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/jobs/:jobName/metrics").handler { routingContext ->
             handleGetJobMetrics(routingContext, controller, namespace, cache)
         }
 
-        mainRouter.get("/clusters/:clusterName/jobmanager/metrics").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/jobmanager/metrics").handler { routingContext ->
             handleGetJobManagerMetrics(routingContext, controller, namespace)
         }
 
-        mainRouter.get("/clusters/:clusterName/taskmanagers").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/taskmanagers").handler { routingContext ->
             handleListTaskManagers(routingContext, controller, namespace)
         }
 
-        mainRouter.get("/clusters/:clusterName/taskmanagers/:taskmanager/details").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/taskmanagers/:taskmanager/details").handler { routingContext ->
             handleGetTaskManagerDetails(routingContext, controller, namespace)
         }
 
-        mainRouter.get("/clusters/:clusterName/taskmanagers/:taskmanager/metrics").handler { routingContext ->
+        subrouterRouter.get("/clusters/:clusterName/taskmanagers/:taskmanager/metrics").handler { routingContext ->
             handleGetTaskManagerMetrics(routingContext, controller, namespace)
         }
+
+        mainRouter.mountSubRouter("/api/v1/", subrouterRouter)
 
 
         vertx.eventBus().consumer<String>("/deployment/delete") { message ->
@@ -829,7 +832,7 @@ class OperatorVerticle(
                 val result = handler.apply(it)
 
                 if (result.isSuccessful()) {
-                    json.serialize(Result(ResultStatus.OK, json.serialize(result.output)))
+                    json.serialize(Result(ResultStatus.OK, result.output?.let { json.serialize(it) }))
                 } else {
                     json.serialize(Result(ResultStatus.ERROR, null))
                 }

@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ConnectionConfig
 
 class JobDelete(private val factory: WebClientFactory = WebClientDefaultFactory) : JobCommand<Void?> {
     override fun run(connectionConfig: ConnectionConfig, clusterName: String, jobName: String, unused: Void?) {
-        HttpUtils.delete(factory, connectionConfig, "/clusters/$clusterName/jobs/$jobName")
+        HttpUtils.delete(factory, connectionConfig, "/api/v1/clusters/$clusterName/jobs/$jobName")
     }
 }
 
