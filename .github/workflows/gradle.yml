@@ -33,6 +33,6 @@ jobs:
       if: github.event_name == 'release' && github.event.action == 'published'
       run: pipeline/docker-push-image.sh
       env:
-        DOCKER_EMAIL: ${{ secrets.DOCKER_EMAIL }}
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        DOCKER_IMAGE_TAG: ${{ github.event.release.tag_name }}
