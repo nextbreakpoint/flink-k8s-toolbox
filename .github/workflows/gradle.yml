@@ -30,7 +30,6 @@ jobs:
     - name: Run integration test - EnsureBehaviour
       run: pipeline/run-integration-test.sh EnsureBehaviour
     - name: Publish to Registry
-      uses: elgohr/Publish-Docker-Github-Action@master
       if: github.event_name == 'release' && github.event.action == 'published'
       run: pipeline/docker-push-image.sh
       env:
