@@ -5,7 +5,7 @@ on:
       - master
   pull_request:
   release:
-    types:
+    types: [published]
 jobs:
   build:
     runs-on: ubuntu-18.04
@@ -29,3 +29,11 @@ jobs:
       run: pipeline/install-helm.sh
     - name: Run integration test - EnsureBehaviour
       run: pipeline/run-integration-test.sh EnsureBehaviour
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      if: github.event_name == 'release' && github.event.action == 'published'
+      with:
+        name: nextbreakpoint/flinkctl
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        tag_semver: true
