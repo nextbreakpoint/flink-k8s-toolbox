@@ -181,7 +181,7 @@ class EnsureBehaviourTest : IntegrationSetup() {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-2", status = ResourceStatus.Updating)).isTrue()
         }
 
-        awaitUntilAsserted(timeout = 180) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-2", status = ResourceStatus.Updated)).isTrue()
             assertThat(hasTaskManagers(namespace = namespace, name = "cluster-2", taskManagers = 3)).isTrue()
             val latestStatus = getLatestClusterStatus(clusterName = "cluster-2")
@@ -196,7 +196,7 @@ class EnsureBehaviourTest : IntegrationSetup() {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-2", status = ResourceStatus.Updating)).isTrue()
         }
 
-        awaitUntilAsserted(timeout = 180) {
+        awaitUntilAsserted(timeout = 360) {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-2", status = ResourceStatus.Updated)).isTrue()
             assertThat(hasTaskManagers(namespace = namespace, name = "cluster-2", taskManagers = 4)).isTrue()
             val latestStatus = getLatestClusterStatus(clusterName = "cluster-2")
@@ -212,7 +212,7 @@ class EnsureBehaviourTest : IntegrationSetup() {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-2", status = ResourceStatus.Updating)).isTrue()
         }
 
-        awaitUntilAsserted(timeout = 360) {
+        awaitUntilAsserted(timeout = 480) {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-2", status = ResourceStatus.Updated)).isTrue()
             assertThat(hasTaskManagers(namespace = namespace, name = "cluster-2", taskManagers = 1)).isTrue()
             val latestStatus = getLatestClusterStatus(clusterName = "cluster-2")
