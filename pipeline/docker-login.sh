@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
 
-set -x
 set -e
 
 eval $(minikube docker-env)
