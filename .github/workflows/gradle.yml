@@ -5,7 +5,9 @@ on:
       - master
   pull_request:
   release:
-    types: [published]
+    types:
+      - created
+      - published
 jobs:
   build:
     runs-on: ubuntu-18.04
@@ -25,7 +27,7 @@ jobs:
     - name: Run integration test - EnsureBehaviour
       run: pipeline/run-integration-test.sh EnsureBehaviour
     - name: Publish to Registry
-      if: github.event_name == 'release' && github.event.action == 'published'
+      if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')
       run: pipeline/docker-push-image.sh
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
