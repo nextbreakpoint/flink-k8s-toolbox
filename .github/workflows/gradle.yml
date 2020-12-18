@@ -6,7 +6,6 @@ on:
   pull_request:
   release:
     types:
-      - created
       - published
 jobs:
   build:
@@ -22,17 +21,18 @@ jobs:
       run: pipeline/print-dependencies.sh
     - name: Start Minikube
       run: pipeline/run-minikube.sh
-    - name: Test Docker login
-      run: pipeline/docker-login-test.sh
+    - name: Docker login
+      if: github.event_name == 'release' && github.event.action == 'published'
+      run: pipeline/docker-login.sh
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     - name: Build Docker images
       run: pipeline/docker-build-images.sh
-    - name: Run integration test - EnsureBehaviour
-      run: pipeline/run-integration-test.sh EnsureBehaviour
+    - name: Run integration tests
+      run: pipeline/run-integration-tests.sh
     - name: Publish to Registry
-      if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')
+      if: github.event_name == 'release' && github.event.action == 'published'
       run: pipeline/docker-push-image.sh
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
