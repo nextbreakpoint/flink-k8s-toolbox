@@ -95,6 +95,17 @@ https://github.com/nextbreakpoint/flink-k8s-toolbox/blob/master/MANUAL.md
 Look at the section "Create your first deployment".
 
 
+## Contribute
+
+Visit the project on GitHub:
+
+https://github.com/nextbreakpoint/flink-k8s-toolbox
+
+Report an issue or request a feature:
+
+https://github.com/nextbreakpoint/flink-k8s-toolbox/issues
+
+
 ## License
 
 The toolbox is distributed under the terms of BSD 3-Clause License.
