@@ -20,13 +20,13 @@ jobs:
         java-version: 11
     - name: Print dependencies
       run: pipeline/print-dependencies.sh
+    - name: Start Minikube
+      run: pipeline/run-minikube.sh
     - name: Test Docker login
       run: pipeline/docker-login-test.sh
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Start Minikube
-      run: pipeline/run-minikube.sh
     - name: Build Docker images
       run: pipeline/docker-build-images.sh
     - name: Run integration test - EnsureBehaviour
