@@ -5,6 +5,7 @@ import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.common.RestartPolicy
 import com.nextbreakpoint.flink.common.SavepointRequest
+import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.common.Timeout
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -83,6 +84,7 @@ class JobManager(
     fun onJobReadyToRestart() {
         logger.info("Job restarted")
         controller.resetSavepointRequest()
+        controller.resetJob()
         controller.updateStatus()
         controller.updateDigests()
         controller.setSupervisorStatus(JobStatus.Starting)
@@ -174,47 +176,36 @@ class JobManager(
             return false
         }
 
-        val seconds = controller.timeSinceLastUpdateInSeconds()
-
-        if (seconds > taskTimeout) {
+        if (controller.timeSinceLastUpdateInSeconds() > taskTimeout) {
             return true
         }
 
         return false
     }
 
-    fun startJob(): Boolean {
-        if (!isClusterUpdated()) {
-            return false
-        }
-
-        val bootstrapJobExists = controller.doesBootstrapJobExists()
-
-        if (!bootstrapJobExists) {
-            if (controller.hasJobId()) {
-                controller.resetJob()
-                return false
-            }
-
-            if (controller.isWithoutSavepoint()) {
-                controller.setSavepointPath("")
-            }
-
-            val result = controller.createBootstrapJob()
-
-            if (!result.isSuccessful()) {
-                logger.log(Level.SEVERE, "Couldn't create bootstrap job")
-            }
-
-            return false
-        }
-
+    fun isJobStarted(): Boolean {
         if (!controller.hasJobId()) {
             logger.log(Level.WARNING, "Job not ready yet")
             return false
         }
 
         return true
+    }
+
+    fun ensureBootstrapJobExists(): Boolean {
+        val bootstrapJobExists = controller.doesBootstrapJobExists()
+
+        if (!bootstrapJobExists) {
+            val result = controller.createBootstrapJob()
+
+            if (result.isSuccessful()) {
+                logger.info("Bootstrap job created")
+            } else {
+                logger.log(Level.SEVERE, "Couldn't create Bootstrap job")
+            }
+        }
+
+        return bootstrapJobExists
     }
 
     fun cancelJob(): Boolean {
@@ -360,13 +351,7 @@ class JobManager(
     fun isJobFailed() = controller.isJobFailed()
 
     fun hasTaskTimedOut(): Boolean {
-        val seconds = controller.timeSinceLastUpdateInSeconds()
-
-        if (seconds > taskTimeout) {
-            return true
-        }
-
-        return false
+        return controller.timeSinceLastUpdateInSeconds() > taskTimeout
     }
 
     fun hasParallelismChanged(): Boolean {
@@ -400,6 +385,12 @@ class JobManager(
     fun isClusterTerminated() = controller.isClusterTerminated()
 
     fun isClusterUpdated() = controller.isClusterUpdated()
+
+    fun mustResetSavepoint() = controller.isWithoutSavepoint() && controller.getCurrentSavepointPath() != null
+
+    fun resetSavepoint() {
+        controller.setSavepointPath("")
+    }
 
     fun terminateBootstrapJob(): Boolean {
         val bootstrapJobExists = controller.doesBootstrapJobExists()

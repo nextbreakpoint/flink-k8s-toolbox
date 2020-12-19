@@ -49,7 +49,7 @@ class JobControllerTest {
     )
     private val logger = mock(Logger::class.java)
     private val controller = mock(Controller::class.java)
-    private val jobController = JobController("flink", "test", "test", controller, 5, clusterResources, jobResources, job)
+    private val jobController = JobController("flink", "test", "test", 5, controller, clusterResources, jobResources, job)
 
     @BeforeEach
     fun setup() {
@@ -100,18 +100,11 @@ class JobControllerTest {
     }
 
     @Test
-    fun `should create bootstrap job`() {
-        val result: Result<String?> = Result(status = ResultStatus.OK, output = "jobname")
-        given(controller.createBootstrapJob(eq("flink"), eq("test"), eq("test"), eq(bootstrapJob))).thenReturn(result)
-        assertThat(jobController.createBootstrapJob(bootstrapJob)).isEqualTo(result)
-        verify(controller, times(1)).createBootstrapJob(eq("flink"), eq("test"), eq("test"), eq(bootstrapJob))
-    }
-
-    @Test
     fun `should delete bootstrap job`() {
         val result: Result<Void?> = Result(status = ResultStatus.OK, output = null)
         given(controller.deleteBootstrapJob(eq("flink"), eq("test"), eq("test"), eq("bootstrap-test-test"))).thenReturn(result)
         assertThat(jobController.deleteBootstrapJob()).isEqualTo(result)
+        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).deleteBootstrapJob(eq("flink"), eq("test"), eq("test"), eq("bootstrap-test-test"))
     }
 
@@ -583,7 +576,7 @@ class JobControllerTest {
         assertThat(jobController.doesBootstrapJobExists()).isTrue()
         // TODO perhaps we can fin a better way to do this
         val newResources = jobResources.withBootstrap(null)
-        val newController = JobController("flink", "test", "test", controller, 5, clusterResources, newResources, job)
+        val newController = JobController("flink", "test", "test", 5, controller, clusterResources, newResources, job)
         assertThat(newController.doesBootstrapJobExists()).isFalse()
     }
 
@@ -598,6 +591,7 @@ class JobControllerTest {
         val result: Result<String?> = Result(status = ResultStatus.OK, output = job.metadata?.name ?: "")
         given(controller.createBootstrapJob(eq("flink"), eq("test"), eq("test"), eq(job))).thenReturn(result)
         assertThat(jobController.createBootstrapJob()).isEqualTo(result)
+        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).isDryRun()
         verify(controller, times(1)).createBootstrapJob(eq("flink"), eq("test"), eq("test"), eq(job))
     }

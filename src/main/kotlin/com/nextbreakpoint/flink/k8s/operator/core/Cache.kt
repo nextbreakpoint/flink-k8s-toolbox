@@ -5,11 +5,12 @@ import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeployment
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import io.kubernetes.client.openapi.models.V1Deployment
 import io.kubernetes.client.openapi.models.V1Pod
-import java.util.concurrent.ConcurrentHashMap
 
 class Cache(val namespace: String) {
     private val resources = Resources()
-    private val snapshot = Resources()
+    private val snapshot = Snapshot()
+    private var latestResetTimestamp: Long = 0L
+    private var latestUpdateTimestamp: Long = 0L
 
     fun listDeploymentNames(): List<String> = snapshot.flinkDeployments.keys.toList()
 
@@ -17,111 +18,170 @@ class Cache(val namespace: String) {
 
     fun listJobNames(): List<String> = snapshot.flinkJobs.keys.toList()
 
-    fun getFlinkDeployments(): List<V1FlinkDeployment> = snapshot.flinkDeployments.values.toList()
+    fun getFlinkDeployments(): List<V1FlinkDeployment> = snapshot.flinkDeployments.values.map { it.resource }.toList()
 
-    fun getFlinkDeployment(deploymentName: String) = snapshot.flinkDeployments[deploymentName]
+    fun getFlinkDeployment(deploymentName: String) = snapshot.flinkDeployments[deploymentName]?.resource
 
-    fun getFlinkClusters(): List<V1FlinkCluster> = snapshot.flinkClusters.values.toList()
+    fun getFlinkClusters(): List<V1FlinkCluster> = snapshot.flinkClusters.values.map { it.resource }.toList()
 
-    fun getFlinkCluster(clusterName: String) = snapshot.flinkClusters[clusterName]
+    fun getFlinkCluster(clusterName: String) = snapshot.flinkClusters[clusterName]?.resource
 
-    fun getFlinkJobs(): List<V1FlinkJob> = snapshot.flinkJobs.values.toList()
+    fun getFlinkJobs(): List<V1FlinkJob> = snapshot.flinkJobs.values.map { it.resource }.toList()
 
-    fun getFlinkJob(jobName: String) = snapshot.flinkJobs[jobName]
+    fun getFlinkJob(jobName: String) = snapshot.flinkJobs[jobName]?.resource
 
     fun getSupervisorResources(clusterName: String) =
         SupervisorResources(
-            flinkCluster = snapshot.flinkClusters[clusterName],
-            supervisorPod = snapshot.supervisorPods.values.filter { it.metadata?.name?.startsWith("supervisor-$clusterName-") ?: false }.firstOrNull(),
-            supervisorDep = snapshot.supervisorDeps["supervisor-$clusterName"]
+            flinkCluster = snapshot.flinkClusters[clusterName]?.resource,
+            supervisorPod = snapshot.supervisorPods.values.map { it.resource }.filter { it.metadata?.name?.startsWith("supervisor-$clusterName-") ?: false }.firstOrNull(),
+            supervisorDep = snapshot.supervisorDeps["supervisor-$clusterName"]?.resource
         )
 
+    fun getLastResetTimestamp(): Long {
+        synchronized(resources) {
+            return latestResetTimestamp
+        }
+    }
+
+    fun getLastUpdateTimestamp(): Long {
+        synchronized(resources) {
+            return latestUpdateTimestamp
+        }
+    }
+
     fun onFlinkDeploymentChanged(resource: V1FlinkDeployment) {
-        if (extractNamespace(resource) == namespace) {
-            resources.flinkDeployments[extractName(resource)] = resource
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.flinkDeployments[extractName(resource)] = CachedResource(resource, latestUpdateTimestamp)
+            }
         }
     }
 
     fun onFlinkDeploymentDeleted(resource: V1FlinkDeployment) {
-        if (extractNamespace(resource) == namespace) {
-            resources.flinkDeployments.remove(extractName(resource))
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.flinkDeployments.remove(extractName(resource))
+            }
         }
     }
 
-    fun onFlinkDeploymentDeletedAll() {
-        resources.flinkDeployments.clear()
+    fun onFlinkDeploymentsReset() {
+        synchronized(resources) {
+            latestResetTimestamp = System.currentTimeMillis()
+            resources.flinkDeployments.clear()
+        }
     }
 
     fun onFlinkClusterChanged(resource: V1FlinkCluster) {
-        if (extractNamespace(resource) == namespace) {
-            resources.flinkClusters[extractName(resource)] = resource
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.flinkClusters[extractName(resource)] = CachedResource(resource, latestUpdateTimestamp)
+            }
         }
     }
 
     fun onFlinkClusterDeleted(resource: V1FlinkCluster) {
-        if (extractNamespace(resource) == namespace) {
-            resources.flinkClusters.remove(extractName(resource))
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.flinkClusters.remove(extractName(resource))
+            }
         }
     }
 
-    fun onFlinkClusterDeletedAll() {
-        resources.flinkClusters.clear()
+    fun onFlinkClustersReset() {
+        synchronized(resources) {
+            latestResetTimestamp = System.currentTimeMillis()
+            resources.flinkClusters.clear()
+        }
     }
 
     fun onFlinkJobChanged(resource: V1FlinkJob) {
-        if (extractNamespace(resource) == namespace) {
-            resources.flinkJobs[extractName(resource)] = resource
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.flinkJobs[extractName(resource)] = CachedResource(resource, latestUpdateTimestamp)
+            }
         }
     }
 
     fun onFlinkJobDeleted(resource: V1FlinkJob) {
-        if (extractNamespace(resource) == namespace) {
-            resources.flinkJobs.remove(extractName(resource))
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.flinkJobs.remove(extractName(resource))
+            }
         }
     }
 
-    fun onFlinkJobDeletedAll() {
-        resources.flinkJobs.clear()
+    fun onFlinkJobsReset() {
+        synchronized(resources) {
+            latestResetTimestamp = System.currentTimeMillis()
+            resources.flinkJobs.clear()
+        }
     }
 
     fun onPodChanged(resource: V1Pod) {
-        if (extractNamespace(resource) == namespace && extractName(resource).startsWith("supervisor-")) {
-            resources.supervisorPods[extractName(resource)] = resource
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace && extractName(resource).startsWith("supervisor-")) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.supervisorPods[extractName(resource)] = CachedResource(resource, latestUpdateTimestamp)
+            }
         }
     }
 
     fun onPodDeleted(resource: V1Pod) {
-        if (extractNamespace(resource) == namespace) {
-            resources.supervisorPods.remove(extractName(resource))
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.supervisorPods.remove(extractName(resource))
+            }
         }
     }
 
-    fun onPodDeletedAll() {
-        resources.supervisorPods.clear()
+    fun onPodsReset() {
+        synchronized(resources) {
+            latestResetTimestamp = System.currentTimeMillis()
+            resources.supervisorPods.clear()
+        }
     }
 
     fun onDeploymentChanged(resource: V1Deployment) {
-        if (extractNamespace(resource) == namespace && extractName(resource).startsWith("supervisor-")) {
-            resources.supervisorDeps[extractName(resource)] = resource
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace && extractName(resource).startsWith("supervisor-")) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.supervisorDeps[extractName(resource)] = CachedResource(resource, latestUpdateTimestamp)
+            }
         }
     }
 
     fun onDeploymentDeleted(resource: V1Deployment) {
-        if (extractNamespace(resource) == namespace) {
-            resources.supervisorDeps.remove(extractName(resource))
+        synchronized(resources) {
+            if (extractNamespace(resource) == namespace) {
+                latestUpdateTimestamp = System.currentTimeMillis()
+                resources.supervisorDeps.remove(extractName(resource))
+            }
         }
     }
 
-    fun onDeploymentDeletedAll() {
-        resources.supervisorDeps.clear()
+    fun onDeploymentsReset() {
+        synchronized(resources) {
+            latestResetTimestamp = System.currentTimeMillis()
+            resources.supervisorDeps.clear()
+        }
     }
 
-    fun updateSnapshot() {
-        snapshot.flinkDeployments = ConcurrentHashMap(resources.flinkDeployments)
-        snapshot.flinkClusters = ConcurrentHashMap(resources.flinkClusters)
-        snapshot.flinkJobs = ConcurrentHashMap(resources.flinkJobs)
-        snapshot.supervisorPods = ConcurrentHashMap(resources.supervisorPods)
-        snapshot.supervisorDeps = ConcurrentHashMap(resources.supervisorDeps)
+    fun takeSnapshot() {
+        synchronized(resources) {
+            snapshot.flinkDeployments = resources.flinkDeployments.toMap()
+            snapshot.flinkClusters = resources.flinkClusters.toMap()
+            snapshot.flinkJobs = resources.flinkJobs.toMap()
+            snapshot.supervisorPods = resources.supervisorPods.toMap()
+            snapshot.supervisorDeps = resources.supervisorDeps.toMap()
+        }
     }
 
     private fun extractName(resource: V1Pod) =
@@ -154,16 +214,21 @@ class Cache(val namespace: String) {
     private fun extractNamespace(resource: V1FlinkDeployment) =
         resource.metadata?.namespace ?: throw RuntimeException("Namespace is null")
 
+    private data class CachedResource<T>(val resource: T, val timestamp: Long)
+
     private class Resources {
-        @Volatile
-        var flinkDeployments = ConcurrentHashMap<String, V1FlinkDeployment>()
-        @Volatile
-        var flinkClusters = ConcurrentHashMap<String, V1FlinkCluster>()
-        @Volatile
-        var flinkJobs = ConcurrentHashMap<String, V1FlinkJob>()
-        @Volatile
-        var supervisorPods = ConcurrentHashMap<String, V1Pod>()
-        @Volatile
-        var supervisorDeps = ConcurrentHashMap<String, V1Deployment>()
+        var flinkDeployments = mutableMapOf<String, CachedResource<V1FlinkDeployment>>()
+        var flinkClusters = mutableMapOf<String, CachedResource<V1FlinkCluster>>()
+        var flinkJobs = mutableMapOf<String, CachedResource<V1FlinkJob>>()
+        var supervisorPods = mutableMapOf<String, CachedResource<V1Pod>>()
+        var supervisorDeps = mutableMapOf<String, CachedResource<V1Deployment>>()
+    }
+
+    private class Snapshot {
+        var flinkDeployments = mapOf<String, CachedResource<V1FlinkDeployment>>()
+        var flinkClusters = mapOf<String, CachedResource<V1FlinkCluster>>()
+        var flinkJobs = mapOf<String, CachedResource<V1FlinkJob>>()
+        var supervisorPods = mapOf<String, CachedResource<V1Pod>>()
+        var supervisorDeps = mapOf<String, CachedResource<V1Deployment>>()
     }
 }

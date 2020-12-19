@@ -16,7 +16,10 @@ import java.util.function.Function
 import java.util.logging.Level
 import java.util.logging.Logger
 
-class MonitoringVerticle(private val port: Int, private val registryName: String) : AbstractVerticle() {
+class MonitoringVerticle(
+    private val port: Int,
+    private val registryName: String
+) : AbstractVerticle() {
     companion object {
         private val logger: Logger = Logger.getLogger(MonitoringVerticle::class.simpleName)
     }

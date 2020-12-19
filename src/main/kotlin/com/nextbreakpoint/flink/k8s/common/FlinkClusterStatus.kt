@@ -186,7 +186,7 @@ object FlinkClusterStatus {
     fun getServiceMode(flinkCluster: V1FlinkCluster): String? =
         flinkCluster.status?.serviceMode
 
-    private fun updateStatusTimestamp(flinkCluster: V1FlinkCluster, currentTimeMillis: Long) {
+    fun updateStatusTimestamp(flinkCluster: V1FlinkCluster, currentTimeMillis: Long) {
         flinkCluster.status?.timestamp = DateTime(currentTimeMillis)
     }
 

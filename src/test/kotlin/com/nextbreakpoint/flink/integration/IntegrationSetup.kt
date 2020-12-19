@@ -32,7 +32,7 @@ import kotlin.test.fail
 
 open class IntegrationSetup {
     companion object {
-        val version = "1.4.0-beta"
+        val version = "1.4.1-beta"
         val flinkVersion = "1.9.2"
         val scalaVersion = "2.11"
         val timestamp = System.currentTimeMillis()

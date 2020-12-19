@@ -99,7 +99,7 @@ class Supervisor(
     private fun reconcile(logger: Logger, clusterName: String, clusterResources: ClusterResources) {
         val cluster = clusterResources.flinkCluster ?: throw RuntimeException("Cluster not found")
 
-        val clusterController = ClusterController(cache.namespace, clusterName, controller, pollingInterval, clusterResources, cluster)
+        val clusterController = ClusterController(cache.namespace, clusterName, pollingInterval, controller, clusterResources, cluster)
 
         val actionTimestamp = clusterController.getActionTimestamp()
 
@@ -135,7 +135,7 @@ class Supervisor(
     private fun reconcile(logger: Logger, clusterName: String, jobName: String, clusterResources: ClusterResources, jobResources: JobResources) {
         val job = jobResources.flinkJob ?: throw RuntimeException("Job not found")
 
-        val jobController = JobController(cache.namespace, clusterName, jobName, controller, pollingInterval, clusterResources, jobResources, job)
+        val jobController = JobController(cache.namespace, clusterName, jobName, pollingInterval, controller, clusterResources, jobResources, job)
 
         val actionTimestamp = jobController.getActionTimestamp()
 
