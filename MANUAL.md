@@ -172,19 +172,19 @@ Make sure that CRDs and default roles have been installed in Kubernetes (see abo
 
 Pull the flinkctl's Docker image with command:
 
-    docker pull nextbreakpoint/flinkctl:1.4.0-beta
+    docker pull nextbreakpoint/flinkctl:1.4.1-beta
 
 Create a new Docker image using flinkctl as base image. This image will be used to run the jobs, 
 therefore the image must contain the code of a Flink application package into a single JAR file:
 
-    FROM nextbreakpoint/flinkctl:1.4.0-beta
+    FROM nextbreakpoint/flinkctl:1.4.1-beta
     COPY flink-jobs.jar /flink-jobs.jar
 
 If you don't have the JAR of a Flink application yet, you can try this:
 
     FROM busybox AS build
     RUN wget -O flink-jobs.jar https://github.com/nextbreakpoint/flink-workshop/releases/download/v1.2.3/com.nextbreakpoint.flinkworkshop-1.2.3.jar
-    FROM nextbreakpoint/flinkctl:1.4.0-beta
+    FROM nextbreakpoint/flinkctl:1.4.1-beta
     COPY --from=build /flink-jobs.jar /flink-jobs.jar
 
 Build the Docker image with command:
@@ -251,7 +251,7 @@ Create a file deployment.yaml:
       cluster:
         supervisor:
           pullPolicy: IfNotPresent
-          image: nextbreakpoint/flinkctl:1.4.0-beta
+          image: nextbreakpoint/flinkctl:1.4.1-beta
           serviceAccount: flink-supervisor
           taskTimeout: 180
           rescaleDelay: 10
@@ -781,7 +781,7 @@ Please note that you must use SSL certificates when invoking the API if the oper
 
 Print the CLI usage:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta --help
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta --help
 
 The output should look like:
 
@@ -807,7 +807,7 @@ The output should look like:
 
 You can see the options of each subcommand:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster create --help
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster create --help
 
     Usage: flinkctl cluster create [OPTIONS]
     
@@ -830,115 +830,115 @@ Expose the operator using an external address:
 
 Get the list of deployments:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta deployments list --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta deployments list --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the list of clusters:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta clusters list --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta clusters list --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the list of jobs:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta jobs list --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta jobs list --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the status of a deployment:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta deployment status --deployment-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta deployment status --deployment-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the status of a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster status --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster status --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the status of a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job status --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job status --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
 
 Delete a deployment:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta deployment delete --deployment-name=cluster-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta deployment delete --deployment-name=cluster-1 --host=$(minikube ip)
 
 Delete a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster delete --cluster-name=cluster-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster delete --cluster-name=cluster-1 --host=$(minikube ip)
 
 Delete a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job delete --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job delete --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
 
 Stop a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster stop --cluster-name=cluster-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster stop --cluster-name=cluster-1 --host=$(minikube ip)
 
 Start a cluster: 
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster start --cluster-name=cluster-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster start --cluster-name=cluster-1 --host=$(minikube ip)
 
 Stop a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job stop --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job stop --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
 
 Start a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job start --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job start --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
 
 Start a cluster without recovering from the savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster start --cluster-name=cluster-1 --without-savepoint --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster start --cluster-name=cluster-1 --without-savepoint --host=$(minikube ip) 
 
 Stop a cluster without creating a new savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster stop --cluster-name=cluster-1 --without-savepoint --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster stop --cluster-name=cluster-1 --without-savepoint --host=$(minikube ip)
 
 Start a job without recovering from the savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job start --cluster-name=cluster-1 --job-name=job-1 --without-savepoint --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job start --cluster-name=cluster-1 --job-name=job-1 --without-savepoint --host=$(minikube ip) 
 
 Stop a job without creating a new savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job stop --cluster-name=cluster-1 --job-name=job-1 --without-savepoint --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job stop --cluster-name=cluster-1 --job-name=job-1 --without-savepoint --host=$(minikube ip)
 
 Create a new savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta savepoint trigger --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta savepoint trigger --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) 
 
 Remove savepoint from job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta savepoint forget --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta savepoint forget --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) 
 
 Rescale a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta cluster scale --cluster-name=cluster-1 --task-managers=4 --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster scale --cluster-name=cluster-1 --task-managers=4 --host=$(minikube ip) 
 
 Rescale a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job scale --cluster-name=cluster-1 --job-name=job-1 --parallelism=2 --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job scale --cluster-name=cluster-1 --job-name=job-1 --parallelism=2 --host=$(minikube ip) 
 
 Get the details of the job: 
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job details --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job details --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the metrics of the job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta job metrics --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job metrics --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the metrics of the JobManager:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta jobmanager metrics --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta jobmanager metrics --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get a list of TaskManagers:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta taskmanagers list --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta taskmanagers list --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the metrics of a TaskManager:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta taskmanager metrics --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta taskmanager metrics --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the details of a TaskManager:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta taskmanager details --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta taskmanager details --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the metrics of a TaskManager:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta taskmanager metrics --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta taskmanager metrics --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
 
 ## Server components
 
@@ -1023,17 +1023,17 @@ where CLASSPATH must include all the dependencies required to run the applicatio
 
 Build a Docker image with command:
 
-    docker build -t nextbreakpoint/flinkctl:1.4.0-beta .
+    docker build -t nextbreakpoint/flinkctl:1.4.1-beta .
 
 Test the image printing the CLI usage:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.0-beta --help
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta --help
 
 Tag and push the image to your Docker registry if needed:
 
-    docker tag nextbreakpoint/flinkctl:1.4.0-beta some-registry/flinkctl:1.4.0-beta
+    docker tag nextbreakpoint/flinkctl:1.4.1-beta some-registry/flinkctl:1.4.1-beta
     docker login some-registry
-    docker push some-registry/flinkctl:1.4.0-beta
+    docker push some-registry/flinkctl:1.4.1-beta
 
 ### Run the application
 
@@ -1048,7 +1048,7 @@ Run the operator with a given namespace and Kubernetes config on Linux:
 
 Run the operator with a given namespace and Kubernetes config using Docker:
 
-    docker run --rm -it -v ~/.kube/config:/kube/config nextbreakpoint/flinkctl:1.4.0-beta operator run --namespace=test --kube-config=/kube/config
+    docker run --rm -it -v ~/.kube/config:/kube/config nextbreakpoint/flinkctl:1.4.1-beta operator run --namespace=test --kube-config=/kube/config
 
 Run the operator with a given namespace and Kubernetes config with java command:
 

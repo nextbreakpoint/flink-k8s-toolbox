@@ -25,7 +25,7 @@ class CacheAdapter(
             }, { resource ->
                 cache.onFlinkDeploymentDeleted(resource)
             }, {
-                cache.onFlinkDeploymentDeletedAll()
+                cache.onFlinkDeploymentsReset()
             })
         }
 
@@ -38,7 +38,7 @@ class CacheAdapter(
             }, { resource ->
                 cache.onFlinkClusterDeleted(resource)
             }, {
-                cache.onFlinkClusterDeletedAll()
+                cache.onFlinkClustersReset()
             })
         }
 
@@ -51,7 +51,7 @@ class CacheAdapter(
             }, { resource ->
                 cache.onFlinkJobDeleted(resource)
             }, {
-                cache.onFlinkJobDeletedAll()
+                cache.onFlinkJobsReset()
             })
         }
 
@@ -64,7 +64,7 @@ class CacheAdapter(
             }, { resource ->
                 cache.onPodDeleted(resource)
             }, {
-                cache.onPodDeletedAll()
+                cache.onPodsReset()
             })
         }
 
@@ -77,7 +77,7 @@ class CacheAdapter(
             }, { resource ->
                 cache.onDeploymentDeleted(resource)
             }, {
-                cache.onDeploymentDeletedAll()
+                cache.onDeploymentsReset()
             })
         }
 

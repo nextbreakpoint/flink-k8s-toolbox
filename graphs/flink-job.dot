@@ -56,6 +56,13 @@ digraph state_machine {
   STARTING -> STARTING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
+              <TD>Cluster not updated</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTING -> STARTING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
               <TD>Cluster starting</TD>
           </TR>
       </TABLE>
