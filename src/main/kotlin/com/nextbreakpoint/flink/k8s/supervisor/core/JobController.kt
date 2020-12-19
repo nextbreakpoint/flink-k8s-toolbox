@@ -19,7 +19,6 @@ import com.nextbreakpoint.flink.k8s.controller.core.Result
 import com.nextbreakpoint.flink.k8s.controller.core.ResultStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
 import com.nextbreakpoint.flink.k8s.factory.BootstrapResourcesDefaultFactory
-import io.kubernetes.client.openapi.models.V1Job
 import org.joda.time.DateTime
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -30,8 +29,8 @@ class JobController(
     val namespace: String,
     val clusterName: String,
     val jobName: String,
+    val pollingInterval: Long,
     private val controller: Controller,
-    private val pollingInterval: Long,
     private val clusterResources: ClusterResources,
     private val jobResources: JobResources,
     private val job: V1FlinkJob
@@ -43,11 +42,6 @@ class JobController(
     fun triggerSavepoint(options: SavepointOptions) = controller.triggerSavepoint(namespace, clusterName, jobName, options, JobContext(job))
 
     fun querySavepoint(savepointRequest: SavepointRequest) = controller.querySavepoint(namespace, clusterName, jobName, savepointRequest, JobContext(job))
-
-    fun createBootstrapJob(bootstrapJob: V1Job) = controller.createBootstrapJob(namespace, clusterName, jobName, bootstrapJob)
-
-    fun deleteBootstrapJob() = jobResources.bootstrapJob?.metadata?.name?.let { controller.deleteBootstrapJob(namespace, clusterName, jobName, it) }
-        ?: Result(ResultStatus.OK, null)
 
     fun stopJob() = controller.stopJob(namespace, clusterName, jobName, JobContext(job))
 
@@ -213,7 +207,7 @@ class JobController(
         FlinkJobAnnotations.setWithoutSavepoint(job, value)
     }
 
-    fun isWithoutSavepoint() = getClusterIsWithoutSavepoint() || FlinkJobAnnotations.isWithoutSavepoint(job)
+    fun isWithoutSavepoint() = clusterIsWithoutSavepoint() || FlinkJobAnnotations.isWithoutSavepoint(job)
 
     fun setShouldRestart(value: Boolean) {
         FlinkJobAnnotations.setShouldRestart(job, value)
@@ -279,7 +273,20 @@ class JobController(
             controller.isDryRun()
         )
 
-        return createBootstrapJob(resource)
+        FlinkJobStatus.updateStatusTimestamp(job, controller.currentTimeMillis())
+
+        return controller.createBootstrapJob(namespace, clusterName, jobName, resource)
+    }
+
+    fun deleteBootstrapJob(): Result<Void?> {
+        val name = jobResources.bootstrapJob?.metadata?.name
+        if (name != null && jobResources.bootstrapJob?.metadata?.deletionTimestamp == null) {
+            FlinkJobStatus.updateStatusTimestamp(job, controller.currentTimeMillis())
+
+            return controller.deleteBootstrapJob(namespace, clusterName, jobName, name)
+        } else {
+            return Result(ResultStatus.ERROR, null)
+        }
     }
 
     fun hasJobId() = job.status?.jobId?.isNotEmpty() ?: false
@@ -295,16 +302,15 @@ class JobController(
 
     fun getDeclaredJobParallelism() = min(max(job.spec.jobParallelism ?: 1, job.spec.minJobParallelism ?: 0), job.spec.maxJobParallelism ?: 32)
 
-    fun getCurrentSavepointPath() = FlinkJobStatus.getSavepointPath(job)
-
     fun getCurrentJobParallelism() = FlinkJobStatus.getJobParallelism(job)
 
     fun setCurrentJobParallelism(parallelism: Int) = FlinkJobStatus.setJobParallelism(job, parallelism)
 
-    fun getJobStatus() = if (job.status != null) controller.getJobStatus(namespace, clusterName, jobName, job.status.jobId) else Result(ResultStatus.ERROR, "")
+    fun getCurrentSavepointPath() = FlinkJobStatus.getSavepointPath(job)
+
+    fun getJobStatus() = if (job.status != null) controller.getJobStatus(namespace, clusterName, jobName, job.status.jobId) else Result(ResultStatus.ERROR, null)
 
     private val activeStatus = setOf(JobStatus.Starting.toString(), JobStatus.Started.toString())
 
-    private fun getClusterIsWithoutSavepoint() =
-        clusterResources.flinkCluster?.let { FlinkClusterAnnotations.isWithoutSavepoint(clusterResources.flinkCluster) } ?: false
+    private fun clusterIsWithoutSavepoint() = clusterResources.flinkCluster?.let { FlinkClusterAnnotations.isWithoutSavepoint(clusterResources.flinkCluster) } ?: false
 }

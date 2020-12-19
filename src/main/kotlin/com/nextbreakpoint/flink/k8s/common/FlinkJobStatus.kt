@@ -245,7 +245,7 @@ object FlinkJobStatus {
         }
     }
 
-    private fun updateStatusTimestamp(flinkJob: V1FlinkJob, currentTimeMillis: Long) {
+    fun updateStatusTimestamp(flinkJob: V1FlinkJob, currentTimeMillis: Long) {
         flinkJob.status?.timestamp = DateTime(currentTimeMillis)
     }
 

@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.math.max
 
 class OperatorRunner(
     private val registry: MeterRegistry,
@@ -32,10 +33,19 @@ class OperatorRunner(
         val operator = Operator.create(controller, cache, options.taskTimeout, options.pollingInterval, options.serverConfig)
 
         while (!Thread.interrupted()) {
-            TimeUnit.SECONDS.sleep(options.pollingInterval)
+            TimeUnit.SECONDS.sleep(max(options.pollingInterval, 5))
 
             try {
-                cache.updateSnapshot()
+                val currentTimeMillis = controller.currentTimeMillis()
+                if (currentTimeMillis - cache.getLastResetTimestamp() < 10000) {
+                    logger.log(Level.WARNING, "Cache has been cleared less than 10 seconds ago")
+                    continue
+                }
+                if (currentTimeMillis - cache.getLastUpdateTimestamp() < 4500) {
+                    logger.log(Level.INFO, "Cache has been modified less than 5 seconds ago")
+                    continue
+                }
+                cache.takeSnapshot()
                 updateClusterMetrics(cache, clusterGauges)
                 updateJobMetrics(cache, jobGauges)
                 operator.reconcile()

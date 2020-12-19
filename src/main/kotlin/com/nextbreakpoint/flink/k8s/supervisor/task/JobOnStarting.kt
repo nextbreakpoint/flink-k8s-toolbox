@@ -51,10 +51,16 @@ class JobOnStarting : Task<JobManager>() {
             return
         }
 
-        if (manager.isClusterUpdated()) {
+        val clusterUpdated = manager.isClusterUpdated()
+
+        if (clusterUpdated) {
             manager.setResourceUpdated(true)
         } else {
             manager.setResourceUpdated(false)
+        }
+
+        if (!clusterUpdated) {
+            return
         }
 
         if (manager.isRestartTimeout()) {
@@ -62,7 +68,16 @@ class JobOnStarting : Task<JobManager>() {
             return
         }
 
-        if (manager.startJob()) {
+        if (manager.mustResetSavepoint()) {
+            manager.resetSavepoint()
+            return
+        }
+
+        if (!manager.ensureBootstrapJobExists()) {
+            return
+        }
+
+        if (manager.isJobStarted()) {
             manager.onJobStarted()
             return
         }

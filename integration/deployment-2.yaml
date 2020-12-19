@@ -61,7 +61,7 @@ spec:
   cluster:
     supervisor:
       pullPolicy: Never
-      image: integration/flinkctl:1.4.0-beta
+      image: integration/flinkctl:1.4.1-beta
       serviceAccount: flink-supervisor
       taskTimeout: 180
       rescaleDelay: 30

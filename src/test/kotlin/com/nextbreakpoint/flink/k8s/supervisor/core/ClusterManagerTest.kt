@@ -39,7 +39,7 @@ class ClusterManagerTest {
         given(controller.doesTaskManagerPodsExist()).thenReturn(true)
         given(controller.timeSinceLastUpdateInSeconds()).thenReturn(2L)
         given(controller.timeSinceLastRescaleInSeconds()).thenReturn(30L)
-        given(controller.removeUnusedTaskManagers()).thenReturn(mapOf())
+        given(controller.removeUnusedTaskManagers()).thenReturn(setOf())
         given(controller.deletePod(any())).thenReturn(Result(ResultStatus.OK, null))
         given(controller.deleteService()).thenReturn(Result(ResultStatus.OK, null))
     }
@@ -187,7 +187,6 @@ class ClusterManagerTest {
         given(controller.doesJobManagerPodExists()).thenReturn(false)
         val result = manager.hasResourceDiverged()
         verify(controller, times(1)).doesJobManagerPodExists()
-        verify(controller, times(1)).doesJobManagerServiceExists()
         assertThat(result).isTrue()
     }
 
@@ -438,17 +437,17 @@ class ClusterManagerTest {
 
     @Test
     fun `areJobsUpdating should return true when there are some jobs in updating status`() {
-        given(controller.areJobsUpdating()).thenReturn(true)
-        val result = manager.areJobsUpdating()
-        verify(controller, times(1)).areJobsUpdating()
+        given(controller.areJobsReady()).thenReturn(true)
+        val result = manager.areJobsReady()
+        verify(controller, times(1)).areJobsReady()
         assertThat(result).isTrue()
     }
 
     @Test
     fun `areJobsUpdating should return false when there isn't any job in updating status`() {
-        given(controller.areJobsUpdating()).thenReturn(false)
-        val result = manager.areJobsUpdating()
-        verify(controller, times(1)).areJobsUpdating()
+        given(controller.areJobsReady()).thenReturn(false)
+        val result = manager.areJobsReady()
+        verify(controller, times(1)).areJobsReady()
         assertThat(result).isFalse()
     }
 

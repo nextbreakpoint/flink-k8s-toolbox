@@ -22,7 +22,7 @@ class ClusterOnStartedTest {
         given(context.hasSpecificationChanged()).thenReturn(false)
         given(context.isActionPresent()).thenReturn(false)
         given(context.isClusterUnhealthy()).thenReturn(false)
-        given(context.areJobsUpdating()).thenReturn(false)
+        given(context.areJobsReady()).thenReturn(true)
         given(context.stopUnmanagedJobs()).thenReturn(true)
         given(context.rescaleTaskManagers()).thenReturn(false)
         given(context.rescaleTaskManagerPods()).thenReturn(false)
@@ -91,8 +91,8 @@ class ClusterOnStartedTest {
     }
 
     @Test
-    fun `should behave as expected when jobs are updating`() {
-        given(context.areJobsUpdating()).thenReturn(true)
+    fun `should behave as expected when jobs are not ready`() {
+        given(context.areJobsReady()).thenReturn(false)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
@@ -105,7 +105,7 @@ class ClusterOnStartedTest {
         inOrder.verify(context, times(1)).rescaleTaskManagerPods()
         inOrder.verify(context, times(1)).isClusterReady()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
-        inOrder.verify(context, times(1)).areJobsUpdating()
+        inOrder.verify(context, times(1)).areJobsReady()
         verifyNoMoreInteractions(context)
     }
 
@@ -124,7 +124,7 @@ class ClusterOnStartedTest {
         inOrder.verify(context, times(1)).rescaleTaskManagerPods()
         inOrder.verify(context, times(1)).isClusterReady()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
-        inOrder.verify(context, times(1)).areJobsUpdating()
+        inOrder.verify(context, times(1)).areJobsReady()
         inOrder.verify(context, times(1)).stopUnmanagedJobs()
         verifyNoMoreInteractions(context)
     }
@@ -194,7 +194,7 @@ class ClusterOnStartedTest {
         inOrder.verify(context, times(1)).rescaleTaskManagerPods()
         inOrder.verify(context, times(1)).isClusterReady()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
-        inOrder.verify(context, times(1)).areJobsUpdating()
+        inOrder.verify(context, times(1)).areJobsReady()
         inOrder.verify(context, times(1)).stopUnmanagedJobs()
         verifyNoMoreInteractions(context)
     }

@@ -49,7 +49,7 @@ class CacheAdpterTest {
         verify(kubeClient, times(1)).watchFlickClusters(eq("flink"))
         verifyNoMoreInteractions(kubeClient)
 
-        verify(cache, times(1)).onFlinkClusterDeletedAll()
+        verify(cache, times(1)).onFlinkClustersReset()
         verifyNoMoreInteractions(cache)
 
         Thread.sleep(1000)
@@ -60,7 +60,7 @@ class CacheAdpterTest {
         verifyNoMoreInteractions(kubeClient)
 
         val inOrder = inOrder(cache)
-        inOrder.verify(cache, times(2)).onFlinkClusterDeletedAll()
+        inOrder.verify(cache, times(2)).onFlinkClustersReset()
         inOrder.verify(cache, times(1)).onFlinkClusterChanged(eq(cluster1))
         inOrder.verify(cache, times(1)).onFlinkClusterChanged(eq(cluster2))
         inOrder.verify(cache, times(1)).onFlinkClusterDeleted(eq(cluster1))
@@ -91,7 +91,7 @@ class CacheAdpterTest {
         verify(kubeClient, times(1)).watchJobs(eq("flink"))
         verifyNoMoreInteractions(kubeClient)
 
-        verify(cache, times(1)).onJobDeletedAll()
+        verify(cache, times(1)).onJobsReset()
         verifyNoMoreInteractions(cache)
 
         Thread.sleep(1000)
@@ -102,7 +102,7 @@ class CacheAdpterTest {
         verifyNoMoreInteractions(kubeClient)
 
         val inOrder = inOrder(cache)
-        inOrder.verify(cache, times(2)).onJobDeletedAll()
+        inOrder.verify(cache, times(2)).onJobsReset()
         inOrder.verify(cache, times(1)).onJobChanged(eq(resource1))
         inOrder.verify(cache, times(1)).onJobChanged(eq(resource2))
         inOrder.verify(cache, times(1)).onJobDeleted(eq(resource1))
@@ -133,7 +133,7 @@ class CacheAdpterTest {
         verify(kubeClient, times(1)).watchServices(eq("flink"))
         verifyNoMoreInteractions(kubeClient)
 
-        verify(cache, times(1)).onServiceDeletedAll()
+        verify(cache, times(1)).onServicesReset()
         verifyNoMoreInteractions(cache)
 
         Thread.sleep(1000)
@@ -144,7 +144,7 @@ class CacheAdpterTest {
         verifyNoMoreInteractions(kubeClient)
 
         val inOrder = inOrder(cache)
-        inOrder.verify(cache, times(2)).onServiceDeletedAll()
+        inOrder.verify(cache, times(2)).onServicesReset()
         inOrder.verify(cache, times(1)).onServiceChanged(eq(resource1))
         inOrder.verify(cache, times(1)).onServiceChanged(eq(resource2))
         inOrder.verify(cache, times(1)).onServiceDeleted(eq(resource1))
@@ -175,7 +175,7 @@ class CacheAdpterTest {
         verify(kubeClient, times(1)).watchPods(eq("flink"))
         verifyNoMoreInteractions(kubeClient)
 
-        verify(cache, times(1)).onPodDeletedAll()
+        verify(cache, times(1)).onPodsReset()
         verifyNoMoreInteractions(cache)
 
         Thread.sleep(1000)
@@ -186,7 +186,7 @@ class CacheAdpterTest {
         verifyNoMoreInteractions(kubeClient)
 
         val inOrder = inOrder(cache)
-        inOrder.verify(cache, times(2)).onPodDeletedAll()
+        inOrder.verify(cache, times(2)).onPodsReset()
         inOrder.verify(cache, times(1)).onPodChanged(eq(resource1))
         inOrder.verify(cache, times(1)).onPodChanged(eq(resource2))
         inOrder.verify(cache, times(1)).onPodDeleted(eq(resource1))
@@ -214,7 +214,7 @@ class CacheAdpterTest {
         verify(kubeClient, times(1)).watchFlinkJobs(eq("flink"))
         verifyNoMoreInteractions(kubeClient)
 
-        verify(cache, times(1)).onFlinkJobDeletedAll()
+        verify(cache, times(1)).onFlinkJobsReset()
         verifyNoMoreInteractions(cache)
 
         Thread.sleep(1000)
@@ -225,7 +225,7 @@ class CacheAdpterTest {
         verifyNoMoreInteractions(kubeClient)
 
         val inOrder = inOrder(cache)
-        inOrder.verify(cache, times(2)).onFlinkJobDeletedAll()
+        inOrder.verify(cache, times(2)).onFlinkJobsReset()
         inOrder.verify(cache, times(1)).onFlinkJobChanged(eq(job1))
         inOrder.verify(cache, times(1)).onFlinkJobChanged(eq(job2))
         inOrder.verify(cache, times(1)).onFlinkJobDeleted(eq(job1))

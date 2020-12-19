@@ -270,61 +270,35 @@ class JobManagerTest {
     }
 
     @Test
-    fun `startJob should return true when bootstrap job exists and job has id`() {
-        given(controller.doesBootstrapJobExists()).thenReturn(true)
+    fun `isJobStarted should return true when job has id`() {
         given(controller.hasJobId()).thenReturn(true)
-        val result = manager.startJob()
-        verify(controller, times(1)).doesBootstrapJobExists()
+        val result = manager.isJobStarted()
         verify(controller, times(1)).hasJobId()
         assertThat(result).isTrue()
     }
 
     @Test
-    fun `startJob should return false when bootstrap job exists but job doesn't have id`() {
+    fun `isJobStarted should return false when job doesn't have id`() {
+        given(controller.hasJobId()).thenReturn(false)
+        val result = manager.isJobStarted()
+        verify(controller, times(1)).hasJobId()
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `ensureBootstrapJobExists should do nothing when jobmanager service exists`() {
         given(controller.doesBootstrapJobExists()).thenReturn(true)
-        given(controller.hasJobId()).thenReturn(false)
-        val result = manager.startJob()
+        val result = manager.ensureBootstrapJobExists()
         verify(controller, times(1)).doesBootstrapJobExists()
-        verify(controller, times(1)).hasJobId()
-        assertThat(result).isFalse()
+        assertThat(result).isTrue()
     }
 
     @Test
-    fun `startJob should remove job id when bootstrap job doesn't exit and job has id`() {
+    fun `ensureBootstrapJobExists should create resource when jobmanager service doesn't exists`() {
         given(controller.doesBootstrapJobExists()).thenReturn(false)
-        given(controller.hasJobId()).thenReturn(true)
-        val result = manager.startJob()
+        given(controller.createBootstrapJob()).thenReturn(Result(ResultStatus.OK, "test"))
+        val result = manager.ensureBootstrapJobExists()
         verify(controller, times(1)).doesBootstrapJobExists()
-        verify(controller, times(1)).hasJobId()
-        verify(controller, times(1)).resetJob()
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `startJob should create bootstrap job when bootstrap job doesn't exit and job doesn't have id`() {
-        given(controller.doesBootstrapJobExists()).thenReturn(false)
-        given(controller.hasJobId()).thenReturn(false)
-        given(controller.createBootstrapJob()).thenReturn(Result(ResultStatus.OK, null))
-        val result = manager.startJob()
-        verify(controller, times(1)).doesBootstrapJobExists()
-        verify(controller, times(1)).hasJobId()
-        verify(controller, times(1)).isWithoutSavepoint()
-        verify(controller, times(1)).createBootstrapJob()
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `startJob should remove savepoint when savepoint is not required`() {
-        given(controller.doesBootstrapJobExists()).thenReturn(false)
-        given(controller.hasJobId()).thenReturn(false)
-        given(controller.isWithoutSavepoint()).thenReturn(true)
-        given(controller.createBootstrapJob()).thenReturn(Result(ResultStatus.OK, null))
-        val result = manager.startJob()
-        verify(controller, times(1)).isClusterUpdated()
-        verify(controller, times(1)).doesBootstrapJobExists()
-        verify(controller, times(1)).hasJobId()
-        verify(controller, times(1)).isWithoutSavepoint()
-        verify(controller, times(1)).setSavepointPath(eq(""))
         verify(controller, times(1)).createBootstrapJob()
         assertThat(result).isFalse()
     }

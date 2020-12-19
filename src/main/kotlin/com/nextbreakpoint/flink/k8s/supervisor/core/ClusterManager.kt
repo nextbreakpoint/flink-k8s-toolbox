@@ -140,11 +140,11 @@ class ClusterManager(
     }
 
     fun hasResourceDiverged(): Boolean {
-        val podExists = controller.doesJobManagerPodExists()
+        if (!controller.doesJobManagerPodExists()) {
+            return true
+        }
 
-        val serviceExists = controller.doesJobManagerServiceExists()
-
-        if (!serviceExists || !podExists) {
+        if (!controller.doesJobManagerServiceExists()) {
             return true
         }
 
@@ -215,7 +215,7 @@ class ClusterManager(
         return true
     }
 
-    fun areJobsUpdating() = controller.areJobsUpdating()
+    fun areJobsReady() = controller.areJobsReady()
 
     fun ensureJobManagerServiceExists(): Boolean {
         val serviceExists = controller.doesJobManagerServiceExists()
@@ -225,12 +225,12 @@ class ClusterManager(
 
             if (result.isSuccessful()) {
                 logger.info("JobManager service created")
+            } else {
+                logger.log(Level.SEVERE, "Couldn't create JobManager service")
             }
-
-            return false
         }
 
-        return true
+        return serviceExists
     }
 
     fun ensureJobManagerPodExists(): Boolean {
@@ -241,12 +241,12 @@ class ClusterManager(
 
             if (result.isSuccessful()) {
                 logger.info("JobManager pod created")
+            } else {
+                logger.log(Level.SEVERE, "Couldn't create JobManager pod")
             }
-
-            return false
         }
 
-        return true
+        return jobmanagerReplicas == 1
     }
 
     fun rescaleTaskManagers(): Boolean {
@@ -277,18 +277,21 @@ class ClusterManager(
         if (currentTaskManagers > taskManagerReplicas) {
             val result = controller.createTaskManagerPods(currentTaskManagers)
 
+            result.output.forEach { taskmanagerPodName ->
+                logger.info("TaskManagers pod created ($taskmanagerPodName)")
+            }
+
             if (result.isSuccessful()) {
-                logger.info("TaskManagers pods created")
                 controller.updateRescaleTimestamp()
             }
         } else if (controller.timeSinceLastRescaleInSeconds() > controller.getRescaleDelay()) {
-            val taskmanagerIdWithPodNameMap = controller.removeUnusedTaskManagers()
+            val taskmanagerPodNames = controller.removeUnusedTaskManagers()
 
-            taskmanagerIdWithPodNameMap.forEach { taskmanagerIdWithPodName ->
-                logger.info("TaskManager pod deleted (${taskmanagerIdWithPodName.value})")
+            taskmanagerPodNames.forEach { taskmanagerPodNames ->
+                logger.info("TaskManager pod deleted (${taskmanagerPodNames})")
             }
 
-            if (taskmanagerIdWithPodNameMap.isNotEmpty()) {
+            if (taskmanagerPodNames.isNotEmpty()) {
                 controller.updateRescaleTimestamp()
             }
         }

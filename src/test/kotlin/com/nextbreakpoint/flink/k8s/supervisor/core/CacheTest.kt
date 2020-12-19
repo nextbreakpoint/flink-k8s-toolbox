@@ -33,7 +33,7 @@ class CacheTest {
         val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         assertThat(cache.getFlinkClusters()).isNotEmpty()
     }
 
@@ -42,7 +42,7 @@ class CacheTest {
         val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         assertThat(cache.getFlinkCluster("test")).isNotNull()
     }
 
@@ -54,7 +54,7 @@ class CacheTest {
         val cluster2 = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         val clusters = cache.getFlinkClusters()
         assertThat(clusters).hasSize(1)
         assertThat(clusters).containsExactlyInAnyOrder(cluster2)
@@ -69,22 +69,7 @@ class CacheTest {
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
         cache.onFlinkClusterDeleted(cluster1)
-        cache.updateSnapshot()
-        assertThat(cache.getFlinkClusters()).hasSize(0)
-    }
-
-    @Test
-    fun `should remove all clusters when all clusters are deleted`() {
-        val cluster1 = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
-        cluster1.metadata.uid = "123"
-        cache.onFlinkClusterChanged(cluster1)
-        val cluster2 = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
-        cluster2.metadata.uid = "456"
-        cache.onFlinkClusterChanged(cluster2)
-        cache.updateSnapshot()
-        assertThat(cache.getFlinkClusters()).hasSize(1)
-        cache.onFlinkClusterDeletedAll()
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         assertThat(cache.getFlinkClusters()).hasSize(0)
     }
 
@@ -96,7 +81,7 @@ class CacheTest {
         val cluster2 = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
         cluster2.metadata.uid = "456"
         cache.onFlinkClusterChanged(cluster2)
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         val clusterSelectors = cache.listClusterNames()
         assertThat(clusterSelectors).hasSize(1)
         assertThat(clusterSelectors).containsExactlyInAnyOrder("test")
@@ -115,7 +100,7 @@ class CacheTest {
         val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
         cluster.metadata.uid = "123"
         cache.onFlinkClusterChanged(cluster)
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         val clusterResources = cache.getClusterResources()
         assertThat(clusterResources.flinkJobs).isEmpty()
         assertThat(clusterResources.jobmanagerService).isNull()
@@ -141,7 +126,7 @@ class CacheTest {
         cache.onServiceChanged(service)
         cache.onPodChanged(jobManagerPod)
         cache.onPodChanged(taskManagerPod)
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         val clusterResources = cache.getClusterResources()
         assertThat(clusterResources.flinkJobs).isEqualTo(setOf(flinkJob))
         assertThat(clusterResources.jobmanagerService).isEqualTo(service)
@@ -177,7 +162,7 @@ class CacheTest {
         cache.onJobChanged(job2)
         cache.onPodChanged(jobManagerPod2)
         cache.onPodChanged(taskManagerPod2)
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         val clusterResources = cache.getClusterResources()
         assertThat(clusterResources.flinkJobs).isEqualTo(setOf(flinkJob2))
         assertThat(clusterResources.jobmanagerService).isEqualTo(service2)
@@ -218,47 +203,7 @@ class CacheTest {
         cache.onServiceDeleted(service1)
         cache.onPodDeleted(jobManagerPod1)
         cache.onPodDeleted(taskManagerPod1)
-        cache.updateSnapshot()
-        val clusterResources = cache.getClusterResources()
-        assertThat(clusterResources.flinkJobs).isEmpty()
-        assertThat(clusterResources.jobmanagerService).isNull()
-        assertThat(clusterResources.jobmanagerPods).isEmpty()
-        assertThat(clusterResources.taskmanagerPods).isEmpty()
-        val jobResources = cache.getJobResources("test")
-        assertThat(jobResources.flinkJob).isNull()
-        assertThat(jobResources.bootstrapJob).isNull()
-    }
-
-    @Test
-    fun `should update resources when all resources are deleted`() {
-        val cluster = TestFactory.aFlinkCluster(name = "test", namespace = "flink")
-        cluster.metadata.uid = "123"
-        cache.onFlinkClusterChanged(cluster)
-        val flinkJob1 = TestFactory.aFlinkJob(name = "test-test", namespace = "flink")
-        val job1 = TestFactory.aBootstrapJob(cluster, flinkJob1)
-        val service1 = TestFactory.aJobManagerService(cluster)
-        val jobManagerPod1 = TestFactory.aJobManagerPod(cluster,"1")
-        val taskManagerPod1 = TestFactory.aTaskManagerPod(cluster,"1")
-        val flinkJob2 = TestFactory.aFlinkJob(name = "test-test", namespace = "flink")
-        val job2 = TestFactory.aBootstrapJob(cluster, flinkJob2)
-        val service2 = TestFactory.aJobManagerService(cluster)
-        val jobManagerPod2 = TestFactory.aJobManagerPod(cluster,"1")
-        val taskManagerPod2 = TestFactory.aTaskManagerPod(cluster,"1")
-        cache.onFlinkJobChanged(flinkJob1)
-        cache.onJobChanged(job1)
-        cache.onServiceChanged(service1)
-        cache.onPodChanged(jobManagerPod1)
-        cache.onPodChanged(taskManagerPod1)
-        cache.onFlinkJobChanged(flinkJob2)
-        cache.onJobChanged(job2)
-        cache.onServiceChanged(service2)
-        cache.onPodChanged(jobManagerPod2)
-        cache.onPodChanged(taskManagerPod2)
-        cache.onJobDeletedAll()
-        cache.onServiceDeletedAll()
-        cache.onPodDeletedAll()
-        cache.onFlinkJobDeletedAll()
-        cache.updateSnapshot()
+        cache.takeSnapshot()
         val clusterResources = cache.getClusterResources()
         assertThat(clusterResources.flinkJobs).isEmpty()
         assertThat(clusterResources.jobmanagerService).isNull()

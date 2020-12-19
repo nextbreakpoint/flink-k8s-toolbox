@@ -2,7 +2,7 @@
   "cluster": {
     "supervisor": {
       "pullPolicy": "IfNotPresent",
-      "image": "nextbreakpoint/flinkctl:1.4.0-beta",
+      "image": "nextbreakpoint/flinkctl:1.4.1-beta",
       "serviceAccount": "flink-supervisor",
       "taskTimeout": 180,
       "rescaleDelay": 10,

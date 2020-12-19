@@ -1,0 +1,14 @@
+# 1.4.1-beta
+
+Release notes:
+- Ensure that cache is fully populate before reconciling resources  
+
+# 1.4.0-beta
+
+Release notes:
+- Support for new custom resources: FlinkDeployment, FlinkCluster, FlinkJob.
+- New toolbox distribution which includes native command flinkctl.
+- New quick start tutorial with example of Flink deployment.
+- New manual with detailed instructions.
+- Many code improvements.
+- Compiled using GraalVM and Native Image.

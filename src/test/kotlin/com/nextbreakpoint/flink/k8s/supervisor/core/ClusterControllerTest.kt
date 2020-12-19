@@ -44,7 +44,7 @@ class ClusterControllerTest {
     )
     private val logger = mock(Logger::class.java)
     private val controller = mock(Controller::class.java)
-    private val clusterController = ClusterController("flink", "test", controller, 5, resources, cluster)
+    private val clusterController = ClusterController("flink", "test", 5, controller, resources, cluster)
 
     @AfterEach
     fun verifyInteractions() {
@@ -86,6 +86,7 @@ class ClusterControllerTest {
         val result: Result<String?> = Result(status = ResultStatus.OK, output = "podname")
         given(controller.createPod(eq("flink"), eq("test"), eq(pod))).thenReturn(result)
         assertThat(clusterController.createPod(pod)).isEqualTo(result)
+        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).createPod(eq("flink"), eq("test"), eq(pod))
     }
 
@@ -94,15 +95,8 @@ class ClusterControllerTest {
         val result: Result<Void?> = Result(status = ResultStatus.OK, output = null)
         given(controller.deletePod(eq("flink"), eq("test"), any())).thenReturn(result)
         assertThat(clusterController.deletePod("podname")).isEqualTo(result)
+        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).deletePod(eq("flink"), eq("test"), eq("podname"))
-    }
-
-    @Test
-    fun `should create service`() {
-        val result: Result<String?> = Result(status = ResultStatus.OK, output = "servicename")
-        given(controller.createService(eq("flink"), eq("test"), eq(service))).thenReturn(result)
-        assertThat(clusterController.createService(service)).isEqualTo(result)
-        verify(controller, times(1)).createService(eq("flink"), eq("test"), eq(service))
     }
 
     @Test
@@ -110,6 +104,7 @@ class ClusterControllerTest {
         val result: Result<Void?> = Result(status = ResultStatus.OK, output = null)
         given(controller.deleteService(eq("flink"), eq("test"), eq("jobmanager-test"))).thenReturn(result)
         assertThat(clusterController.deleteService()).isEqualTo(result)
+        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).deleteService(eq("flink"), eq("test"), eq("jobmanager-test"))
     }
 
@@ -409,6 +404,7 @@ class ClusterControllerTest {
         val result: Result<String?> = Result(status = ResultStatus.OK, output = "servicename")
         given(controller.createService(eq("flink"), eq("test"), eq(service))).thenReturn(result)
         assertThat(clusterController.createService()).isEqualTo(result)
+        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).createService(eq("flink"), eq("test"), eq(service))
     }
 
@@ -432,6 +428,7 @@ class ClusterControllerTest {
         given(controller.createPod(eq("flink"), eq("test"), eq(pod))).thenReturn(result)
         val expectedResult: Result<Set<String>> = Result(status = ResultStatus.OK, output = setOf("podname"))
         assertThat(clusterController.createJobManagerPods(1)).isEqualTo(expectedResult)
+        verify(controller, times(1)).currentTimeMillis()
         verify(controller, times(1)).createPod(eq("flink"), eq("test"), eq(pod))
     }
 
@@ -455,6 +452,7 @@ class ClusterControllerTest {
         given(controller.createPod(eq("flink"), eq("test"), eq(pod))).thenReturn(result)
         val expectedResult: Result<Set<String>> = Result(status = ResultStatus.OK, output = setOf("podname"))
         assertThat(clusterController.createTaskManagerPods(2)).isEqualTo(expectedResult)
+        verify(controller, times(2)).currentTimeMillis()
         verify(controller, times(2)).createPod(eq("flink"), eq("test"), eq(pod))
     }
 
@@ -477,7 +475,7 @@ class ClusterControllerTest {
         assertThat(clusterController.doesJobManagerServiceExists()).isTrue()
         // TODO perhaps we can fin a better way to do this
         val newResources = resources.withService(null)
-        val newController = ClusterController("flink", "test", controller, 5, newResources, cluster)
+        val newController = ClusterController("flink", "test", 5, controller, newResources, cluster)
         assertThat(newController.doesJobManagerServiceExists()).isFalse()
     }
 
@@ -621,6 +619,7 @@ class ClusterControllerTest {
         pod4.status?.podIP = "172.17.0.15"
         given(controller.getTaskManagerStatus(eq("flink"), eq("test"))).thenReturn(Result(ResultStatus.OK, taskManagersInfo))
         clusterController.removeUnusedTaskManagers()
+        verify(controller, times(2)).currentTimeMillis()
         verify(controller, times(1)).getTaskManagerStatus(eq("flink"), eq("test"))
         verify(controller, times(1)).deletePod(eq("flink"), eq("test"), eq(pod3.metadata?.name ?: ""))
         verify(controller, times(1)).deletePod(eq("flink"), eq("test"), eq(pod4.metadata?.name ?: ""))

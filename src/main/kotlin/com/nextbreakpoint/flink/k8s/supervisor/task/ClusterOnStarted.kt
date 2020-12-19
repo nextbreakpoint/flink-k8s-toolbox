@@ -55,7 +55,7 @@ class ClusterOnStarted : Task<ClusterManager>() {
 
         manager.setResourceUpdated(true)
 
-        if (manager.areJobsUpdating()) {
+        if (!manager.areJobsReady()) {
             return
         }
 

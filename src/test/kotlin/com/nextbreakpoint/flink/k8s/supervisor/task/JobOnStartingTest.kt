@@ -28,8 +28,10 @@ class JobOnStartingTest {
         given(context.isClusterUpdated()).thenReturn(true)
         given(context.isClusterReady()).thenReturn(true)
         given(context.isRestartTimeout()).thenReturn(false)
-        given(context.startJob()).thenReturn(true)
+        given(context.isJobStarted()).thenReturn(true)
         given(context.hasFinalizer()).thenReturn(true)
+        given(context.mustResetSavepoint()).thenReturn(false)
+        given(context.ensureBootstrapJobExists()).thenReturn(true)
     }
 
     @Test
@@ -152,14 +154,11 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterUnhealthy()
         inOrder.verify(context, times(1)).isClusterUpdated()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(false))
-        inOrder.verify(context, times(1)).isRestartTimeout()
-        inOrder.verify(context, times(1)).startJob()
-        inOrder.verify(context, times(1)).onJobStarted()
         verifyNoMoreInteractions(context)
     }
 
     @Test
-    fun `should behave as expected when cluster has timed out`() {
+    fun `should behave as expected when job has timed out`() {
         given(context.isRestartTimeout()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
@@ -180,8 +179,8 @@ class JobOnStartingTest {
     }
 
     @Test
-    fun `should behave as expected when cluster hasn't started`() {
-        given(context.startJob()).thenReturn(false)
+    fun `should behave as expected when job hasn't started`() {
+        given(context.isJobStarted()).thenReturn(false)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
@@ -196,12 +195,15 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterUpdated()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
         inOrder.verify(context, times(1)).isRestartTimeout()
-        inOrder.verify(context, times(1)).startJob()
+        inOrder.verify(context, times(1)).mustResetSavepoint()
+        inOrder.verify(context, times(1)).ensureBootstrapJobExists()
+        inOrder.verify(context, times(1)).isJobStarted()
         verifyNoMoreInteractions(context)
     }
 
     @Test
-    fun `should behave as expected when cluster has started`() {
+    fun `should behave as expected when savepoint must be reset`() {
+        given(context.mustResetSavepoint()).thenReturn(true)
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
@@ -216,7 +218,52 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).isClusterUpdated()
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
         inOrder.verify(context, times(1)).isRestartTimeout()
-        inOrder.verify(context, times(1)).startJob()
+        inOrder.verify(context, times(1)).mustResetSavepoint()
+        inOrder.verify(context, times(1)).resetSavepoint()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when bootstrap job doesn't exist`() {
+        given(context.ensureBootstrapJobExists()).thenReturn(false)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
+        inOrder.verify(context, times(1)).isClusterStopping()
+        inOrder.verify(context, times(1)).isClusterStopped()
+        inOrder.verify(context, times(1)).isClusterStarting()
+        inOrder.verify(context, times(1)).isClusterStarted()
+        inOrder.verify(context, times(1)).setClusterHealth(eq("HEALTHY"))
+        inOrder.verify(context, times(1)).isActionPresent()
+        inOrder.verify(context, times(1)).isClusterUnhealthy()
+        inOrder.verify(context, times(1)).isClusterUpdated()
+        inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
+        inOrder.verify(context, times(1)).isRestartTimeout()
+        inOrder.verify(context, times(1)).mustResetSavepoint()
+        inOrder.verify(context, times(1)).ensureBootstrapJobExists()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when job has started`() {
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
+        inOrder.verify(context, times(1)).isClusterStopping()
+        inOrder.verify(context, times(1)).isClusterStopped()
+        inOrder.verify(context, times(1)).isClusterStarting()
+        inOrder.verify(context, times(1)).isClusterStarted()
+        inOrder.verify(context, times(1)).setClusterHealth(eq("HEALTHY"))
+        inOrder.verify(context, times(1)).isActionPresent()
+        inOrder.verify(context, times(1)).isClusterUnhealthy()
+        inOrder.verify(context, times(1)).isClusterUpdated()
+        inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
+        inOrder.verify(context, times(1)).isRestartTimeout()
+        inOrder.verify(context, times(1)).mustResetSavepoint()
+        inOrder.verify(context, times(1)).ensureBootstrapJobExists()
+        inOrder.verify(context, times(1)).isJobStarted()
         inOrder.verify(context, times(1)).onJobStarted()
         verifyNoMoreInteractions(context)
     }
