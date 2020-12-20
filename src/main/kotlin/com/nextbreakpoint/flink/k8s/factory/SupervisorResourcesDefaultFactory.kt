@@ -25,7 +25,6 @@ object SupervisorResourcesDefaultFactory : SupervisorResourcesFactory {
         owner: String,
         clusterName: String,
         supervisorSpec: V1SupervisorSpec,
-        replicas: Int,
         dryRun: Boolean
     ): V1Deployment {
         if (supervisorSpec.image == null) {
@@ -92,7 +91,7 @@ object SupervisorResourcesDefaultFactory : SupervisorResourcesFactory {
             .endSpec()
             .build()
 
-        val deployment = V1DeploymentBuilder()
+        return V1DeploymentBuilder()
             .editOrNewMetadata()
             .withName("supervisor-$clusterName")
             .withLabels(supervisorLabels)
@@ -102,14 +101,12 @@ object SupervisorResourcesDefaultFactory : SupervisorResourcesFactory {
             .withTemplate(supervisorPodSpec)
             .withSelector(supervisorSelector)
             .withStrategy(V1DeploymentStrategy().type("Recreate"))
-            .withReplicas(if (dryRun) 0 else replicas)
+            .withReplicas(if (dryRun) 0 else supervisorSpec.replicas ?: 1)
             .withProgressDeadlineSeconds(180)
             .withMinReadySeconds(30)
             .withRevisionHistoryLimit(3)
             .endSpec()
             .build()
-
-        return deployment
     }
 
     private fun createAffinity(

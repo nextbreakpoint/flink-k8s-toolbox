@@ -1,3 +1,12 @@
+# 1.4.2-beta
+
+Release notes:
+- Configurable operator's replicas to enable HA.
+- Configurable supervisor's replicas to enable HA.
+- Accept zero as parallelism value to suspend job.
+- Replace watch with informer.
+- Stability improvements    
+
 # 1.4.1-beta
 
 Release notes:

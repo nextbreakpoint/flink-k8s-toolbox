@@ -127,7 +127,7 @@ object FlinkJobStatus {
     }
 
     fun getJobParallelism(flinkJob: V1FlinkJob): Int =
-        flinkJob.status?.jobParallelism ?: 1
+        flinkJob.status?.jobParallelism ?: 0
 
     fun setJobParallelism(flinkJob: V1FlinkJob, jobParallelism: Int) {
         if (flinkJob.status?.jobParallelism != jobParallelism) {

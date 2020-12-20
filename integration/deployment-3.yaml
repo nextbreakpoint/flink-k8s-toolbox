@@ -23,7 +23,7 @@ spec:
           className: com.nextbreakpoint.flink.jobs.batch.ReportJob
           arguments:
             - --CONSOLE_OUTPUT
-            - "true"
+            - "false"
             - --SOURCE_FS_PATH
             - file:///tmp/workshop/sensor-events
             - --OUTPUT_FS_PATH
@@ -38,10 +38,11 @@ spec:
   cluster:
     supervisor:
       pullPolicy: Never
-      image: integration/flinkctl:1.4.1-beta
+      image: integration/flinkctl:1.4.2-beta
       serviceAccount: flink-supervisor
       taskTimeout: 120
       rescaleDelay: 30
+      replicas: 1
       resources:
         limits:
           cpu: '1'

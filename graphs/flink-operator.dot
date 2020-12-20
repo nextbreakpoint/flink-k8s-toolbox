@@ -8,7 +8,7 @@ digraph state_machine {
   USER -> OPERATORDEPLOYMENT [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
-              <TD>Install</TD>
+              <TD>Create</TD>
           </TR>
       </TABLE>
   > ];
@@ -203,7 +203,7 @@ digraph state_machine {
   USER [ fillcolor=gray width=1.5 ] [ label = <
     <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
         <TR>
-            <TD>User<BR/>(kubectl)</TD>
+            <TD>Helm</TD>
         </TR>
     </TABLE>
   > ];

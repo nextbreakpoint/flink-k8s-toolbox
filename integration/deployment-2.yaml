@@ -23,7 +23,7 @@ spec:
           className: com.nextbreakpoint.flink.jobs.stream.TestJob
           arguments:
             - --CONSOLE_OUTPUT
-            - "true"
+            - "false"
           resources:
             limits:
               cpu: '1'
@@ -50,7 +50,7 @@ spec:
           className: com.nextbreakpoint.flink.jobs.stream.TestJob
           arguments:
             - --CONSOLE_OUTPUT
-            - "true"
+            - "false"
           resources:
             limits:
               cpu: '1'
@@ -61,10 +61,11 @@ spec:
   cluster:
     supervisor:
       pullPolicy: Never
-      image: integration/flinkctl:1.4.1-beta
+      image: integration/flinkctl:1.4.2-beta
       serviceAccount: flink-supervisor
       taskTimeout: 180
       rescaleDelay: 30
+      replicas: 2
       resources:
         limits:
           cpu: '1'

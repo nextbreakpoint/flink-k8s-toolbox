@@ -141,14 +141,17 @@ class ClusterManager(
 
     fun hasResourceDiverged(): Boolean {
         if (!controller.doesJobManagerPodExists()) {
+            logger.info("Detected change: JobManager pod missing")
             return true
         }
 
         if (!controller.doesJobManagerServiceExists()) {
+            logger.info("Detected change: JobManager service missing")
             return true
         }
 
         if (controller.getJobManagerReplicas() != 1) {
+            logger.info("Detected change: JobManager replicas")
             return true
         }
 
@@ -159,7 +162,7 @@ class ClusterManager(
         val changes = controller.computeChanges()
 
         if (changes.isNotEmpty()) {
-            logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
+            logger.info("Detected change: ${changes.joinToString(separator = ",")}")
             return true
         }
 
@@ -258,6 +261,8 @@ class ClusterManager(
             return false
         }
 
+        logger.info("Detected change: TaskManagers")
+
         controller.rescaleCluster(requiredTaskManagers)
 
         controller.updateRescaleTimestamp()
@@ -284,19 +289,23 @@ class ClusterManager(
             if (result.isSuccessful()) {
                 controller.updateRescaleTimestamp()
             }
+
+            return true
         } else if (controller.timeSinceLastRescaleInSeconds() > controller.getRescaleDelay()) {
             val taskmanagerPodNames = controller.removeUnusedTaskManagers()
 
-            taskmanagerPodNames.forEach { taskmanagerPodNames ->
-                logger.info("TaskManager pod deleted (${taskmanagerPodNames})")
+            taskmanagerPodNames.forEach { taskmanagerPodName ->
+                logger.info("TaskManager pod deleted ($taskmanagerPodName)")
             }
 
             if (taskmanagerPodNames.isNotEmpty()) {
                 controller.updateRescaleTimestamp()
             }
+
+            return taskmanagerPodNames.isNotEmpty()
         }
 
-        return true
+        return false
     }
 
     fun executeAction(acceptedActions: Set<Action>) {
@@ -308,10 +317,8 @@ class ClusterManager(
             Action.START -> {
                 if (acceptedActions.contains(Action.START)) {
                     logger.info("Start cluster")
-                    controller.updateStatus()
-                    controller.updateDigests()
                     controller.setShouldRestart(true)
-                    controller.setSupervisorStatus(ClusterStatus.Starting)
+                    controller.setSupervisorStatus(ClusterStatus.Stopping)
                     controller.setResourceStatus(ResourceStatus.Updating)
                 } else {
                     logger.log(Level.WARNING, "Action not allowed")

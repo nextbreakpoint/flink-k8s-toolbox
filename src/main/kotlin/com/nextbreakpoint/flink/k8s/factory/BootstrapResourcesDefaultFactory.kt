@@ -92,7 +92,7 @@ object BootstrapResourcesDefaultFactory : BootstrapResourcesFactory {
             .withAffinity(jobAffinity)
             .build()
 
-        val job = V1JobBuilder()
+        return V1JobBuilder()
             .editOrNewMetadata()
             .withName("bootstrap-$clusterName-$jobName")
             .withLabels(jobLabels)
@@ -112,8 +112,6 @@ object BootstrapResourcesDefaultFactory : BootstrapResourcesFactory {
             .endTemplate()
             .endSpec()
             .build()
-
-        return job
     }
 
     private fun createAffinity(

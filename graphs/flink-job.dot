@@ -74,6 +74,20 @@ digraph state_machine {
           </TR>
       </TABLE>
   > ];
+  STARTING -> STOPPED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job suspended<BR/>(parallelism 0)</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job started</TD>
+          </TR>
+      </TABLE>
+  > ];
   STARTED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
@@ -155,6 +169,13 @@ digraph state_machine {
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
               <TD>Job deleted</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STOPPED -> STARTED [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
+              <TD>Job running</TD>
           </TR>
       </TABLE>
   > ];

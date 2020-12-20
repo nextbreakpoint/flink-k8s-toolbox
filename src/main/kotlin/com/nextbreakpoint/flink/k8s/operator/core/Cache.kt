@@ -33,7 +33,7 @@ class Cache(val namespace: String) {
     fun getSupervisorResources(clusterName: String) =
         SupervisorResources(
             flinkCluster = snapshot.flinkClusters[clusterName]?.resource,
-            supervisorPod = snapshot.supervisorPods.values.map { it.resource }.filter { it.metadata?.name?.startsWith("supervisor-$clusterName-") ?: false }.firstOrNull(),
+            supervisorPods = snapshot.supervisorPods.values.map { it.resource }.filter { it.metadata?.name?.startsWith("supervisor-$clusterName-") ?: false }.toSet(),
             supervisorDep = snapshot.supervisorDeps["supervisor-$clusterName"]?.resource
         )
 

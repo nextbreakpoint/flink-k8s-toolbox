@@ -32,7 +32,7 @@ import kotlin.test.fail
 
 open class IntegrationSetup {
     companion object {
-        val version = "1.4.1-beta"
+        val version = "1.4.2-beta"
         val flinkVersion = "1.9.2"
         val scalaVersion = "2.11"
         val timestamp = System.currentTimeMillis()
@@ -639,6 +639,15 @@ open class IntegrationSetup {
             return executeCommand(command) == 0
         }
 
+        fun hasLessOrEqualToTaskManagers(namespace: String, name: String, taskManagers: Int): Boolean {
+            val command = listOf(
+                "sh",
+                "-c",
+                "kubectl -n $namespace get fc > /dev/null && kubectl -n $namespace get fc $name -o json | jq --exit-status -r '.status | select(.taskManagerReplicas <= $taskManagers)' > /dev/null"
+            )
+            return executeCommand(command) == 0
+        }
+
         fun hasParallelism(namespace: String, name: String, jobParallelism: Int): Boolean {
             val command = listOf(
                 "sh",
@@ -832,7 +841,7 @@ open class IntegrationSetup {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace logs --tail=1000 -l role=jobmanager,clusterName=$clusterName"
+                "kubectl -n $namespace logs --tail=1000 -l role=jobmanager,clusterName=$clusterName -c jobmanager"
             )
             return executeCommand(command)
         }
@@ -841,7 +850,7 @@ open class IntegrationSetup {
             val command = listOf(
                 "sh",
                 "-c",
-                "kubectl -n $namespace logs --tail=1000 -l role=taskmanager,clusterName=$clusterName"
+                "kubectl -n $namespace logs --tail=1000 -l role=taskmanager,clusterName=$clusterName -c taskmanager"
             )
             return executeCommand(command)
         }

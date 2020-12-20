@@ -1,7 +1,7 @@
 FROM gradle:6.6.1-jdk11 AS build
 ADD . /src
 WORKDIR /src
-RUN gradle --no-daemon build test copyRuntimeDeps
+RUN gradle --no-daemon clean build test copyRuntimeDeps
 
 FROM oracle/graalvm-ce:20.3.0-java11 as native-image
 COPY --from=build /src/build/libs/* /build/libs/

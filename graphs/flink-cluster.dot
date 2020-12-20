@@ -49,6 +49,13 @@ digraph state_machine {
   STARTED -> STOPPING [ label = <
       <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
           <TR>
+              <TD>Cluster started</TD>
+          </TR>
+      </TABLE>
+  > ];
+  STARTED -> STOPPING [ label = <
+      <TABLE ALIGN="LEFT" BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR>
               <TD>Cluster deleted</TD>
           </TR>
       </TABLE>

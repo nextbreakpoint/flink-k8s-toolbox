@@ -35,7 +35,7 @@ class SupervisorManager(
             }
         }
 
-        if (supervisorResources.supervisorDep == null && supervisorResources.supervisorPod == null) {
+        if (supervisorResources.supervisorDep == null && supervisorResources.supervisorPods.isEmpty()) {
             val hasFinalizer = controller.hasFinalizer(cluster)
 
             if (!controller.isClusterTerminated(cluster)) {
@@ -59,16 +59,18 @@ class SupervisorManager(
             }
         }
 
-        if (supervisorResources.supervisorDep == null && supervisorResources.supervisorPod != null) {
-            if (supervisorResources.supervisorPod.metadata?.deletionTimestamp != null) {
-                logger.info("Supervisor pod deleted. Awaiting termination...")
-            } else {
-                logger.info("Supervisor deployment missing. Deleting pod...")
-                controller.deletePod(cache.namespace, clusterName, getName(supervisorResources.supervisorPod))
+        if (supervisorResources.supervisorDep == null && supervisorResources.supervisorPods.isNotEmpty()) {
+            supervisorResources.supervisorPods.forEach { supervisorPod ->
+                if (supervisorPod.metadata?.deletionTimestamp != null) {
+                    logger.info("Supervisor pod deleted. Awaiting termination...")
+                } else {
+                    logger.info("Supervisor deployment missing. Deleting pod...")
+                    controller.deletePod(cache.namespace, clusterName, getName(supervisorPod))
+                }
             }
         }
 
-        if (supervisorResources.supervisorDep != null && supervisorResources.supervisorPod == null) {
+        if (supervisorResources.supervisorDep != null && supervisorResources.supervisorPods.isEmpty()) {
             logger.log(Level.WARNING, "Supervisor pod not running")
         }
     }

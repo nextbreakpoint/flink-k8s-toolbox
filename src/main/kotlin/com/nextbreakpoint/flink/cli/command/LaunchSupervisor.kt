@@ -10,7 +10,7 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.supervisor.SupervisorRunner
 import com.nextbreakpoint.flink.k8s.supervisor.core.Cache
-import com.nextbreakpoint.flink.k8s.supervisor.core.CacheAdapter
+import com.nextbreakpoint.flink.k8s.supervisor.core.Adapter
 import com.nextbreakpoint.flink.vertex.MonitoringVerticle
 import com.nextbreakpoint.flink.vertex.SupervisorVerticle
 import io.vertx.core.VertxOptions
@@ -19,6 +19,7 @@ import io.vertx.micrometer.VertxPrometheusOptions
 import io.vertx.micrometer.backends.BackendRegistries
 import io.vertx.rxjava.core.Vertx
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 class LaunchSupervisor : LaunchCommand<SupervisorOptions> {
     companion object {
@@ -46,8 +47,6 @@ class LaunchSupervisor : LaunchCommand<SupervisorOptions> {
 
         val cache = Cache(namespace = namespace, clusterName = options.clusterName)
 
-        val cacheAdapter = CacheAdapter(kubeClient, cache)
-
         val controller = Controller(flinkOptions, flinkClient, kubeClient, options.dryRun)
 
         val vertx = Vertx.vertx(createVertxOptions())
@@ -57,15 +56,15 @@ class LaunchSupervisor : LaunchCommand<SupervisorOptions> {
 
         val registry = BackendRegistries.getNow("flink-supervisor")
 
-        val runner = SupervisorRunner(registry, controller, cache, runnerOptions)
+        val cacheAdapter = Adapter(kubeClient, cache)
 
-        cacheAdapter.watchFlinkClusters(namespace)
-        cacheAdapter.watchFlinkJobs(namespace)
-        cacheAdapter.watchServices(namespace)
-        cacheAdapter.watchJobs(namespace)
-        cacheAdapter.watchPods(namespace)
+        val runner = SupervisorRunner(registry, controller, cache, cacheAdapter, runnerOptions)
 
-        runner.run()
+        val thread = thread {
+            runner.run()
+        }
+
+        thread.join()
     }
 
     private fun createVertxOptions(): VertxOptions {

@@ -81,8 +81,8 @@ object FlinkClient {
         try {
             val flinkApi = createFlinkApiClient(address, TIMEOUT)
 
-            files.forEach {
-                val response = flinkApi.deleteJarCall(it.id, null, null).execute()
+            files.forEach { file ->
+                val response = flinkApi.deleteJarCall(file.id, null, null).execute()
 
                 response.body().use { body ->
                     if (!response.isSuccessful) {
@@ -321,7 +321,11 @@ object FlinkClient {
                 val detailsResponse = flinkApi.getJobDetailsCall(jobId, null, null).execute()
 
                 detailsResponse.body().use { body ->
-                    if (!detailsResponse.isSuccessful) {
+                    if (detailsResponse.code() == 404) {
+                        return
+                    }
+
+                    if (detailsResponse.code() >= 400) {
                         throw CallException("[$address] Can't cancel job $jobId")
                     }
 
@@ -332,7 +336,11 @@ object FlinkClient {
                             val response = flinkApi.terminateJobCall(jobId, "cancel", null, null).execute()
 
                             response.body().use {
-                                if (!response.isSuccessful) {
+                                if (detailsResponse.code() == 404) {
+                                    return
+                                }
+
+                                if (detailsResponse.code() >= 400) {
                                     throw CallException("[$address] Can't cancel job $jobId")
                                 }
                             }

@@ -54,6 +54,13 @@ class JobOnStopped : Task<JobManager>() {
             return
         }
 
+        if (manager.isJobRunning()) {
+            manager.onJobStarted()
+            return
+        }
+
+        manager.updateJobStatus()
+
         if (!manager.shouldRestartJob()) {
             return
         }

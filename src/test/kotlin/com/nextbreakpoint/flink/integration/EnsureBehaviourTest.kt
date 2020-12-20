@@ -111,8 +111,8 @@ class EnsureBehaviourTest : IntegrationSetup() {
 
         `Should stop a job but not create a savepoint`(savepointPath21)
 
-//        updateRestartPolicy(clusterName = "cluster-2", index = 0, restartPolicy = RestartPolicy.Always)
-//        updateRestartPolicy(clusterName = "cluster-2", index = 1, restartPolicy = RestartPolicy.Always)
+        updateRestartPolicy(clusterName = "cluster-2", index = 0, restartPolicy = RestartPolicy.Always)
+        updateRestartPolicy(clusterName = "cluster-2", index = 1, restartPolicy = RestartPolicy.Always)
 
         `Should restart a job but ignore the savepoint`()
 
@@ -214,12 +214,12 @@ class EnsureBehaviourTest : IntegrationSetup() {
 
         awaitUntilAsserted(timeout = 480) {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-2", status = ResourceStatus.Updated)).isTrue()
-            assertThat(hasTaskManagers(namespace = namespace, name = "cluster-2", taskManagers = 1)).isTrue()
+            assertThat(hasLessOrEqualToTaskManagers(namespace = namespace, name = "cluster-2", taskManagers = 2)).isTrue()
             val latestStatus = getLatestClusterStatus(clusterName = "cluster-2")
-            assertThat(latestStatus.taskManagers).isEqualTo(1)
-            assertThat(latestStatus.taskManagerReplicas).isEqualTo(1)
-            assertThat(latestStatus.taskSlots).isEqualTo(2)
-            assertThat(latestStatus.totalTaskSlots).isEqualTo(2)
+            assertThat(latestStatus.taskManagers).isLessThanOrEqualTo(2)
+            assertThat(latestStatus.taskManagerReplicas).isLessThanOrEqualTo(2)
+            assertThat(latestStatus.taskSlots).isLessThanOrEqualTo(4)
+            assertThat(latestStatus.totalTaskSlots).isLessThanOrEqualTo(4)
         }
     }
 
@@ -234,7 +234,7 @@ class EnsureBehaviourTest : IntegrationSetup() {
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = "cluster-0", status = ResourceStatus.Updated)).isTrue()
         }
 
-        awaitUntilAsserted(timeout = 60) {
+        awaitUntilAsserted(timeout = 180) {
             assertThat(hasTaskManagers(namespace = namespace, name = "cluster-0", taskManagers = 0)).isTrue()
             val latestStatus = getLatestClusterStatus(clusterName = "cluster-0")
             assertThat(latestStatus.taskManagers).isEqualTo(0)
@@ -817,7 +817,7 @@ class EnsureBehaviourTest : IntegrationSetup() {
         awaitUntilAsserted(timeout = 60) {
             assertThat(clusterExists(namespace = namespace, name = clusterName)).isTrue()
         }
-        awaitUntilAsserted(timeout = 360) {
+        awaitUntilAsserted(timeout = 480) {
             assertThat(hasClusterStatus(namespace = namespace, name = clusterName, status = ClusterStatus.Started)).isTrue()
             assertThat(hasResourceStatus(namespace = namespace, resource = "fc", name = clusterName, status = ResourceStatus.Updated)).isTrue()
         }

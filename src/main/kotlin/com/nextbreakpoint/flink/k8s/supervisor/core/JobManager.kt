@@ -41,6 +41,7 @@ class JobManager(
 
     fun onJobCanceled() {
         logger.log(Level.WARNING, "Job canceled")
+        controller.setCurrentJobParallelism(0)
         controller.resetSavepointRequest()
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
@@ -49,6 +50,7 @@ class JobManager(
 
     fun onJobFinished() {
         logger.info("Job finished")
+        controller.setCurrentJobParallelism(0)
         controller.resetSavepointRequest()
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
@@ -57,6 +59,7 @@ class JobManager(
 
     fun onJobFailed() {
         logger.log(Level.WARNING, "Job failed")
+        controller.setCurrentJobParallelism(0)
         controller.resetSavepointRequest()
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
@@ -65,8 +68,9 @@ class JobManager(
 
     fun onJobStopped() {
         logger.info("Job stopped")
-        controller.resetJob()
+        controller.setCurrentJobParallelism(0)
         controller.resetSavepointRequest()
+        controller.resetJob()
         controller.setShouldRestart(false)
         controller.setSupervisorStatus(JobStatus.Stopped)
         controller.setResourceStatus(ResourceStatus.Updated)
@@ -74,6 +78,7 @@ class JobManager(
 
     fun onJobTerminated() {
         logger.info("Job terminated")
+        controller.setCurrentJobParallelism(0)
         controller.resetSavepointRequest()
         controller.resetJob()
         controller.setShouldRestart(false)
@@ -109,9 +114,10 @@ class JobManager(
 
     fun onClusterUnhealthy() {
         logger.info("Cluster unhealthy")
-        controller.resetJob()
+        controller.setCurrentJobParallelism(0)
         controller.resetSavepointRequest()
         controller.setShouldRestart(false)
+        controller.resetJob()
         controller.setSupervisorStatus(JobStatus.Stopped)
         controller.setResourceStatus(ResourceStatus.Updated)
     }
@@ -327,7 +333,7 @@ class JobManager(
         val changes = controller.computeChanges()
 
         if (changes.isNotEmpty()) {
-            logger.info("Detected changes: ${changes.joinToString(separator = ",")}")
+            logger.info("Detected change: ${changes.joinToString(separator = ",")}")
             return true
         }
 
@@ -350,6 +356,8 @@ class JobManager(
 
     fun isJobFailed() = controller.isJobFailed()
 
+    fun isJobRunning() = controller.isJobRunning()
+
     fun hasTaskTimedOut(): Boolean {
         return controller.timeSinceLastUpdateInSeconds() > taskTimeout
     }
@@ -357,6 +365,7 @@ class JobManager(
     fun hasParallelismChanged(): Boolean {
         val desiredJobParallelism = controller.getDeclaredJobParallelism()
         val currentJobParallelism = controller.getCurrentJobParallelism()
+        logger.info("Detected change: Parallelism")
         return currentJobParallelism != desiredJobParallelism
     }
 
@@ -385,6 +394,8 @@ class JobManager(
     fun isClusterTerminated() = controller.isClusterTerminated()
 
     fun isClusterUpdated() = controller.isClusterUpdated()
+
+    fun isJobSuspended() = controller.isJobSuspended()
 
     fun mustResetSavepoint() = controller.isWithoutSavepoint() && controller.getCurrentSavepointPath() != null
 
@@ -417,11 +428,8 @@ class JobManager(
             Action.START -> {
                 if (acceptedActions.contains(Action.START)) {
                     logger.info("Start job")
-                    controller.updateStatus()
-                    controller.updateDigests()
-                    controller.resetSavepointRequest()
-                    controller.setShouldRestart(false)
-                    controller.setSupervisorStatus(JobStatus.Starting)
+                    controller.setShouldRestart(true)
+                    controller.setSupervisorStatus(JobStatus.Stopping)
                     controller.setResourceStatus(ResourceStatus.Updating)
                 } else {
                     logger.log(Level.WARNING, "Action not allowed")
@@ -430,7 +438,6 @@ class JobManager(
             Action.STOP -> {
                 if (acceptedActions.contains(Action.STOP)) {
                     logger.info("Stop job")
-                    controller.resetSavepointRequest()
                     controller.setShouldRestart(false)
                     controller.setSupervisorStatus(JobStatus.Stopping)
                     controller.setResourceStatus(ResourceStatus.Updating)

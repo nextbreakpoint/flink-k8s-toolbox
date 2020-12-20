@@ -74,7 +74,7 @@ class FlinkJobStatusTest {
     fun `should store job parallelism and update timestamp`() {
         val timestamp = DateTime(System.currentTimeMillis())
         assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isEqualTo(DateTime(0))
-        assertThat(FlinkJobStatus.getJobParallelism(flinkJob)).isEqualTo(1)
+        assertThat(FlinkJobStatus.getJobParallelism(flinkJob)).isEqualTo(0)
         FlinkJobStatus.setJobParallelism(flinkJob, 4)
         assertThat(FlinkJobStatus.getJobParallelism(flinkJob)).isEqualTo(4)
         assertThat(FlinkJobStatus.getStatusTimestamp(flinkJob)).isGreaterThanOrEqualTo(timestamp)
