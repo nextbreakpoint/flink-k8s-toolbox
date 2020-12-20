@@ -8,7 +8,7 @@ import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterConfiguration
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
-import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
+import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.common.Resource
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.controller.core.Result
@@ -32,6 +32,10 @@ class ClusterController(
     private val resources: ClusterResources,
     private val cluster: V1FlinkCluster
 ) {
+    companion object {
+        private val logger = Logger.getLogger(ClusterController::class.simpleName)
+    }
+
     fun timeSinceLastUpdateInSeconds() = (controller.currentTimeMillis() - FlinkClusterStatus.getStatusTimestamp(cluster).millis) / 1000L
 
     fun timeSinceLastRescaleInSeconds() = (controller.currentTimeMillis() - FlinkClusterStatus.getRescaleTimestamp(cluster).millis) / 1000L
@@ -400,10 +404,14 @@ class ClusterController(
 
     private fun getPodName(taskManagerInfo: TaskManagerInfo): String? {
         //akka.tcp://flink@172.17.0.12:41545/user/taskmanager_0
+        logger.info("TaskManager path: ${taskManagerInfo.path}")
         val regexp = Regex("akka\\.tcp://flink@([0-9.]+):[0-9]+/user/taskmanager_[0-9]+")
         val match = regexp.matchEntire(taskManagerInfo.path.toString())
         val nodeIP = match?.groupValues?.get(1)
-        return if (nodeIP != null) findTaskManagerByPodIP(nodeIP) else null
+        logger.info("TaskManager nodeIP: $nodeIP")
+        val name = if (nodeIP != null) findTaskManagerByPodIP(nodeIP) else null
+        logger.info("TaskManager name: $name")
+        return name
     }
 
     private fun findTaskManagerByPodIP(podIP: String?) =

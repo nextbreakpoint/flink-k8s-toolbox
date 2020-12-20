@@ -164,11 +164,21 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             .withEnv(jobmanagerVariables)
             .withEnvFrom(clusterSpec.jobManager?.environmentFrom)
             .withResources(clusterSpec.jobManager?.resources)
-            .withReadinessProbe(
+//            .withReadinessProbe(
+//                V1Probe()
+//                    .httpGet(V1HTTPGetAction().port(IntOrString(8081)).path("/overview"))
+//                    .initialDelaySeconds(15)
+//                    .periodSeconds(30)
+//                    .failureThreshold(3)
+//                    .successThreshold(1)
+//            )
+            .withLivenessProbe(
                 V1Probe()
                     .httpGet(V1HTTPGetAction().port(IntOrString(8081)).path("/overview"))
                     .initialDelaySeconds(15)
-                    .periodSeconds(5)
+                    .periodSeconds(30)
+                    .failureThreshold(3)
+                    .successThreshold(1)
             )
             .build()
 

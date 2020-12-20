@@ -2,6 +2,7 @@ package com.nextbreakpoint.flink.k8s.crd;
 
 import com.google.gson.annotations.SerializedName;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
+import io.kubernetes.client.openapi.models.V1SecurityContext;
 import lombok.Builder;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -32,4 +33,8 @@ public class V1SupervisorSpec {
     private Integer rescaleDelay;
     @SerializedName("rescalePolicy")
     private String rescalePolicy;
+    @SerializedName("replicas")
+    private Integer replicas;
+    @SerializedName("securityContext")
+    private V1SecurityContext securityContext;
 }

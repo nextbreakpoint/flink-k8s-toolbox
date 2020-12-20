@@ -6,10 +6,11 @@ spec:
   cluster:
     supervisor:
       pullPolicy: IfNotPresent
-      image: nextbreakpoint/flinkctl:1.4.1-beta
+      image: nextbreakpoint/flinkctl:1.4.2-beta
       serviceAccount: flink-supervisor
       taskTimeout: 180
       rescaleDelay: 10
+      replicas: 2
       resources:
         limits:
           cpu: '0.05'

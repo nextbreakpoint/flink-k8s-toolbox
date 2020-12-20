@@ -11,7 +11,7 @@ class ExtractSchemas {
     companion object {
         private val typeDefinitions = mutableMapOf<String, Map<String, Any>>()
 
-        private val URL = "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json"
+        private val URL = "https://raw.githubusercontent.com/kubernetes/kubernetes/v1.18.14/api/openapi-spec/swagger.json"
 
         @JvmStatic
         fun main(args: Array<String>) {

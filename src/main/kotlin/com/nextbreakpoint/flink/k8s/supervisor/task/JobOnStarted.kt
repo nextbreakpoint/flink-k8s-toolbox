@@ -6,6 +6,7 @@ import com.nextbreakpoint.flink.k8s.supervisor.core.JobManager
 
 class JobOnStarted : Task<JobManager>() {
     private val actions = setOf(
+        Action.START,
         Action.STOP,
         Action.FORGET_SAVEPOINT,
         Action.TRIGGER_SAVEPOINT

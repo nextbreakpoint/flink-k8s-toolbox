@@ -1,6 +1,7 @@
 package com.nextbreakpoint.flink.k8s.crd;
 
 import com.google.gson.annotations.SerializedName;
+import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.openapi.models.V1ListMeta;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder(toBuilder = true, setterPrefix = "with")
-public class V1FlinkJobList {
+public class V1FlinkJobList implements KubernetesListObject {
     @SerializedName("apiVersion")
     private String apiVersion;
     @SerializedName("items")

@@ -7,5 +7,5 @@ import io.kubernetes.client.openapi.models.V1Pod
 data class SupervisorResources(
     val flinkCluster: V1FlinkCluster? = null,
     val supervisorDep: V1Deployment? = null,
-    val supervisorPod: V1Pod? = null
+    val supervisorPods: Set<V1Pod>
 )

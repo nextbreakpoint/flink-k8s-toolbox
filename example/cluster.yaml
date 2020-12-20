@@ -5,7 +5,7 @@ metadata:
 spec:
   supervisor:
     pullPolicy: Never
-    image: nextbreakpoint/flinkctl:1.4.1-beta
+    image: nextbreakpoint/flinkctl:1.4.2-beta
     serviceAccount: flink-supervisor
     taskTimeout: 120
     resources:
