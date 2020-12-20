@@ -816,10 +816,8 @@ class JobManagerTest {
         given(controller.getAction()).thenReturn(Action.START)
         manager.executeAction(setOf(Action.START))
         verify(controller, times(1)).getAction()
-        verify(controller, times(1)).updateStatus()
-        verify(controller, times(1)).updateDigests()
-        verify(controller, times(1)).setShouldRestart(eq(false))
-        verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Starting))
+        verify(controller, times(1)).setShouldRestart(eq(true))
+        verify(controller, times(1)).setSupervisorStatus(eq(JobStatus.Stopping))
         verify(controller, times(1)).setResourceStatus(eq(ResourceStatus.Updating))
         verify(controller, times(1)).resetAction()
     }

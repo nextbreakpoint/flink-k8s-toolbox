@@ -3,16 +3,19 @@ package com.nextbreakpoint.flink.k8s.supervisor
 import com.nextbreakpoint.flink.common.RunnerOptions
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.supervisor.core.Cache
+import com.nextbreakpoint.flink.k8s.supervisor.core.Adapter
 import io.micrometer.core.instrument.MeterRegistry
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.math.max
+import kotlin.math.min
 
 class SupervisorRunner(
     private val registry: MeterRegistry,
     private val controller: Controller,
     private val cache: Cache,
+    private val adapter: Adapter,
     private val options: RunnerOptions
 ) {
     companion object {
@@ -20,27 +23,55 @@ class SupervisorRunner(
     }
 
     fun run() {
-        val supervisor = Supervisor.create(controller, cache, options.taskTimeout, options.pollingInterval, options.serverConfig)
+        try {
+            val supervisorController = SupervisorController(registry, controller, cache, adapter, options)
 
-        while (!Thread.interrupted()) {
-            TimeUnit.SECONDS.sleep(max(options.pollingInterval, 5))
+            adapter.start(supervisorController)
+        } finally {
+            adapter.stop();
+        }
+    }
 
+    private class SupervisorController(
+        private val registry: MeterRegistry,
+        private val controller: Controller,
+        private val cache: Cache,
+        private val adapter: Adapter,
+        private val options: RunnerOptions
+    ) : io.kubernetes.client.extended.controller.Controller {
+        @Volatile
+        private var running = true
+
+        override fun run() {
             try {
-                val currentTimeMillis = controller.currentTimeMillis()
-                if (currentTimeMillis - cache.getLastResetTimestamp() < 10000) {
-                    logger.log(Level.WARNING, "Cache has been cleared less than 10 seconds ago")
-                    continue
+                val supervisor = Supervisor.create(controller, cache, options.taskTimeout, options.pollingInterval, options.serverConfig)
+
+                val pollingInterval = max(min(options.pollingInterval, 60L), 5L)
+
+                while (running) {
+                    try {
+                        if (adapter.haveSynced()) {
+                            cache.takeSnapshot()
+                            supervisor.reconcile()
+                            supervisor.cleanup()
+                        } else {
+                            logger.log(Level.INFO, "Cache not synced yet")
+                        }
+
+                        TimeUnit.SECONDS.sleep(pollingInterval)
+                    } catch (e: Exception) {
+                        logger.log(Level.SEVERE, "Something went wrong", e)
+                    }
                 }
-                if (currentTimeMillis - cache.getLastUpdateTimestamp() < 4500) {
-                    logger.log(Level.INFO, "Cache has been modified less than 5 seconds ago")
-                    continue
-                }
-                cache.takeSnapshot()
-                supervisor.reconcile()
-                supervisor.cleanup()
+            } catch (e: InterruptedException) {
+                // do nothing
             } catch (e: Exception) {
                 logger.log(Level.SEVERE, "Something went wrong", e)
             }
+        }
+
+        override fun shutdown() {
+            running = false
         }
     }
 }

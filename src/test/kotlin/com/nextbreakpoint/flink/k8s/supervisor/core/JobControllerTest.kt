@@ -288,7 +288,7 @@ class JobControllerTest {
 
     @Test
     fun `should initialize status`() {
-        assertThat(FlinkJobStatus.getJobParallelism(job)).isEqualTo(1)
+        assertThat(FlinkJobStatus.getJobParallelism(job)).isEqualTo(0)
         assertThat(FlinkJobStatus.getSavepointPath(job)).isNull()
         assertThat(FlinkJobStatus.getLabelSelector(job)).isNull()
         assertThat(FlinkJobStatus.getSavepointMode(job)).isEqualTo(SavepointMode.Automatic)

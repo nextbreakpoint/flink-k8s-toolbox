@@ -6,6 +6,7 @@ import com.nextbreakpoint.flink.k8s.supervisor.core.ClusterManager
 
 class ClusterOnStarted : Task<ClusterManager>() {
     private val actions = setOf(
+        Action.START,
         Action.STOP
     )
 

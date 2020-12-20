@@ -136,6 +136,16 @@
     ]
   },
   {
+    "name": "com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterList",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterDigest",
     "allDeclaredFields": true,
     "methods": [
@@ -167,6 +177,16 @@
   },
   {
     "name": "com.nextbreakpoint.flink.k8s.crd.V1FlinkDeployment",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentList",
     "allDeclaredFields": true,
     "methods": [
       {
@@ -227,6 +247,16 @@
   },
   {
     "name": "com.nextbreakpoint.flink.k8s.crd.V1FlinkJob",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.nextbreakpoint.flink.k8s.crd.V1FlinkJobList",
     "allDeclaredFields": true,
     "methods": [
       {
@@ -766,6 +796,16 @@
     ]
   },
   {
+    "name": "io.kubernetes.client.extended.leaderelection.LeaderElectionRecord",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "io.kubernetes.client.openapi.models.V1AWSElasticBlockStoreVolumeSource",
     "allDeclaredFields": true,
     "methods": [
@@ -986,6 +1026,16 @@
     ]
   },
   {
+    "name": "io.kubernetes.client.openapi.models.V1DeploymentList",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "io.kubernetes.client.openapi.models.V1DeploymentCondition",
     "allDeclaredFields": true,
     "methods": [
@@ -1057,6 +1107,46 @@
   },
   {
     "name": "io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.kubernetes.client.openapi.models.V1EndpointAddress",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.kubernetes.client.openapi.models.V1EndpointPort",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.kubernetes.client.openapi.models.V1EndpointSubset",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.kubernetes.client.openapi.models.V1Endpoints",
     "allDeclaredFields": true,
     "methods": [
       {
@@ -1237,6 +1327,16 @@
   },
   {
     "name": "io.kubernetes.client.openapi.models.V1Job",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.kubernetes.client.openapi.models.V1JobList",
     "allDeclaredFields": true,
     "methods": [
       {
@@ -1436,6 +1536,16 @@
     ]
   },
   {
+    "name": "io.kubernetes.client.openapi.models.V1ObjectReference",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "io.kubernetes.client.openapi.models.V1OwnerReference",
     "allDeclaredFields": true,
     "methods": [
@@ -1467,6 +1577,16 @@
   },
   {
     "name": "io.kubernetes.client.openapi.models.V1Pod",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.kubernetes.client.openapi.models.V1PodList",
     "allDeclaredFields": true,
     "methods": [
       {
@@ -1776,6 +1896,16 @@
     ]
   },
   {
+    "name": "io.kubernetes.client.openapi.models.V1ServiceList",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "io.kubernetes.client.openapi.models.V1ServiceAccountTokenProjection",
     "allDeclaredFields": true,
     "methods": [
@@ -1967,6 +2097,16 @@
   },
   {
     "name": "io.kubernetes.client.openapi.models.V1WindowsSecurityContextOptions",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.kubernetes.client.openapi.models.V1Endpoints",
     "allDeclaredFields": true,
     "methods": [
       {
@@ -3131,6 +3271,12 @@
     "name": "java.security.cert.PKIXRevocationChecker"
   },
   {
+    "name": "java.security.interfaces.DSAPrivateKey"
+  },
+  {
+    "name": "java.security.interfaces.DSAPublicKey"
+  },
+  {
     "name": "java.security.interfaces.ECPrivateKey"
   },
   {
@@ -3141,6 +3287,9 @@
   },
   {
     "name": "java.security.interfaces.RSAPublicKey"
+  },
+  {
+    "name": "java.security.spec.DSAParameterSpec"
   },
   {
     "name": "java.sql.Date"
@@ -4154,6 +4303,15 @@
   },
   {
     "name": "sun.security.provider.JavaKeyStore$JKS",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.JavaKeyStore$DualFormatJKS",
     "methods": [
       {
         "name": "<init>",

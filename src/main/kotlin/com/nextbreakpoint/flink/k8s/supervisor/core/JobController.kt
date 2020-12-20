@@ -53,6 +53,8 @@ class JobController(
 
     fun isJobFailed() = FlinkJobStatus.getJobStatus(job) == "FAILED"
 
+    fun isJobRunning() = FlinkJobStatus.getJobStatus(job) == "RUNNING"
+
     fun isClusterReady(requireFreeSlots: Int) = controller.isClusterReady(namespace, clusterName, requireFreeSlots)
 
     fun isClusterHealthy() = controller.isClusterHealthy(namespace, clusterName)
@@ -75,12 +77,6 @@ class JobController(
 
         val restartPolicy = RestartPolicy.valueOf(job.spec.restart.restartPolicy)
         FlinkJobStatus.setRestartPolicy(job, restartPolicy)
-
-        if (activeStatus.contains(getSupervisorStatus().toString())) {
-            FlinkJobStatus.setJobParallelism(job, getDeclaredJobParallelism())
-        } else {
-            FlinkJobStatus.setJobParallelism(job, 0)
-        }
 
         val newStatusTimestamp = FlinkJobStatus.getStatusTimestamp(job)
 
@@ -300,7 +296,7 @@ class JobController(
         .filter { job -> activeStatus.contains(job.status.supervisorStatus) }
         .map { job -> job.status?.jobParallelism ?: 0 }.sum()
 
-    fun getDeclaredJobParallelism() = min(max(job.spec.jobParallelism ?: 1, job.spec.minJobParallelism ?: 0), job.spec.maxJobParallelism ?: 32)
+    fun getDeclaredJobParallelism() = min(max(job.spec.jobParallelism ?: 0, job.spec.minJobParallelism ?: 0), job.spec.maxJobParallelism ?: 32)
 
     fun getCurrentJobParallelism() = FlinkJobStatus.getJobParallelism(job)
 
@@ -309,6 +305,8 @@ class JobController(
     fun getCurrentSavepointPath() = FlinkJobStatus.getSavepointPath(job)
 
     fun getJobStatus() = if (job.status != null) controller.getJobStatus(namespace, clusterName, jobName, job.status.jobId) else Result(ResultStatus.ERROR, null)
+
+    fun isJobSuspended() = getCurrentJobParallelism() == 0
 
     private val activeStatus = setOf(JobStatus.Starting.toString(), JobStatus.Started.toString())
 

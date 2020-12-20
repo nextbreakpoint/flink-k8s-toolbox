@@ -4,11 +4,11 @@ Follow these tutorial to set up a Minikube environment and learn how to use the 
 
 ## Preparation   
 
-Install Minikube 1.11.0 or later with Kubernetes 1.17. Install kubectl and Helm 3.
+Install Minikube 1.11.0 or later with Kubernetes 1.18. Install kubectl and Helm 3.
 
 Start Minikube with at least 8Gb of memory:
 
-    minikube start --cpus=2 --memory=8gb --kubernetes-version v1.17.0
+    minikube start --cpus=2 --memory=8gb --kubernetes-version v1.18.0
 
 ## Install Minio 
 
@@ -217,31 +217,31 @@ Configure Docker environment:
 
 Get status of the deployment:
 
-     docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta deployment status --host=$(minikube ip) --deployment-name=cluster-1 | jq -r '.output' | jq
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.2-beta deployment status --host=$(minikube ip) --deployment-name=cluster-1 | jq -r '.output' | jq
 
 Get status of the cluster:
 
-     docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster status --host=$(minikube ip) --cluster-name=cluster-1 | jq -r '.output' | jq
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.2-beta cluster status --host=$(minikube ip) --cluster-name=cluster-1 | jq -r '.output' | jq
 
 Get status of a job:
 
-     docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job status --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1 | jq -r '.output' | jq
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.2-beta job status --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1 | jq -r '.output' | jq
 
 Stop the cluster:
 
-     docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster stop --host=$(minikube ip) --cluster-name=cluster-1
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.2-beta cluster stop --host=$(minikube ip) --cluster-name=cluster-1
 
 Start the cluster:
 
-     docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta cluster start --host=$(minikube ip) --cluster-name=cluster-1
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.2-beta cluster start --host=$(minikube ip) --cluster-name=cluster-1
 
 Stop a job:
 
-     docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job stop --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.2-beta job stop --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1
 
 Start a job:
 
-     docker run --rm -it nextbreakpoint/flinkctl:1.4.1-beta job start --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1
+     docker run --rm -it nextbreakpoint/flinkctl:1.4.2-beta job start --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1
 
 ## Remove all resources 
 

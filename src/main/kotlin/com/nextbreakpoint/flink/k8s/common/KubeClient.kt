@@ -4,12 +4,17 @@ import com.google.gson.reflect.TypeToken
 import com.nextbreakpoint.flink.common.FlinkAddress
 import com.nextbreakpoint.flink.common.FlinkOptions
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterList
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkClusterStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeployment
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentList
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeploymentStatus
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
+import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobList
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJobStatus
 import io.kubernetes.client.custom.V1Patch
+import io.kubernetes.client.informer.SharedIndexInformer
+import io.kubernetes.client.informer.SharedInformerFactory
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.Configuration
@@ -19,9 +24,14 @@ import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.apis.CustomObjectsApi
 import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1Deployment
+import io.kubernetes.client.openapi.models.V1DeploymentList
 import io.kubernetes.client.openapi.models.V1Job
+import io.kubernetes.client.openapi.models.V1JobList
 import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1Service
+import io.kubernetes.client.openapi.models.V1ServiceList
+import io.kubernetes.client.util.CallGeneratorParams
 import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.PatchUtils
 import io.kubernetes.client.util.Watch
@@ -44,17 +54,22 @@ object KubeClient {
     private val coreApiWatch = CoreV1Api()
     private val appsApiWatch = AppsV1Api()
 
+    private var apiClient: ApiClient? = null
+
     fun configure(kubeConfig: String?) {
         Configuration.setDefaultApiClient(createKubernetesApiClient(kubeConfig, 5000))
+        apiClient = createKubernetesApiClient(kubeConfig, 0)
         objectApi.apiClient = Configuration.getDefaultApiClient()
         batchApi.apiClient = Configuration.getDefaultApiClient()
         coreApi.apiClient = Configuration.getDefaultApiClient()
         appsApi.apiClient = Configuration.getDefaultApiClient()
-        objectApiWatch.apiClient = createKubernetesApiClient(kubeConfig, 0)
-        batchApiWatch.apiClient = createKubernetesApiClient(kubeConfig, 0)
-        coreApiWatch.apiClient = createKubernetesApiClient(kubeConfig, 0)
-        appsApiWatch.apiClient = createKubernetesApiClient(kubeConfig, 0)
+        objectApiWatch.apiClient = apiClient
+        batchApiWatch.apiClient = apiClient
+        coreApiWatch.apiClient = apiClient
+        appsApiWatch.apiClient = apiClient
     }
+
+    fun createSharedInformerFactory() = SharedInformerFactory(apiClient)
 
     fun findFlinkAddress(flinkOptions: FlinkOptions, namespace: String, name: String): FlinkAddress {
         try {
@@ -561,7 +576,160 @@ object KubeClient {
         }
     }
 
-    fun watchFlickDeployments(namespace: String): Watchable<V1FlinkDeployment> =
+    fun createFlinkDeploymentsInformer(factory: SharedInformerFactory, namespace: String): SharedIndexInformer<V1FlinkDeployment> =
+        factory.sharedIndexInformerFor(
+            { params: CallGeneratorParams ->
+                objectApiWatch.listNamespacedCustomObjectCall(
+                    "nextbreakpoint.com",
+                    "v1",
+                    namespace,
+                    "flinkdeployments",
+                    null,
+                    null,
+                    null,
+                    null,//"component=flink,owner=flink-operator",
+                    null,
+                    params.resourceVersion,
+                    params.timeoutSeconds,
+                    params.watch,
+                    null
+                )
+            },
+            V1FlinkDeployment::class.java,
+            V1FlinkDeploymentList::class.java
+        )
+
+    fun createFlinkClustersInformer(factory: SharedInformerFactory, namespace: String): SharedIndexInformer<V1FlinkCluster> =
+        factory.sharedIndexInformerFor(
+            { params: CallGeneratorParams ->
+                objectApiWatch.listNamespacedCustomObjectCall(
+                    "nextbreakpoint.com",
+                    "v1",
+                    namespace,
+                    "flinkclusters",
+                    null,
+                    null,
+                    null,
+                    null,//"component=flink,owner=flink-operator",
+                    null,
+                    params.resourceVersion,
+                    params.timeoutSeconds,
+                    params.watch,
+                    null
+                )
+            },
+            V1FlinkCluster::class.java,
+            V1FlinkClusterList::class.java
+        )
+
+    fun createFlinkJobsInformer(factory: SharedInformerFactory, namespace: String): SharedIndexInformer<V1FlinkJob> =
+        factory.sharedIndexInformerFor(
+            { params: CallGeneratorParams ->
+                objectApiWatch.listNamespacedCustomObjectCall(
+                    "nextbreakpoint.com",
+                    "v1",
+                    namespace,
+                    "flinkjobs",
+                    null,
+                    null,
+                    null,
+                    null,//"component=flink,owner=flink-operator",
+                    null,
+                    params.resourceVersion,
+                    params.timeoutSeconds,
+                    params.watch,
+                    null
+                )
+            },
+            V1FlinkJob::class.java,
+            V1FlinkJobList::class.java
+        )
+
+    fun createServicesInformer(factory: SharedInformerFactory, namespace: String): SharedIndexInformer<V1Service> =
+        factory.sharedIndexInformerFor(
+            { params: CallGeneratorParams ->
+                coreApiWatch.listNamespacedServiceCall(
+                    namespace,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "component=flink,owner=flink-operator",
+                    null,
+                    params.resourceVersion,
+                    params.timeoutSeconds,
+                    params.watch,
+                    null
+                )
+            },
+            V1Service::class.java,
+            V1ServiceList::class.java
+        )
+
+    fun createDeploymentsInformer(factory: SharedInformerFactory, namespace: String): SharedIndexInformer<V1Deployment> =
+        factory.sharedIndexInformerFor(
+            { params: CallGeneratorParams ->
+                appsApiWatch.listNamespacedDeploymentCall(
+                    namespace,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "component=flink,owner=flink-operator",
+                    null,
+                    params.resourceVersion,
+                    params.timeoutSeconds,
+                    params.watch,
+                    null
+                )
+            },
+            V1Deployment::class.java,
+            V1DeploymentList::class.java
+        )
+
+    fun createJobsInformer(factory: SharedInformerFactory, namespace: String): SharedIndexInformer<V1Job> =
+        factory.sharedIndexInformerFor(
+            { params: CallGeneratorParams ->
+                batchApiWatch.listNamespacedJobCall(
+                    namespace,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "component=flink,owner=flink-operator",
+                    null,
+                    params.resourceVersion,
+                    params.timeoutSeconds,
+                    params.watch,
+                    null
+                )
+            },
+            V1Job::class.java,
+            V1JobList::class.java
+        )
+
+    fun createPodsInformer(factory: SharedInformerFactory, namespace: String): SharedIndexInformer<V1Pod> =
+        factory.sharedIndexInformerFor(
+            { params: CallGeneratorParams ->
+                coreApiWatch.listNamespacedPodCall(
+                    namespace,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "component=flink,owner=flink-operator",
+                    null,
+                    params.resourceVersion,
+                    params.timeoutSeconds,
+                    params.watch,
+                    null
+                )
+            },
+            V1Pod::class.java,
+            V1PodList::class.java
+        )
+
+    fun watchFlinkDeployments(namespace: String): Watchable<V1FlinkDeployment> =
         Watch.createWatch(
             objectApiWatch.apiClient,
             objectApiWatch.listNamespacedCustomObjectCall(
@@ -582,7 +750,7 @@ object KubeClient {
             object : TypeToken<Watch.Response<V1FlinkDeployment>>() {}.type
         )
 
-    fun watchFlickClusters(namespace: String): Watchable<V1FlinkCluster> =
+    fun watchFlinkClusters(namespace: String): Watchable<V1FlinkCluster> =
         Watch.createWatch(
             objectApiWatch.apiClient,
             objectApiWatch.listNamespacedCustomObjectCall(
@@ -1038,7 +1206,7 @@ object KubeClient {
         }
     }
 
-    private fun createKubernetesApiClient(kubeConfig: String?, timeout: Int): ApiClient? {
+    private fun createKubernetesApiClient(kubeConfig: String?, timeout: Int): ApiClient {
         val client = if (kubeConfig?.isNotBlank() == true) Config.fromConfig(FileInputStream(File(kubeConfig))) else Config.fromCluster()
         client.connectTimeout = timeout
         client.writeTimeout = timeout

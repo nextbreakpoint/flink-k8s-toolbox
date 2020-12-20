@@ -29,6 +29,7 @@ class JobOnStartingTest {
         given(context.isClusterReady()).thenReturn(true)
         given(context.isRestartTimeout()).thenReturn(false)
         given(context.isJobStarted()).thenReturn(true)
+        given(context.isJobSuspended()).thenReturn(false)
         given(context.hasFinalizer()).thenReturn(true)
         given(context.mustResetSavepoint()).thenReturn(false)
         given(context.ensureBootstrapJobExists()).thenReturn(true)
@@ -196,6 +197,7 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
         inOrder.verify(context, times(1)).isRestartTimeout()
         inOrder.verify(context, times(1)).mustResetSavepoint()
+        inOrder.verify(context, times(1)).isJobSuspended()
         inOrder.verify(context, times(1)).ensureBootstrapJobExists()
         inOrder.verify(context, times(1)).isJobStarted()
         verifyNoMoreInteractions(context)
@@ -241,6 +243,7 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
         inOrder.verify(context, times(1)).isRestartTimeout()
         inOrder.verify(context, times(1)).mustResetSavepoint()
+        inOrder.verify(context, times(1)).isJobSuspended()
         inOrder.verify(context, times(1)).ensureBootstrapJobExists()
         verifyNoMoreInteractions(context)
     }
@@ -262,9 +265,33 @@ class JobOnStartingTest {
         inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
         inOrder.verify(context, times(1)).isRestartTimeout()
         inOrder.verify(context, times(1)).mustResetSavepoint()
+        inOrder.verify(context, times(1)).isJobSuspended()
         inOrder.verify(context, times(1)).ensureBootstrapJobExists()
         inOrder.verify(context, times(1)).isJobStarted()
         inOrder.verify(context, times(1)).onJobStarted()
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when job is suspended`() {
+        given(context.isJobSuspended()).thenReturn(true)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).isClusterTerminated()
+        inOrder.verify(context, times(1)).isClusterStopping()
+        inOrder.verify(context, times(1)).isClusterStopped()
+        inOrder.verify(context, times(1)).isClusterStarting()
+        inOrder.verify(context, times(1)).isClusterStarted()
+        inOrder.verify(context, times(1)).setClusterHealth(eq("HEALTHY"))
+        inOrder.verify(context, times(1)).isActionPresent()
+        inOrder.verify(context, times(1)).isClusterUnhealthy()
+        inOrder.verify(context, times(1)).isClusterUpdated()
+        inOrder.verify(context, times(1)).setResourceUpdated(eq(true))
+        inOrder.verify(context, times(1)).isRestartTimeout()
+        inOrder.verify(context, times(1)).mustResetSavepoint()
+        inOrder.verify(context, times(1)).isJobSuspended()
+        inOrder.verify(context, times(1)).onJobStopped()
         verifyNoMoreInteractions(context)
     }
 

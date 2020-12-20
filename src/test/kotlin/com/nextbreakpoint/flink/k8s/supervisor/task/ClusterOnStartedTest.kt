@@ -71,7 +71,7 @@ class ClusterOnStartedTest {
         inOrder.verify(context, times(1)).hasResourceDiverged()
         inOrder.verify(context, times(1)).hasSpecificationChanged()
         inOrder.verify(context, times(1)).isActionPresent()
-        inOrder.verify(context, times(1)).executeAction(setOf(Action.STOP))
+        inOrder.verify(context, times(1)).executeAction(setOf(Action.START, Action.STOP))
         verifyNoMoreInteractions(context)
     }
 

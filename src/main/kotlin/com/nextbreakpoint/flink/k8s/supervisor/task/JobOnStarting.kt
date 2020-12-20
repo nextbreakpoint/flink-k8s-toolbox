@@ -73,6 +73,11 @@ class JobOnStarting : Task<JobManager>() {
             return
         }
 
+        if (manager.isJobSuspended()) {
+            manager.onJobStopped()
+            return
+        }
+
         if (!manager.ensureBootstrapJobExists()) {
             return
         }

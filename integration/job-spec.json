@@ -8,7 +8,7 @@
     "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
     "arguments": [
       "--CONSOLE_OUTPUT",
-      "true"
+      "false"
     ],
     "resources": {
       "limits": {

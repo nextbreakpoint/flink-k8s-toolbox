@@ -9,7 +9,6 @@ interface SupervisorResourcesFactory {
         owner: String,
         clusterName: String,
         supervisorSpec: V1SupervisorSpec,
-        replicas: Int,
         dryRun: Boolean
     ): V1Deployment
 }

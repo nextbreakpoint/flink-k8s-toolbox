@@ -93,7 +93,6 @@ class OperatorController(
             Resource.RESOURCE_OWNER,
             clusterName,
             cluster.spec.supervisor,
-            1,
             controller.isDryRun()
         )
 

@@ -527,7 +527,7 @@ class ClusterManagerTest {
         val result = manager.rescaleTaskManagerPods()
         verify(controller, times(1)).getClampedTaskManagers()
         verify(controller, times(1)).getTaskManagerReplicas()
-        assertThat(result).isTrue()
+        assertThat(result).isFalse()
     }
 
     @Test
@@ -543,7 +543,8 @@ class ClusterManagerTest {
     }
 
     @Test
-    fun `rescaleTaskManagerPods should delete pods when taskmanager replicas are more than current taskmanagers and timeout occurred`() {
+    fun `rescaleTaskManagerPods should delete pods when taskmanager replicas are more than current taskmanagers and timeout occurred and there is an unused taskamanger`() {
+        given(controller.removeUnusedTaskManagers()).thenReturn(setOf("test"))
         given(controller.getClampedTaskManagers()).thenReturn(2)
         given(controller.getTaskManagerReplicas()).thenReturn(3)
         given(controller.getRescaleDelay()).thenReturn(60)
@@ -552,7 +553,21 @@ class ClusterManagerTest {
         verify(controller, times(1)).getClampedTaskManagers()
         verify(controller, times(1)).getTaskManagerReplicas()
         verify(controller, times(1)).removeUnusedTaskManagers()
+        verify(controller, times(1)).updateRescaleTimestamp()
         assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `rescaleTaskManagerPods should delete pods when taskmanager replicas are more than current taskmanagers and timeout occurred but there isn't any unused taskamanger`() {
+        given(controller.getClampedTaskManagers()).thenReturn(2)
+        given(controller.getTaskManagerReplicas()).thenReturn(3)
+        given(controller.getRescaleDelay()).thenReturn(60)
+        given(controller.timeSinceLastRescaleInSeconds()).thenReturn(70)
+        val result = manager.rescaleTaskManagerPods()
+        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getTaskManagerReplicas()
+        verify(controller, times(1)).removeUnusedTaskManagers()
+        assertThat(result).isFalse()
     }
 
     @Test
@@ -584,10 +599,8 @@ class ClusterManagerTest {
         given(controller.getAction()).thenReturn(Action.START)
         manager.executeAction(setOf(Action.START))
         verify(controller, times(1)).getAction()
-        verify(controller, times(1)).updateStatus()
-        verify(controller, times(1)).updateDigests()
         verify(controller, times(1)).setShouldRestart(eq(true))
-        verify(controller, times(1)).setSupervisorStatus(eq(ClusterStatus.Starting))
+        verify(controller, times(1)).setSupervisorStatus(eq(ClusterStatus.Stopping))
         verify(controller, times(1)).setResourceStatus(eq(ResourceStatus.Updating))
         verify(controller, times(1)).resetAction()
     }
