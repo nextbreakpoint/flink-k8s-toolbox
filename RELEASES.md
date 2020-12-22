@@ -1,3 +1,8 @@
+# 1.4.3-beta
+
+Release notes:
+- 
+
 # 1.4.2-beta
 
 Release notes:
@@ -5,12 +10,12 @@ Release notes:
 - Configurable supervisor's replicas to enable HA.
 - Accept zero as parallelism value to suspend job.
 - Replace watch with informer.
-- Stability improvements    
+- Stability improvements.    
 
 # 1.4.1-beta
 
 Release notes:
-- Ensure that cache is fully populate before reconciling resources  
+- Ensure that cache is fully populate before reconciling resources.
 
 # 1.4.0-beta
 
