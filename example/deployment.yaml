@@ -6,7 +6,7 @@ spec:
   cluster:
     supervisor:
       pullPolicy: IfNotPresent
-      image: nextbreakpoint/flinkctl:1.4.2-beta
+      image: nextbreakpoint/flinkctl:1.4.3-beta
       serviceAccount: flink-supervisor
       taskTimeout: 180
       rescaleDelay: 10
