@@ -19,7 +19,6 @@ import io.vertx.micrometer.VertxPrometheusOptions
 import io.vertx.micrometer.backends.BackendRegistries
 import io.vertx.rxjava.core.Vertx
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 class LaunchOperator : LaunchCommand<OperatorOptions> {
     companion object {
@@ -28,11 +27,10 @@ class LaunchOperator : LaunchCommand<OperatorOptions> {
     }
 
     override fun run(flinkOptions: FlinkOptions, namespace: String, options: OperatorOptions) {
-        val controlPort = Integer.getInteger("operator.control.port", 4444)
-        val monitoringPort = Integer.getInteger("operator.monitoring.port", 8080)
+        val monitoringPort = Integer.getInteger("monitoring.port", 8080)
 
         val serverConfig = ServerConfig(
-            port = controlPort,
+            port = options.port,
             keystorePath = options.keystorePath,
             keystoreSecret = options.keystoreSecret,
             truststorePath = options.truststorePath,
@@ -56,15 +54,19 @@ class LaunchOperator : LaunchCommand<OperatorOptions> {
 
         val registry = BackendRegistries.getNow("flink-operator")
 
-        val cacheAdapter = Adapter(kubeClient, cache)
+        val factory = kubeClient.createSharedInformerFactory()
 
-        val runner = OperatorRunner(registry, controller, cache, cacheAdapter, runnerOptions)
+        val cacheAdapter = Adapter(kubeClient, cache, factory)
 
-        val thread = thread {
+        try {
+            cacheAdapter.start()
+
+            val runner = OperatorRunner(registry, controller, cache, factory, cacheAdapter, runnerOptions)
+
             runner.run()
+        } finally {
+            cacheAdapter.stop()
         }
-
-        thread.join()
     }
 
     private fun createVertxOptions(): VertxOptions {

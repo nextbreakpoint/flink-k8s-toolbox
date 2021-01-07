@@ -5,7 +5,6 @@ import com.nextbreakpoint.flink.common.JobStatus
 import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.common.RestartPolicy
 import com.nextbreakpoint.flink.common.SavepointRequest
-import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.common.Timeout
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -363,10 +362,14 @@ class JobManager(
     }
 
     fun hasParallelismChanged(): Boolean {
-        val desiredJobParallelism = controller.getDeclaredJobParallelism()
-        val currentJobParallelism = controller.getCurrentJobParallelism()
-        logger.info("Detected change: Parallelism")
-        return currentJobParallelism != desiredJobParallelism
+        val declaredJobParallelism = controller.getClampedDeclaredJobParallelism()
+        val requiredJobParallelism = controller.getClampedCurrentJobParallelism()
+        if (requiredJobParallelism != declaredJobParallelism) {
+            logger.info("Detected change: Parallelism ($declaredJobParallelism/$requiredJobParallelism)")
+            return true
+        } else {
+            return false
+        }
     }
 
     fun isActionPresent() = controller.getAction() != Action.NONE

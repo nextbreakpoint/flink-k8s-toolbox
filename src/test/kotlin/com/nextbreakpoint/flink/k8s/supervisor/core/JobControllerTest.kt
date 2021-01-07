@@ -630,9 +630,9 @@ class JobControllerTest {
     @Test
     fun `should return job parallelism`() {
         job.spec.jobParallelism = 0
-        assertThat(jobController.getDeclaredJobParallelism()).isEqualTo(0)
+        assertThat(jobController.getClampedDeclaredJobParallelism()).isEqualTo(0)
         job.spec.jobParallelism = 2
-        assertThat(jobController.getDeclaredJobParallelism()).isEqualTo(2)
+        assertThat(jobController.getClampedDeclaredJobParallelism()).isEqualTo(2)
     }
 
     @Test

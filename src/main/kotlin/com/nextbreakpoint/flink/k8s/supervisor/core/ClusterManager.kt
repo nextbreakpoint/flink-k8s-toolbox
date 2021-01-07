@@ -169,12 +169,6 @@ class ClusterManager(
         return false
     }
 
-    fun hasScaleChanged(): Boolean {
-        val desiredTaskManagers = controller.getClampedRequiredTaskManagers()
-        val currentTaskManagers = controller.getCurrentTaskManagers()
-        return currentTaskManagers != desiredTaskManagers
-    }
-
     fun isActionPresent() = controller.getAction() != Action.NONE
 
     fun isResourceDeleted() = controller.hasBeenDeleted()
@@ -253,15 +247,15 @@ class ClusterManager(
     }
 
     fun rescaleTaskManagers(): Boolean {
-        val currentTaskManagers = controller.getClampedTaskManagers()
+        val declaredTaskManagers = controller.getClampedDeclaredTaskManagers()
 
-        val requiredTaskManagers = controller.getClampedRequiredTaskManagers()
+        val requiredTaskManagers = controller.getClampedTaskManagers()
 
-        if (requiredTaskManagers == currentTaskManagers) {
+        if (requiredTaskManagers == declaredTaskManagers) {
             return false
         }
 
-        logger.info("Detected change: TaskManagers")
+        logger.info("Detected change: TaskManagers ($requiredTaskManagers/$declaredTaskManagers)")
 
         controller.rescaleCluster(requiredTaskManagers)
 
@@ -271,16 +265,16 @@ class ClusterManager(
     }
 
     fun rescaleTaskManagerPods(): Boolean {
-        val currentTaskManagers = controller.getClampedTaskManagers()
+        val declaredTaskManagers = controller.getClampedDeclaredTaskManagers()
 
         val taskManagerReplicas = controller.getTaskManagerReplicas()
 
-        if (currentTaskManagers == taskManagerReplicas) {
+        if (declaredTaskManagers == taskManagerReplicas) {
             return false
         }
 
-        if (currentTaskManagers > taskManagerReplicas) {
-            val result = controller.createTaskManagerPods(currentTaskManagers)
+        if (declaredTaskManagers > taskManagerReplicas) {
+            val result = controller.createTaskManagerPods(declaredTaskManagers)
 
             result.output.forEach { taskmanagerPodName ->
                 logger.info("TaskManagers pod created ($taskmanagerPodName)")
