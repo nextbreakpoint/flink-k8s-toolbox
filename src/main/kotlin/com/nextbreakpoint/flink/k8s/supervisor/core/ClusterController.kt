@@ -8,7 +8,6 @@ import com.nextbreakpoint.flink.common.ResourceStatus
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterAnnotations
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterConfiguration
 import com.nextbreakpoint.flink.k8s.common.FlinkClusterStatus
-import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.common.Resource
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.controller.core.Result
@@ -65,7 +64,7 @@ class ClusterController(
 
         FlinkClusterStatus.setTotalTaskSlots(cluster, getTaskManagerReplicas() * getDeclaredTaskSlots())
 
-        FlinkClusterStatus.setTaskManagers(cluster, getClampedTaskManagers())
+        FlinkClusterStatus.setTaskManagers(cluster, getClampedDeclaredTaskManagers())
 
         val newStatusTimestamp = FlinkClusterStatus.getStatusTimestamp(cluster)
 
@@ -137,7 +136,7 @@ class ClusterController(
     fun updateStatus() {
         FlinkClusterStatus.setTotalTaskSlots(cluster, getTaskManagerReplicas() * getDeclaredTaskSlots())
 
-        FlinkClusterStatus.setTaskManagers(cluster, getClampedTaskManagers())
+        FlinkClusterStatus.setTaskManagers(cluster, getClampedDeclaredTaskManagers())
 
         FlinkClusterStatus.setTaskSlots(cluster, getDeclaredTaskSlots())
 
@@ -324,27 +323,17 @@ class ClusterController(
         (it.metadata?.name ?: throw RuntimeException("Metadata name is null")) to it.status?.jobId
     }.toMap()
 
-    fun getClampedTaskManagers() = min(max(getDeclaredTaskManagers(), cluster.spec.minTaskManagers ?: 0), cluster.spec.maxTaskManagers ?: 32)
+    fun getClampedDeclaredTaskManagers() = clampedTaskManagers(getDeclaredTaskManagers())
 
-    fun getDeclaredTaskManagers() = cluster.spec.taskManagers ?: 0
-
-    fun getDeclaredTaskSlots() = cluster.spec.taskManager?.taskSlots ?: 1
-
-    fun getDeclaredServiceMode() = cluster.spec.jobManager?.serviceMode
-
-    fun getCurrentTaskManagers() = FlinkClusterStatus.getTaskManagers(cluster)
-
-    fun getClampedRequiredTaskManagers(): Int {
-        if (getRescalePolicy() == RescalePolicy.None || resources.flinkJobs.isNullOrEmpty()) {
-            return getClampedTaskManagers()
+    fun getClampedTaskManagers(): Int {
+        return if (getRescalePolicy() == RescalePolicy.None || resources.flinkJobs.isNullOrEmpty()) {
+            getClampedDeclaredTaskManagers()
         } else {
-            return getRequiredTaskManagers()
+            getClampedRequiredTaskManagers()
         }
     }
 
-    fun getRequiredTaskManagers(): Int {
-        return min(max(computeRequiredTaskManagers(), cluster.spec.minTaskManagers ?: 0), cluster.spec.maxTaskManagers ?: 32)
-    }
+    fun getCurrentTaskManagers() = FlinkClusterStatus.getTaskManagers(cluster)
 
     fun getRequiredTaskSlots() = resources.flinkJobs
         .filter { job -> activeStatus.contains(job.status?.supervisorStatus) }
@@ -395,6 +384,16 @@ class ClusterController(
     fun hasJobFinalizers() = resources.flinkJobs.any {
         it.metadata?.finalizers?.contains(Resource.SUPERVISOR_FINALIZER_VALUE) ?: false
     }
+
+    private fun getDeclaredTaskManagers() = cluster.spec.taskManagers ?: 0
+
+    private fun getDeclaredTaskSlots() = cluster.spec.taskManager?.taskSlots ?: 1
+
+    private fun getDeclaredServiceMode() = cluster.spec.jobManager?.serviceMode
+
+    private fun clampedTaskManagers(taskManagers: Int): Int = min(max(taskManagers, cluster.spec.minTaskManagers ?: 0), cluster.spec.maxTaskManagers ?: 32)
+
+    private fun getClampedRequiredTaskManagers(): Int = clampedTaskManagers(computeRequiredTaskManagers())
 
     private fun computeRequiredTaskManagers(): Int {
         val requiredTaskSlots = getRequiredTaskSlots()

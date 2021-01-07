@@ -1,7 +1,9 @@
 # 1.4.3-beta
 
 Release notes:
-- 
+- Few bugs fixed.
+- Drop support for old versions of Flink.
+- Update example to Flink 1.11.
 
 # 1.4.2-beta
 

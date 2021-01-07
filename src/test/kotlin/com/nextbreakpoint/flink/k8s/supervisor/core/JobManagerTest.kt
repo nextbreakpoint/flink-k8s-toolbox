@@ -565,21 +565,21 @@ class JobManagerTest {
 
     @Test
     fun `hasParallelismChanged should return true when current parallelism is not equals to job parallelism`() {
-        given(controller.getDeclaredJobParallelism()).thenReturn(1)
-        given(controller.getCurrentJobParallelism()).thenReturn(2)
+        given(controller.getClampedDeclaredJobParallelism()).thenReturn(1)
+        given(controller.getClampedCurrentJobParallelism()).thenReturn(2)
         val result = manager.hasParallelismChanged()
-        verify(controller, times(1)).getDeclaredJobParallelism()
-        verify(controller, times(1)).getCurrentJobParallelism()
+        verify(controller, times(1)).getClampedDeclaredJobParallelism()
+        verify(controller, times(1)).getClampedCurrentJobParallelism()
         assertThat(result).isTrue()
     }
 
     @Test
     fun `hasParallelismChanged should return false when current parallelism is equals to job parallelism`() {
-        given(controller.getDeclaredJobParallelism()).thenReturn(2)
-        given(controller.getCurrentJobParallelism()).thenReturn(2)
+        given(controller.getClampedDeclaredJobParallelism()).thenReturn(2)
+        given(controller.getClampedCurrentJobParallelism()).thenReturn(2)
         val result = manager.hasParallelismChanged()
-        verify(controller, times(1)).getDeclaredJobParallelism()
-        verify(controller, times(1)).getCurrentJobParallelism()
+        verify(controller, times(1)).getClampedDeclaredJobParallelism()
+        verify(controller, times(1)).getClampedCurrentJobParallelism()
         assertThat(result).isFalse()
     }
 

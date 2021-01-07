@@ -236,26 +236,6 @@ class ClusterManagerTest {
     }
 
     @Test
-    fun `hasScaleChanged should return false when scale hasn't changed`() {
-        given(controller.getClampedRequiredTaskManagers()).thenReturn(2)
-        given(controller.getCurrentTaskManagers()).thenReturn(2)
-        val result = manager.hasScaleChanged()
-        verify(controller, times(1)).getClampedRequiredTaskManagers()
-        verify(controller, times(1)).getCurrentTaskManagers()
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `hasScaleChanged should return true when scale has changed`() {
-        given(controller.getClampedRequiredTaskManagers()).thenReturn(2)
-        given(controller.getCurrentTaskManagers()).thenReturn(1)
-        val result = manager.hasScaleChanged()
-        verify(controller, times(1)).getClampedRequiredTaskManagers()
-        verify(controller, times(1)).getCurrentTaskManagers()
-        assertThat(result).isTrue()
-    }
-
-    @Test
     fun `isManualActionPresent should return true when manual action is not none`() {
         given(controller.getAction()).thenReturn(Action.START)
         val result = manager.isActionPresent()
@@ -489,54 +469,54 @@ class ClusterManagerTest {
 
     @Test
     fun `rescaleTaskManagers should do nothing when required taskmanagers are equals to current taskmanagers`() {
+        given(controller.getClampedDeclaredTaskManagers()).thenReturn(2)
         given(controller.getClampedTaskManagers()).thenReturn(2)
-        given(controller.getClampedRequiredTaskManagers()).thenReturn(2)
         val result = manager.rescaleTaskManagers()
+        verify(controller, times(1)).getClampedDeclaredTaskManagers()
         verify(controller, times(1)).getClampedTaskManagers()
-        verify(controller, times(1)).getClampedRequiredTaskManagers()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `rescaleTaskManagers should rescale cluster when required taskmanagers are not equals to current taskmanagers`() {
-        given(controller.getClampedTaskManagers()).thenReturn(3)
-        given(controller.getClampedRequiredTaskManagers()).thenReturn(2)
+        given(controller.getClampedDeclaredTaskManagers()).thenReturn(3)
+        given(controller.getClampedTaskManagers()).thenReturn(2)
         val result = manager.rescaleTaskManagers()
+        verify(controller, times(1)).getClampedDeclaredTaskManagers()
         verify(controller, times(1)).getClampedTaskManagers()
-        verify(controller, times(1)).getClampedRequiredTaskManagers()
         verify(controller, times(1)).rescaleCluster(eq(2))
         assertThat(result).isTrue()
     }
 
     @Test
     fun `rescaleTaskManagerPods should do nothing when taskmanager replicas are equals to current taskmanagers`() {
-        given(controller.getClampedTaskManagers()).thenReturn(2)
+        given(controller.getClampedDeclaredTaskManagers()).thenReturn(2)
         given(controller.getTaskManagerReplicas()).thenReturn(2)
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getClampedDeclaredTaskManagers()
         verify(controller, times(1)).getTaskManagerReplicas()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `rescaleTaskManagerPods should do nothing when taskmanager replicas are more than current taskmanagers but timeout didn't occur`() {
-        given(controller.getClampedTaskManagers()).thenReturn(2)
+        given(controller.getClampedDeclaredTaskManagers()).thenReturn(2)
         given(controller.getTaskManagerReplicas()).thenReturn(3)
         given(controller.getRescaleDelay()).thenReturn(60)
         given(controller.timeSinceLastRescaleInSeconds()).thenReturn(50)
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getClampedDeclaredTaskManagers()
         verify(controller, times(1)).getTaskManagerReplicas()
         assertThat(result).isFalse()
     }
 
     @Test
     fun `rescaleTaskManagerPods should create pods when taskmanager replicas are less than current taskmanagers`() {
-        given(controller.getClampedTaskManagers()).thenReturn(3)
+        given(controller.getClampedDeclaredTaskManagers()).thenReturn(3)
         given(controller.getTaskManagerReplicas()).thenReturn(2)
         given(controller.createTaskManagerPods(eq(3))).thenReturn(Result(ResultStatus.OK, setOf("test")))
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getClampedDeclaredTaskManagers()
         verify(controller, times(1)).getTaskManagerReplicas()
         verify(controller, times(1)).createTaskManagerPods(eq(3))
         assertThat(result).isTrue()
@@ -545,12 +525,12 @@ class ClusterManagerTest {
     @Test
     fun `rescaleTaskManagerPods should delete pods when taskmanager replicas are more than current taskmanagers and timeout occurred and there is an unused taskamanger`() {
         given(controller.removeUnusedTaskManagers()).thenReturn(setOf("test"))
-        given(controller.getClampedTaskManagers()).thenReturn(2)
+        given(controller.getClampedDeclaredTaskManagers()).thenReturn(2)
         given(controller.getTaskManagerReplicas()).thenReturn(3)
         given(controller.getRescaleDelay()).thenReturn(60)
         given(controller.timeSinceLastRescaleInSeconds()).thenReturn(70)
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getClampedDeclaredTaskManagers()
         verify(controller, times(1)).getTaskManagerReplicas()
         verify(controller, times(1)).removeUnusedTaskManagers()
         verify(controller, times(1)).updateRescaleTimestamp()
@@ -559,12 +539,12 @@ class ClusterManagerTest {
 
     @Test
     fun `rescaleTaskManagerPods should delete pods when taskmanager replicas are more than current taskmanagers and timeout occurred but there isn't any unused taskamanger`() {
-        given(controller.getClampedTaskManagers()).thenReturn(2)
+        given(controller.getClampedDeclaredTaskManagers()).thenReturn(2)
         given(controller.getTaskManagerReplicas()).thenReturn(3)
         given(controller.getRescaleDelay()).thenReturn(60)
         given(controller.timeSinceLastRescaleInSeconds()).thenReturn(70)
         val result = manager.rescaleTaskManagerPods()
-        verify(controller, times(1)).getClampedTaskManagers()
+        verify(controller, times(1)).getClampedDeclaredTaskManagers()
         verify(controller, times(1)).getTaskManagerReplicas()
         verify(controller, times(1)).removeUnusedTaskManagers()
         assertThat(result).isFalse()

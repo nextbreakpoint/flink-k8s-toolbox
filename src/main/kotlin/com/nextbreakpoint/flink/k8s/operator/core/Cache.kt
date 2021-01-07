@@ -12,23 +12,35 @@ class Cache(val namespace: String) {
     private var latestResetTimestamp: Long = 0L
     private var latestUpdateTimestamp: Long = 0L
 
-    fun listDeploymentNames(): List<String> = snapshot.flinkDeployments.keys.toList()
+    fun listDeploymentNamesSnapshot(): List<String> = snapshot.flinkDeployments.keys.toList()
 
-    fun listClusterNames(): List<String> = snapshot.flinkClusters.keys.toList()
+    fun listClusterNamesSnapshot(): List<String> = snapshot.flinkClusters.keys.toList()
 
-    fun listJobNames(): List<String> = snapshot.flinkJobs.keys.toList()
+    fun listJobNamesSnapshot(): List<String> = snapshot.flinkJobs.keys.toList()
+
+    fun listDeploymentNames(): List<String> = resources.flinkDeployments.keys.toList()
+
+    fun listClusterNames(): List<String> = resources.flinkClusters.keys.toList()
+
+    fun listJobNames(): List<String> = resources.flinkJobs.keys.toList()
 
     fun getFlinkDeployments(): List<V1FlinkDeployment> = snapshot.flinkDeployments.values.map { it.resource }.toList()
 
-    fun getFlinkDeployment(deploymentName: String) = snapshot.flinkDeployments[deploymentName]?.resource
+    fun getFlinkDeploymentSnapshot(deploymentName: String) = snapshot.flinkDeployments[deploymentName]?.resource
+
+    fun getFlinkDeployment(deploymentName: String) = resources.flinkDeployments[deploymentName]?.resource
 
     fun getFlinkClusters(): List<V1FlinkCluster> = snapshot.flinkClusters.values.map { it.resource }.toList()
 
-    fun getFlinkCluster(clusterName: String) = snapshot.flinkClusters[clusterName]?.resource
+    fun getFlinkClusterSnapshot(clusterName: String) = snapshot.flinkClusters[clusterName]?.resource
+
+    fun getFlinkCluster(clusterName: String) = resources.flinkClusters[clusterName]?.resource
 
     fun getFlinkJobs(): List<V1FlinkJob> = snapshot.flinkJobs.values.map { it.resource }.toList()
 
-    fun getFlinkJob(jobName: String) = snapshot.flinkJobs[jobName]?.resource
+    fun getFlinkJobSnapshot(jobName: String) = snapshot.flinkJobs[jobName]?.resource
+
+    fun getFlinkJob(jobName: String) = resources.flinkJobs[jobName]?.resource
 
     fun getSupervisorResources(clusterName: String) =
         SupervisorResources(

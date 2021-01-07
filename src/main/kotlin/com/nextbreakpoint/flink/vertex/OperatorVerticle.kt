@@ -273,6 +273,12 @@ class OperatorVerticle(
         return vertx.createHttpServer(serverOptions)
             .requestHandler(mainRouter)
             .rxListen(serverConfig.port)
+            .doOnSuccess { server ->
+                logger.log(Level.INFO, "Operator listening on port ${server.actualPort()}")
+            }
+            .doOnError { error ->
+                logger.log(Level.WARNING, "Operator error", error)
+            }
             .toCompletable()
     }
 

@@ -4,7 +4,16 @@ import com.nextbreakpoint.flink.common.RunnerOptions
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.supervisor.core.Cache
 import com.nextbreakpoint.flink.k8s.supervisor.core.Adapter
+import io.kubernetes.client.extended.controller.ControllerManager
+import io.kubernetes.client.extended.controller.LeaderElectingController
+import io.kubernetes.client.extended.controller.builder.ControllerBuilder
+import io.kubernetes.client.extended.leaderelection.LeaderElectionConfig
+import io.kubernetes.client.extended.leaderelection.LeaderElector
+import io.kubernetes.client.extended.leaderelection.resourcelock.EndpointsLock
+import io.kubernetes.client.informer.SharedInformerFactory
 import io.micrometer.core.instrument.MeterRegistry
+import java.time.Duration
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -15,6 +24,7 @@ class SupervisorRunner(
     private val registry: MeterRegistry,
     private val controller: Controller,
     private val cache: Cache,
+    private val factory: SharedInformerFactory,
     private val adapter: Adapter,
     private val options: RunnerOptions
 ) {
@@ -23,13 +33,25 @@ class SupervisorRunner(
     }
 
     fun run() {
-        try {
-            val supervisorController = SupervisorController(registry, controller, cache, adapter, options)
+        val supervisorController = SupervisorController(registry, controller, cache, adapter, options)
 
-            adapter.start(supervisorController)
-        } finally {
-            adapter.stop();
-        }
+        val controllerManager: ControllerManager = ControllerBuilder.controllerManagerBuilder(factory)
+            .addController(supervisorController)
+            .build()
+
+        val leaderElectingController = LeaderElectingController(
+            LeaderElector(
+                LeaderElectionConfig(
+                    EndpointsLock(cache.namespace, "leader-election-supervisor-${cache.clusterName}", "supervisor-${UUID.randomUUID()}"),
+                    Duration.ofMillis(10000),
+                    Duration.ofMillis(8000),
+                    Duration.ofMillis(5000)
+                )
+            ),
+            controllerManager
+        )
+
+        leaderElectingController.run()
     }
 
     private class SupervisorController(
