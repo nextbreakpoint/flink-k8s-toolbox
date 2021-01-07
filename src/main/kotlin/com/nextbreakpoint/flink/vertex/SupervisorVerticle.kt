@@ -52,6 +52,12 @@ class SupervisorVerticle(
         return vertx.createHttpServer(serverOptions)
             .requestHandler(mainRouter)
             .rxListen(serverConfig.port)
+            .doOnSuccess { server ->
+                logger.log(Level.INFO, "Supervisor listening on port ${server.actualPort()}")
+            }
+            .doOnError { error ->
+                logger.log(Level.WARNING, "Supervisor error", error)
+            }
             .toCompletable()
     }
 

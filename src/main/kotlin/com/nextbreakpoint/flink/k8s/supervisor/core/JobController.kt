@@ -150,7 +150,7 @@ class JobController(
     }
 
     fun updateStatus() {
-        FlinkJobStatus.setJobParallelism(job, getDeclaredJobParallelism())
+        FlinkJobStatus.setJobParallelism(job, getClampedDeclaredJobParallelism())
 
         val savepointMode = SavepointMode.valueOf(job.spec.savepoint.savepointMode)
         FlinkJobStatus.setSavepointMode(job, savepointMode)
@@ -265,7 +265,7 @@ class JobController(
             jobName,
             job.spec.bootstrap,
             getCurrentSavepointPath(),
-            getCurrentJobParallelism(),
+            getClampedCurrentJobParallelism(),
             controller.isDryRun()
         )
 
@@ -296,17 +296,23 @@ class JobController(
         .filter { job -> activeStatus.contains(job.status.supervisorStatus) }
         .map { job -> job.status?.jobParallelism ?: 0 }.sum()
 
-    fun getDeclaredJobParallelism() = min(max(job.spec.jobParallelism ?: 0, job.spec.minJobParallelism ?: 0), job.spec.maxJobParallelism ?: 32)
+    fun getClampedDeclaredJobParallelism() = clampJobParallelism(getDeclaredJobParallelism())
 
-    fun getCurrentJobParallelism() = FlinkJobStatus.getJobParallelism(job)
+    fun getClampedCurrentJobParallelism() = clampJobParallelism(getCurrentJobParallelism())
 
     fun setCurrentJobParallelism(parallelism: Int) = FlinkJobStatus.setJobParallelism(job, parallelism)
+
+    fun getCurrentJobParallelism() = FlinkJobStatus.getJobParallelism(job)
 
     fun getCurrentSavepointPath() = FlinkJobStatus.getSavepointPath(job)
 
     fun getJobStatus() = if (job.status != null) controller.getJobStatus(namespace, clusterName, jobName, job.status.jobId) else Result(ResultStatus.ERROR, null)
 
     fun isJobSuspended() = getCurrentJobParallelism() == 0
+
+    private fun clampJobParallelism(parallelism: Int) = min(max(parallelism, job.spec.minJobParallelism ?: 0), job.spec.maxJobParallelism ?: 32)
+
+    private fun getDeclaredJobParallelism() = job.spec.jobParallelism ?: 0
 
     private val activeStatus = setOf(JobStatus.Starting.toString(), JobStatus.Started.toString())
 

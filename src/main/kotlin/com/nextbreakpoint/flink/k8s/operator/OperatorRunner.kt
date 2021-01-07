@@ -8,8 +8,17 @@ import com.nextbreakpoint.flink.k8s.common.FlinkJobStatus
 import com.nextbreakpoint.flink.k8s.controller.Controller
 import com.nextbreakpoint.flink.k8s.operator.core.Cache
 import com.nextbreakpoint.flink.k8s.operator.core.Adapter
+import io.kubernetes.client.extended.controller.ControllerManager
+import io.kubernetes.client.extended.controller.LeaderElectingController
+import io.kubernetes.client.extended.controller.builder.ControllerBuilder
+import io.kubernetes.client.extended.leaderelection.LeaderElectionConfig
+import io.kubernetes.client.extended.leaderelection.LeaderElector
+import io.kubernetes.client.extended.leaderelection.resourcelock.EndpointsLock
+import io.kubernetes.client.informer.SharedInformerFactory
 import io.micrometer.core.instrument.ImmutableTag
 import io.micrometer.core.instrument.MeterRegistry
+import java.time.Duration
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Level
@@ -21,6 +30,7 @@ class OperatorRunner(
     private val registry: MeterRegistry,
     private val controller: Controller,
     private val cache: Cache,
+    private val factory: SharedInformerFactory,
     private val adapter: Adapter,
     private val options: RunnerOptions
 ) {
@@ -29,13 +39,25 @@ class OperatorRunner(
     }
 
     fun run() {
-        try {
-            val operatorController = OperatorController(registry, controller, cache, adapter, options)
+        val operatorController = OperatorController(registry, controller, cache, adapter, options)
 
-            adapter.start(operatorController)
-        } finally {
-            adapter.stop();
-        }
+        val controllerManager: ControllerManager = ControllerBuilder.controllerManagerBuilder(factory)
+            .addController(operatorController)
+            .build()
+
+        val leaderElectingController = LeaderElectingController(
+            LeaderElector(
+                LeaderElectionConfig(
+                    EndpointsLock(cache.namespace, "leader-election-operator", "operator-${UUID.randomUUID()}"),
+                    Duration.ofMillis(10000),
+                    Duration.ofMillis(8000),
+                    Duration.ofMillis(5000)
+                )
+            ),
+            controllerManager
+        )
+
+        leaderElectingController.run()
     }
 
     private class OperatorController(

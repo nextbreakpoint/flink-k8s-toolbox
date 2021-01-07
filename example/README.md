@@ -10,13 +10,17 @@ Start Minikube with at least 8Gb of memory:
 
     minikube start --cpus=2 --memory=8gb --kubernetes-version v1.18.14
 
-## Install Minio 
+## Install Minio
 
 Minio will be used as persistent storage for savepoints.
 
+Create minio namespace:
+
+    kubectl create namespace minio
+
 Install Minio with Helm:
 
-    helm install minio example/minio --namespace flink-jobs --set minio.accessKey=minioaccesskey,minio.secretKey=miniosecretkey
+    helm install minio example/minio --namespace minio --set minio.accessKey=minioaccesskey,minio.secretKey=miniosecretkey
 
 Create an empty bucket:
 
@@ -71,7 +75,7 @@ Configure Docker environment:
 
 Build Flink jobs image:
 
-    docker build -t example/jobs:latest example/jobs 
+    docker build -t example/jobs:latest example/jobs
 
 ## Use deployment resource to deploy cluster and jobs    
 
@@ -143,33 +147,33 @@ Example of patch operation to change savepointInterval:
 
 Inspect status of the deployment:
 
-    kubectl -n flink-jobs get fd cluster-1 -o json | jq '.status' 
+    kubectl -n flink-jobs get fd cluster-1 -o json | jq '.status'
 
 Inspect status of the cluster:
 
-    kubectl -n flink-jobs get fc cluster-1 -o json | jq '.status' 
+    kubectl -n flink-jobs get fc cluster-1 -o json | jq '.status'
 
 Inspect status of a job:
 
-    kubectl -n flink-jobs get fj cluster-1-job-1 -o json | jq '.status' 
+    kubectl -n flink-jobs get fj cluster-1-job-1 -o json | jq '.status'
 
-## Control cluster and jobs with annotations 
+## Control cluster and jobs with annotations
 
 Annotate the cluster to stop it:
 
-    kubectl -n flink-jobs annotate fc cluster-1 --overwrite operator.nextbreakpoint.com/requested-action=STOP 
+    kubectl -n flink-jobs annotate fc cluster-1 --overwrite operator.nextbreakpoint.com/requested-action=STOP
 
 Annotate the cluster to start it:
 
-    kubectl -n flink-jobs annotate fc cluster-1 --overwrite operator.nextbreakpoint.com/requested-action=START 
+    kubectl -n flink-jobs annotate fc cluster-1 --overwrite operator.nextbreakpoint.com/requested-action=START
 
 Annotate a job to stop it:
 
-    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=STOP 
+    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=STOP
 
 Annotate a job to start it:
 
-    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=START 
+    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=START
 
 ##  Control cluster and jobs with curl
 
@@ -205,7 +209,7 @@ Start a job:
 
     curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/start -XPUT -d'{"withoutSavepoint":false}'
 
-## Control cluster and jobs with flinkctl 
+## Control cluster and jobs with flinkctl
 
 Expose the operator using an external address:
 
@@ -243,7 +247,7 @@ Start a job:
 
      docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job start --host=$(minikube ip) --cluster-name=cluster-1 --job-name=job-1
 
-## Remove all resources 
+## Remove all resources
 
 Delete the deployment to remove all resources (this might take a while):
 
@@ -259,5 +263,4 @@ Uninstall toolbox resources:
 
     helm uninstall flink-k8s-toolbox-operator --namespace flink-operator
     helm uninstall flink-k8s-toolbox-roles --namespace flink-operator
-    helm uninstall flink-k8s-toolbox-crd 
-
+    helm uninstall flink-k8s-toolbox-crd

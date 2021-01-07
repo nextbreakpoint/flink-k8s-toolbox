@@ -65,7 +65,7 @@ class DeploymentManager(
     private fun updateDeployment() {
         val clusterName = getName(deployment)
 
-        val deployedCluster = cache.getFlinkCluster(clusterName)
+        val deployedCluster = cache.getFlinkClusterSnapshot(clusterName)
 
         val deployedJobs = getDeployedJobs(clusterName)
 
@@ -191,7 +191,7 @@ class DeploymentManager(
                     val deployedJobDigest = deployedJobDigests[jobName]
                     val declaredJobDigest = declaredJobDigests[jobName]
 
-                    if (deployedJobDigest != null && declaredJobDigest != null && isFlinkJobSpecChanged(deployedJobDigest, declaredJobDigest) || areScaleLimitsChanged(deployedJobSpec, declaredJobSpec)) {
+                    if (deployedJobDigest != null && declaredJobDigest != null && (isFlinkJobSpecChanged(deployedJobDigest, declaredJobDigest) || areScaleLimitsChanged(deployedJobSpec, declaredJobSpec))) {
                         deployedJob.spec.bootstrap = declaredJobSpec.bootstrap
                         deployedJob.spec.savepoint = declaredJobSpec.savepoint
                         deployedJob.spec.restart = declaredJobSpec.restart
@@ -218,7 +218,7 @@ class DeploymentManager(
     private fun hasDeploymentBeenRemoved(): Boolean {
         val clusterName = getName(deployment)
 
-        val deployedCluster = cache.getFlinkCluster(clusterName)
+        val deployedCluster = cache.getFlinkClusterSnapshot(clusterName)
 
         val deploymentDigest = makeDeploymentDigest()
 
@@ -324,7 +324,7 @@ class DeploymentManager(
 
     private fun getDeployedJobs(clusterName: String) =
         deployment.status?.digest?.jobs?.map {
-            it.name to cache.getFlinkJob("$clusterName-${it.name}")
+            it.name to cache.getFlinkJobSnapshot("$clusterName-${it.name}")
         }?.toMap().orEmpty()
 
     private fun getDeclaredJobs() =

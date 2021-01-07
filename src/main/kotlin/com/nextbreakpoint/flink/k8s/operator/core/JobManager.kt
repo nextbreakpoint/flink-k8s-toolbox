@@ -34,7 +34,7 @@ class JobManager(
     }
 
     private fun matchClusterName(job: V1FlinkJob) =
-        cache.listClusterNames().firstOrNull { job.metadata?.name?.startsWith("$it-") ?: false }
+        cache.listClusterNamesSnapshot().firstOrNull { job.metadata?.name?.startsWith("$it-") ?: false }
 
     private fun getName(job: V1FlinkJob) =
         job.metadata?.name ?: throw RuntimeException("Metadata name is null")

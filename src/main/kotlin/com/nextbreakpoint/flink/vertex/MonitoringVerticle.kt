@@ -44,6 +44,12 @@ class MonitoringVerticle(
         return vertx.createHttpServer()
             .requestHandler(mainRouter)
             .rxListen(port)
+            .doOnSuccess { server ->
+                logger.log(Level.INFO, "Monitor listening on port ${server.actualPort()}")
+            }
+            .doOnError { error ->
+                logger.log(Level.WARNING, "Monitor error", error)
+            }
             .toCompletable()
     }
 

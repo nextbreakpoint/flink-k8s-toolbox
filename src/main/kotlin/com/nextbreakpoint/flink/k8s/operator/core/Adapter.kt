@@ -4,34 +4,19 @@ import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkDeployment
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import io.kubernetes.client.extended.controller.Controller
-import io.kubernetes.client.extended.controller.ControllerManager
-import io.kubernetes.client.extended.controller.LeaderElectingController
-import io.kubernetes.client.extended.controller.builder.ControllerBuilder
-import io.kubernetes.client.extended.leaderelection.LeaderElectionConfig
-import io.kubernetes.client.extended.leaderelection.LeaderElector
-import io.kubernetes.client.extended.leaderelection.resourcelock.EndpointsLock
 import io.kubernetes.client.informer.ResourceEventHandler
+import io.kubernetes.client.informer.SharedInformerFactory
 import io.kubernetes.client.openapi.models.V1Deployment
 import io.kubernetes.client.openapi.models.V1Pod
-import java.time.Duration
-import java.util.UUID
-import java.util.logging.Logger
 
 class Adapter(
     private val kubeClient: KubeClient,
     private val cache: Cache,
-    private val backoffTime: Long = 5000L
+    private val factory: SharedInformerFactory
 ) {
-    companion object {
-        private val logger: Logger = Logger.getLogger(Adapter::class.simpleName)
-    }
-
-    private val factory = kubeClient.createSharedInformerFactory()
-
     fun haveSynced() = haveFlinkDeploymentsSynced() && haveFlinkClustersSynced() && haveFlinkJobsSynced() && havePodsSynced() && haveDeploymentsSynced()
 
-    fun start(controller: Controller) {
+    fun start() {
         watchFlinkDeployments(cache.namespace)
         watchFlinkClusters(cache.namespace)
         watchFlinkJobs(cache.namespace)
@@ -39,24 +24,6 @@ class Adapter(
         watchPods(cache.namespace)
 
         factory.startAllRegisteredInformers()
-
-        val controllerManager: ControllerManager = ControllerBuilder.controllerManagerBuilder(factory)
-            .addController(controller)
-            .build()
-
-        val leaderElectingController = LeaderElectingController(
-            LeaderElector(
-                LeaderElectionConfig(
-                    EndpointsLock(cache.namespace, "leader-election-operator", "operator-${UUID.randomUUID()}"),
-                    Duration.ofMillis(10000),
-                    Duration.ofMillis(8000),
-                    Duration.ofMillis(5000)
-                )
-            ),
-            controllerManager
-        )
-
-        leaderElectingController.run()
     }
 
     fun stop() {

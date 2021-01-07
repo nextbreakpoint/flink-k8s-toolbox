@@ -3,29 +3,20 @@ package com.nextbreakpoint.flink.k8s.supervisor.core
 import com.nextbreakpoint.flink.k8s.common.KubeClient
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkCluster
 import com.nextbreakpoint.flink.k8s.crd.V1FlinkJob
-import io.kubernetes.client.extended.controller.Controller
-import io.kubernetes.client.extended.controller.ControllerManager
-import io.kubernetes.client.extended.controller.LeaderElectingController
-import io.kubernetes.client.extended.controller.builder.ControllerBuilder
-import io.kubernetes.client.extended.leaderelection.LeaderElectionConfig
-import io.kubernetes.client.extended.leaderelection.LeaderElector
-import io.kubernetes.client.extended.leaderelection.resourcelock.EndpointsLock
 import io.kubernetes.client.informer.ResourceEventHandler
+import io.kubernetes.client.informer.SharedInformerFactory
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1Service
-import java.time.Duration
-import java.util.UUID
 
 class Adapter(
     private val kubeClient: KubeClient,
-    private val cache: Cache
+    private val cache: Cache,
+    private val factory: SharedInformerFactory
 ) {
-    private val factory = kubeClient.createSharedInformerFactory()
-
     fun haveSynced() = haveFlinkClustersSynced() && haveFlinkJobsSynced() && havePodsSynced() && haveServicesSynced() && havePodsSynced() && haveJobsSynced()
 
-    fun start(controller: Controller) {
+    fun start() {
         watchFlinkClusters(cache.namespace)
         watchFlinkJobs(cache.namespace)
         watchServices(cache.namespace)
@@ -33,24 +24,6 @@ class Adapter(
         watchPods(cache.namespace)
 
         factory.startAllRegisteredInformers()
-
-        val controllerManager: ControllerManager = ControllerBuilder.controllerManagerBuilder(factory)
-            .addController(controller)
-            .build()
-
-        val leaderElectingController = LeaderElectingController(
-            LeaderElector(
-                LeaderElectionConfig(
-                    EndpointsLock(cache.namespace, "leader-election-supervisor-${cache.clusterName}", "supervisor-${UUID.randomUUID()}"),
-                    Duration.ofMillis(10000),
-                    Duration.ofMillis(8000),
-                    Duration.ofMillis(5000)
-                )
-            ),
-            controllerManager
-        )
-
-        leaderElectingController.run()
     }
 
     fun stop() {

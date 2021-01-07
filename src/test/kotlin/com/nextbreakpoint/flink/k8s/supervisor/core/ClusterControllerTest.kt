@@ -496,9 +496,9 @@ class ClusterControllerTest {
     @Test
     fun `should return number of task managers`() {
         cluster.spec.taskManagers = 4
-        assertThat(clusterController.getClampedTaskManagers()).isEqualTo(4)
+        assertThat(clusterController.getClampedDeclaredTaskManagers()).isEqualTo(4)
         cluster.spec.taskManagers = 2
-        assertThat(clusterController.getClampedTaskManagers()).isEqualTo(2)
+        assertThat(clusterController.getClampedDeclaredTaskManagers()).isEqualTo(2)
     }
 
     @Test
@@ -512,12 +512,12 @@ class ClusterControllerTest {
     fun `should return required number of task managers`() {
         FlinkJobStatus.setSupervisorStatus(job, JobStatus.Started)
         FlinkJobStatus.setJobParallelism(job, 0)
-        assertThat(clusterController.getClampedRequiredTaskManagers()).isEqualTo(0)
+        assertThat(clusterController.getClampedTaskManagers()).isEqualTo(0)
         FlinkJobStatus.setJobParallelism(job, 2)
         cluster.spec?.taskManager?.taskSlots = 2
-        assertThat(clusterController.getClampedRequiredTaskManagers()).isEqualTo(1)
+        assertThat(clusterController.getClampedTaskManagers()).isEqualTo(1)
         cluster.spec?.taskManager?.taskSlots = 1
-        assertThat(clusterController.getClampedRequiredTaskManagers()).isEqualTo(2)
+        assertThat(clusterController.getClampedTaskManagers()).isEqualTo(2)
     }
 
     @Test
