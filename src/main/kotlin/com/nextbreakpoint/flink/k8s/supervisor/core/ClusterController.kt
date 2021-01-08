@@ -404,7 +404,7 @@ class ClusterController(
     private fun getPodName(taskManagerInfo: TaskManagerInfo): String? {
         //akka.tcp://flink@172.17.0.12:41545/user/taskmanager_0
         logger.info("TaskManager path: ${taskManagerInfo.path}")
-        val regexp = Regex("akka\\.tcp://flink@([0-9.]+):[0-9]+/user/taskmanager_[0-9]+")
+        val regexp = Regex("akka\\.tcp://flink@([0-9.]+):[0-9]+/user/(rpc/)?taskmanager_[0-9]+")
         val match = regexp.matchEntire(taskManagerInfo.path.toString())
         val nodeIP = match?.groupValues?.get(1)
         logger.info("TaskManager nodeIP: $nodeIP")
@@ -413,8 +413,8 @@ class ClusterController(
         return name
     }
 
-    private fun findTaskManagerByPodIP(podIP: String?) =
-        resources.taskmanagerPods.find { pod -> pod.status?.podIP == podIP }?.metadata?.name
+    private fun findTaskManagerByPodIP(podIP: String) =
+        resources.taskmanagerPods.find { pod -> pod.status?.podIPs?.any { podIp -> podIp.ip == podIP } ?: false }?.metadata?.name
 
     private fun isJobReady(job: V1FlinkJob) = job.status?.resourceStatus == ResourceStatus.Updated.toString() && !transitoryStatus.contains(job.status?.supervisorStatus.toString())
 
