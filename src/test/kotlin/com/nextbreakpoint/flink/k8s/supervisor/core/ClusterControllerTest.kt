@@ -17,6 +17,7 @@ import com.nextbreakpoint.flink.testing.KotlinMockito.given
 import com.nextbreakpoint.flink.testing.TestFactory
 import com.nextbreakpoint.flinkclient.model.TaskManagerInfo
 import com.nextbreakpoint.flinkclient.model.TaskManagersInfo
+import io.kubernetes.client.openapi.models.V1PodIP
 import io.kubernetes.client.openapi.models.V1PodStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.joda.time.DateTime
@@ -613,10 +614,10 @@ class ClusterControllerTest {
         pod2.status = V1PodStatus()
         pod3.status = V1PodStatus()
         pod4.status = V1PodStatus()
-        pod1.status?.podIP = "172.17.0.12"
-        pod2.status?.podIP = "172.17.0.13"
-        pod3.status?.podIP = "172.17.0.14"
-        pod4.status?.podIP = "172.17.0.15"
+        pod1.status?.podIPs = listOf(V1PodIP().ip("172.17.0.12"))
+        pod2.status?.podIPs = listOf(V1PodIP().ip("172.17.0.13"))
+        pod3.status?.podIPs = listOf(V1PodIP().ip("172.17.0.14"))
+        pod4.status?.podIPs = listOf(V1PodIP().ip("172.17.0.15"))
         given(controller.getTaskManagerStatus(eq("flink"), eq("test"))).thenReturn(Result(ResultStatus.OK, taskManagersInfo))
         clusterController.removeUnusedTaskManagers()
         verify(controller, times(2)).currentTimeMillis()
