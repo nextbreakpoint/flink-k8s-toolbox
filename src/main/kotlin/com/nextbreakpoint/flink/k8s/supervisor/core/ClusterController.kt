@@ -418,7 +418,7 @@ class ClusterController(
 
     private fun isJobReady(job: V1FlinkJob) = job.status?.resourceStatus == ResourceStatus.Updated.toString() && !transitoryStatus.contains(job.status?.supervisorStatus.toString())
 
-    private val activeStatus = setOf(JobStatus.Starting.toString(), JobStatus.Started.toString())
+    private val activeStatus = setOf(JobStatus.Stopping.toString(), JobStatus.Starting.toString(), JobStatus.Started.toString())
 
     private val transitoryStatus = setOf(JobStatus.Starting.toString(), JobStatus.Stopping.toString())
 }
