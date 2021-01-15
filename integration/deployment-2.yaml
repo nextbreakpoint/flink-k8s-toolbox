@@ -10,7 +10,7 @@ spec:
         savepoint:
           savepointMode: Automatic
           savepointInterval: 0
-          savepointTargetPath: s3a://flink/2/savepoints
+          savepointTargetPath: s3a://nextbreakpoint-integration/savepoints
         restart:
           restartPolicy: Never
           restartDelay: 60
@@ -20,10 +20,12 @@ spec:
           pullPolicy: Never
           image: integration/jobs:latest
           jarPath: /flink-jobs.jar
-          className: com.nextbreakpoint.flink.jobs.stream.TestJob
+          className: com.nextbreakpoint.flink.jobs.ComputeAverage
           arguments:
-            - --CONSOLE_OUTPUT
-            - "false"
+            - --JOB_PARAMETERS
+            - /var/config/computeaverage.conf
+            - --OUTPUT_LOCATION
+            - s3a://nextbreakpoint-integration
           resources:
             limits:
               cpu: '1'
@@ -37,7 +39,7 @@ spec:
         savepoint:
           savepointMode: Automatic
           savepointInterval: 0
-          savepointTargetPath: s3a://flink/2/savepoints
+          savepointTargetPath: s3a://nextbreakpoint-integration/savepoints
         restart:
           restartPolicy: Never
           restartDelay: 60
@@ -47,10 +49,12 @@ spec:
           pullPolicy: Never
           image: integration/jobs:latest
           jarPath: /flink-jobs.jar
-          className: com.nextbreakpoint.flink.jobs.stream.TestJob
+          className: com.nextbreakpoint.flink.jobs.ComputeMaximum
           arguments:
-            - --CONSOLE_OUTPUT
-            - "false"
+            - --JOB_PARAMETERS
+            - /var/config/computemaximum.conf
+            - --OUTPUT_LOCATION
+            - s3a://nextbreakpoint-integration
           resources:
             limits:
               cpu: '1'
@@ -75,84 +79,57 @@ spec:
           memory: 200Mi
     runtime:
       pullPolicy: Never
-      image: integration/flink:1.9.2
+      image: integration/flink:1.11.3
     jobManager:
       serviceMode: ClusterIP
       annotations:
         managed: true
-      environment:
-        - name: FLINK_JM_HEAP
-          value: "256"
-        - name: FLINK_SAVEPOINTS_LOCATION
-          value: s3a://flink/2/savepoints
-        - name: FLINK_CHECKPOINTS_LOCATION
-          value: file:///var/checkpoints
-        - name: FLINK_FS_CHECKPOINTS_LOCATION
-          value: file:///var/fs_checkpoints
-        - name: FLINK_S3_ENDPOINT
-          value: http://minio-headless:9000
-        - name: FLINK_S3_PATH_STYLE_ACCESS
-          value: "true"
+      command:
+        - 'bash'
+      args:
+        - '-c'
+        - 'FLINK_PROPERTIES="$(FLINK_PROPERTIES)\ns3.access-key: $(S3_ACCESS_KEY)\ns3.secret-key: $(S3_SECRET_KEY)" /docker-entrypoint.sh jobmanager'
       environmentFrom:
+        - configMapRef:
+            name: integration-jobmanager-properties-v1
         - secretRef:
-            name: flink-secrets
+            name: integration-aws-credentials-v1
       volumeMounts:
         - name: config-vol
-          mountPath: /hadoop/etc/core-site.xml
-          subPath: core-site.xml
-        - name: data-vol
-          mountPath: /data
+          mountPath: /var/config/computeaverage.conf
+          subPath: computeaverage.conf
+        - name: config-vol
+          mountPath: /var/config/computemaximum.conf
+          subPath: computemaximum.conf
       volumes:
         - name: config-vol
           configMap:
-            name: flink-config
-        - name: data-vol
-          hostPath:
-            path: /data
+            name: integration-job-parameters-v1
       resources:
         limits:
           cpu: '1'
-          memory: 300Mi
+          memory: 600Mi
         requests:
           cpu: '0.1'
-          memory: 200Mi
+          memory: 128Mi
     taskManager:
       taskSlots: 2
       annotations:
         managed: true
-      environment:
-        - name: FLINK_TM_HEAP
-          value: "400"
-        - name: FLINK_SAVEPOINTS_LOCATION
-          value: s3a://flink/2/savepoints
-        - name: FLINK_CHECKPOINTS_LOCATION
-          value: file:///var/checkpoints
-        - name: FLINK_FS_CHECKPOINTS_LOCATION
-          value: file:///var/fs_checkpoints
-        - name: FLINK_S3_ENDPOINT
-          value: http://minio-headless:9000
-        - name: FLINK_S3_PATH_STYLE_ACCESS
-          value: "true"
+      command:
+        - 'bash'
+      args:
+        - '-c'
+        - 'FLINK_PROPERTIES="$(FLINK_PROPERTIES)\ns3.access-key: $(S3_ACCESS_KEY)\ns3.secret-key: $(S3_SECRET_KEY)" /docker-entrypoint.sh taskmanager'
       environmentFrom:
+        - configMapRef:
+            name: integration-taskmanager-properties-v1
         - secretRef:
-            name: flink-secrets
-      volumeMounts:
-        - name: config-vol
-          mountPath: /hadoop/etc/core-site.xml
-          subPath: core-site.xml
-        - name: data-vol
-          mountPath: /data
-      volumes:
-        - name: config-vol
-          configMap:
-            name: flink-config
-        - name: data-vol
-          hostPath:
-            path: /data
+            name: integration-aws-credentials-v1
       resources:
         limits:
           cpu: '1'
-          memory: 500Mi
+          memory: 600Mi
         requests:
           cpu: '0.1'
-          memory: 500Mi
+          memory: 256Mi

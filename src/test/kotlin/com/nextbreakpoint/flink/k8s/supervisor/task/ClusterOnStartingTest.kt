@@ -41,8 +41,20 @@ class ClusterOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).executeAction(eq(setOf(Action.STOP)))
+        verifyNoMoreInteractions(context)
+    }
+
+    @Test
+    fun `should behave as expected when specification has changed`() {
+        given(context.hasSpecificationChanged()).thenReturn(true)
+        task.execute(context)
+        val inOrder = inOrder(context)
+        inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
+        inOrder.verify(context, times(1)).onResourceChanged()
         verifyNoMoreInteractions(context)
     }
 
@@ -52,6 +64,7 @@ class ClusterOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).setClusterHealth(eq(""))
         inOrder.verify(context, times(1)).ensureJobManagerPodExists()
@@ -64,6 +77,7 @@ class ClusterOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).setClusterHealth(eq(""))
         inOrder.verify(context, times(1)).ensureJobManagerPodExists()
@@ -77,6 +91,7 @@ class ClusterOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).setClusterHealth(eq(""))
         inOrder.verify(context, times(1)).ensureJobManagerPodExists()
@@ -91,6 +106,7 @@ class ClusterOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).setClusterHealth(eq(""))
         inOrder.verify(context, times(1)).ensureJobManagerPodExists()
@@ -121,6 +137,7 @@ class ClusterOnStartingTest {
         task.execute(context)
         val inOrder = inOrder(context)
         inOrder.verify(context, times(1)).isResourceDeleted()
+        inOrder.verify(context, times(1)).hasSpecificationChanged()
         inOrder.verify(context, times(1)).isActionPresent()
         inOrder.verify(context, times(1)).setClusterHealth(eq(""))
         inOrder.verify(context, times(1)).ensureJobManagerPodExists()

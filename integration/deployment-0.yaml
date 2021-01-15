@@ -21,40 +21,14 @@ spec:
           memory: 200Mi
     runtime:
       pullPolicy: Never
-      image: integration/flink:1.9.2
+      image: integration/flink:1.11.3
     jobManager:
       serviceMode: NodePort
       annotations:
         managed: true
-      environment:
-        - name: FLINK_JM_HEAP
-          value: "256"
-        - name: FLINK_SAVEPOINTS_LOCATION
-          value: s3a://flink/0/savepoints
-        - name: FLINK_CHECKPOINTS_LOCATION
-          value: file:///var/checkpoints
-        - name: FLINK_FS_CHECKPOINTS_LOCATION
-          value: file:///var/fs_checkpoints
-        - name: FLINK_S3_ENDPOINT
-          value: http://minio-headless:9000
-        - name: FLINK_S3_PATH_STYLE_ACCESS
-          value: "true"
       environmentFrom:
-        - secretRef:
-            name: flink-secrets
-      volumeMounts:
-        - name: config-vol
-          mountPath: /hadoop/etc/core-site.xml
-          subPath: core-site.xml
-        - name: data-vol
-          mountPath: /data
-      volumes:
-        - name: config-vol
-          configMap:
-            name: flink-config
-        - name: data-vol
-          hostPath:
-            path: /data
+        - configMapRef:
+            name: integration-jobmanager-properties-v1
       initContainers:
         - image: busybox
           command:
@@ -84,48 +58,22 @@ spec:
               memory: 64Mi
       extraPorts:
         - name: prometheus
-          containerPort: 9999
+          containerPort: 9250
           protocol: TCP
       resources:
         limits:
           cpu: '1'
-          memory: 300Mi
+          memory: 600Mi
         requests:
           cpu: '0.1'
-          memory: 200Mi
+          memory: 128Mi
     taskManager:
       taskSlots: 2
       annotations:
         managed: true
-      environment:
-        - name: FLINK_TM_HEAP
-          value: "400"
-        - name: FLINK_SAVEPOINTS_LOCATION
-          value: s3a://flink/0/savepoints
-        - name: FLINK_CHECKPOINTS_LOCATION
-          value: file:///var/checkpoints
-        - name: FLINK_FS_CHECKPOINTS_LOCATION
-          value: file:///var/fs_checkpoints
-        - name: FLINK_S3_ENDPOINT
-          value: http://minio-headless:9000
-        - name: FLINK_S3_PATH_STYLE_ACCESS
-          value: "true"
       environmentFrom:
-        - secretRef:
-            name: flink-secrets
-      volumeMounts:
-        - name: config-vol
-          mountPath: /hadoop/etc/core-site.xml
-          subPath: core-site.xml
-        - name: data-vol
-          mountPath: /data
-      volumes:
-        - name: config-vol
-          configMap:
-            name: flink-config
-        - name: data-vol
-          hostPath:
-            path: /data
+        - configMapRef:
+            name: integration-taskmanager-properties-v1
       initContainers:
         - image: busybox
           command:
@@ -155,12 +103,12 @@ spec:
               memory: 64Mi
       extraPorts:
         - name: prometheus
-          containerPort: 9999
+          containerPort: 9250
           protocol: TCP
       resources:
         limits:
           cpu: '1'
-          memory: 500Mi
+          memory: 600Mi
         requests:
           cpu: '0.1'
-          memory: 500Mi
+          memory: 256Mi

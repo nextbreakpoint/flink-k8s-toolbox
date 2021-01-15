@@ -1,0 +1,72 @@
+{{- $fullname := include "jobs.fullname" . -}}
+{{- $name := include "jobs.name" . -}}
+{{- $chart := include "jobs.chart" . -}}
+{{- $root := . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $root.Values.name }}-job-parameters-v1
+  namespace: {{ $root.Release.Namespace | quote }}
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+data:
+  computeaverage.conf: |
+    rest-port: 8081
+    source-delay-array: 250 10
+    source-delay-interval: 300000
+    console-verbosity: 1
+    job-name: computeaverage
+    disable-chaining: true
+    checkpoint-interval: 600000
+    window-size: 60000
+    window-slide: 10000
+    max-out-of-orderness: 5000
+    bucket-check-interval: 120000
+    bucket-output-path: /output/computeaverage
+    partitions: 32
+  computemaximum.conf: |
+    rest-port: 8081
+    source-delay-array: 250 10
+    source-delay-interval: 600000
+    console-verbosity: 1
+    job-name: computemaximum
+    disable-chaining: true
+    checkpoint-interval: 600000
+    window-size: 60000
+    window-slide: 10000
+    max-out-of-orderness: 5000
+    bucket-check-interval: 120000
+    bucket-output-path: /output/computemaximum
+    partitions: 32
+  computeaverage-with-limit.conf: |
+    rest-port: 8081
+    source-delay-array: 250 10
+    source-delay-interval: 600000
+    source-limit: 25
+    console-verbosity: 1
+    job-name: computemaximum
+    disable-chaining: true
+    checkpoint-interval: 600000
+    window-size: 60000
+    window-slide: 10000
+    max-out-of-orderness: 5000
+    bucket-check-interval: 120000
+    bucket-output-path: /output/computemaximum
+    partitions: 32
+  computemaximum-with-limit.conf: |
+    rest-port: 8081
+    source-delay-array: 250 10
+    source-delay-interval: 600000
+    source-limit: 25
+    console-verbosity: 1
+    job-name: computemaximum
+    disable-chaining: true
+    checkpoint-interval: 600000
+    window-size: 60000
+    window-slide: 10000
+    max-out-of-orderness: 5000
+    bucket-check-interval: 120000
+    bucket-output-path: /output/computemaximum
+    partitions: 32

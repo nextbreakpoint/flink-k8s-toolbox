@@ -33,12 +33,16 @@ import kotlin.test.fail
 open class IntegrationSetup {
     companion object {
         val version = "1.4.3-beta"
-        val flinkVersion = "1.9.2"
-        val scalaVersion = "2.11"
+        val flinkVersion = "1.11.3"
+        val scalaVersion = "2.12"
         val timestamp = System.currentTimeMillis()
         val namespace = "integration"
         val port = getVariable("OPERATOR_PORT", "30000").toInt()
         val host = getVariable("OPERATOR_HOST", "localhost")
+        val s3Endpoint = getVariable("S3_ENDPOINT", "http://minio-headless:9000")
+        val s3PathStyleAccess = getVariable("S3_PATH_STYLE_ACCESS", "true")
+        val s3AccessKey = getVariable("S3_ACCESS_KEY", "minioaccesskey")
+        val s3SecretKey = getVariable("S3_SECRET_KEY", "miniosecretkey")
         val mapTypeToken = object : TypeToken<Map<String, Any>>() {}
         val clusterSpecTypeToken = object : TypeToken<V1FlinkClusterSpec>() {}
         val clusterStatusTypeToken = object : TypeToken<V1FlinkClusterStatus>() {}
@@ -57,6 +61,7 @@ open class IntegrationSetup {
             deleteNamespace()
             buildDockerImages()
             createNamespace()
+            installCharts()
             installMinio()
             waitForMinio()
             createBucket()
@@ -73,6 +78,7 @@ open class IntegrationSetup {
             TimeUnit.SECONDS.sleep(5)
             uninstallOperator()
             uninstallMinio()
+            uninstallCharts()
             removeFinalizers()
             TimeUnit.SECONDS.sleep(5)
             deleteNamespace()
@@ -117,7 +123,6 @@ open class IntegrationSetup {
             println("Building job image...")
             val jobBuildArgs = listOf(
                 "--build-arg", "repository=integration/flinkctl", "--build-arg", "version=$version"
-
             )
             if (buildDockerImage(path = "integration/jobs", name = "integration/jobs:latest", args = jobBuildArgs) != 0) {
                 fail("Can't build job image")
@@ -126,10 +131,29 @@ open class IntegrationSetup {
             buildDockerImages = false
         }
 
+        fun installCharts() {
+            println("Installing jobs chart...")
+            val args = listOf("--set=s3AccessKey=$s3AccessKey,s3SecretKey=$s3SecretKey,s3Endpoint=$s3Endpoint,s3PathStyleAccess=$s3PathStyleAccess")
+            if (installHelmChart(namespace = namespace, name = "jobs", path = "integration/helm/jobs", args = args, print = false) != 0) {
+                if (upgradeHelmChart(namespace = namespace, name = "jobs", path = "integration/helm/jobs", args = args, print = false) != 0) {
+                    fail("Can't install or upgrade Helm chart")
+                }
+            }
+            println("Jobs chart installed")
+        }
+
+        fun uninstallCharts() {
+            println("Uninstalling jobs chart...")
+            if (uninstallHelmChart(namespace = namespace, name = "jobs") != 0) {
+                println("Can't uninstall Helm chart")
+            }
+            println("Jobs chart uninstalled")
+        }
+
         fun installMinio() {
             println("Installing Minio...")
-            if (installHelmChart(namespace = namespace, name = "minio", path = "integration/minio", args = listOf()) != 0) {
-                if (upgradeHelmChart(namespace = namespace, name = "minio", path = "integration/minio", args = listOf()) != 0) {
+            if (installHelmChart(namespace = namespace, name = "minio", path = "integration/helm/minio", args = listOf()) != 0) {
+                if (upgradeHelmChart(namespace = namespace, name = "minio", path = "integration/helm/minio", args = listOf()) != 0) {
                     fail("Can't install or upgrade Helm chart")
                 }
             }
@@ -156,7 +180,7 @@ open class IntegrationSetup {
 
         fun createBucket() {
             println("Creating bucket...")
-            if (createBucket(namespace = namespace, bucketName = "flink") != 0) {
+            if (createBucket(namespace = namespace, bucketName = "nextbreakpoint-integration") != 0) {
                 fail("Can't create bucket")
             }
             println("Bucker created")
@@ -200,7 +224,7 @@ open class IntegrationSetup {
             }
             println("Operator installed")
             println("Starting operator...")
-            if (scaleOperator(namespace = namespace, replicas = 1) != 0) {
+            if (scaleOperator(namespace = namespace, replicas = 2) != 0) {
                 fail("Can't scale the operator")
             }
             awaitUntilAsserted(timeout = 60) {
@@ -291,21 +315,11 @@ open class IntegrationSetup {
 
         fun installResources() {
             println("Install resources...")
-            if (createResources(namespace = namespace, path = "integration/flink-config.yaml") != 0) {
-                if (replaceResources(namespace = namespace, path = "integration/flink-config.yaml") != 0) {
-                    fail("Can't create configmap")
-                }
-            }
-            if (createResources(namespace = namespace, path = "integration/flink-secrets.yaml") != 0) {
-                if (replaceResources(namespace = namespace, path = "integration/flink-secrets.yaml") != 0) {
-                    fail("Can't create secrets")
-                }
-            }
-            if (createResources(namespace = namespace, path = "integration/sample-data.yaml") != 0) {
-                if (replaceResources(namespace = namespace, path = "integration/sample-data.yaml") != 0) {
-                    fail("Can't create data")
-                }
-            }
+//            if (createResources(namespace = namespace, path = "integration/sample-data.yaml") != 0) {
+//                if (replaceResources(namespace = namespace, path = "integration/sample-data.yaml") != 0) {
+//                    fail("Can't create data")
+//                }
+//            }
             println("Resources installed")
         }
 
@@ -894,7 +908,7 @@ open class IntegrationSetup {
             return executeCommand(command)
         }
 
-        private fun installHelmChart(namespace: String, name: String, path: String, args: List<String>? = emptyList()): Int {
+        private fun installHelmChart(namespace: String, name: String, path: String, args: List<String>? = emptyList(), print: Boolean = false): Int {
             val command = listOf(
                 "helm",
                 "install",
@@ -903,10 +917,10 @@ open class IntegrationSetup {
                 name,
                 path
             ).plus(args?.asSequence().orEmpty())
-            return executeCommand(command)
+            return executeCommand(command, print)
         }
 
-        private fun upgradeHelmChart(namespace: String, name: String, path: String, args: List<String>? = emptyList()): Int {
+        private fun upgradeHelmChart(namespace: String, name: String, path: String, args: List<String>? = emptyList(), print: Boolean = false): Int {
             val command = listOf(
                 "helm",
                 "upgrade",
@@ -915,7 +929,7 @@ open class IntegrationSetup {
                 name,
                 path
             ).plus(args?.asSequence().orEmpty())
-            return executeCommand(command)
+            return executeCommand(command, print)
         }
 
         private fun uninstallHelmChart(namespace: String, name: String): Int {
@@ -1090,8 +1104,8 @@ open class IntegrationSetup {
             }
         }
 
-        private fun executeCommand(command: List<String>): Int {
-            println(command.joinToString(prefix = "# ", separator = " "))
+        private fun executeCommand(command: List<String>, print: Boolean = true): Int {
+            if (print) println(command.joinToString(prefix = "# ", separator = " "))
             val processBuilder = ProcessBuilder(command)
             val environment = processBuilder.environment()
             environment["KUBECONFIG"] = System.getenv("KUBECONFIG") ?: System.getProperty("user.home") + "/.kube/config"
@@ -1101,8 +1115,8 @@ open class IntegrationSetup {
             return process.waitFor()
         }
 
-        private fun executeCommand(command: List<String>, outputStream: OutputStream): Int {
-            println(command.joinToString(prefix = "# ", separator = " "))
+        private fun executeCommand(command: List<String>, outputStream: OutputStream, print: Boolean = true): Int {
+            if (print) println(command.joinToString(prefix = "# ", separator = " "))
             val processBuilder = ProcessBuilder(command)
             val environment = processBuilder.environment()
             environment["KUBECONFIG"] = System.getenv("KUBECONFIG") ?: System.getProperty("user.home") + "/.kube/config"
@@ -1116,6 +1130,10 @@ open class IntegrationSetup {
 
         private fun getVariable(name: String, defaultValue: String): String {
             return System.getenv(name) ?: defaultValue
+        }
+
+        private fun getVariable(name: String): String {
+            return System.getenv(name) ?: throw IllegalStateException("Missing required environment variable: $name")
         }
     }
 }
