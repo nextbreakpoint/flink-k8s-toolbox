@@ -1,0 +1,48 @@
+# Default values.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+name: demo
+
+s3BucketName: nextbreakpoint-demo
+s3Endpoint: http://minio-headless.minio:9000
+s3PathStyleAccess: "true"
+s3AccessKey: minioaccesskey
+s3SecretKey: miniosecretkey
+
+runtime:
+  pullPolicy: IfNotPresent
+  image: flink:1.11.3-scala_2.12-java11
+
+supervisor:
+  pullPolicy: IfNotPresent
+  rescalePolicy: JobParallelism
+  rescaleDelay: 10
+  taskTimeout: 180
+  replicas: 1
+
+jobManager:
+  serviceMode: ClusterIP
+
+taskManager:
+  taskSlots: 1
+
+jobs:
+  pullPolicy: IfNotPresent
+  image: example/jobs:latest
+  computeaverage:
+    restartPolicy: Always
+    savepointMode: Automatic
+    savepointInterval: 600
+    jobParallelism: 1
+    restartDelay: 30
+    restartTimeout: 120
+  computemaximum:
+    restartPolicy: Always
+    savepointMode: Automatic
+    savepointInterval: 600
+    jobParallelism: 1
+    restartDelay: 30
+    restartTimeout: 120
+
+taskManagers:

@@ -1,9 +1,11 @@
 # 1.4.3-beta
 
 Release notes:
-- Few bugs fixed.
-- Drop support for old versions of Flink.
+- Add properties command and args to JobManager and TaskManager.
+- Fix autoscaling issues.
+- Fix issue in restart cluster on resource changed.  
 - Update example to Flink 1.11.
+- Stop supporting old versions of Flink.
 
 # 1.4.2-beta
 

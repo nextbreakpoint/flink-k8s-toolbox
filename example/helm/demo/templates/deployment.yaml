@@ -1,0 +1,162 @@
+{{- $fullname := include "demo.fullname" . -}}
+{{- $name := include "demo.name" . -}}
+{{- $chart := include "demo.chart" . -}}
+{{- $root := . }}
+apiVersion: "nextbreakpoint.com/v1"
+kind: FlinkDeployment
+metadata:
+  name: {{ $root.Values.name | quote }}
+  namespace: {{ $root.Release.Namespace | quote }}
+  labels:
+    chart: {{ $chart }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+spec:
+  cluster:
+    {{- if $root.Values.taskManagers }}
+    taskManagers: {{ $root.Values.taskManagers }}
+    {{- end }}
+    supervisor:
+      pullPolicy: {{ $root.Values.supervisor.pullPolicy }}
+      image: nextbreakpoint/flinkctl:1.4.3-beta
+      serviceAccount: flink-supervisor
+      taskTimeout: {{ $root.Values.supervisor.taskTimeout }}
+      rescaleDelay: {{ $root.Values.supervisor.rescaleDelay }}
+      rescalePolicy: {{ $root.Values.supervisor.rescalePolicy }}
+      replicas: {{ $root.Values.supervisor.replicas }}
+      resources:
+        limits:
+          cpu: '0.5'
+          memory: 200Mi
+        requests:
+          cpu: '0.1'
+          memory: 200Mi
+    runtime:
+      pullPolicy: {{ $root.Values.runtime.pullPolicy }}
+      image: {{ $root.Values.runtime.image }}
+    jobManager:
+      serviceMode: {{ $root.Values.jobManager.serviceMode }}
+      annotations:
+        managedBy: "flinkctl"
+      command:
+        - 'bash'
+      args:
+        - '-c'
+        - 'FLINK_PROPERTIES="$(FLINK_PROPERTIES)\ns3.access-key: $(S3_ACCESS_KEY)\ns3.secret-key: $(S3_SECRET_KEY)" /docker-entrypoint.sh jobmanager'
+      environment:
+        - name: ENABLE_BUILT_IN_PLUGINS
+          value: flink-s3-fs-hadoop-1.11.3.jar
+      environmentFrom:
+        - configMapRef:
+            name: {{ $root.Values.name }}-jobmanager-properties-v1
+        - secretRef:
+            name: {{ $root.Values.name }}-aws-credentials-v1
+      extraPorts:
+        - name: prometheus
+          containerPort: 9250
+          protocol: TCP
+      volumeMounts:
+        - name: config-vol
+          mountPath: /var/config/computeaverage.conf
+          subPath: computeaverage.conf
+        - name: config-vol
+          mountPath: /var/config/computemaximum.conf
+          subPath: computemaximum.conf
+      volumes:
+        - name: config-vol
+          configMap:
+            name: {{ $root.Values.name }}-job-parameters-v1
+      resources:
+        limits:
+          cpu: '1'
+          memory: 600Mi
+        requests:
+          cpu: '0.2'
+          memory: 600Mi
+    taskManager:
+      taskSlots: {{ $root.Values.taskManager.taskSlots }}
+      annotations:
+        managedBy: "flinkctl"
+      command:
+        - 'bash'
+      args:
+        - '-c'
+        - 'FLINK_PROPERTIES="$(FLINK_PROPERTIES)\ns3.access-key: $(S3_ACCESS_KEY)\ns3.secret-key: $(S3_SECRET_KEY)" /docker-entrypoint.sh taskmanager'
+      environment:
+        - name: ENABLE_BUILT_IN_PLUGINS
+          value: flink-s3-fs-hadoop-1.11.3.jar
+      environmentFrom:
+        - configMapRef:
+            name: {{ $root.Values.name }}-taskmanager-properties-v1
+        - secretRef:
+            name: {{ $root.Values.name }}-aws-credentials-v1
+      extraPorts:
+        - name: prometheus
+          containerPort: 9250
+          protocol: TCP
+      resources:
+        limits:
+          cpu: '1'
+          memory: 2200Mi
+        requests:
+          cpu: '0.2'
+          memory: 2200Mi
+  jobs:
+    - name: computeaverage
+      spec:
+        jobParallelism: {{ $root.Values.jobs.computeaverage.jobParallelism }}
+        savepoint:
+          savepointMode: {{ $root.Values.jobs.computeaverage.savepointMode }}
+          savepointInterval: {{ $root.Values.jobs.computeaverage.savepointInterval }}
+          savepointTargetPath: s3a://{{ $root.Values.s3BucketName }}/savepoints
+        restart:
+          restartPolicy: {{ $root.Values.jobs.computeaverage.restartPolicy }}
+          restartDelay: {{ $root.Values.jobs.computeaverage.restartDelay }}
+          restartTimeout: {{ $root.Values.jobs.computeaverage.restartTimeout }}
+        bootstrap:
+          serviceAccount: flink-bootstrap
+          pullPolicy: {{ $root.Values.jobs.pullPolicy }}
+          image: {{ $root.Values.jobs.image }}
+          jarPath: /flink-jobs.jar
+          className: com.nextbreakpoint.flink.jobs.ComputeAverage
+          arguments:
+            - --JOB_PARAMETERS
+            - file:///var/config/computeaverage.conf
+            - --OUTPUT_LOCATION
+            - s3a://{{ $root.Values.s3BucketName }}
+          resources:
+            limits:
+              cpu: '0.5'
+              memory: 200Mi
+            requests:
+              cpu: '0.1'
+              memory: 200Mi
+    - name: computemaximum
+      spec:
+        jobParallelism: {{ $root.Values.jobs.computemaximum.jobParallelism }}
+        savepoint:
+          savepointMode: {{ $root.Values.jobs.computemaximum.savepointMode }}
+          savepointInterval: {{ $root.Values.jobs.computemaximum.savepointInterval }}
+          savepointTargetPath: s3a://{{ $root.Values.s3BucketName }}/savepoints
+        restart:
+          restartPolicy: {{ $root.Values.jobs.computemaximum.restartPolicy }}
+          restartDelay: {{ $root.Values.jobs.computemaximum.restartDelay }}
+          restartTimeout: {{ $root.Values.jobs.computemaximum.restartTimeout }}
+        bootstrap:
+          serviceAccount: flink-bootstrap
+          pullPolicy: {{ $root.Values.jobs.pullPolicy }}
+          image: {{ $root.Values.jobs.image }}
+          jarPath: /flink-jobs.jar
+          className: com.nextbreakpoint.flink.jobs.ComputeMaximum
+          arguments:
+            - --JOB_PARAMETERS
+            - file:///var/config/computemaximum.conf
+            - --OUTPUT_LOCATION
+            - s3a://{{ $root.Values.s3BucketName }}
+          resources:
+            limits:
+              cpu: '0.5'
+              memory: 200Mi
+            requests:
+              cpu: '0.1'
+              memory: 200Mi

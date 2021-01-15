@@ -1,5 +1,7 @@
-FROM busybox AS build
-RUN wget -O flink-jobs.jar https://github.com/nextbreakpoint/flink-workshop/releases/download/v1.2.3/com.nextbreakpoint.flinkworkshop-1.2.3.jar
+FROM maven:3.6.3-adoptopenjdk-11 AS build
+COPY demo /demo
+WORKDIR /demo
+RUN mvn clean package -t toolchains.xml -DincludeFlinkRuntime=false
 
 FROM nextbreakpoint/flinkctl:1.4.3-beta
-COPY --from=build /flink-jobs.jar /flink-jobs.jar
+COPY --from=build /demo/target/demo-1.0.0-shaded.jar /flink-jobs.jar
