@@ -1,14 +1,26 @@
 {
   "jobParallelism": 1,
+  "savepoint": {
+    "savepointMode": "Manual",
+    "savepointInterval": 0,
+    "savepointTargetPath": "s3a://nextbreakpoint-integration/savepoints"
+  },
+  "restart": {
+    "restartPolicy": "Always",
+    "restartDelay": 60,
+    "restartTimeout": 120
+  },
   "bootstrap": {
     "serviceAccount": "flink-bootstrap",
     "pullPolicy": "Never",
     "image": "integration/jobs:latest",
     "jarPath": "/flink-jobs.jar",
-    "className": "com.nextbreakpoint.flink.jobs.stream.TestJob",
+    "className": "com.nextbreakpoint.flink.jobs.ComputeAverage",
     "arguments": [
-      "--CONSOLE_OUTPUT",
-      "false"
+      "--JOB_PARAMETERS",
+      "/var/config/computeaverage.conf",
+      "--OUTPUT_LOCATION",
+      "s3a://nextbreakpoint-integration"
     ],
     "resources": {
       "limits": {
@@ -20,15 +32,5 @@
         "memory": "200Mi"
       }
     }
-  },
-  "savepoint": {
-    "savepointMode": "Manual",
-    "savepointInterval": 0,
-    "savepointTargetPath": "s3a://flink/0/savepoints"
-  },
-  "restart": {
-    "restartPolicy": "Always",
-    "restartDelay": 60,
-    "restartTimeout": 120
   }
 }
