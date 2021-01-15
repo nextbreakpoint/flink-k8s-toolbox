@@ -15,6 +15,11 @@ class ClusterOnStarting : Task<ClusterManager>() {
             return
         }
 
+        if (manager.hasSpecificationChanged()) {
+            manager.onResourceChanged()
+            return
+        }
+
         if (manager.isActionPresent()) {
             manager.executeAction(actions)
             return
