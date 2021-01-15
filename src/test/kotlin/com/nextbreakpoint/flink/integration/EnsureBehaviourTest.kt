@@ -48,6 +48,12 @@ class EnsureBehaviourTest : IntegrationSetup() {
         @AfterAll
         @JvmStatic
         fun teardown() {
+            describeResources()
+            printOperatorLogs()
+            printSupervisorLogs()
+            printJobManagerLogs()
+            printTaskManagerLogs()
+            printBootstrapJobLogs()
             IntegrationSetup.teardown()
         }
     }
@@ -56,18 +62,6 @@ class EnsureBehaviourTest : IntegrationSetup() {
     fun failFast() {
         if (stopTests) {
             fail("Tests aborted")
-        }
-    }
-
-    @AfterEach
-    fun printInfo() {
-        if (!stopTests) {
-            printSupervisorLogs()
-            printOperatorLogs()
-            printJobManagerLogs()
-            printTaskManagerLogs()
-            printBootstrapJobLogs()
-            describeResources()
         }
     }
 

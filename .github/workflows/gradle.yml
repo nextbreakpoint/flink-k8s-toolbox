@@ -1,4 +1,4 @@
-name: Flink Operator CI
+name: Flink Kubernetes Toolbox
 on:
   push:
     branches:
