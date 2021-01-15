@@ -19,11 +19,13 @@ This is the list of the main features implemented in the toolbox:
 - Support for batch and stream jobs
 - Support for cluster without jobs (bare cluster)
 - Support for cluster with one or more jobs
-- Support scaling based on standard Kubernetes scale interface
+- Support cluster and job rescale via Kubernetes scale interface
+- Support autoscaling based on custom metrics (compatible with HPA)
 - Support for init containers and side containers for JobManagers and TaskManagers
 - Support for mounted volumes (same as volumes in Pod specification)
 - Support for environment variables, including variables from ConfigMap or Secret
 - Support for resource requirements (for all components)
+- Support for user defined entrypoint
 - Support for user defined annotations
 - Support for user defined container ports
 - Support for pull secrets and private registries
@@ -74,7 +76,7 @@ The dependencies between resources are represented in the following graph:
 ![Resource dependencies](/graphs/flink-operator.png "Resource dependencies")
 
 
-## Get started 
+## Get started
 
 Download the Docker image with flinkctl command from Docker Hub:
 
@@ -110,7 +112,7 @@ https://github.com/nextbreakpoint/flink-k8s-toolbox/issues
 
 The toolbox is distributed under the terms of BSD 3-Clause License.
 
-    Copyright (c) 2020, Andrea Medeghini
+    Copyright (c) 2019-2021, Andrea Medeghini
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without

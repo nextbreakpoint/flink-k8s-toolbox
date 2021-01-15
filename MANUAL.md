@@ -2,13 +2,13 @@
 
 This document describes how to install and use the Flink Kubernetes Toolbox.
 
-Currently, Flink Kubernetes Toolbox requires Kubernetes 1.18 or later, and it supports Apache Flink 1.9 or later.
+Currently, Flink Kubernetes Toolbox requires Kubernetes 1.18 or later, and it supports Apache Flink 1.11 or later.
 
 ## Generate SSL certificates
 
 The toolbox provides client and server components. The client component communicates to the server component over HTTP.
-To ensure that the communication is secure, flinkctl uses HTTPS and SSL certificates for authentication. 
-The HTTPS protocol is optional, and flinkctl can use just HTTP, but in that case it is recommended to restrict the access to port 4444. 
+To ensure that the communication is secure, flinkctl uses HTTPS and SSL certificates for authentication.
+The HTTPS protocol is optional, and flinkctl can use just HTTP, but in that case it is recommended to restrict the access to port 4444.
 
 Execute the script secrets.sh to generate self-signed certificates and keystores to use with the operator:
 
@@ -46,11 +46,11 @@ Install the CRDs (Custom Resource Definitions) with Helm command:
 
 Install the default roles with Helm command:
 
-    helm install flink-k8s-toolbox-roles helm/flink-k8s-toolbox-roles --namespace flink-operator --set observedNamespace=flink-jobs
+    helm install flink-k8s-toolbox-roles helm/flink-k8s-toolbox-roles --namespace flink-operator --set targetNamespace=flink-jobs
 
 Install the operator and enable SSL with Helm command:
 
-    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink-operator --set observedNamespace=flink-jobs --set secretName=flink-operator-ssl
+    helm install flink-k8s-toolbox-operator helm/flink-k8s-toolbox-operator --namespace flink-operator --set targetNamespace=flink-jobs --set secretName=flink-operator-ssl
 
 Remove "--set secretName=flink-operator-ssl" if you don't want to enable SSL.
 
@@ -58,7 +58,7 @@ Scale the operator with command:
 
     kubectl -n flink-operator scale deployment flink-operator --replicas=1
 
-Use more than one replica to enable HA (High Availability). 
+Increase the number of replicas to enable HA (High Availability).
 
 Alternatively, you can pass the argument --set replicas=1 when installing the operator with Helm.
 
@@ -136,7 +136,7 @@ Create a copy of your FlinkJob resources:
 
 Upgrade the default roles using Helm:
 
-    helm upgrade flink-k8s-toolbox-roles --install helm/flink-k8s-toolbox-roles --namespace flink-operator --set observedNamespace=flink-jobs
+    helm upgrade flink-k8s-toolbox-roles --install helm/flink-k8s-toolbox-roles --namespace flink-operator --set targetNamespace=flink-jobs
 
 Upgrade the CRDs using Helm:
 
@@ -148,7 +148,7 @@ interested of restoring the latest savepoint in the jobs resource. The savepoint
 
 Finally, upgrade and restart the operator using Helm:
 
-    helm upgrade flink-k8s-toolbox-operator --install helm/flink-k8s-toolbox-operator --namespace flink-operator --set observedNamespace=flink-jobs --set secretName=flink-operator-ssl --set replicas=1
+    helm upgrade flink-k8s-toolbox-operator --install helm/flink-k8s-toolbox-operator --namespace flink-operator --set targetNamespace=flink-jobs --set secretName=flink-operator-ssl --set replicas=1
 
 ## Custom resources and schemas
 
@@ -178,79 +178,152 @@ Pull the flinkctl's Docker image with command:
 
     docker pull nextbreakpoint/flinkctl:1.4.3-beta
 
-Create a new Docker image using flinkctl as base image. This image will be used to run the jobs, 
+Create a new Docker image using flinkctl as base image. This image will be used to run the jobs,
 therefore the image must contain the code of a Flink application package into a single JAR file:
 
     FROM nextbreakpoint/flinkctl:1.4.3-beta
     COPY flink-jobs.jar /flink-jobs.jar
 
-If you don't have the JAR of a Flink application yet, you can try this:
-
-    FROM busybox AS build
-    RUN wget -O flink-jobs.jar https://github.com/nextbreakpoint/flink-workshop/releases/download/v1.2.3/com.nextbreakpoint.flinkworkshop-1.2.3.jar
-    FROM nextbreakpoint/flinkctl:1.4.3-beta
-    COPY --from=build /flink-jobs.jar /flink-jobs.jar
-
 Build the Docker image with command:
 
-    docker build -t jobs:latest .
+    docker build -t demo/jobs:latest .
+
+If you don't have the JAR of a Flink application yet, you can try using the demo:
+
+    docker build -t demo/jobs:latest example/jobs
 
 Pull the Flink's Docker image with command:
 
-    docker pull flink:1.9.2
+    docker pull flink:1.11.3-scala_2.12-java11
 
-Please note that you can use any image of Flink which implements the same entrypoint for running JobManager and TaskManager.
+Please note that you can use other images of Flink. The image must have an entrypoint for running JobManager and TaskManager.
 
-Create a flink-config.yaml file (this is just an example):
+Install Minio to simulate a distributed filesystem base on AWS S3 API.
+
+    helm repo add minio https://helm.min.io/
+    helm repo update
+    helm install minio minio/minio --namespace minio --set accessKey=minioaccesskey,secretKey=miniosecretkey,persistence.size=20Gi,service.port=9000
+
+Expose Minio port to host:
+
+    kubectl -n minio expose service minio --name=minio-external --type=LoadBalancer --external-ip=$(minikube ip) --port=9000 --target-port=9000
+
+Create the bucket with AWS CLI:
+
+    export AWS_ACCESS_KEY_ID=minioaccesskey  
+    export AWS_SECRET_ACCESS_KEY=miniosecretkey
+    aws s3 mb s3://nextbreakpoint-demo --endpoint-url http://$(minikube ip):9000
+
+Create a file flinkproperties.yaml for the JobManager and TaskManager configuration:
+
+    ---
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: demo-jobmanager-properties-v1
+    data:
+      FLINK_PROPERTIES: |
+        heartbeat.timeout: 90000
+        heartbeat.interval: 15000
+        jobmanager.memory.jvm-overhead.min: 64mb
+        jobmanager.memory.jvm-metaspace.size: 192mb
+        jobmanager.memory.off-heap.size: 64mb
+        jobmanager.memory.process.size: 600mb
+        jobmanager.memory.flink.size: 256mb
+        metrics.reporters: prometheus
+        metrics.reporter.prometheus.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+        metrics.reporter.prometheus.port: 9250
+        metrics.latency.granularity: operator
+        state.backend: filesystem
+        state.savepoints.dir: s3a://nextbreakpoint-demo/savepoints
+        state.checkpoints.dir: s3a://nextbreakpoint-demo/checkpoints
+        s3.connection.maximum: 200
+        s3.access-key: minioaccesskey
+        s3.secret-key: miniosecretkey
+        s3.endpoint: http://minio.minio:9000
+        s3.path.style.access: true
+    ---
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: demo-taskmanager-properties-v1
+    data:
+      FLINK_PROPERTIES: |
+        heartbeat.timeout: 90000
+        heartbeat.interval: 15000
+        taskmanager.memory.jvm-overhead.min: 192mb
+        taskmanager.memory.jvm-metaspace.size: 256mb
+        taskmanager.memory.framework.heap.size: 128mb
+        taskmanager.memory.framework.off-heap.size: 128mb
+        taskmanager.memory.process.size: 2200mb
+        taskmanager.memory.flink.size: 1600mb
+        taskmanager.memory.network.fraction: 0.1
+        taskmanager.memory.managed.fraction: 0.1
+        metrics.reporters: prometheus
+        metrics.reporter.prometheus.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+        metrics.reporter.prometheus.port: 9250
+        metrics.latency.granularity: operator
+        state.backend: filesystem
+        state.savepoints.dir: s3a://nextbreakpoint-demo/savepoints
+        state.checkpoints.dir: s3a://nextbreakpoint-demo/checkpoints
+        s3.connection.maximum: 200
+        s3.access-key: minioaccesskey
+        s3.secret-key: miniosecretkey
+        s3.endpoint: http://minio.minio:9000
+        s3.path.style.access: true
+
+Deploy the resources with command:
+
+    kubectl -n flink-jobs apply -f flinkproperties.yaml
+
+Create a file jobparameters.yaml for the jobs configuration:
 
     apiVersion: v1
     kind: ConfigMap
     metadata:
-        name: flink-config
+      name: demo-job-parameters-v1
     data:
-        core-site.xml: |
-            <?xml version="1.0" encoding="UTF-8"?>
-            <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-            <configuration>
-            <property>
-            <name>fs.s3.impl</name>
-            <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
-            </property>
-            <property>
-            <name>fs.s3a.buffer.dir</name>
-            <value>/tmp</value>
-            </property>
-            <property>
-            <name>fs.s3a.aws.credentials.provider</name>
-            <value>com.amazonaws.auth.EnvironmentVariableCredentialsProvider</value>
-            </property>
-            </configuration>
+      computeaverage.conf: |
+        rest-port: 8081
+        source-delay-array: 250 10
+        source-delay-interval: 300000
+        source-limit: 0
+        console-verbosity: 1
+        job-name: computeaverage
+        disable-chaining: true
+        checkpoint-interval: 600000
+        window-size: 60000
+        window-slide: 10000
+        max-out-of-orderness: 5000
+        bucket-check-interval: 120000
+        bucket-output-path: /output/computeaverage
+        partitions: 32
+      computemaximum.conf: |
+        rest-port: 8081
+        source-delay-array: 250 10
+        source-delay-interval: 300000
+        source-limit: 0
+        console-verbosity: 1
+        job-name: computemaximum
+        disable-chaining: true
+        checkpoint-interval: 600000
+        window-size: 60000
+        window-slide: 10000
+        max-out-of-orderness: 5000
+        bucket-check-interval: 120000
+        bucket-output-path: /output/computemaximum
+        partitions: 32
 
-Deploy the config map:
+Deploy the resources with command:
 
-    kubectl -n flink-jobs apply -f flink-config.yaml 
+    kubectl -n flink-jobs apply -f jobparameters.yaml
 
-Create a flink-secrets.yaml file (this is just an example):
-
-    apiVersion: v1
-    kind: Secret
-    metadata:
-        name: flink-secrets
-    type: Opaque
-    data:
-        AWS_ACCESS_KEY_ID: "your-base64-encoded-access-key"
-        AWS_SECRET_KEY: "your-base64-encoded-secret-key"
-
-Deploy the secret:
-
-    kubectl -n flink-jobs apply -f flink-secrets.yaml 
-
-Create a file deployment.yaml:
+Create a deployment.yaml file to describe cluster and jobs:
 
     apiVersion: "nextbreakpoint.com/v1"
     kind: FlinkDeployment
     metadata:
-      name: cluster-1
+      name: "demo"
     spec:
       cluster:
         supervisor:
@@ -259,235 +332,269 @@ Create a file deployment.yaml:
           serviceAccount: flink-supervisor
           taskTimeout: 180
           rescaleDelay: 10
+          rescalePolicy: JobParallelism
           replicas: 1
           resources:
             limits:
-              cpu: '0.05'
+              cpu: '0.5'
               memory: 200Mi
             requests:
-              cpu: '0.05'
+              cpu: '0.1'
               memory: 200Mi
         runtime:
           pullPolicy: IfNotPresent
-          image: flink:1.9.2
+          image: flink:1.11.3-scala_2.12-java11
         jobManager:
-          serviceMode: NodePort
+          serviceMode: ClusterIP
           annotations:
             managedBy: "flinkctl"
           environment:
-          - name: FLINK_JM_HEAP
-            value: "256"
+            - name: ENABLE_BUILT_IN_PLUGINS
+              value: flink-s3-fs-hadoop-1.11.3.jar;flink-s3-fs-presto-1.11.3.jar
           environmentFrom:
-          - secretRef:
-              name: flink-secrets
+            - configMapRef:
+                name: demo-jobmanager-properties-v1
           volumeMounts:
             - name: config-vol
-              mountPath: /hadoop/etc/core-site.xml
-              subPath: core-site.xml
+              mountPath: /var/config/computeaverage.conf
+              subPath: computeaverage.conf
+            - name: config-vol
+              mountPath: /var/config/computemaximum.conf
+              subPath: computemaximum.conf
           volumes:
             - name: config-vol
               configMap:
-                name: flink-config
+                name: demo-job-parameters-v1
           extraPorts:
             - name: prometheus
-              containerPort: 9999
+              containerPort: 9250
               protocol: TCP
           resources:
             limits:
               cpu: '1'
-              memory: 300Mi
-            requests:
-              cpu: '0.2'
-              memory: 200Mi
-        taskManager:
-          taskSlots: 2
-          annotations:
-            managedBy: "flinkctl"
-          environment:
-          - name: FLINK_TM_HEAP
-            value: "1024"
-          environmentFrom:
-          - secretRef:
-              name: flink-secrets
-          volumeMounts:
-            - name: config-vol
-              mountPath: /hadoop/etc/core-site.xml
-              subPath: core-site.xml
-          volumes:
-            - name: config-vol
-              configMap:
-                name: flink-config
-          extraPorts:
-            - name: prometheus
-              containerPort: 9999
-              protocol: TCP
-          resources:
-            limits:
-              cpu: '1'
-              memory: 1100Mi
+              memory: 600Mi
             requests:
               cpu: '0.2'
               memory: 600Mi
+        taskManager:
+          taskSlots: 1
+          annotations:
+            managedBy: "flinkctl"
+          environment:
+            - name: ENABLE_BUILT_IN_PLUGINS
+              value: flink-s3-fs-hadoop-1.11.3.jar;flink-s3-fs-presto-1.11.3.jar
+          environmentFrom:
+            - configMapRef:
+                name: demo-taskmanager-properties-v1
+          extraPorts:
+            - name: prometheus
+              containerPort: 9250
+              protocol: TCP
+          resources:
+            limits:
+              cpu: '1'
+              memory: 2200Mi
+            requests:
+              cpu: '0.2'
+              memory: 2200Mi
       jobs:
-        - name: job-1
-          spec:
-            jobParallelism: 2
-            savepoint:
-              savepointMode: Automatic
-              savepointInterval: 3600
-              savepointTargetPath: s3a://flink/cluster-1/job-1/savepoints
-            restart:
-              restartPolicy: OnlyIfFailed
-              restartDelay: 60
-              restartTimeout: 120
-            bootstrap:
-              serviceAccount: flink-bootstrap
-              pullPolicy: IfNotPresent
-              image: jobs:latest
-              jarPath: /flink-jobs.jar
-              className: com.nextbreakpoint.flink.jobs.stream.TestJob
-              arguments:
-                - --CONSOLE_OUTPUT
-                - "true"
-              resources:
-                limits:
-                  cpu: '0.05'
-                  memory: 200Mi
-                requests:
-                  cpu: '0.05'
-                  memory: 200Mi
-        - name: job-2
+        - name: computeaverage
           spec:
             jobParallelism: 1
             savepoint:
               savepointMode: Automatic
-              savepointInterval: 0
-              savepointTargetPath: s3a://flink/cluster-1/job-2/savepoints
+              savepointInterval: 600
+              savepointTargetPath: s3a://nextbreakpoint-demo/savepoints
             restart:
               restartPolicy: Always
-              restartDelay: 60
+              restartDelay: 30
               restartTimeout: 120
             bootstrap:
               serviceAccount: flink-bootstrap
               pullPolicy: IfNotPresent
-              image: jobs:latest
+              image: demo/jobs:latest
               jarPath: /flink-jobs.jar
-              className: com.nextbreakpoint.flink.jobs.stream.TestJob
+              className: com.nextbreakpoint.flink.jobs.ComputeAverage
               arguments:
-                - --CONSOLE_OUTPUT
-                - "true"
+                - --JOB_PARAMETERS
+                - file:///var/config/computemaximum.conf
+                - --OUTPUT_LOCATION
+                - s3p://nextbreakpoint-demo
               resources:
                 limits:
-                  cpu: '0.05'
+                  cpu: '0.5'
                   memory: 200Mi
                 requests:
-                  cpu: '0.05'
+                  cpu: '0.1'
                   memory: 200Mi
-        - name: job-3
+        - name: computemaximum
           spec:
             jobParallelism: 1
             savepoint:
-              savepointMode: Manual
-              savepointInterval: 0
-              savepointTargetPath: s3a://flink/cluster-1/job-3/savepoints
+              savepointMode: Automatic
+              savepointInterval: 600
+              savepointTargetPath: s3a://nextbreakpoint-demo/savepoints
             restart:
-              restartPolicy: Never
-              restartDelay: 60
+              restartPolicy: Always
+              restartDelay: 30
               restartTimeout: 120
             bootstrap:
               serviceAccount: flink-bootstrap
               pullPolicy: IfNotPresent
-              image: jobs:latest
+              image: demo/jobs:latest
               jarPath: /flink-jobs.jar
-              className: com.nextbreakpoint.flink.jobs.stream.TestJob
+              className: com.nextbreakpoint.flink.jobs.ComputeMaximum
               arguments:
-                - --CONSOLE_OUTPUT
-                - "true"
+                - --JOB_PARAMETERS
+                - file:///var/config/computemaximum.conf
+                - --OUTPUT_LOCATION
+                - s3p://nextbreakpoint-demo
               resources:
                 limits:
-                  cpu: '0.05'
+                  cpu: '0.5'
                   memory: 200Mi
                 requests:
-                  cpu: '0.05'
+                  cpu: '0.1'
                   memory: 200Mi
 
-Create the resource with command:
+Deploy the resource with command:
 
     kubectl -n flink-jobs apply -f deployment.yaml
 
-At this point, the operator should create a bunch of derived resources, including one FlinkCluster resource, three FlinkJob resources,  
-one Service resource, and several Pods resources. The name of the resources contains the name of the cluster, which is the same as the name of the deployment.   
-Wait few minutes until the operator creates the supervisor of the cluster, deploys JobManager and TaskManagers, and starts the Flink jobs.
+Wait few minutes until the operator creates the supervisor of the cluster, deploys the JobManager, creates the required TaskManagers, and starts the jobs. The operator should create these derived resources: one FlinkCluster resource, two FlinkJob resources, one Service resource, and several Pod resources.
 
-You can follow what the operator is doing:
+You can see what the operator is doing tailing the logs:
 
     kubectl -n flink-operator logs -f --tail=-1 -l app=flink-operator
 
-    2020-12-16 09:57:40 INFO CacheAdapter - Starting watch loop for resources: FlinkDeployments
-    2020-12-16 09:57:40 INFO CacheAdapter - Starting watch loop for resources: FlinkClusters
-    2020-12-16 09:57:40 INFO CacheAdapter - Starting watch loop for resources: FlinkJobs
-    2020-12-16 09:57:40 INFO CacheAdapter - Starting watch loop for resources: Deployments
-    2020-12-16 09:57:40 INFO CacheAdapter - Starting watch loop for resources: Pods
-    2020-12-16 09:57:40 INFO OperatorVerticle - HTTPS with client authentication is enabled
-    [vert.x-eventloop-thread-0] INFO io.vertx.ext.web.handler.impl.LoggerHandlerImpl - 172.17.0.1 - - [Wed, 16 Dec 2020 09:57:57 GMT] "GET /version HTTP/1.1" 200 0 "-" "kube-probe/1.18"
+    [main] INFO io.kubernetes.client.extended.leaderelection.LeaderElector - Successfully acquired lease, became leader
+    [leader-elector-hook-worker-0] INFO io.kubernetes.client.extended.controller.LeaderElectingController - Lease acquired, starting controller..
+    2021-01-15 09:45:01 INFO Operator - Add finalizer: deployment demo
+    2021-01-15 09:45:21 INFO Operator - Job demo-computeaverage created
+    2021-01-15 09:45:21 INFO Operator - Job demo-computemaximum created
+    ...
 
-You can follow what the supervisor is doing:
+You can see what the supervisor is doing tailing the logs:
 
     kubectl -n flink-jobs logs -f --tail=-1 -l role=supervisor
 
-    2020-12-16 09:57:50 INFO CacheAdapter - Starting watch loop for resources: Services
-    2020-12-16 09:57:50 INFO CacheAdapter - Starting watch loop for resources: FlinkJobs
-    2020-12-16 09:57:50 INFO CacheAdapter - Starting watch loop for resources: Jobs
-    2020-12-16 09:57:50 INFO CacheAdapter - Starting watch loop for resources: Pods
-    2020-12-16 09:57:51 WARNING SupervisorVerticle - HTTPS not enabled!
-    2020-12-16 09:57:50 INFO CacheAdapter - Starting watch loop for resources: FlinkClusters
-    2020-12-16 09:57:55 INFO Supervisor cluster-1 - Resource version: 4499685
-    2020-12-16 09:57:55 INFO Supervisor cluster-1 - Supervisor status: Unknown
-    2020-12-16 09:57:55 INFO Supervisor cluster-1 - Add finalizer
-    2020-12-16 09:57:56 INFO Supervisor cluster-1-job-1 - Resource version: 4499646
-    2020-12-16 09:57:56 INFO Supervisor cluster-1-job-1 - Supervisor status: Unknown
-    2020-12-16 09:57:56 INFO Supervisor cluster-1-job-1 - Add finalizer
+    [main] INFO io.kubernetes.client.extended.leaderelection.LeaderElector - Successfully acquired lease, became leader
+    [leader-elector-hook-worker-0] INFO io.kubernetes.client.extended.controller.LeaderElectingController - Lease acquired, starting controller..
+    2021-01-15 15:33:25 INFO Supervisor demo - Resource version: 562190
+    2021-01-15 15:33:25 INFO Supervisor demo - Supervisor status: Unknown
+    2021-01-15 15:33:25 INFO Supervisor demo - Add finalizer
+    2021-01-15 15:33:25 INFO Supervisor demo-computeaverage - Resource version: 562178
+    2021-01-15 15:33:25 INFO Supervisor demo-computeaverage - Supervisor status: Unknown
+    2021-01-15 15:33:25 INFO Supervisor demo-computeaverage - Add finalizer
+    2021-01-15 15:33:25 INFO Supervisor demo-computemaximum - Resource version: 562179
+    2021-01-15 15:33:25 INFO Supervisor demo-computemaximum - Supervisor status: Unknown
+    2021-01-15 15:33:25 INFO Supervisor demo-computemaximum - Add finalizer
+    2021-01-15 15:33:30 INFO Supervisor demo - Resource version: 562238
+    2021-01-15 15:33:30 INFO Supervisor demo - Cluster initialised
+    2021-01-15 15:33:30 INFO Supervisor demo-computeaverage - Resource version: 562240
+    2021-01-15 15:33:30 INFO Supervisor demo-computemaximum - Resource version: 562242
+    2021-01-15 15:33:35 INFO Supervisor demo - Resource version: 562249
+    2021-01-15 15:33:35 INFO Supervisor demo - Supervisor status: Starting
+    2021-01-15 15:33:35 INFO Supervisor demo - JobManager pod created
+    2021-01-15 15:33:35 INFO Supervisor demo-computeaverage - Resource version: 562251
+    2021-01-15 15:33:35 INFO Supervisor demo-computeaverage - Supervisor status: Starting
+    2021-01-15 15:33:35 INFO Supervisor demo-computemaximum - Resource version: 562253
+    2021-01-15 15:33:35 INFO Supervisor demo-computemaximum - Supervisor status: Starting
+    2021-01-15 15:33:40 INFO Supervisor demo - Resource version: 562262
+    2021-01-15 15:33:40 INFO Supervisor demo - JobManager service created
+    2021-01-15 15:33:45 INFO Supervisor demo - Resource version: 562280
+    2021-01-15 15:33:45 INFO Supervisor demo - Cluster started
+    2021-01-15 15:33:50 INFO Supervisor demo - Resource version: 562288
+    2021-01-15 15:33:50 INFO Supervisor demo - Supervisor status: Started
+    2021-01-15 15:33:50 INFO Supervisor demo - Detected change: TaskManagers (2/0)
+    2021-01-15 15:33:51 INFO Supervisor demo-computeaverage - Resource version: 562290
+    2021-01-15 15:33:51 INFO Supervisor demo-computemaximum - Resource version: 562291
+    2021-01-15 15:33:56 INFO Supervisor demo - Resource version: 562298
+    2021-01-15 15:33:56 INFO Supervisor demo - TaskManagers pod created (taskmanager-demo-hrf8l)
+    2021-01-15 15:33:56 INFO Supervisor demo - TaskManagers pod created (taskmanager-demo-lvmzt)
+    2021-01-15 15:34:01 INFO Supervisor demo - Resource version: 562310
+    2021-01-15 15:34:06 INFO Supervisor demo - Resource version: 562327
+    2021-01-15 15:34:06 INFO Supervisor demo-computeaverage - Bootstrap job created
+    2021-01-15 15:34:06 INFO Supervisor demo-computemaximum - Bootstrap job created
+    2021-01-15 15:34:11 INFO Supervisor demo - Resource version: 562336
+    2021-01-15 15:34:11 INFO Supervisor demo-computeaverage - Resource version: 562339
+    2021-01-15 15:34:11 WARNING Supervisor demo-computeaverage - Job not ready yet
+    2021-01-15 15:34:11 INFO Supervisor demo-computemaximum - Resource version: 562348
+    2021-01-15 15:34:11 WARNING Supervisor demo-computemaximum - Job not ready yet
+    2021-01-15 15:34:16 WARNING Supervisor demo-computeaverage - Job not ready yet
+    2021-01-15 15:34:16 INFO Supervisor demo-computemaximum - Resource version: 562372
+    2021-01-15 15:34:16 INFO Supervisor demo-computemaximum - Job started
+    2021-01-15 15:34:21 INFO Supervisor demo-computeaverage - Resource version: 562383
+    2021-01-15 15:34:21 INFO Supervisor demo-computeaverage - Job started
+    2021-01-15 15:34:21 INFO Supervisor demo-computemaximum - Resource version: 562373
+    2021-01-15 15:34:21 INFO Supervisor demo-computemaximum - Supervisor status: Started
+    2021-01-15 15:34:26 INFO Supervisor demo-computeaverage - Resource version: 562390
+    2021-01-15 15:34:26 INFO Supervisor demo-computeaverage - Supervisor status: Started
+    2021-01-15 15:34:26 INFO Supervisor demo-computemaximum - Resource version: 562391
+    2021-01-15 15:34:31 INFO Supervisor demo-computeaverage - Resource version: 562399
+    ...
 
 You can watch the FlinkDeployment resource:
 
     kubectl -n flink-jobs get fd --watch
 
-    NAME        RESOURCE-STATUS   AGE
-    cluster-1   Updated           6m20s
+    NAME    RESOURCE-STATUS   AGE
+    demo    Updated           6m20s
 
 You can watch the FlinkCluster resource:
 
     kubectl -n flink-jobs get fc --watch
 
-    NAME        RESOURCE-STATUS   SUPERVISOR-STATUS   CLUSTER-HEALTH   TASK-MANAGERS   TOTAL-TASK-SLOTS   SERVICE-MODE   AGE
-    cluster-1   Updating          Starting                             0               0                  NodePort       2m33s
-    cluster-1   Updated           Started             HEALTHY          2               4                  NodePort       5m
+    NAME   RESOURCE-STATUS   SUPERVISOR-STATUS   CLUSTER-HEALTH   TASK-MANAGERS   REQUESTED-TASK-MANAGERS   TASK-MANAGERS-REPLICAS   TOTAL-TASK-SLOTS   SERVICE-MODE   AGE
+    demo   Updating          Starting                             0                                         0                        0                  ClusterIP      51s
+    demo   Updating          Started                              0                                         0                        0                  ClusterIP      56s
+    demo   Updating          Started                              0               2                         0                        0                  ClusterIP      62s
 
 You can watch the FlinkJob resources:
 
     kubectl -n flink-jobs get fj --watch
 
-    NAME              RESOURCE-STATUS   SUPERVISOR-STATUS   CLUSTER-NAME   CLUSTER-HEALTH   JOB-STATUS   JOB-ID                             JOB-PARALLELISM   JOB-RESTART    SAVEPOINT-MODE   SAVEPOINT-PATH   SAVEPOINT-AGE   AGE
-    cluster-1-job-1   Updating          Starting            cluster-1                                                                       2                 OnlyIfFailed   Automatic                                         2m48s
-    cluster-1-job-2   Updating          Starting            cluster-1                                                                       1                 Always         Automatic                                         2m48s
-    cluster-1-job-3   Updating          Starting            cluster-1                                                                       1                 Never          Manual                                            2m48s
-    cluster-1-job-1   Updated           Started             cluster-1      HEALTHY          RUNNING      82cf4d4e6c0cd4f89b587c74af33f298   2                 OnlyIfFailed   Automatic                                         7m
+    NAME                  RESOURCE-STATUS   SUPERVISOR-STATUS   CLUSTER-NAME   CLUSTER-HEALTH   JOB-STATUS   JOB-ID   JOB-RESTART   JOB-PARALLELISM   REQUESTED-JOB-PARALLELISM   SAVEPOINT-MODE   SAVEPOINT-PATH   SAVEPOINT-AGE   AGE
+    demo-computeaverage                                                                                                                               1                                                                             0s
+    demo-computemaximum                                                                                                                               1                                                                             0s
+    demo-computeaverage                                                                                               Always                          1                           Automatic                                         36s
+    demo-computeaverage                                                                                               Always                          1                           Automatic                                         36s
+    demo-computemaximum                                                                                               Always                          1                           Automatic                                         36s
+    demo-computemaximum                                                                                               Always                          1                           Automatic                                         36s
+    demo-computeaverage   Updating          Starting            demo                                                  Always        1                 1                           Automatic                                         41s
+    demo-computemaximum   Updating          Starting            demo                                                  Always        1                 1                           Automatic                                         41s
+    demo-computeaverage   Updated           Starting            demo           HEALTHY                                Always        1                 1                           Automatic                                         77s
+    demo-computemaximum   Updated           Starting            demo           HEALTHY                                Always        1                 1                           Automatic                                         77s
+    demo-computemaximum   Updated           Starting            demo           HEALTHY                       c79ec6a54a69260a42ffc92eae559270   Always        1                 1                           Automatic                                         87s
+    demo-computemaximum   Updated           Started             demo           HEALTHY                       c79ec6a54a69260a42ffc92eae559270   Always        1                 1                           Automatic                                         87s
+    demo-computemaximum   Updated           Started             demo           HEALTHY          RUNNING      c79ec6a54a69260a42ffc92eae559270   Always        1                 1                           Automatic                                         92s
+    demo-computeaverage   Updated           Started             demo           HEALTHY          RUNNING      ecc96795e1565d8bf48b39d98f6e909a   Always        1                 1                           Automatic
 
 You can watch the pods:
 
     kubectl -n flink-jobs get pod --watch
 
-    NAME                                    READY   STATUS      RESTARTS   AGE
-    bootstrap-cluster-1-job-1-msbrv         0/1     Completed   0          3m3s
-    jobmanager-cluster-1-dmpk9              1/1     Running     0          10m
-    minio-f7ddc4b9d-f99qr                   1/1     Running     16         128d
-    supervisor-cluster-1-7cfb9c76f4-l76gt   1/1     Running     0          18m
-    taskmanager-cluster-1-d8xzg             1/1     Running     0          3m15s
-    taskmanager-cluster-1-ll88q             1/1     Running     0          3m15s
+    NAME                                  READY   STATUS              RESTARTS   AGE
+    supervisor-demo-5568979d75-d7b5r      1/1     Running             0          1s
+    jobmanager-demo-d798s                 0/1     Pending             0          0s
+    jobmanager-demo-d798s                 0/1     ContainerCreating   0          0s
+    jobmanager-demo-d798s                 1/1     Running             0          1s
+    taskmanager-demo-hrf8l                0/1     Pending             0          0s
+    taskmanager-demo-lvmzt                0/1     Pending             0          0s
+    taskmanager-demo-hrf8l                0/1     ContainerCreating   0          0s
+    taskmanager-demo-lvmzt                0/1     ContainerCreating   0          0s
+    taskmanager-demo-lvmzt                1/1     Running             0          1s
+    taskmanager-demo-hrf8l                1/1     Running             0          2s
+    bootstrap-demo-computeaverage-pjzwx   0/1     Pending             0          0s
+    bootstrap-demo-computeaverage-pjzwx   0/1     ContainerCreating   0          0s
+    bootstrap-demo-computemaximum-cbjhx   0/1     Pending             0          0s
+    bootstrap-demo-computemaximum-cbjhx   0/1     ContainerCreating   0          0s
+    bootstrap-demo-computeaverage-pjzwx   0/1     Completed           0          9s
+    bootstrap-demo-computemaximum-cbjhx   0/1     Completed           0          10s
 
 You can inspect the FlinkDeployment resource:
 
-    kubectl -n flink-jobs get fd cluster-1 -o json | jq '.status'
+    kubectl -n flink-jobs get fd demo -o json | jq '.status'
 
     {
         "digest": {
@@ -504,7 +611,7 @@ You can inspect the FlinkDeployment resource:
                         "restart": "PQvmPQxmz6LjAa8HW+SQPQ==",
                         "savepoint": "oxNouuvcYqYkBWtMOnKjdQ=="
                     },
-                    "name": "job-1"
+                    "name": "computeaverage"
                 },
                 {
                     "job": {
@@ -512,15 +619,7 @@ You can inspect the FlinkDeployment resource:
                         "restart": "pxeYsVQV2fsVkJfRUQgehw==",
                         "savepoint": "oj/YaUKHUIZHCjgRxVN2wA=="
                     },
-                    "name": "job-2"
-                },
-                {
-                    "job": {
-                        "bootstrap": "40m+cgqz3RTs9Pps7vy25Q==",
-                        "restart": "+pseQWz5urZaK5Feo97SsA==",
-                        "savepoint": "fCBVDBHjaBLHu1lMugtOuA=="
-                    },
-                    "name": "job-3"
+                    "name": "computemaximum"
                 }
             ]
         },
@@ -530,7 +629,7 @@ You can inspect the FlinkDeployment resource:
 
 You can inspect the FlinkCluster resource:
 
-    kubectl -n flink-jobs get fc cluster-1 -o json | jq '.status'
+    kubectl -n flink-jobs get fc demo -o json | jq '.status'
 
     {
         "clusterHealth": "HEALTHY",
@@ -540,7 +639,7 @@ You can inspect the FlinkCluster resource:
             "supervisor": "WtUIhzGMVrfpgNNH8oe/uw==",
             "taskManager": "gQcoI/m7uD7hnM6bjVxtmA=="
         },
-        "labelSelector": "name=cluster-1,owner=flink-operator,component=flink,role=taskmanager",
+        "labelSelector": "clusterName=demo,owner=flink-operator,component=flink,role=taskmanager",
         "rescaleTimestamp": "2020-12-16T10:12:55.416Z",
         "resourceStatus": "Updated",
         "serviceMode": "NodePort",
@@ -554,11 +653,11 @@ You can inspect the FlinkCluster resource:
 
 You can inspect the FlinkJob resources:
 
-    kubectl -n flink-jobs get fj cluster-1-job-1 -o json | jq '.status'
+    kubectl -n flink-jobs get fj demo-computeaverage -o json | jq '.status'
 
     {
         "clusterHealth": "HEALTHY",
-        "clusterName": "cluster-1",
+        "clusterName": "demo",
         "digest": {
             "bootstrap": "qOety+rnp6ETxBsejANgow==",
             "restart": "PQvmPQxmz6LjAa8HW+SQPQ==",
@@ -567,7 +666,7 @@ You can inspect the FlinkJob resources:
         "jobId": "82cf4d4e6c0cd4f89b587c74af33f298",
         "jobParallelism": 2,
         "jobStatus": "RUNNING",
-        "labelSelector": "name=cluster-1-job-1,owner=flink-operator,component=flink,role=taskmanager",
+        "labelSelector": "clusterName=demo,owner=flink-operator,component=flink,role=taskmanager",
         "resourceStatus": "Updated",
         "restartPolicy": "OnlyIfFailed",
         "savepointJobId": "",
@@ -579,37 +678,37 @@ You can inspect the FlinkJob resources:
         "timestamp": "2020-12-16T10:13:30.628Z"
     }
 
-You can also expose the JobManager web console:
+You can expose the JobManager web console:
 
-    kubectl -n flink-jobs port-forward service/jobmanager-cluster-1 8081
+    kubectl -n flink-jobs port-forward service/jobmanager-demo 8081
 
-then open a browser at http://localhost:8081
+then open a browser at http://localhost:8081.
 
 ## Control cluster and jobs with annotations
 
-Annotate the cluster to stop it:
+Annotate the cluster resource to stop the cluster:
 
-    kubectl -n flink-jobs annotate fc cluster-1 --overwrite operator.nextbreakpoint.com/requested-action=STOP 
+    kubectl -n flink-jobs annotate fc demo --overwrite operator.nextbreakpoint.com/requested-action=STOP
 
-Annotate the cluster to start it:
+Annotate the cluster resource to restart the cluster:
 
-    kubectl -n flink-jobs annotate fc cluster-1 --overwrite operator.nextbreakpoint.com/requested-action=START 
+    kubectl -n flink-jobs annotate fc demo --overwrite operator.nextbreakpoint.com/requested-action=START
 
-Annotate a job to stop it:
+Annotate the job reource to stop the job (but not the cluster):
 
-    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=STOP 
+    kubectl -n flink-jobs annotate fj demo-computeaverage --overwrite operator.nextbreakpoint.com/requested-action=STOP
 
-Annotate a job to start it:
+Annotate the job resource to restart the job (but not the cluster):
 
-    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=START 
+    kubectl -n flink-jobs annotate fj demo-computeaverage --overwrite operator.nextbreakpoint.com/requested-action=START
 
-Annotate a job to trigger a savepoint:
+Annotate the job resource to trigger a savepoint:
 
-    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=TRIGGER_SAVEPOINT 
+    kubectl -n flink-jobs annotate fj demo-computeaverage --overwrite operator.nextbreakpoint.com/requested-action=TRIGGER_SAVEPOINT
 
-Annotate a job to forget a savepoint:
+Annotate the job resource to forget a savepoint:
 
-    kubectl -n flink-jobs annotate fj cluster-1-job-1 --overwrite operator.nextbreakpoint.com/requested-action=FORGET_SAVEPOINT 
+    kubectl -n flink-jobs annotate fj demo-computeaverage --overwrite operator.nextbreakpoint.com/requested-action=FORGET_SAVEPOINT
 
 ## Control cluster and jobs using HTTP  
 
@@ -676,109 +775,109 @@ Get list of jobs:
 
 Get status of a deployment:
 
-    curl http://localhost:4444/api/v1/deployments/cluster-1/status
+    curl http://localhost:4444/api/v1/deployments/demo/status
 
 Get status of a cluster:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/status
+    curl http://localhost:4444/api/v1/clusters/demo/status
 
 Get status of a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/status
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage/status
 
 Get details of a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/details
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage/details
 
 Get metrics of a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/metrics
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage/metrics
 
 Get metrics of the JobManager:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobmanager/metrics
+    curl http://localhost:4444/api/v1/clusters/demo/jobmanager/metrics
 
 Get list of TaskManagers:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/taskmanagers
+    curl http://localhost:4444/api/v1/clusters/demo/taskmanagers
 
 Get metrics of a TaskManager:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/taskmanagers/67761be7be3c93b44dd037632871c828/metrics
+    curl http://localhost:4444/api/v1/clusters/demo/taskmanagers/67761be7be3c93b44dd037632871c828/metrics
 
 Get details of a TaskManager:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/taskmanagers/67761be7be3c93b44dd037632871c828/details
+    curl http://localhost:4444/api/v1/clusters/demo/taskmanagers/67761be7be3c93b44dd037632871c828/details
 
 Create a deployment:
 
-    curl http://localhost:4444/api/v1/deployments/cluster-1 -XPOST -d@example/deployment-spec.json
+    curl http://localhost:4444/api/v1/deployments/demo -XPOST -d@example/deployment-spec.json
 
 Create a cluster:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1 -XPOST -d@example/cluster-spec.json
+    curl http://localhost:4444/api/v1/clusters/demo -XPOST -d@example/cluster-spec.json
 
 Create a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1 -XPOST -d@example/job-spec-1.json
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage -XPOST -d@example/job-spec-1.json
 
 Delete a deployment:
 
-    curl http://localhost:4444/api/v1/deployments/cluster-1 -XDELETE
+    curl http://localhost:4444/api/v1/deployments/demo -XDELETE
 
 Delete a cluster:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1 -XDELETE
+    curl http://localhost:4444/api/v1/clusters/demo -XDELETE
 
 Delete a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1 -XDELETE
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage -XDELETE
 
 Update a deployment:
 
-    curl http://localhost:4444/api/v1/deployments/cluster-1 -XPUT -d@example/deployment-spec.json
+    curl http://localhost:4444/api/v1/deployments/demo -XPUT -d@example/deployment-spec.json
 
 Update a cluster:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1 -XPUT -d@example/cluster-spec.json
+    curl http://localhost:4444/api/v1/clusters/demo -XPUT -d@example/cluster-spec.json
 
 Update a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1 -XPUT -d@example/job-spec-1.json
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage -XPUT -d@example/job-spec-1.json
 
 Start a cluster:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/start -XPUT -d'{"withoutSavepoint":false}'
+    curl http://localhost:4444/api/v1/clusters/demo/start -XPUT -d'{"withoutSavepoint":false}'
 
 Stop a cluster:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/stop -XPUT -d'{"withoutSavepoint":false}'
+    curl http://localhost:4444/api/v1/clusters/demo/stop -XPUT -d'{"withoutSavepoint":false}'
 
 Scale a cluster:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/scale -XPUT -d'{"taskManagers":4}'
+    curl http://localhost:4444/api/v1/clusters/demo/scale -XPUT -d'{"taskManagers":4}'
 
 Start a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/start -XPUT -d'{"withoutSavepoint":false}'
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage/start -XPUT -d'{"withoutSavepoint":false}'
 
 Stop a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/stop -XPUT -d'{"withoutSavepoint":false}'
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage/stop -XPUT -d'{"withoutSavepoint":false}'
 
 Scale a job:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/scale -XPUT -d'{"parallelism":2}'
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage/scale -XPUT -d'{"parallelism":2}'
 
 Trigger a savepoint:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/savepoint/trigger -XPUT
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage/savepoint/trigger -XPUT
 
 Forget a savepoint:
 
-    curl http://localhost:4444/api/v1/clusters/cluster-1/jobs/job-1/savepoint/forget -XPUT
+    curl http://localhost:4444/api/v1/clusters/demo/jobs/computeaverage/savepoint/forget -XPUT
 
-Please note that you must use SSL certificates when invoking the API if the operator has SSL enabled (see instructions for generating SSL certificates above):
+Please note that you must provide the SSL certificates when the operator API is secured with TLS (see instructions for generating SSL certificates above):
 
     curl --cacert secrets/ca_cert.pem --cert secrets/operator-cli_cert.pem --key secrets/operator-cli_key.pem https://localhost:4444/api/v1/clusters/<name>/status
 
@@ -794,7 +893,7 @@ The output should look like:
 
     Options:
         -h, --help  Show this message and exit
-    
+
     Commands:
         operator      Access operator subcommands
         supervisor    Access supervisor subcommands
@@ -815,9 +914,9 @@ You can see the options of each subcommand:
     docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster create --help
 
     Usage: flinkctl cluster create [OPTIONS]
-    
+
         Create a cluster
-    
+
     Options:
         --host TEXT               The operator host
         --port INT                The operator port
@@ -843,107 +942,115 @@ Get the list of clusters:
 
 Get the list of jobs:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta jobs list --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta jobs list --cluster-name=demo --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the status of a deployment:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta deployment status --deployment-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta deployment status --deployment-name=demo --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the status of a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster status --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster status --cluster-name=demo --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the status of a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job status --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job status --cluster-name=demo --job-name=computeaverage --host=$(minikube ip) | jq -r '.output' | jq
 
 Delete a deployment:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta deployment delete --deployment-name=cluster-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta deployment delete --deployment-name=demo --host=$(minikube ip)
 
 Delete a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster delete --cluster-name=cluster-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster delete --cluster-name=demo --host=$(minikube ip)
 
 Delete a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job delete --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job delete --cluster-name=demo --job-name=computeaverage --host=$(minikube ip)
 
 Stop a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster stop --cluster-name=cluster-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster stop --cluster-name=demo --host=$(minikube ip)
 
-Start a cluster: 
+Start a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster start --cluster-name=cluster-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster start --cluster-name=demo --host=$(minikube ip)
 
 Stop a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job stop --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job stop --cluster-name=demo --job-name=computeaverage --host=$(minikube ip)
 
 Start a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job start --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job start --cluster-name=demo --job-name=computeaverage --host=$(minikube ip)
 
 Start a cluster without recovering from the savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster start --cluster-name=cluster-1 --without-savepoint --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster start --cluster-name=demo --without-savepoint --host=$(minikube ip)
 
 Stop a cluster without creating a new savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster stop --cluster-name=cluster-1 --without-savepoint --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster stop --cluster-name=demo --without-savepoint --host=$(minikube ip)
 
 Start a job without recovering from the savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job start --cluster-name=cluster-1 --job-name=job-1 --without-savepoint --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job start --cluster-name=demo --job-name=computeaverage --without-savepoint --host=$(minikube ip)
 
 Stop a job without creating a new savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job stop --cluster-name=cluster-1 --job-name=job-1 --without-savepoint --host=$(minikube ip)
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job stop --cluster-name=demo --job-name=computeaverage --without-savepoint --host=$(minikube ip)
 
 Create a new savepoint:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta savepoint trigger --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta savepoint trigger --cluster-name=demo --job-name=computeaverage --host=$(minikube ip)
 
 Remove savepoint from job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta savepoint forget --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta savepoint forget --cluster-name=demo --job-name=computeaverage --host=$(minikube ip)
 
 Rescale a cluster:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster scale --cluster-name=cluster-1 --task-managers=4 --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta cluster scale --cluster-name=demo --task-managers=4 --host=$(minikube ip)
 
 Rescale a job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job scale --cluster-name=cluster-1 --job-name=job-1 --parallelism=2 --host=$(minikube ip) 
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job scale --cluster-name=demo --job-name=computeaverage --parallelism=2 --host=$(minikube ip)
 
-Get the details of the job: 
+Get the details of the job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job details --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job details --cluster-name=demo --job-name=computeaverage --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the metrics of the job:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job metrics --cluster-name=cluster-1 --job-name=job-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta job metrics --cluster-name=demo --job-name=computeaverage --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the metrics of the JobManager:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta jobmanager metrics --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta jobmanager metrics --cluster-name=demo --host=$(minikube ip) | jq -r '.output' | jq
 
 Get a list of TaskManagers:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta taskmanagers list --cluster-name=cluster-1 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta taskmanagers list --cluster-name=demo --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the metrics of a TaskManager:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta taskmanager metrics --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta taskmanager metrics --cluster-name=demo --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the details of a TaskManager:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta taskmanager details --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta taskmanager details --cluster-name=demo --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
 
 Get the metrics of a TaskManager:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta taskmanager metrics --cluster-name=cluster-1 --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta taskmanager metrics --cluster-name=demo --taskmanager-id=67761be7be3c93b44dd037632871c828 --host=$(minikube ip) | jq -r '.output' | jq
+
+Please note that you must provide the SSL certificates when the operator API is secured with TLS (see instructions for generating SSL certificates above):
+
+    docker run --rm -it -v /var/secrets:/secrets nextbreakpoint/flinkctl:1.4.3-beta deployments list --keystore-path=/secrets/keystore-operator-cli.jks --truststore-path=/secrets/truststore-operator-cli.jks --keystore-secret=keystore-password --truststore-secret=truststore-password --host=$(minikube ip) | jq -r '.output' | jq
+
+When using minikube, the secrets can be mounted from host:
+
+    minikube start --cpus=2 --memory=8gb --kubernetes-version v1.18.14 --mount-string="$(pwd)/secrets:/var/secrets" --mount
 
 ## Server components
 
@@ -960,15 +1067,15 @@ The operator process is required to orchestrate resources and processes.
 
 The supervisor process is required to reconcile the status of the resources.
 
-    flinkctl supervisor run --namespace=flink-jobs --cluster-name=cluster-1 --task-timeout=180 --polling-interval=5
+    flinkctl supervisor run --namespace=flink-jobs --cluster-name=demo --task-timeout=180 --polling-interval=5
 
 ### Bootstrap process
 
-The bootstrap process is required to upload the JAR to the JobManager and run the job. 
+The bootstrap process is required to upload the JAR to the JobManager and run the job.
 
-    flinkctl bootstrap run --namespace=flink-jobs --cluster-name=cluster-1 --job-name=job-1 --class-name=your-main-class --jar-path=/your-job-jar.jar --parallelism=2 
+    flinkctl bootstrap run --namespace=flink-jobs --cluster-name=demo --job-name=computeaverage --class-name=your-main-class --jar-path=/your-job-jar.jar --parallelism=2
 
-### Monitoring 
+### Monitoring
 
 The operator process exposes metrics to Prometheus on port 8080 by default:
 
@@ -1002,7 +1109,7 @@ The state machine associate to a job is documented in this graph:
 
 ## Developers instructions
 
-Instruction for building and running the flinkctl command. 
+Instruction for building and running the flinkctl command.
 
 ### Build with Gradle
 
@@ -1012,9 +1119,9 @@ Compile and package the code with Gradle command:
 
     ./gradlew build copyRuntimeDeps
 
-All the JARs required to run the application will be produced into the directory build/libs. 
+All the JARs required to run the application will be produced into the directory build/libs.
 
-Please note that Gradle alone will only build the JARs, not the binary file. 
+Please note that Gradle alone will only build the JARs, not the binary file.
 
 If you are on MacOS or Linux, you can build the flinkctl binary file with the command:
 
@@ -1042,8 +1149,8 @@ Tag and push the image to your Docker registry if needed:
 
 ### Run the application
 
-The command flinkctl can be executed directly on any Linux machine or indirectly from a Docker container on any system which supports Docker. 
-Alternatively, you can run the Java code with the java command. The application can be executed and debugged as any Java application. 
+The command flinkctl can be executed directly on any Linux machine or indirectly from a Docker container on any system which supports Docker.
+Alternatively, you can run the Java code with the java command. The application can be executed and debugged as any Java application.
 
 The application can be configured to point to a local or remote Kubernetes cluster, and it works with Minikube and Docker for Desktop too.
 
@@ -1097,7 +1204,7 @@ The service account for JobManagers and TaskManagers can be configured in the Fl
 If not specified, the default service account will be used for JobManagers and TaskManagers.
 
 In case the default account are not used, then new account must be created with the correct permissions.
-The required permissions should match the ones which are defined in the default accounts. 
+The required permissions should match the ones which are defined in the default accounts.
 
 ### Periodic savepoints and automatic savepoints
 
