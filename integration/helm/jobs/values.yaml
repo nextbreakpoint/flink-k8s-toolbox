@@ -1,0 +1,11 @@
+# Default values.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+name: integration
+
+s3BucketName: nextbreakpoint-integration
+s3Endpoint: http://minio-headless:9000
+s3PathStyleAccess: "true"
+s3AccessKey: minioaccesskey
+s3SecretKey: miniosecretkey
