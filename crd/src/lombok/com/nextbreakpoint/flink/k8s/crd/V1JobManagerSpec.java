@@ -46,4 +46,8 @@ public class V1JobManagerSpec {
     private V1ResourceRequirements resources;
     @SerializedName("securityContext")
     private V1SecurityContext securityContext;
+    @SerializedName("command")
+    private List<String> command;
+    @SerializedName("args")
+    private List<String> args;
 }

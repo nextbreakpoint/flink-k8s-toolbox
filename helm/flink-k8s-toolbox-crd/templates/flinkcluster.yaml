@@ -38,7 +38,7 @@ spec:
               nullable: false
               properties:
                 taskManagers:
-                  description: Number of Task Managers.
+                  description: Number of TaskManagers.
                   type: integer
                   nullable: true
                 minTaskManagers:
@@ -67,13 +67,13 @@ spec:
                         - Always
                         - IfNotPresent
                     image:
-                      description: Image to use for Job Manager and Task Managers.
+                      description: Image to use for JobManager and TaskManagers.
                       type: string
                       nullable: false
                   required:
                     - image
                 jobManager:
-                  description: A Flink Job Manager specification.
+                  description: A Flink JobManager specification.
                   type: object
                   nullable: false
                   properties:
@@ -85,13 +85,25 @@ spec:
                         - ClusterIP
                         - NodePort
                     serviceAccount:
-                      description: Service account to use for running Job Manager.
+                      description: Service account to use for running JobManager.
                       type: string
                       nullable: true
                     annotations:
-                      description: User annonations to add to Job Manager pod (like Prometheues annotations).
+                      description: User annonations to add to JobManager pod (like Prometheues annotations).
                       type: object
                       nullable: true
+                    command:
+                      description: The command to use for JobManager container
+                      type: array
+                      nullable: true
+                      items:
+                        type: "string"
+                    args:
+                      description: The args to use for JobManager container
+                      type: array
+                      nullable: true
+                      items:
+                        type: "string"
                     environment:
                       description: List of environment variables.
                       type: array
@@ -3750,22 +3762,34 @@ spec:
                   required:
                     - serviceMode
                 taskManager:
-                  description: A Flink Task Manager specification.
+                  description: A Flink TaskManager specification.
                   type: object
                   nullable: false
                   properties:
                     taskSlots:
-                      description: Number of task slots per Task Manager.
+                      description: Number of task slots per TaskManager.
                       type: integer
                       nullable: true
                     serviceAccount:
-                      description: Service account to use for running Task Manager.
+                      description: Service account to use for running TaskManager.
                       type: string
                       nullable: true
                     annotations:
-                      description: User annonations to add to Task Manager pod (like Prometheues annotations).
+                      description: User annonations to add to TaskManager pod (like Prometheues annotations).
                       type: object
                       nullable: true
+                    command:
+                      description: The command to use for TaskManager container
+                      type: array
+                      nullable: true
+                      items:
+                        type: "string"
+                    args:
+                      description: The args to use for TaskManager container
+                      type: array
+                      nullable: true
+                      items:
+                        type: "string"
                     environment:
                       description: List of environment variables.
                       type: array
