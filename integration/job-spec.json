@@ -3,7 +3,7 @@
   "savepoint": {
     "savepointMode": "Manual",
     "savepointInterval": 0,
-    "savepointTargetPath": "s3a://nextbreakpoint-integration/savepoints"
+    "savepointTargetPath": "s3a://nextbreakpoint-integration/0/savepoints"
   },
   "restart": {
     "restartPolicy": "Always",
@@ -18,18 +18,18 @@
     "className": "com.nextbreakpoint.flink.jobs.ComputeAverage",
     "arguments": [
       "--JOB_PARAMETERS",
-      "/var/config/computeaverage.conf",
+      "file:///var/config/computeaverage.conf",
       "--OUTPUT_LOCATION",
-      "s3a://nextbreakpoint-integration"
+      "s3a://nextbreakpoint-integration/0"
     ],
     "resources": {
       "limits": {
-        "cpu": "0.2",
-        "memory": "200Mi"
+        "cpu": "0.5",
+        "memory": "128Mi"
       },
       "requests": {
-        "cpu": "0.1",
-        "memory": "200Mi"
+        "cpu": "0.05",
+        "memory": "128Mi"
       }
     }
   }

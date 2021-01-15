@@ -1,8 +1,8 @@
 # 1.4.3-beta
 
 Release notes:
-- Add properties command and args to JobManager and TaskManager.
-- Fix autoscaling issues.
+- Add properties command and args to JobManager and TaskManager spec.
+- Fix scaling issues (supervisor doesn't detect idle taskmanagers).
 - Fix issue in restart cluster on resource changed.  
 - Update example to Flink 1.11.
 - Stop supporting old versions of Flink.

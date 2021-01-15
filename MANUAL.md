@@ -216,7 +216,6 @@ Create the bucket with AWS CLI:
 
 Create a file flinkproperties.yaml for the JobManager and TaskManager configuration:
 
-    ---
     apiVersion: v1
     kind: ConfigMap
     metadata:
