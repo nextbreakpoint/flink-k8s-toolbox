@@ -19,8 +19,8 @@ data:
     jobmanager.memory.jvm-overhead.min: 64mb
     jobmanager.memory.jvm-metaspace.size: 192mb
     jobmanager.memory.off-heap.size: 64mb
-    jobmanager.memory.process.size: 600mb
-    jobmanager.memory.flink.size: 256mb
+    jobmanager.memory.process.size: 500mb
+    jobmanager.memory.flink.size: 200mb
     metrics.reporters: prometheus
     metrics.reporter.prometheus.class: org.apache.flink.metrics.prometheus.PrometheusReporter
     metrics.reporter.prometheus.port: 9250
@@ -46,12 +46,12 @@ data:
   FLINK_PROPERTIES: |
     heartbeat.timeout: 90000
     heartbeat.interval: 15000
-    taskmanager.memory.jvm-overhead.min: 192mb
-    taskmanager.memory.jvm-metaspace.size: 256mb
-    taskmanager.memory.framework.heap.size: 128mb
-    taskmanager.memory.framework.off-heap.size: 128mb
-    taskmanager.memory.process.size: 2200mb
-    taskmanager.memory.flink.size: 1600mb
+    taskmanager.memory.jvm-overhead.min: 64mb
+    taskmanager.memory.jvm-metaspace.size: 192mb
+    taskmanager.memory.framework.heap.size: 64mb
+    taskmanager.memory.framework.off-heap.size: 64mb
+    taskmanager.memory.process.size: 600mb
+    taskmanager.memory.flink.size: 300mb
     taskmanager.memory.network.fraction: 0.1
     taskmanager.memory.managed.fraction: 0.1
     metrics.reporters: prometheus
