@@ -80,11 +80,11 @@ The dependencies between resources are represented in the following graph:
 
 Download the Docker image with flinkctl command from Docker Hub:
 
-    docker pull nextbreakpoint/flinkctl:1.4.3-beta
+    docker pull nextbreakpoint/flinkctl:1.4.4-beta
 
 Execute flinkctl as Docker container:
 
-    docker run --rm -it nextbreakpoint/flinkctl:1.4.3-beta --help
+    docker run --rm -it nextbreakpoint/flinkctl:1.4.4-beta --help
 
 Check out the quickstart example to get started with the toolbox:
 
