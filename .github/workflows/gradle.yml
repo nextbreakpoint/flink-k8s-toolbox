@@ -30,8 +30,17 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     - name: Build Docker images
       run: pipeline/docker-build-images.sh
-    - name: Run integration tests
+    - name: Run integration tests - Flink 1.12
       run: pipeline/run-integration-tests.sh
+      env:
+        FLINK_VERSION: "1.12.1"
+        SCALA_VERSION: "2.12"
+    - name: Run integration tests - Flink 1.11
+      if: github.event_name == 'release' && github.event.action == 'published'
+      run: pipeline/run-integration-tests.sh
+      env:
+        FLINK_VERSION: "1.11.3"
+        SCALA_VERSION: "2.12"
     - name: Publish to Registry
       if: github.event_name == 'release' && github.event.action == 'published'
       run: pipeline/docker-push-image.sh
