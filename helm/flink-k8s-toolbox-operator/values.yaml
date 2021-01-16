@@ -4,7 +4,7 @@
 
 image:
   repository: nextbreakpoint/flinkctl
-  tag: 1.4.3-beta
+  tag: 1.4.4-beta
   pullPolicy: Always
   pullSecrets:
 

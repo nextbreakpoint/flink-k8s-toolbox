@@ -1,4 +1,4 @@
-# 1.4.3-beta
+# 1.4.4-beta
 
 Release notes:
 - Add properties command and args to JobManager and TaskManager spec.
