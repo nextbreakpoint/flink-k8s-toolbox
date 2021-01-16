@@ -31,7 +31,9 @@ Create the configuration file computeaverage.conf:
     window-size: 60000
     window-slide: 10000
     max-out-of-orderness: 5000
-    bucket-check-interval: 120000
+    bucket-check-interval: 30000
+    bucket-rollover-interval: 300000
+    bucket-inactivity-interval: 300000
     bucket-output-path: /computeaverage/output
     partitions: 32
 
@@ -51,7 +53,7 @@ Or alternatively use java command:
 
     export CLASSPATH=$(find "target/libs" -name '*.jar' | xargs echo | tr ' ' ':')
 
-    java -classpath target/demo-1.0.0-shaded.jar:${CLASSPATH} -Denable.developer.mode="true" -Dstate.savepoints.path=file://$(pwd)/tmp/savepoints -Dstate.checkpoints.path=file://$(pwd)/tmp/checkpoints ${JOB_CLASS} --JOB_PARAMETERS file://$(pwd)/config/${JOB_NAME}.conf --OUPUT_LOCATION file://$(pwd)/tmp/output
+    java -classpath target/demo-1.0.0-shaded.jar:${CLASSPATH} -Denable.developer.mode="true" -Dstate.savepoints.dir=file://$(pwd)/tmp/savepoints -Dstate.checkpoints.dir=file://$(pwd)/tmp/checkpoints ${JOB_CLASS} --JOB_PARAMETERS file://$(pwd)/config/${JOB_NAME}.conf --OUPUT_LOCATION file://$(pwd)/tmp/output
 
 ## Execute job on standalone server
 
@@ -60,6 +62,10 @@ Install Minikube and jq. We recommend Minikube 1.11.0.
 Start Minikube with at least 8Gb of memory and mount the config directory:
 
     minikube start --cpus=2 --memory=8gb --kubernetes-version v1.18.14 --mount-string="$(pwd)/config:/var/config" --mount
+
+Configure the path of the Java JDK:
+
+    export JAVA_HOME=/Library/Java/JavaVirtualMachines/adoptopenjdk-11.jdk/Contents/Home
 
 Package the code without Flink runtime (since the job will run on the standalone server):
 
@@ -132,7 +138,7 @@ Inspect the job using the Flink's web console:
 Stop the job and create a savepoint:
 
     JOB=$(curl -s http://${FLINK_HOST}:8081/jobs | jq -r '.jobs[0] | select(.status=="RUNNING") | .id')
-    curl -X POST -H 'content-type: application/json' http://${FLINK_HOST}:8081/jobs/$JOB/stop -d "{\"drain\": false, \"targetDirectory\": \"s3a://${S3_BUCKET}/${JOB_NAME}/savepoints\"}"
+    curl -X POST -H 'content-type: application/json' http://${FLINK_HOST}:8081/jobs/$JOB/stop -d "{\"drain\": false, \"targetDirectory\": \"s3p://${S3_BUCKET}/${JOB_NAME}/savepoints\"}"
 
 Or cancel the job without savepoint:
 

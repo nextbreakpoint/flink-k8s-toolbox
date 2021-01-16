@@ -10,7 +10,7 @@ spec:
         savepoint:
           savepointMode: Automatic
           savepointInterval: 0
-          savepointTargetPath: s3a://nextbreakpoint-integration/1/savepoints
+          savepointTargetPath: s3p://nextbreakpoint-integration/1/savepoints
         restart:
           restartPolicy: Never
           restartDelay: 60
@@ -50,7 +50,7 @@ spec:
           memory: 128Mi
     runtime:
       pullPolicy: Never
-      image: integration/flink:1.11.3
+      image: integration/flink:latest
     jobManager:
       serviceMode: NodePort
       annotations:
@@ -59,12 +59,14 @@ spec:
         - 'bash'
       args:
         - '-c'
-        - 'FLINK_PROPERTIES="$(FLINK_PROPERTIES)\ns3.access-key: $(S3_ACCESS_KEY)\ns3.secret-key: $(S3_SECRET_KEY)\nstate.savepoints.dir: s3a://nextbreakpoint-integration/1/savepoints\nstate.checkpoints.dir: s3a://nextbreakpoint-integration/1/checkpoints" /docker-entrypoint.sh jobmanager'
+        - 'FLINK_PROPERTIES="$(FLINK_PROPERTIES)$(SECRET_PROPERTIES)" /docker-entrypoint.sh jobmanager'
       environmentFrom:
+        - configMapRef:
+            name: integration-flink-plugins-v1
         - configMapRef:
             name: integration-jobmanager-properties-v1
         - secretRef:
-            name: integration-aws-credentials-v1
+            name: integration-cluster-1-secret-v1
       initContainers:
         - image: busybox
           command:
@@ -92,10 +94,6 @@ spec:
             requests:
               cpu: '0.01'
               memory: 64Mi
-      extraPorts:
-        - name: prometheus
-          containerPort: 9250
-          protocol: TCP
       volumeMounts:
         - name: config-vol
           mountPath: /var/config/computeaverage.conf
@@ -104,6 +102,10 @@ spec:
         - name: config-vol
           configMap:
             name: integration-job-parameters-v1
+      extraPorts:
+        - name: prometheus
+          containerPort: 9250
+          protocol: TCP
       resources:
         limits:
           cpu: '1'
@@ -119,12 +121,14 @@ spec:
         - 'bash'
       args:
         - '-c'
-        - 'FLINK_PROPERTIES="$(FLINK_PROPERTIES)\ns3.access-key: $(S3_ACCESS_KEY)\ns3.secret-key: $(S3_SECRET_KEY)\nstate.savepoints.dir: s3a://nextbreakpoint-integration/1/savepoints\nstate.checkpoints.dir: s3a://nextbreakpoint-integration/1/checkpoints" /docker-entrypoint.sh taskmanager'
+        - 'FLINK_PROPERTIES="$(FLINK_PROPERTIES)$(SECRET_PROPERTIES)" /docker-entrypoint.sh taskmanager'
       environmentFrom:
+        - configMapRef:
+            name: integration-flink-plugins-v1
         - configMapRef:
             name: integration-taskmanager-properties-v1
         - secretRef:
-            name: integration-aws-credentials-v1
+            name: integration-cluster-1-secret-v1
       initContainers:
         - image: busybox
           command:

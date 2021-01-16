@@ -22,7 +22,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <scala.version>2.12.7</scala.version>
-        <flink.version>1.11.3</flink.version>
+        <flink.version>1.12.1</flink.version>
         <slf4j.version>1.7.30</slf4j.version>
         <scala-library.version>2.12.7</scala-library.version>
         <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
@@ -301,6 +301,20 @@
                             <daemonThreadJoinTimeout>5000</daemonThreadJoinTimeout>
                             <!-- we pass the class name as system property -->
                             <mainClass>${className}</mainClass>
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>enable.developer.mode</key>
+                                    <value>true</value>
+                                </systemProperty>
+                                <systemProperty>
+                                    <key>state.savepoints.dir</key>
+                                    <value>file://${project.basedir}/tmp/savepoints</value>
+                                </systemProperty>
+                                <systemProperty>
+                                    <key>state.checkpoints.dir</key>
+                                    <value>file://${project.basedir}/tmp/checkpoints</value>
+                                </systemProperty>
+                            </systemProperties>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -33,8 +33,8 @@ import kotlin.test.fail
 open class IntegrationSetup {
     companion object {
         val version = "1.4.4-beta"
-        val flinkVersion = "1.11.3"
-        val scalaVersion = "2.12"
+        val flinkVersion = getVariable("FLINK_VERSION", "1.12.1")
+        val scalaVersion = getVariable("SCALA_VERSION", "2.12")
         val timestamp = System.currentTimeMillis()
         val namespace = "integration"
         val port = getVariable("OPERATOR_PORT", "30000").toInt()
@@ -117,12 +117,12 @@ open class IntegrationSetup {
             val flinkBuildArgs = listOf(
                 "--build-arg", "flink_version=$flinkVersion", "--build-arg", "scala_version=$scalaVersion"
             )
-            if (buildDockerImage(path = "integration/flink", name = "integration/flink:$flinkVersion", args = flinkBuildArgs) != 0) {
+            if (buildDockerImage(path = "integration/flink", name = "integration/flink:latest", args = flinkBuildArgs) != 0) {
                 fail("Can't build flink image")
             }
             println("Building job image...")
             val jobBuildArgs = listOf(
-                "--build-arg", "repository=integration/flinkctl", "--build-arg", "version=$version"
+                "--build-arg", "image=integration/flinkctl:$version", "--build-arg", "flink_version=$flinkVersion", "--build-arg", "scala_version=$scalaVersion"
             )
             if (buildDockerImage(path = "integration/jobs", name = "integration/jobs:latest", args = jobBuildArgs) != 0) {
                 fail("Can't build job image")
@@ -133,7 +133,7 @@ open class IntegrationSetup {
 
         fun installCharts() {
             println("Installing jobs chart...")
-            val args = listOf("--set=s3AccessKey=$s3AccessKey,s3SecretKey=$s3SecretKey,s3Endpoint=$s3Endpoint,s3PathStyleAccess=$s3PathStyleAccess")
+            val args = listOf("--set=s3AccessKey=$s3AccessKey,s3SecretKey=$s3SecretKey,s3Endpoint=$s3Endpoint,s3PathStyleAccess=$s3PathStyleAccess,flinkVersion=$flinkVersion,scalaVersion=$scalaVersion")
             if (installHelmChart(namespace = namespace, name = "jobs", path = "integration/helm/jobs", args = args, print = false) != 0) {
                 if (upgradeHelmChart(namespace = namespace, name = "jobs", path = "integration/helm/jobs", args = args, print = false) != 0) {
                     fail("Can't install or upgrade Helm chart")

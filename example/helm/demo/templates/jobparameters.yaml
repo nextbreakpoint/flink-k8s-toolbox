@@ -19,11 +19,13 @@ data:
     console-verbosity: 1
     job-name: computeaverage
     disable-chaining: true
-    checkpoint-interval: 600000
+    checkpoint-interval: 300000
     window-size: 60000
     window-slide: 10000
     max-out-of-orderness: 5000
-    bucket-check-interval: 120000
+    bucket-check-interval: 30000
+    bucket-rollover-interval: 300000
+    bucket-inactivity-interval: 300000
     bucket-output-path: /output/computeaverage
     partitions: 32
   computemaximum.conf: |
@@ -33,10 +35,12 @@ data:
     console-verbosity: 1
     job-name: computemaximum
     disable-chaining: true
-    checkpoint-interval: 600000
+    checkpoint-interval: 300000
     window-size: 60000
     window-slide: 10000
     max-out-of-orderness: 5000
-    bucket-check-interval: 120000
+    bucket-check-interval: 30000
+    bucket-rollover-interval: 300000
+    bucket-inactivity-interval: 300000
     bucket-output-path: /output/computemaximum
     partitions: 32

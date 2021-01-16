@@ -1,26 +1,27 @@
 version: '3.7'
 services:
   jobmanager:
-    image: flink:1.11.3-scala_2.12-java11
+    image: apache/flink:1.12.1-scala_2.12-java11
     command: '${JOB_MANAGER_COMMAND:-jobmanager}'
     environment:
-      ENABLE_BUILT_IN_PLUGINS: flink-s3-fs-hadoop-1.11.3.jar
+      ENABLE_BUILT_IN_PLUGINS: "flink-s3-fs-hadoop-1.12.1.jar;flink-s3-fs-presto-1.12.1.jar"
       FLINK_PROPERTIES: |
+        rest.address: jobmanager
         jobmanager.rpc.address: jobmanager
         jobmanager.memory.jvm-overhead.min: 64mb
         jobmanager.memory.jvm-metaspace.size: 192mb
         jobmanager.memory.off-heap.size: 64mb
-        jobmanager.memory.process.size: 600mb
-        jobmanager.memory.flink.size: 256mb
+        jobmanager.memory.process.size: 500mb
+        jobmanager.memory.flink.size: 200mb
         metrics.reporters: prometheus
         metrics.reporter.prometheus.class: org.apache.flink.metrics.prometheus.PrometheusReporter
         metrics.reporter.prometheus.port: 9250
         metrics.latency.granularity: operator
         state.backend: filesystem
-        state.savepoints.dir: s3a://${S3_BUCKET}/savepoints
-        state.checkpoints.dir: s3a://${S3_BUCKET}/checkpoints
+        state.savepoints.dir: s3p://${S3_BUCKET}/savepoints
+        state.checkpoints.dir: s3p://${S3_BUCKET}/checkpoints
         parallelism.default: 1
-        s3.connection.maximum: 200
+        s3.connection.maximum: 300
         s3.endpoint: ${S3_ENDPOINT:-http://localhost:9000}
         s3.path.style.access: ${S3_PATH_STYLE_ACCESS:-"true"}
         s3.access-key: ${S3_ACCESS_KEY:-minioaccesskey}
@@ -39,30 +40,31 @@ services:
     networks:
       - flink-network
   taskmanager1:
-    image: flink:1.11.3-scala_2.12-java11
+    image: apache/flink:1.12.1-scala_2.12-java11
     command: 'taskmanager'
     environment:
-      ENABLE_BUILT_IN_PLUGINS: flink-s3-fs-hadoop-1.11.3.jar
+      ENABLE_BUILT_IN_PLUGINS: "flink-s3-fs-hadoop-1.12.1.jar;flink-s3-fs-presto-1.12.1.jar"
       FLINK_PROPERTIES: |
+        rest.address: jobmanager
         jobmanager.rpc.address: jobmanager
         metrics.reporters: prometheus
         metrics.reporter.prometheus.class: org.apache.flink.metrics.prometheus.PrometheusReporter
         metrics.reporter.prometheus.port: 9250
         metrics.latency.granularity: operator
         taskmanager.numberOfTaskSlots: 2
-        taskmanager.memory.jvm-overhead.min: 192mb
-        taskmanager.memory.jvm-metaspace.size: 256mb
-        taskmanager.memory.framework.heap.size: 128mb
-        taskmanager.memory.framework.off-heap.size: 128mb
-        taskmanager.memory.process.size: 2200mb
-        taskmanager.memory.flink.size: 1600mb
+        taskmanager.memory.jvm-overhead.min: 64mb
+        taskmanager.memory.jvm-metaspace.size: 192mb
+        taskmanager.memory.framework.heap.size: 64mb
+        taskmanager.memory.framework.off-heap.size: 64mb
+        taskmanager.memory.process.size: 600mb
+        taskmanager.memory.flink.size: 300mb
         taskmanager.memory.network.fraction: 0.1
         taskmanager.memory.managed.fraction: 0.1
         state.backend: filesystem
-        state.savepoints.dir: s3a://${S3_BUCKET}/savepoints
-        state.checkpoints.dir: s3a://${S3_BUCKET}/checkpoints
+        state.savepoints.dir: s3p://${S3_BUCKET}/savepoints
+        state.checkpoints.dir: s3p://${S3_BUCKET}/checkpoints
         parallelism.default: 1
-        s3.connection.maximum: 200
+        s3.connection.maximum: 300
         s3.endpoint: ${S3_ENDPOINT:-http://minio:9000}
         s3.path.style.access: ${S3_PATH_STYLE_ACCESS:-"true"}
         s3.access-key: ${S3_ACCESS_KEY:-minioaccesskey}
@@ -75,30 +77,31 @@ services:
         protocol: tcp
         mode: ingress
   taskmanager2:
-    image: flink:1.11.3-scala_2.12-java11
+    image: apache/flink:1.12.1-scala_2.12-java11
     command: 'taskmanager'
     environment:
-      ENABLE_BUILT_IN_PLUGINS: flink-s3-fs-hadoop-1.11.3.jar
+      ENABLE_BUILT_IN_PLUGINS: "flink-s3-fs-hadoop-1.12.1.jar;flink-s3-fs-presto-1.12.1.jar"
       FLINK_PROPERTIES: |
+        rest.address: jobmanager
         jobmanager.rpc.address: jobmanager
         metrics.reporters: prometheus
         metrics.reporter.prometheus.class: org.apache.flink.metrics.prometheus.PrometheusReporter
         metrics.reporter.prometheus.port: 9250
         metrics.latency.granularity: operator
         taskmanager.numberOfTaskSlots: 2
-        taskmanager.memory.jvm-overhead.min: 192mb
-        taskmanager.memory.jvm-metaspace.size: 256mb
-        taskmanager.memory.framework.heap.size: 128mb
-        taskmanager.memory.framework.off-heap.size: 128mb
-        taskmanager.memory.process.size: 2200mb
-        taskmanager.memory.flink.size: 1600mb
+        taskmanager.memory.jvm-overhead.min: 64mb
+        taskmanager.memory.jvm-metaspace.size: 192mb
+        taskmanager.memory.framework.heap.size: 64mb
+        taskmanager.memory.framework.off-heap.size: 64mb
+        taskmanager.memory.process.size: 600mb
+        taskmanager.memory.flink.size: 300mb
         taskmanager.memory.network.fraction: 0.1
         taskmanager.memory.managed.fraction: 0.1
         state.backend: filesystem
-        state.savepoints.dir: s3a://${S3_BUCKET}/savepoints
-        state.checkpoints.dir: s3a://${S3_BUCKET}/checkpoints
+        state.savepoints.dir: s3p://${S3_BUCKET}/savepoints
+        state.checkpoints.dir: s3p://${S3_BUCKET}/checkpoints
         parallelism.default: 1
-        s3.connection.maximum: 200
+        s3.connection.maximum: 300
         s3.endpoint: ${S3_ENDPOINT:-http://minio:9000}
         s3.path.style.access: ${S3_PATH_STYLE_ACCESS:-"true"}
         s3.access-key: ${S3_ACCESS_KEY:-minioaccesskey}

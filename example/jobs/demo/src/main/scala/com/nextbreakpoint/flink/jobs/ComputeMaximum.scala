@@ -9,6 +9,7 @@ import org.apache.flink.configuration.Configuration
 import org.apache.flink.core.fs.{FileSystem, Path}
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink
+import org.apache.flink.streaming.api.functions.sink.filesystem.rollingpolicies.DefaultRollingPolicy
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
@@ -47,7 +48,9 @@ object ComputeMaximum {
     val sourceDelayInterval = jobParameters.getOrElse("source-delay-interval", "1000").toInt
     val sourceLimit = jobParameters.getOrElse("source-limit", "0").toInt
     val checkpointInterval = jobParameters.getOrElse("checkpoint-interval", Time.seconds(300).toMilliseconds.toString).toLong
-    val bucketCheckInterval = jobParameters.getOrElse("bucket-check-interval", Time.seconds(300).toMilliseconds.toString).toLong
+    val bucketCheckInterval = jobParameters.getOrElse("bucket-check-interval", Time.seconds(30).toMilliseconds.toString).toLong
+    val bucketRolloverInterval = jobParameters.getOrElse("bucket-rollover-interval", Time.seconds(300).toMilliseconds.toString).toLong
+    val bucketInactivityInterval = jobParameters.getOrElse("bucket-inactivity-interval", Time.seconds(300).toMilliseconds.toString).toLong
     val idleTimeout = jobParameters.getOrElse("idle-timeout", Time.seconds(30).toMilliseconds.toString).toLong
     val autoWatermarkInterval = jobParameters.getOrElse("auto-watermark-interval", Time.seconds(1).toMilliseconds.toString).toLong
     val maxOutOfOrderness = jobParameters.getOrElse("max-out-of-orderness", Time.minutes(1).toMilliseconds.toString).toLong
@@ -110,13 +113,27 @@ object ComputeMaximum {
       .name("maximum-temperature")
 
     val eventSink = StreamingFileSink.forRowFormat(new Path(outputLocation + bucketOutputPath + "/sensor-temperature"), new SensorTemperatureEncoder)
-        .withBucketCheckInterval(bucketCheckInterval)
-        .withBucketAssigner(new SensorTemperatureBucketAssigner())
-        .build()
+      .withBucketCheckInterval(bucketCheckInterval)
+      .withBucketAssigner(new SensorTemperatureBucketAssigner())
+      .withRollingPolicy(
+        DefaultRollingPolicy.builder()
+          .withRolloverInterval(bucketRolloverInterval)
+          .withInactivityInterval(bucketInactivityInterval)
+          .withMaxPartSize(1024 * 1024)
+          .build()
+      )
+      .build()
 
     val maximumSink = StreamingFileSink.forRowFormat(new Path(outputLocation + bucketOutputPath + "/maximum-temperature"), new LocationTemperatureEncoder)
       .withBucketCheckInterval(bucketCheckInterval)
       .withBucketAssigner(new LocationTemperatureBucketAssigner())
+      .withRollingPolicy(
+        DefaultRollingPolicy.builder()
+          .withRolloverInterval(bucketRolloverInterval)
+          .withInactivityInterval(bucketInactivityInterval)
+          .withMaxPartSize(1024 * 1024)
+          .build()
+      )
       .build()
 
     temperature
@@ -153,8 +170,8 @@ object ComputeMaximum {
   private def createExecutionEnvironment(developerMode: Boolean, restPort: Int, parallelism: Int) = {
     if (developerMode) {
       val configuration = new Configuration
-      configuration.setInteger("parallelism.default", parallelism)
       configuration.setInteger("rest.port", restPort)
+      configuration.setInteger("parallelism.default", parallelism)
       configuration.setString("metrics.reporters", "prometheus")
       configuration.setString("metrics.reporter.prometheus.class", "org.apache.flink.metrics.prometheus.PrometheusReporter")
       configuration.setString("metrics.reporter.prometheus.port", "9250")

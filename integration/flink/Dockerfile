@@ -1,5 +1,5 @@
 ARG flink_version
 ARG scala_version
 
-FROM flink:${flink_version}-scala_${scala_version}-java11
+FROM apache/flink:${flink_version}-scala_${scala_version}-java11
 

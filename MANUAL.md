@@ -194,7 +194,7 @@ If you don't have the JAR of a Flink application yet, you can try using the demo
 
 Pull the Flink's Docker image with command:
 
-    docker pull flink:1.11.3-scala_2.12-java11
+    docker pull apache/flink:1.12.1-scala_2.12-java11
 
 Please note that you can use other images of Flink. The image must have an entrypoint for running JobManager and TaskManager.
 
@@ -234,8 +234,8 @@ Create a file flinkproperties.yaml for the JobManager and TaskManager configurat
         metrics.reporter.prometheus.port: 9250
         metrics.latency.granularity: operator
         state.backend: filesystem
-        state.savepoints.dir: s3a://nextbreakpoint-demo/savepoints
-        state.checkpoints.dir: s3a://nextbreakpoint-demo/checkpoints
+        state.savepoints.dir: s3p://nextbreakpoint-demo/savepoints
+        state.checkpoints.dir: s3p://nextbreakpoint-demo/checkpoints
         s3.connection.maximum: 200
         s3.access-key: minioaccesskey
         s3.secret-key: miniosecretkey
@@ -263,8 +263,8 @@ Create a file flinkproperties.yaml for the JobManager and TaskManager configurat
         metrics.reporter.prometheus.port: 9250
         metrics.latency.granularity: operator
         state.backend: filesystem
-        state.savepoints.dir: s3a://nextbreakpoint-demo/savepoints
-        state.checkpoints.dir: s3a://nextbreakpoint-demo/checkpoints
+        state.savepoints.dir: s3p://nextbreakpoint-demo/savepoints
+        state.checkpoints.dir: s3p://nextbreakpoint-demo/checkpoints
         s3.connection.maximum: 200
         s3.access-key: minioaccesskey
         s3.secret-key: miniosecretkey
@@ -290,26 +290,30 @@ Create a file jobparameters.yaml for the jobs configuration:
         console-verbosity: 1
         job-name: computeaverage
         disable-chaining: true
-        checkpoint-interval: 600000
+        checkpoint-interval: 300000
         window-size: 60000
         window-slide: 10000
         max-out-of-orderness: 5000
-        bucket-check-interval: 120000
+        bucket-check-interval: 30000
+        bucket-rollover-interval: 300000
+        bucket-inactivity-interval: 300000
         bucket-output-path: /output/computeaverage
         partitions: 32
       computemaximum.conf: |
         rest-port: 8081
         source-delay-array: 250 10
-        source-delay-interval: 300000
+        source-delay-interval: 600000
         source-limit: 0
         console-verbosity: 1
         job-name: computemaximum
         disable-chaining: true
-        checkpoint-interval: 600000
+        checkpoint-interval: 300000
         window-size: 60000
         window-slide: 10000
         max-out-of-orderness: 5000
-        bucket-check-interval: 120000
+        bucket-check-interval: 30000
+        bucket-rollover-interval: 300000
+        bucket-inactivity-interval: 300000
         bucket-output-path: /output/computemaximum
         partitions: 32
 
@@ -335,21 +339,21 @@ Create a deployment.yaml file to describe cluster and jobs:
           replicas: 1
           resources:
             limits:
-              cpu: '0.5'
+              cpu: '1'
               memory: 200Mi
             requests:
-              cpu: '0.1'
+              cpu: '0.05'
               memory: 200Mi
         runtime:
           pullPolicy: IfNotPresent
-          image: flink:1.11.3-scala_2.12-java11
+          image: apache/flink:1.12.1-scala_2.12-java11
         jobManager:
           serviceMode: ClusterIP
           annotations:
             managedBy: "flinkctl"
           environment:
             - name: ENABLE_BUILT_IN_PLUGINS
-              value: flink-s3-fs-hadoop-1.11.3.jar;flink-s3-fs-presto-1.11.3.jar
+              value: "flink-s3-fs-hadoop-1.12.1.jar;flink-s3-fs-presto-1.12.1.jar"
           environmentFrom:
             - configMapRef:
                 name: demo-jobmanager-properties-v1
@@ -373,7 +377,7 @@ Create a deployment.yaml file to describe cluster and jobs:
               cpu: '1'
               memory: 600Mi
             requests:
-              cpu: '0.2'
+              cpu: '0.1'
               memory: 600Mi
         taskManager:
           taskSlots: 1
@@ -381,7 +385,7 @@ Create a deployment.yaml file to describe cluster and jobs:
             managedBy: "flinkctl"
           environment:
             - name: ENABLE_BUILT_IN_PLUGINS
-              value: flink-s3-fs-hadoop-1.11.3.jar;flink-s3-fs-presto-1.11.3.jar
+              value: "flink-s3-fs-hadoop-1.12.1.jar;flink-s3-fs-presto-1.12.1.jar"
           environmentFrom:
             - configMapRef:
                 name: demo-taskmanager-properties-v1
@@ -394,7 +398,7 @@ Create a deployment.yaml file to describe cluster and jobs:
               cpu: '1'
               memory: 2200Mi
             requests:
-              cpu: '0.2'
+              cpu: '0.05'
               memory: 2200Mi
       jobs:
         - name: computeaverage
@@ -403,7 +407,7 @@ Create a deployment.yaml file to describe cluster and jobs:
             savepoint:
               savepointMode: Automatic
               savepointInterval: 600
-              savepointTargetPath: s3a://nextbreakpoint-demo/savepoints
+              savepointTargetPath: s3p://nextbreakpoint-demo/savepoints
             restart:
               restartPolicy: Always
               restartDelay: 30
@@ -418,13 +422,13 @@ Create a deployment.yaml file to describe cluster and jobs:
                 - --JOB_PARAMETERS
                 - file:///var/config/computemaximum.conf
                 - --OUTPUT_LOCATION
-                - s3p://nextbreakpoint-demo
+                - s3a://nextbreakpoint-demo
               resources:
                 limits:
-                  cpu: '0.5'
+                  cpu: '1'
                   memory: 200Mi
                 requests:
-                  cpu: '0.1'
+                  cpu: '0.01'
                   memory: 200Mi
         - name: computemaximum
           spec:
@@ -432,7 +436,7 @@ Create a deployment.yaml file to describe cluster and jobs:
             savepoint:
               savepointMode: Automatic
               savepointInterval: 600
-              savepointTargetPath: s3a://nextbreakpoint-demo/savepoints
+              savepointTargetPath: s3p://nextbreakpoint-demo/savepoints
             restart:
               restartPolicy: Always
               restartDelay: 30
@@ -447,13 +451,13 @@ Create a deployment.yaml file to describe cluster and jobs:
                 - --JOB_PARAMETERS
                 - file:///var/config/computemaximum.conf
                 - --OUTPUT_LOCATION
-                - s3p://nextbreakpoint-demo
+                - s3a://nextbreakpoint-demo
               resources:
                 limits:
-                  cpu: '0.5'
+                  cpu: '1'
                   memory: 200Mi
                 requests:
-                  cpu: '0.1'
+                  cpu: '0.01'
                   memory: 200Mi
 
 Deploy the resource with command:

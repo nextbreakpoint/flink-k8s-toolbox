@@ -3,7 +3,7 @@
   "savepoint": {
     "savepointMode": "Manual",
     "savepointInterval": 0,
-    "savepointTargetPath": "s3a://nextbreakpoint-integration/0/savepoints"
+    "savepointTargetPath": "s3p://nextbreakpoint-integration/0/savepoints"
   },
   "restart": {
     "restartPolicy": "Always",
