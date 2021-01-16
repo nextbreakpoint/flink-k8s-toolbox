@@ -12,7 +12,7 @@ s3SecretKey: miniosecretkey
 
 runtime:
   pullPolicy: IfNotPresent
-  image: flink:1.11.3-scala_2.12-java11
+  image: apache/flink:1.12.1-scala_2.12-java11
 
 supervisor:
   pullPolicy: IfNotPresent

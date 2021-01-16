@@ -18,7 +18,7 @@
   },
   "runtime": {
     "pullPolicy": "Never",
-    "image": "integration/flink:1.11.3"
+    "image": "integration/flink:latest"
   },
   "jobManager": {
     "serviceMode": "NodePort",
@@ -30,9 +30,14 @@
     ],
     "args": [
       "-c",
-      "FLINK_PROPERTIES=\"$(FLINK_PROPERTIES)\\ns3.access-key: $(S3_ACCESS_KEY)\\ns3.secret-key: $(S3_SECRET_KEY)\\nstate.savepoints.dir: s3a://nextbreakpoint-integration/0/savepoints\\nstate.checkpoints.dir: s3a://nextbreakpoint-integration/0/checkpoints\" /docker-entrypoint.sh jobmanager"
+      "FLINK_PROPERTIES=\"$(FLINK_PROPERTIES)$(SECRET_PROPERTIES)\" /docker-entrypoint.sh jobmanager"
     ],
     "environmentFrom": [
+      {
+        "configMapRef": {
+          "name": "integration-flink-plugins-v1"
+        }
+      },
       {
         "configMapRef": {
           "name": "integration-jobmanager-properties-v1"
@@ -40,7 +45,7 @@
       },
       {
         "secretRef": {
-          "name": "integration-aws-credentials-v1"
+          "name": "integration-cluster-0-secret-v1"
         }
       }
     ],
@@ -92,9 +97,14 @@
     ],
     "args": [
       "-c",
-      "FLINK_PROPERTIES=\"$(FLINK_PROPERTIES)\\ns3.access-key: $(S3_ACCESS_KEY)\\ns3.secret-key: $(S3_SECRET_KEY)\\nstate.savepoints.dir: s3a://nextbreakpoint-integration/0/savepoints\\nstate.checkpoints.dir: s3a://nextbreakpoint-integration/0/checkpoints\" /docker-entrypoint.sh taskmanager"
+      "FLINK_PROPERTIES=\"$(FLINK_PROPERTIES)$(SECRET_PROPERTIES)\" /docker-entrypoint.sh taskmanager"
     ],
     "environmentFrom": [
+      {
+        "configMapRef": {
+          "name": "integration-flink-plugins-v1"
+        }
+      },
       {
         "configMapRef": {
           "name": "integration-taskmanager-properties-v1"
@@ -102,7 +112,7 @@
       },
       {
         "secretRef": {
-          "name": "integration-aws-credentials-v1"
+          "name": "integration-cluster-0-secret-v1"
         }
       }
     ],

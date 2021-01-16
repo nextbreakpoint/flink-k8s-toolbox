@@ -9,3 +9,6 @@ s3Endpoint: http://minio-headless:9000
 s3PathStyleAccess: "true"
 s3AccessKey: minioaccesskey
 s3SecretKey: miniosecretkey
+
+flinkVersion: "1.12.1"
+scalaVersion: "2.12"
