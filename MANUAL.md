@@ -2,7 +2,7 @@
 
 This document describes how to install and use the Flink Kubernetes Toolbox.
 
-Currently, Flink Kubernetes Toolbox requires Kubernetes 1.18 or later, and it supports Apache Flink 1.11 or later.
+Currently, Flink Kubernetes Toolbox requires Kubernetes 1.18.14 or later, and it supports Apache Flink 1.11 or later.
 
 ## Generate SSL certificates
 
