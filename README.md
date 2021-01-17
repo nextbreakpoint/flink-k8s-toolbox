@@ -28,6 +28,9 @@ This is the list of the main features implemented in the toolbox:
 - Support for user defined entrypoint
 - Support for user defined annotations
 - Support for user defined container ports
+- Support for user defined security context
+- Support for user defined affinity 
+- Support for user defined tolerations
 - Support for pull secrets and private registries
 - Support for public Flink images or custom images
 - Use separate supervisor for each cluster

@@ -2,6 +2,9 @@
 
 Release notes:
 - Update example to Flink 1.12.
+- Add property affinity to JobManager and TaskManager spec. 
+- Add property tolerations to JobManager and TaskManager spec.
+- Add property topologySpreadConstraints to JobManager and TaskManager spec.
 
 # 1.4.3-beta
 
