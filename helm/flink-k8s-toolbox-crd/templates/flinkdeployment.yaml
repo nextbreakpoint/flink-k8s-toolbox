@@ -230,8 +230,6 @@ spec:
                             required:
                               - "name"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "name"
-                          x-kubernetes-patch-strategy: "merge"
                         environmentFrom:
                           description: List of environment variables from ConfigMap.
                           type: array
@@ -1451,8 +1449,6 @@ spec:
                             required:
                               - "name"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "name"
-                          x-kubernetes-patch-strategy: "merge,retainKeys"
                         volumeMounts:
                           description: List of volume mounts.
                           type: array
@@ -1490,8 +1486,6 @@ spec:
                               - "name"
                               - "mountPath"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "mountPath"
-                          x-kubernetes-patch-strategy: "merge"
                         extraPorts:
                           description: Additional container ports.
                           type: array
@@ -1526,12 +1520,6 @@ spec:
                             required:
                               - "containerPort"
                             type: "object"
-                          x-kubernetes-list-map-keys:
-                            - "containerPort"
-                            - "protocol"
-                          x-kubernetes-list-type: "map"
-                          x-kubernetes-patch-merge-key: "containerPort"
-                          x-kubernetes-patch-strategy: "merge"
                         initContainers:
                           description: Optional init containers.
                           type: array
@@ -2563,8 +2551,6 @@ spec:
                             required:
                               - "name"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "name"
-                          x-kubernetes-patch-strategy: "merge"
                         sideContainers:
                           description: Optional side containers.
                           type: array
@@ -3596,8 +3582,6 @@ spec:
                             required:
                               - "name"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "name"
-                          x-kubernetes-patch-strategy: "merge"
                         resources:
                           description: "ResourceRequirements describes the compute resource requirements."
                           properties:
@@ -3690,9 +3674,9 @@ spec:
                           properties:
                             allowPrivilegeEscalation:
                               description: "AllowPrivilegeEscalation controls whether a process can gain more\
-                                                              \ privileges than its parent process. This bool directly controls if the no_new_privs\
-                                                              \ flag will be set on the container process. AllowPrivilegeEscalation is true\
-                                                              \ always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN"
+                                \ privileges than its parent process. This bool directly controls if the no_new_privs\
+                                \ flag will be set on the container process. AllowPrivilegeEscalation is true\
+                                \ always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN"
                               type: "boolean"
                             capabilities:
                               description: "Adds and removes POSIX capabilities from running containers."
@@ -3710,37 +3694,37 @@ spec:
                               type: "object"
                             privileged:
                               description: "Run container in privileged mode. Processes in privileged containers\
-                                                              \ are essentially equivalent to root on the host. Defaults to false."
+                                \ are essentially equivalent to root on the host. Defaults to false."
                               type: "boolean"
                             procMount:
                               description: "procMount denotes the type of proc mount to use for the containers.\
-                                                              \ The default is DefaultProcMount which uses the container runtime defaults\
-                                                              \ for readonly paths and masked paths. This requires the ProcMountType feature\
-                                                              \ flag to be enabled."
+                                \ The default is DefaultProcMount which uses the container runtime defaults\
+                                \ for readonly paths and masked paths. This requires the ProcMountType feature\
+                                \ flag to be enabled."
                               type: "string"
                             readOnlyRootFilesystem:
                               description: "Whether this container has a read-only root filesystem. Default\
-                                                              \ is false."
+                                \ is false."
                               type: "boolean"
                             runAsGroup:
                               description: "The GID to run the entrypoint of the container process. Uses runtime\
-                                                              \ default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext\
-                                                              \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
+                                \ default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext\
+                                \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
                               format: "int64"
                               type: "integer"
                             runAsNonRoot:
                               description: "Indicates that the container must run as a non-root user. If true,\
-                                                              \ the Kubelet will validate the image at runtime to ensure that it does not\
-                                                              \ run as UID 0 (root) and fail to start the container if it does. If unset or\
-                                                              \ false, no such validation will be performed. May also be set in PodSecurityContext.\
-                                                              \  If set in both SecurityContext and PodSecurityContext, the value specified\
-                                                              \ in SecurityContext takes precedence."
+                                \ the Kubelet will validate the image at runtime to ensure that it does not\
+                                \ run as UID 0 (root) and fail to start the container if it does. If unset or\
+                                \ false, no such validation will be performed. May also be set in PodSecurityContext.\
+                                \  If set in both SecurityContext and PodSecurityContext, the value specified\
+                                \ in SecurityContext takes precedence."
                               type: "boolean"
                             runAsUser:
                               description: "The UID to run the entrypoint of the container process. Defaults\
-                                                              \ to user specified in image metadata if unspecified. May also be set in PodSecurityContext.\
-                                                              \  If set in both SecurityContext and PodSecurityContext, the value specified\
-                                                              \ in SecurityContext takes precedence."
+                                \ to user specified in image metadata if unspecified. May also be set in PodSecurityContext.\
+                                \  If set in both SecurityContext and PodSecurityContext, the value specified\
+                                \ in SecurityContext takes precedence."
                               format: "int64"
                               type: "integer"
                             seLinuxOptions:
@@ -3761,22 +3745,22 @@ spec:
                               type: "object"
                             windowsOptions:
                               description: "WindowsSecurityContextOptions contain Windows-specific options and\
-                                                              \ credentials."
+                                \ credentials."
                               properties:
                                 gmsaCredentialSpec:
                                   description: "GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa)\
-                                                                  \ inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName\
-                                                                  \ field."
+                                    \ inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName\
+                                    \ field."
                                   type: "string"
                                 gmsaCredentialSpecName:
                                   description: "GMSACredentialSpecName is the name of the GMSA credential spec\
-                                                                  \ to use."
+                                    \ to use."
                                   type: "string"
                                 runAsUserName:
                                   description: "The UserName in Windows to run the entrypoint of the container\
-                                                                  \ process. Defaults to the user specified in image metadata if unspecified.\
-                                                                  \ May also be set in PodSecurityContext. If set in both SecurityContext\
-                                                                  \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
+                                    \ process. Defaults to the user specified in image metadata if unspecified.\
+                                    \ May also be set in PodSecurityContext. If set in both SecurityContext\
+                                    \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
                                   type: "string"
                               type: "object"
                           type: "object"
@@ -4506,12 +4490,6 @@ spec:
                               - "whenUnsatisfiable"
                             type: "object"
                           type: "array"
-                          x-kubernetes-list-map-keys:
-                            - "topologyKey"
-                            - "whenUnsatisfiable"
-                          x-kubernetes-list-type: "map"
-                          x-kubernetes-patch-merge-key: "topologyKey"
-                          x-kubernetes-patch-strategy: "merge"
                       required:
                         - serviceMode
                     taskManager:
@@ -4664,8 +4642,6 @@ spec:
                             required:
                               - "name"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "name"
-                          x-kubernetes-patch-strategy: "merge"
                         environmentFrom:
                           description: List of environment variables from ConfigMap.
                           type: array
@@ -5885,8 +5861,6 @@ spec:
                             required:
                               - "name"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "name"
-                          x-kubernetes-patch-strategy: "merge,retainKeys"
                         volumeMounts:
                           description: List of volume mounts.
                           type: array
@@ -5924,8 +5898,6 @@ spec:
                               - "name"
                               - "mountPath"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "mountPath"
-                          x-kubernetes-patch-strategy: "merge"
                         extraPorts:
                           description: Additional container ports.
                           type: array
@@ -5960,12 +5932,6 @@ spec:
                             required:
                               - "containerPort"
                             type: "object"
-                          x-kubernetes-list-map-keys:
-                            - "containerPort"
-                            - "protocol"
-                          x-kubernetes-list-type: "map"
-                          x-kubernetes-patch-merge-key: "containerPort"
-                          x-kubernetes-patch-strategy: "merge"
                         initContainers:
                           description: Optional init containers.
                           type: array
@@ -6997,8 +6963,6 @@ spec:
                             required:
                               - "name"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "name"
-                          x-kubernetes-patch-strategy: "merge"
                         sideContainers:
                           description: Optional side containers.
                           type: array
@@ -8030,8 +7994,6 @@ spec:
                             required:
                               - "name"
                             type: "object"
-                          x-kubernetes-patch-merge-key: "name"
-                          x-kubernetes-patch-strategy: "merge"
                         resources:
                           description: "ResourceRequirements describes the compute resource requirements."
                           properties:
@@ -8124,9 +8086,9 @@ spec:
                           properties:
                             allowPrivilegeEscalation:
                               description: "AllowPrivilegeEscalation controls whether a process can gain more\
-                                                              \ privileges than its parent process. This bool directly controls if the no_new_privs\
-                                                              \ flag will be set on the container process. AllowPrivilegeEscalation is true\
-                                                              \ always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN"
+                                \ privileges than its parent process. This bool directly controls if the no_new_privs\
+                                \ flag will be set on the container process. AllowPrivilegeEscalation is true\
+                                \ always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN"
                               type: "boolean"
                             capabilities:
                               description: "Adds and removes POSIX capabilities from running containers."
@@ -8144,37 +8106,37 @@ spec:
                               type: "object"
                             privileged:
                               description: "Run container in privileged mode. Processes in privileged containers\
-                                                              \ are essentially equivalent to root on the host. Defaults to false."
+                                \ are essentially equivalent to root on the host. Defaults to false."
                               type: "boolean"
                             procMount:
                               description: "procMount denotes the type of proc mount to use for the containers.\
-                                                              \ The default is DefaultProcMount which uses the container runtime defaults\
-                                                              \ for readonly paths and masked paths. This requires the ProcMountType feature\
-                                                              \ flag to be enabled."
+                                \ The default is DefaultProcMount which uses the container runtime defaults\
+                                \ for readonly paths and masked paths. This requires the ProcMountType feature\
+                                \ flag to be enabled."
                               type: "string"
                             readOnlyRootFilesystem:
                               description: "Whether this container has a read-only root filesystem. Default\
-                                                              \ is false."
+                                \ is false."
                               type: "boolean"
                             runAsGroup:
                               description: "The GID to run the entrypoint of the container process. Uses runtime\
-                                                              \ default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext\
-                                                              \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
+                                \ default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext\
+                                \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
                               format: "int64"
                               type: "integer"
                             runAsNonRoot:
                               description: "Indicates that the container must run as a non-root user. If true,\
-                                                              \ the Kubelet will validate the image at runtime to ensure that it does not\
-                                                              \ run as UID 0 (root) and fail to start the container if it does. If unset or\
-                                                              \ false, no such validation will be performed. May also be set in PodSecurityContext.\
-                                                              \  If set in both SecurityContext and PodSecurityContext, the value specified\
-                                                              \ in SecurityContext takes precedence."
+                                \ the Kubelet will validate the image at runtime to ensure that it does not\
+                                \ run as UID 0 (root) and fail to start the container if it does. If unset or\
+                                \ false, no such validation will be performed. May also be set in PodSecurityContext.\
+                                \  If set in both SecurityContext and PodSecurityContext, the value specified\
+                                \ in SecurityContext takes precedence."
                               type: "boolean"
                             runAsUser:
                               description: "The UID to run the entrypoint of the container process. Defaults\
-                                                              \ to user specified in image metadata if unspecified. May also be set in PodSecurityContext.\
-                                                              \  If set in both SecurityContext and PodSecurityContext, the value specified\
-                                                              \ in SecurityContext takes precedence."
+                                \ to user specified in image metadata if unspecified. May also be set in PodSecurityContext.\
+                                \  If set in both SecurityContext and PodSecurityContext, the value specified\
+                                \ in SecurityContext takes precedence."
                               format: "int64"
                               type: "integer"
                             seLinuxOptions:
@@ -8195,22 +8157,22 @@ spec:
                               type: "object"
                             windowsOptions:
                               description: "WindowsSecurityContextOptions contain Windows-specific options and\
-                                                              \ credentials."
+                                \ credentials."
                               properties:
                                 gmsaCredentialSpec:
                                   description: "GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa)\
-                                                                  \ inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName\
-                                                                  \ field."
+                                    \ inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName\
+                                    \ field."
                                   type: "string"
                                 gmsaCredentialSpecName:
                                   description: "GMSACredentialSpecName is the name of the GMSA credential spec\
-                                                                  \ to use."
+                                    \ to use."
                                   type: "string"
                                 runAsUserName:
                                   description: "The UserName in Windows to run the entrypoint of the container\
-                                                                  \ process. Defaults to the user specified in image metadata if unspecified.\
-                                                                  \ May also be set in PodSecurityContext. If set in both SecurityContext\
-                                                                  \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
+                                    \ process. Defaults to the user specified in image metadata if unspecified.\
+                                    \ May also be set in PodSecurityContext. If set in both SecurityContext\
+                                    \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
                                   type: "string"
                               type: "object"
                           type: "object"
@@ -8940,16 +8902,10 @@ spec:
                               - "whenUnsatisfiable"
                             type: "object"
                           type: "array"
-                          x-kubernetes-list-map-keys:
-                            - "topologyKey"
-                            - "whenUnsatisfiable"
-                          x-kubernetes-list-type: "map"
-                          x-kubernetes-patch-merge-key: "topologyKey"
-                          x-kubernetes-patch-strategy: "merge"
                       required:
                         - taskSlots
                     supervisor:
-                      description: A Flink supervisor specification.
+                      description: A Flink Supervisor specification.
                       type: object
                       nullable: false
                       properties:
@@ -9088,9 +9044,9 @@ spec:
                           properties:
                             allowPrivilegeEscalation:
                               description: "AllowPrivilegeEscalation controls whether a process can gain more\
-                                                              \ privileges than its parent process. This bool directly controls if the no_new_privs\
-                                                              \ flag will be set on the container process. AllowPrivilegeEscalation is true\
-                                                              \ always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN"
+                                \ privileges than its parent process. This bool directly controls if the no_new_privs\
+                                \ flag will be set on the container process. AllowPrivilegeEscalation is true\
+                                \ always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN"
                               type: "boolean"
                             capabilities:
                               description: "Adds and removes POSIX capabilities from running containers."
@@ -9108,37 +9064,37 @@ spec:
                               type: "object"
                             privileged:
                               description: "Run container in privileged mode. Processes in privileged containers\
-                                                              \ are essentially equivalent to root on the host. Defaults to false."
+                                \ are essentially equivalent to root on the host. Defaults to false."
                               type: "boolean"
                             procMount:
                               description: "procMount denotes the type of proc mount to use for the containers.\
-                                                              \ The default is DefaultProcMount which uses the container runtime defaults\
-                                                              \ for readonly paths and masked paths. This requires the ProcMountType feature\
-                                                              \ flag to be enabled."
+                                \ The default is DefaultProcMount which uses the container runtime defaults\
+                                \ for readonly paths and masked paths. This requires the ProcMountType feature\
+                                \ flag to be enabled."
                               type: "string"
                             readOnlyRootFilesystem:
                               description: "Whether this container has a read-only root filesystem. Default\
-                                                              \ is false."
+                                \ is false."
                               type: "boolean"
                             runAsGroup:
                               description: "The GID to run the entrypoint of the container process. Uses runtime\
-                                                              \ default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext\
-                                                              \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
+                                \ default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext\
+                                \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
                               format: "int64"
                               type: "integer"
                             runAsNonRoot:
                               description: "Indicates that the container must run as a non-root user. If true,\
-                                                              \ the Kubelet will validate the image at runtime to ensure that it does not\
-                                                              \ run as UID 0 (root) and fail to start the container if it does. If unset or\
-                                                              \ false, no such validation will be performed. May also be set in PodSecurityContext.\
-                                                              \  If set in both SecurityContext and PodSecurityContext, the value specified\
-                                                              \ in SecurityContext takes precedence."
+                                \ the Kubelet will validate the image at runtime to ensure that it does not\
+                                \ run as UID 0 (root) and fail to start the container if it does. If unset or\
+                                \ false, no such validation will be performed. May also be set in PodSecurityContext.\
+                                \  If set in both SecurityContext and PodSecurityContext, the value specified\
+                                \ in SecurityContext takes precedence."
                               type: "boolean"
                             runAsUser:
                               description: "The UID to run the entrypoint of the container process. Defaults\
-                                                              \ to user specified in image metadata if unspecified. May also be set in PodSecurityContext.\
-                                                              \  If set in both SecurityContext and PodSecurityContext, the value specified\
-                                                              \ in SecurityContext takes precedence."
+                                \ to user specified in image metadata if unspecified. May also be set in PodSecurityContext.\
+                                \  If set in both SecurityContext and PodSecurityContext, the value specified\
+                                \ in SecurityContext takes precedence."
                               format: "int64"
                               type: "integer"
                             seLinuxOptions:
@@ -9159,22 +9115,22 @@ spec:
                               type: "object"
                             windowsOptions:
                               description: "WindowsSecurityContextOptions contain Windows-specific options and\
-                                                              \ credentials."
+                                \ credentials."
                               properties:
                                 gmsaCredentialSpec:
                                   description: "GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa)\
-                                                                  \ inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName\
-                                                                  \ field."
+                                    \ inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName\
+                                    \ field."
                                   type: "string"
                                 gmsaCredentialSpecName:
                                   description: "GMSACredentialSpecName is the name of the GMSA credential spec\
-                                                                  \ to use."
+                                    \ to use."
                                   type: "string"
                                 runAsUserName:
                                   description: "The UserName in Windows to run the entrypoint of the container\
-                                                                  \ process. Defaults to the user specified in image metadata if unspecified.\
-                                                                  \ May also be set in PodSecurityContext. If set in both SecurityContext\
-                                                                  \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
+                                    \ process. Defaults to the user specified in image metadata if unspecified.\
+                                    \ May also be set in PodSecurityContext. If set in both SecurityContext\
+                                    \ and PodSecurityContext, the value specified in SecurityContext takes precedence."
                                   type: "string"
                               type: "object"
                           type: "object"

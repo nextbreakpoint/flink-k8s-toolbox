@@ -50,7 +50,7 @@ spec:
                   type: integer
                   nullable: true
                 runtime:
-                  description: A Flink image specification.
+                  description: A Flink runtime specification.
                   type: object
                   nullable: false
                   properties:
@@ -225,8 +225,6 @@ spec:
                         required:
                           - "name"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "name"
-                      x-kubernetes-patch-strategy: "merge"
                     environmentFrom:
                       description: List of environment variables from ConfigMap.
                       type: array
@@ -1446,8 +1444,6 @@ spec:
                         required:
                           - "name"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "name"
-                      x-kubernetes-patch-strategy: "merge,retainKeys"
                     volumeMounts:
                       description: List of volume mounts.
                       type: array
@@ -1485,8 +1481,6 @@ spec:
                           - "name"
                           - "mountPath"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "mountPath"
-                      x-kubernetes-patch-strategy: "merge"
                     extraPorts:
                       description: Additional container ports.
                       type: array
@@ -1521,12 +1515,6 @@ spec:
                         required:
                           - "containerPort"
                         type: "object"
-                      x-kubernetes-list-map-keys:
-                        - "containerPort"
-                        - "protocol"
-                      x-kubernetes-list-type: "map"
-                      x-kubernetes-patch-merge-key: "containerPort"
-                      x-kubernetes-patch-strategy: "merge"
                     initContainers:
                       description: Optional init containers.
                       type: array
@@ -2558,8 +2546,6 @@ spec:
                         required:
                           - "name"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "name"
-                      x-kubernetes-patch-strategy: "merge"
                     sideContainers:
                       description: Optional side containers.
                       type: array
@@ -3591,8 +3577,6 @@ spec:
                         required:
                           - "name"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "name"
-                      x-kubernetes-patch-strategy: "merge"
                     resources:
                       description: "ResourceRequirements describes the compute resource requirements."
                       properties:
@@ -4501,12 +4485,6 @@ spec:
                           - "whenUnsatisfiable"
                         type: "object"
                       type: "array"
-                      x-kubernetes-list-map-keys:
-                        - "topologyKey"
-                        - "whenUnsatisfiable"
-                      x-kubernetes-list-type: "map"
-                      x-kubernetes-patch-merge-key: "topologyKey"
-                      x-kubernetes-patch-strategy: "merge"
                   required:
                     - serviceMode
                 taskManager:
@@ -4659,8 +4637,6 @@ spec:
                         required:
                           - "name"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "name"
-                      x-kubernetes-patch-strategy: "merge"
                     environmentFrom:
                       description: List of environment variables from ConfigMap.
                       type: array
@@ -5880,8 +5856,6 @@ spec:
                         required:
                           - "name"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "name"
-                      x-kubernetes-patch-strategy: "merge,retainKeys"
                     volumeMounts:
                       description: List of volume mounts.
                       type: array
@@ -5919,8 +5893,6 @@ spec:
                           - "name"
                           - "mountPath"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "mountPath"
-                      x-kubernetes-patch-strategy: "merge"
                     extraPorts:
                       description: Additional container ports.
                       type: array
@@ -5955,12 +5927,6 @@ spec:
                         required:
                           - "containerPort"
                         type: "object"
-                      x-kubernetes-list-map-keys:
-                        - "containerPort"
-                        - "protocol"
-                      x-kubernetes-list-type: "map"
-                      x-kubernetes-patch-merge-key: "containerPort"
-                      x-kubernetes-patch-strategy: "merge"
                     initContainers:
                       description: Optional init containers.
                       type: array
@@ -6992,8 +6958,6 @@ spec:
                         required:
                           - "name"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "name"
-                      x-kubernetes-patch-strategy: "merge"
                     sideContainers:
                       description: Optional side containers.
                       type: array
@@ -8025,8 +7989,6 @@ spec:
                         required:
                           - "name"
                         type: "object"
-                      x-kubernetes-patch-merge-key: "name"
-                      x-kubernetes-patch-strategy: "merge"
                     resources:
                       description: "ResourceRequirements describes the compute resource requirements."
                       properties:
@@ -8935,12 +8897,6 @@ spec:
                           - "whenUnsatisfiable"
                         type: "object"
                       type: "array"
-                      x-kubernetes-list-map-keys:
-                        - "topologyKey"
-                        - "whenUnsatisfiable"
-                      x-kubernetes-list-type: "map"
-                      x-kubernetes-patch-merge-key: "topologyKey"
-                      x-kubernetes-patch-strategy: "merge"
                   required:
                     - taskSlots
                 supervisor:
