@@ -204,8 +204,10 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             .addAllToContainers(sideContainers)
             .withServiceAccountName(clusterSpec.jobManager?.serviceAccount ?: "default")
             .withImagePullSecrets(jobmanagerPullSecrets)
-            .withAffinity(jobmanagerAffinity)
             .withVolumes(clusterSpec.jobManager?.volumes)
+            .withAffinity(clusterSpec.jobManager?.affinity ?: jobmanagerAffinity)
+            .withTolerations(clusterSpec.jobManager?.tolerations)
+            .withTopologySpreadConstraints(clusterSpec.jobManager?.topologySpreadConstraints)
             .endSpec()
             .build()
     }
@@ -319,8 +321,10 @@ object ClusterResourcesDefaultFactory : ClusterResourcesFactory {
             .addAllToContainers(sideContainers)
             .withServiceAccountName(clusterSpec.taskManager?.serviceAccount ?: "default")
             .withImagePullSecrets(taskmanagerPullSecrets)
-            .withAffinity(taskmanagerAffinity)
             .withVolumes(clusterSpec.taskManager?.volumes)
+            .withAffinity(clusterSpec.taskManager?.affinity ?: taskmanagerAffinity)
+            .withTolerations(clusterSpec.taskManager?.tolerations)
+            .withTopologySpreadConstraints(clusterSpec.taskManager?.topologySpreadConstraints)
             .endSpec()
             .build()
     }

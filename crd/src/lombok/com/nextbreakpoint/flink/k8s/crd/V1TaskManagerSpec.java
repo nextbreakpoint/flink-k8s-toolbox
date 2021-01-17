@@ -9,6 +9,9 @@ import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import io.kubernetes.client.openapi.models.V1Affinity;
+import io.kubernetes.client.openapi.models.V1Toleration;
+import io.kubernetes.client.openapi.models.V1TopologySpreadConstraint;
 import lombok.Builder;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -50,4 +53,10 @@ public class V1TaskManagerSpec {
     private List<String> command;
     @SerializedName("args")
     private List<String> args;
+    @SerializedName("affinity")
+    private V1Affinity affinity;
+    @SerializedName("tolerations")
+    private List<V1Toleration> tolerations;
+    @SerializedName("topologySpreadConstraints")
+    private List<V1TopologySpreadConstraint> topologySpreadConstraints;
 }
